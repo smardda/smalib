@@ -1,0 +1,18 @@
+!>
+!!
+!! Particle object.
+!!
+!! \Bold{Type}
+!!
+!! Data structure; Data module.
+!!
+!! \Bold{Purpose}
+!!
+!! Used by codes \Tt{powcal}.
+!!
+!! \Bold{Function}
+!!
+!! Particle object.
+!!
+!!
+!<

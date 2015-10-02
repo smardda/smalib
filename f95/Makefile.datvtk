@@ -1,0 +1,234 @@
+# basic Makefile
+ 
+# Fortran compiler
+
+# gfortran
+#F90=gfortran
+#intel fortran
+F90=ifort
+
+#library option
+DBG=
+DBG=g
+
+# Fortran compiler flags
+
+#gfortran
+#F90FLAGS = -g -fbacktrace -fbounds-check -fexceptions
+#intel fortran
+#F90FLAGS =   -O3 -C
+F90FLAGS = -debug -debug-parameters all -trace -fpe0 -fp-stack-check -check
+#F90FLAGS =   -xW
+
+# Extra files to clean
+EXTRA_CLEAN_FILES = *.T
+
+# Module extension
+MOD=.mod
+
+# Libraries
+LIBS = ./LIB/lib$(DBG).a
+#LIBS = ./LIB/lib.a
+
+
+# config file.
+
+SOURCES = \
+const_kind_m.f90 \
+const_numphys_h.f90 \
+date_time_m.f90 \
+control_h.f90 \
+vcontrol_h.f90 \
+log_m.f90 \
+clock_m.f90 \
+spl2d_m.f90 \
+spl3d_m.f90 \
+beq_h.f90 \
+posang_h.f90 \
+posang_m.f90 \
+position_h.f90 \
+geobjlist_h.f90 \
+position_m.f90 \
+ls_m.f90 \
+btree_m.f90 \
+geobj_m.f90 \
+query_m.f90 \
+geobjlist_m.f90 \
+vcontrol_m.f90 \
+vfile_m.f90 \
+gfile_m.f90 \
+datline_h.f90 \
+datline_m.f90 \
+dfile_m.f90 \
+bods_m.f90 \
+stack_m.f90 \
+datvtk.f90
+ 
+PROG = datvtk
+
+MODULES=$(SOURCES:.f90=.mod)
+
+OBJECTS=$(SOURCES:.f90=.o)
+
+
+$(PROG): $(OBJECTS) 
+	$(F90) $(F90FLAGS) -o $(PROG) $(OBJECTS)  $(LIBS)
+
+$(OBJECTS):$(MODULES)
+	@touch .TOUCHFILE
+
+$(MODULES): %.mod : %.f90
+	$(F90) $(F90FLAGS) -c $<
+
+clean:
+	rm -f $(OBJECTS) *$(MOD) $(EXTRA_CLEAN_FILES)
+
+distclean: clean
+	rm -f $(PROG) 
+
+
+.PHONY : clean distclean
+
+datvtk.f90 : const_kind_m.mod
+datvtk.f90 : const_numphys_h.mod
+datvtk.f90 : date_time_m.mod
+datvtk.f90 : control_h.mod
+datvtk.f90 : vcontrol_h.mod
+datvtk.f90 : log_m.mod
+datvtk.f90 : clock_m.mod
+datvtk.f90 : spl2d_m.mod
+datvtk.f90 : spl3d_m.mod
+datvtk.f90 : beq_h.mod
+datvtk.f90 : posang_h.mod
+datvtk.f90 : posang_m.mod
+datvtk.f90 : position_h.mod
+datvtk.f90 : geobjlist_h.mod
+datvtk.f90 : position_m.mod
+datvtk.f90 : ls_m.mod
+datvtk.f90 : btree_m.mod
+datvtk.f90 : geobj_m.mod
+datvtk.f90 : query_m.mod
+datvtk.f90 : geobjlist_m.mod
+datvtk.f90 : vcontrol_m.mod
+datvtk.f90 : vfile_m.mod
+datvtk.f90 : gfile_m.mod
+datvtk.f90 : datline_h.mod
+datvtk.f90 : datline_m.mod
+datvtk.f90 : dfile_m.mod
+datvtk.f90 : bods_m.mod
+datvtk.f90 : stack_m.mod
+const_numphys_h.f90 : const_kind_m.mod
+control_h.f90 : const_kind_m.mod
+control_h.f90 : position_h.mod
+vcontrol_h.f90 : const_kind_m.mod
+vcontrol_h.f90 : position_h.mod
+log_m.f90 : const_kind_m.mod
+log_m.f90 : date_time_m.mod
+clock_m.f90 : const_kind_m.mod
+clock_m.f90 : date_time_m.mod
+clock_m.f90 : log_m.mod
+spl2d_m.f90 : const_kind_m.mod
+spl2d_m.f90 : const_numphys_h.mod
+spl2d_m.f90 : log_m.mod
+spl2d_m.f90 : position_h.mod
+spl2d_m.f90 : position_m.mod
+spl3d_m.f90 : const_kind_m.mod
+spl3d_m.f90 : const_numphys_h.mod
+spl3d_m.f90 : log_m.mod
+spl3d_m.f90 : position_h.mod
+spl3d_m.f90 : position_m.mod
+spl3d_m.f90 : spl2d_m.mod
+beq_h.f90 : const_kind_m.mod
+beq_h.f90 : spl2d_m.mod
+beq_h.f90 : spl3d_m.mod
+posang_h.f90 : const_kind_m.mod
+posang_m.f90 : const_kind_m.mod
+posang_m.f90 : const_numphys_h.mod
+posang_m.f90 : posang_h.mod
+posang_m.f90 : log_m.mod
+posang_m.f90 : beq_h.mod
+posang_m.f90 : spl2d_m.mod
+position_h.f90 : const_kind_m.mod
+geobjlist_h.f90 : const_kind_m.mod
+geobjlist_h.f90 : position_h.mod
+geobjlist_h.f90 : geobj_m.mod
+position_m.f90 : const_kind_m.mod
+position_m.f90 : log_m.mod
+position_m.f90 : position_h.mod
+ls_m.f90 : const_kind_m.mod
+ls_m.f90 : log_m.mod
+ls_m.f90 : control_h.mod
+btree_m.f90 : const_kind_m.mod
+btree_m.f90 : log_m.mod
+btree_m.f90 : control_h.mod
+btree_m.f90 : position_h.mod
+btree_m.f90 : position_m.mod
+btree_m.f90 : geobj_m.mod
+btree_m.f90 : query_m.mod
+btree_m.f90 : ls_m.mod
+geobj_m.f90 : const_kind_m.mod
+geobj_m.f90 : const_numphys_h.mod
+geobj_m.f90 : log_m.mod
+geobj_m.f90 : position_h.mod
+geobj_m.f90 : position_m.mod
+query_m.f90 : const_kind_m.mod
+query_m.f90 : const_numphys_h.mod
+query_m.f90 : log_m.mod
+query_m.f90 : control_h.mod
+query_m.f90 : position_h.mod
+query_m.f90 : position_m.mod
+geobjlist_m.f90 : const_kind_m.mod
+geobjlist_m.f90 : log_m.mod
+geobjlist_m.f90 : const_numphys_h.mod
+geobjlist_m.f90 : position_h.mod
+geobjlist_m.f90 : geobjlist_h.mod
+geobjlist_m.f90 : position_m.mod
+geobjlist_m.f90 : control_h.mod
+geobjlist_m.f90 : vcontrol_h.mod
+geobjlist_m.f90 : posang_h.mod
+geobjlist_m.f90 : ls_m.mod
+geobjlist_m.f90 : btree_m.mod
+geobjlist_m.f90 : geobj_m.mod
+geobjlist_m.f90 : query_m.mod
+geobjlist_m.f90 : posang_m.mod
+geobjlist_m.f90 : datline_h.mod
+geobjlist_m.f90 : datline_m.mod
+geobjlist_m.f90 : stack_m.mod
+vcontrol_m.f90 : const_kind_m.mod
+vcontrol_m.f90 : log_m.mod
+vcontrol_m.f90 : position_h.mod
+vcontrol_m.f90 : vcontrol_h.mod
+vcontrol_m.f90 : position_m.mod
+vfile_m.f90 : const_kind_m.mod
+vfile_m.f90 : log_m.mod
+gfile_m.f90 : const_kind_m.mod
+gfile_m.f90 : log_m.mod
+datline_h.f90 : const_kind_m.mod
+datline_m.f90 : const_kind_m.mod
+datline_m.f90 : log_m.mod
+datline_m.f90 : datline_h.mod
+dfile_m.f90 : const_kind_m.mod
+dfile_m.f90 : log_m.mod
+dfile_m.f90 : datline_h.mod
+dfile_m.f90 : datline_m.mod
+bods_m.f90 : const_kind_m.mod
+bods_m.f90 : log_m.mod
+bods_m.f90 : const_numphys_h.mod
+bods_m.f90 : position_h.mod
+bods_m.f90 : geobjlist_h.mod
+bods_m.f90 : position_m.mod
+bods_m.f90 : control_h.mod
+bods_m.f90 : vcontrol_h.mod
+bods_m.f90 : posang_h.mod
+bods_m.f90 : ls_m.mod
+bods_m.f90 : btree_m.mod
+bods_m.f90 : geobj_m.mod
+bods_m.f90 : query_m.mod
+bods_m.f90 : posang_m.mod
+bods_m.f90 : datline_h.mod
+bods_m.f90 : datline_m.mod
+bods_m.f90 : vfile_m.mod
+bods_m.f90 : geobjlist_m.mod
+stack_m.f90 : const_kind_m.mod
+stack_m.f90 : const_numphys_h.mod
+stack_m.f90 : log_m.mod

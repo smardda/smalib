@@ -1,0 +1,312 @@
+module pcontrol_m
+
+  use const_kind_m
+  use const_numphys_h
+  use log_m
+  use position_h
+  use position_m
+  use spl2d_m
+  use spl3d_m
+  use powcal_h
+  use powres_h
+  use powcal_m
+  use odes_h
+  use odes_m
+  use pcontrol_h
+
+  implicit none
+  private
+
+! public subroutines
+  public :: &
+ &pcontrol_init, &
+ &pcontrol_read, &
+ &pcontrol_fix  !< create consistent controls
+
+
+! public types
+
+! private variables
+  character(*), parameter :: m_name='pcontrol_m' !< module name
+  integer(ki4)  :: status   !< error status
+  integer(ki4)  :: nin      !< control file unit number
+  integer(ki4) :: i !< loop counter
+  integer(ki4) :: j !< loop counter
+  integer(ki4) :: k !< loop counter
+  integer(ki4) :: l !< loop counter
+  integer(ki4) :: ij !< loop counter
+  character(len=80) :: root !< file root
+
+  contains
+!---------------------------------------------------------------------
+!> open input control data file
+subroutine pcontrol_init(fileroot)
+
+  !! arguments
+  character(*), intent(in) :: fileroot !< file root
+  !! local
+  character(*), parameter :: s_name='pcontrol_init' !< subroutine name
+  logical :: unitused !< flag to test unit is available
+  character(len=80) :: controlfile !< control file name
+
+
+  !! get file unit
+  do i=99,1,-1
+     inquire(i,opened=unitused)
+     if(.not.unitused)then
+        nin=i
+        exit
+     end if
+  end do
+
+  !! open file
+  controlfile=trim(fileroot)//".ctl"
+  root=fileroot
+  call log_value("Control data file",trim(controlfile))
+  open(unit=nin,file=controlfile,status='OLD',iostat=status)
+  if(status/=0)then
+     !! error opening file
+     print '("Fatal error: Unable to open control file, ",a)',controlfile
+     call log_error(m_name,s_name,1,error_fatal,'Cannot open control data file')
+     stop
+  end if
+
+end  subroutine pcontrol_init
+!---------------------------------------------------------------------
+!> read data for this run
+subroutine pcontrol_read(file,numerics,onumerics,edgprof,plot)
+
+  !! arguments
+  type(pfiles_t), intent(out) :: file !< file names
+  type(pnumerics_t), intent(out) :: numerics !< input numerical parameters
+  type(onumerics_t), intent(out) :: onumerics !< input ODE numerical parameters
+  type(edgprof_t), intent(out) :: edgprof !< input ODE numerical parameters
+  type(pplots_t), intent(out) :: plot !< vtk plot selectors
+
+  !!local
+  character(*), parameter :: s_name='pcontrol_read' !< subroutine name
+  character(len=80) :: vtk_input_file  !< vtk format geometry data input file
+  character(len=80) :: vtkres_input_file  !< vtk format `results' geometry data input file
+  character(len=80) :: hds_input_file  !< vtk format HDS data input file
+  character(len=80) :: geoq_input_file  !< geoq output format data input file
+  character(len=80) :: lau_input_file  !< launch data input file
+  logical :: filefound !< true of file exists
+  integer(ki4) :: dummy_number !< dummy
+  logical :: plot_cartv !< vtk plot selector
+  logical :: plot_allcartv !< vtk plot selector
+  logical :: plot_wall !< vtk plot selector
+  logical :: plot_ptzv !< vtk plot selector
+  logical :: plot_flincart !< vtk plot selector
+  logical :: plot_flinends !< gnu plot selector
+  logical :: plot_flinptz !< vtk plot selector
+  logical :: plot_allptzv !< vtk plot selector
+  logical :: plot_geofld !< vtk plot selector
+  logical :: plot_geofld_quantised !< vtk plot selector
+  logical :: plot_gnu !< gnu plot selector
+
+  !! file names
+  namelist /inputfiles/ &
+ &vtk_input_file, &
+ &vtkres_input_file, &
+ &hds_input_file, &
+ &geoq_input_file, &
+ &lau_input_file
+
+  !! misc parameters
+  namelist /miscparameters/ &
+ &dummy_number
+
+  !! plot selection parameters
+  namelist /plotselections/ &
+ &plot_cartv, &
+ &plot_allcartv, &
+ &plot_wall, &
+ &plot_ptzv, &
+ &plot_flincart, &
+ &plot_flinptz, &
+ &plot_allptzv, &
+ &plot_geofld, &
+ &plot_geofld_quantised, &
+ &plot_flinends, &
+ &plot_gnu
+
+  !! read input file names
+  vtk_input_file='null'
+  vtkres_input_file='null'
+  hds_input_file='null'
+  geoq_input_file='null'
+  lau_input_file='null'
+  read(nin,nml=inputfiles,iostat=status)
+  if(status/=0) then
+     call log_error(m_name,s_name,1,error_fatal,'Error reading input filenames')
+     print '("Fatal error reading input filenames")'
+  end if
+
+  file%vtkdata   = vtk_input_file
+  file%vtkres   = vtkres_input_file
+  file%hdsdata   = hds_input_file
+  file%geoq   = geoq_input_file
+  file%laudata   = lau_input_file
+
+  !!check files exist
+
+  call log_value("geometry data file, vtk_input_file",trim(file%vtkdata))
+  if(file%vtkdata/='null') then
+     inquire(file=vtk_input_file,exist=filefound)
+     if(.not.filefound) then
+        !! error opening file
+        print '("Fatal error: Unable to find geometry data file, ",a)',vtk_input_file
+        call log_error(m_name,s_name,2,error_fatal,'geoq output data file not found')
+     end if
+  end if
+
+  call log_value("results geometry data file, vtkres_input_file",trim(file%vtkres))
+  inquire(file=vtkres_input_file,exist=filefound)
+  if(.not.filefound) then
+     !! error opening file
+     print '("Fatal error: Unable to find results geometry data file, ",a)',vtkres_input_file
+     call log_error(m_name,s_name,3,error_fatal,'geoq output data file not found')
+  end if
+
+  if(file%hdsdata/='null') then
+     call log_value("HDS data file, hds_input_file",trim(file%hdsdata))
+     inquire(file=hds_input_file,exist=filefound)
+     if(.not.filefound) then
+        !! error opening file
+        print '("Fatal error: Unable to find hds data file, ",a)',hds_input_file
+        call log_error(m_name,s_name,4,error_fatal,'HDS data file not found')
+     end if
+  end if
+
+  call log_value("output from geoq, now geoq_input_file",trim(file%geoq))
+  inquire(file=geoq_input_file,exist=filefound)
+  if(.not.filefound) then
+     !! error opening file
+     print '("Fatal error: Unable to find geoq output data file, ",a)',geoq_input_file
+     call log_error(m_name,s_name,5,error_fatal,'geoq output data file not found')
+  end if
+
+  if(file%laudata/='null') then
+     call log_value("launch data file, lau_input_file",trim(file%laudata))
+     inquire(file=lau_input_file,exist=filefound)
+     if(.not.filefound) then
+        !! error opening file
+        print '("Fatal error: Unable to find lau data file, ",a)',lau_input_file
+        call log_error(m_name,s_name,6,error_fatal,'launch data file not found')
+     end if
+  end if
+
+  !! create output file names from root
+
+  !! output file
+  file%powcalout = trim(root)//"_powcal.out"
+  inquire(file=file%powcalout,exist=filefound)
+  call log_value("powcal output file",trim(file%powcalout))
+  if(filefound) then
+     !! error opening file
+     print '("Fatal error: Output file ",a, " already exists")',trim(file%powcalout)
+     print '("Remove it and restart run")'
+     call log_error(m_name,s_name,6,error_fatal,'Output file already exists')
+  end if
+
+  !!vtk file roots
+  file%cartv     =trim(root)//"_cartv"
+  file%allcartv     =trim(root)//"_allcartv"
+  file%wall     =trim(root)//"_wall"
+  file%ptzv    =trim(root)//"_ptzv"
+  file%flincart    =trim(root)//"_flincart"
+  file%flinptz    =trim(root)//"_flinptz"
+  file%allptzv    =trim(root)//"_allptzv"
+  file%geofld =trim(root)//"_geofld"
+  file%geofldq    =trim(root)//"_geofldq"
+  !!gnu file roots
+  file%gnu     =trim(root)//"_gnu"
+  file%flinends    =trim(root)//"_flinends"
+
+  !! set default misc parameters
+  dummy_number = 10
+
+  !!read misc parameters
+  read(nin,nml=miscparameters,iostat=status)
+  if(status/=0) then
+     call log_error(m_name,s_name,10,error_fatal,'Error reading misc parameters')
+     print '("Fatal error reading misc parameters")'
+  end if
+
+  !! check for valid data
+  if(dummy_number<0) &
+ &call log_error(m_name,s_name,11,error_fatal,'dummy_number must be >=0')
+
+
+  !W     numerics%ndummy = dummy_number
+
+  !! set default plot selections
+  plot_cartv = .false.
+  plot_allcartv = .false.
+  plot_wall = .false.
+  plot_ptzv = .false.
+  plot_flincart = .false.
+  plot_flinptz = .false.
+  plot_allptzv = .false.
+  plot_geofld = .false.
+  plot_geofld_quantised = .false.
+  plot_gnu = .false.
+  plot_flinends = .false.
+
+  !!read plot selections
+  read(nin,nml=plotselections,iostat=status)
+  if(status/=0) then
+     call log_error(m_name,s_name,20,error_fatal,'Error reading plot selections')
+     print '("Fatal error reading plot selections")'
+  end if
+
+  !! store values
+  plot%cartv   = plot_cartv
+  plot%allcartv   = plot_allcartv
+  plot%wall   = plot_wall
+  plot%ptzv    = plot_ptzv
+  plot%flincart    = plot_flincart
+  plot%flinptz    = plot_flinptz
+  plot%allptzv     = plot_allptzv
+  plot%geofld    = plot_geofld
+  plot%geofldq     = plot_geofld_quantised
+  plot%gnu     = plot_gnu
+  plot%flinends    = plot_flinends
+
+  call powcal_readcon(numerics,nin)
+
+  call edgprof_readcon(edgprof,nin)
+
+  call odes_readcon(onumerics,nin)
+
+end  subroutine pcontrol_read
+!---------------------------------------------------------------------
+!> create consistent controls
+subroutine pcontrol_fix(numerics,onumerics)
+
+  !! arguments
+  type(pnumerics_t), intent(inout) :: numerics !< input numerical parameters
+  type(onumerics_t), intent(inout) :: onumerics !< input ODE numerical parameters
+
+  !!local
+  character(*), parameter :: s_name='pcontrol_fix' !< subroutine name
+
+  calcn_type: select case (numerics%caltype)
+  case('afws')
+     numerics%nanalau=0
+     numerics%nlaupow=1
+     numerics%nshapow=0
+     onumerics%nstartcon=0
+     onumerics%ntermcon=0
+  case('msus')
+     numerics%nanalau=0
+     numerics%nlaupow=1
+     numerics%nshapow=0
+     onumerics%nstartcon=1
+     onumerics%ntermcon=sign(1,onumerics%ntermcon)
+  case default
+  end select calcn_type
+
+end  subroutine pcontrol_fix
+
+end module pcontrol_m

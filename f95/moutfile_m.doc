@@ -1,0 +1,18 @@
+!>
+!!
+!! This module reads the file containing magnetic field \Tt{sp3} data.
+!!
+!! \Bold{Type}
+!!
+!! File handling; Object-oriented module.
+!!
+!! \Bold{Purpose}
+!!
+!! Used by codes \Tt{geoq}, \Tt{magtfm}, \Tt{powcal}.
+!!
+!! \Bold{Function}
+!!
+!! This module reads the file containing magnetic field \Tt{sp3} data.
+!!
+!!
+!<
