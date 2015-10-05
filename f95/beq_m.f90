@@ -2239,10 +2239,10 @@ subroutine beq_centre(self)
 
 1     continue
   call log_error(m_name,s_name,1,log_info,'Equil. centre')
-  call log_value("SMARDDA-BEQ rcen ",self%n%rcen)
-  call log_value("SMARDDA-BEQ zcen ",self%n%zcen)
-  call log_value("SMARDDA-BEQ psicen ",zpp)
-  call log_value("SMARDDA-BEQ psiaxis ",self%psiaxis)
+  call log_value("SMITER-BEQ rcen ",self%n%rcen)
+  call log_value("SMITER-BEQ zcen ",self%n%zcen)
+  call log_value("SMITER-BEQ psicen ",zpp)
+  call log_value("SMITER-BEQ psiaxis ",self%psiaxis)
 
 end subroutine beq_centre
 !---------------------------------------------------------------------
@@ -2793,11 +2793,11 @@ subroutine beq_psix(self)
      call log_error(m_name,s_name,80,error_fatal,'no X-point found')
   else
      call log_error(m_name,s_name,90,log_info,'X-point value')
-     call log_value("SMARDDA-BEQ psixpt ",self%psixpt)
-     call log_value("SMARDDA-BEQ thetaxpt ",self%thetaxpt)
+     call log_value("SMITER-BEQ psixpt ",self%psixpt)
+     call log_value("SMITER-BEQ thetaxpt ",self%thetaxpt)
      call log_value("psixpt find code",ixf)
-     call log_value("SMARDDA-BEQ rxpt ",self%n%rcen+zsrxpt*cos(self%thetaxpt))
-     call log_value("SMARDDA-BEQ zxpt ",self%n%zcen-zsrxpt*sin(self%thetaxpt))
+     call log_value("SMITER-BEQ rxpt ",self%n%rcen+zsrxpt*cos(self%thetaxpt))
+     call log_value("SMITER-BEQ zxpt ",self%n%zcen-zsrxpt*sin(self%thetaxpt))
   end if
 
 end subroutine beq_psix
@@ -3009,10 +3009,10 @@ subroutine beq_bdryrb(self)
   self%btotbdry=sqrt( max(0.,(self%bpbdry**2+(zf/re)**2)) )
 
   call log_error(m_name,s_name,1,log_info,'Reference boundary values')
-  call log_value("SMARDDA-BEQ psibdry ",self%psibdry)
-  call log_value("SMARDDA-BEQ rbdry ",self%rbdry)
-  call log_value("SMARDDA-BEQ bpbdry ",self%bpbdry)
-  call log_value("SMARDDA-BEQ btotbdry ",self%btotbdry)
+  call log_value("SMITER-BEQ psibdry ",self%psibdry)
+  call log_value("SMITER-BEQ rbdry ",self%rbdry)
+  call log_value("SMITER-BEQ bpbdry ",self%bpbdry)
+  call log_value("SMITER-BEQ btotbdry ",self%btotbdry)
 
   deallocate(wvextn)
   deallocate(wvext)
@@ -3891,8 +3891,8 @@ subroutine beq_findrzm(self,pxl,pang)
      if (zdotprodn*zdotprod<0) then
         self%n%rmove=pxl(1)-zr
         self%n%zmove=pxl(2)-zz
-        call log_value("SMARDDA-BEQ rmove ",1000*self%n%rmove)
-        call log_value("SMARDDA-BEQ zmove ",1000*self%n%zmove)
+        call log_value("SMITER-BEQ rmove ",1000*self%n%rmove)
+        call log_value("SMITER-BEQ zmove ",1000*self%n%zmove)
         call log_value("polar theta relative to qcen ",ztheta)
         call log_value("user polar theta ",ztheta+const_pid/2)
      end if
