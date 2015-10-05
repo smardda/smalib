@@ -184,57 +184,57 @@ subroutine ls_write1(self,kadr,kout)
            call log_error(m_name,s_name,1,error_fatal,'Unable to allocate memory')
         end if
      end if
-     do 1 j=1,in
+     loop_1 : do j=1,in
         iout(j)=self%list(kadr+j,2)
-1           continue
-     else
-        call log_error(m_name,s_name,2,error_fatal,'List array bound exceeded')
-     end if
+     end do loop1
+  else
+     call log_error(m_name,s_name,2,error_fatal,'List array bound exceeded')
+  end if
 
-     ! output ls list array
-     ilines=(in+9)/10
-     !!write
-     write(kout,'("layout ",2i8)') ilines,in
-     write(kout,'(10(1x,i8))',iostat=status) (iout(k),k=1,in)
-     if(status/=0) then
-        call log_error(m_name,s_name,3,error_fatal,'Error writing ls list')
-     end if
-     deallocate(iout)
+  ! output ls list array
+  ilines=(in+9)/10
+  !!write
+  write(kout,'("layout ",2i8)') ilines,in
+  write(kout,'(10(1x,i8))',iostat=status) (iout(k),k=1,in)
+  if(status/=0) then
+     call log_error(m_name,s_name,3,error_fatal,'Error writing ls list')
+  end if
+  deallocate(iout)
 
 end subroutine ls_write1
 subroutine ls_add(self,kadr,k2,kitem)
 
-     !! arguments
+  !! arguments
   type(ls_t), intent(inout) :: self   !< list
   integer(ki4) , intent(in) :: kadr !< first entry of list
   integer(ki4) , intent(in) :: k2 !< second entry of list
   integer(ki4) , intent(in) :: kitem !< item to add to list
 
-     !! local
+  !! local
   character(*), parameter :: s_name='ls_add' !< subroutine name
   integer(ki4) :: isiz  !< local variable
   integer(ki4):: il  !< local variable
   integer(ki4):: iu  !< local variable
 
-     !! test storage
-     isiz=size(self%list,1)
-     il=lbound(self%list,2)
-     iu=ubound(self%list,2)
-     if(il<=k2.AND.k2<=iu) then
-        if(kadr<=isiz) then
-           !! add to existing
-           self%list(kadr,k2)=kitem
-        else
-           call log_error(m_name,s_name,1,error_fatal,'List array not large enough')
-        end if
+  !! test storage
+  isiz=size(self%list,1)
+  il=lbound(self%list,2)
+  iu=ubound(self%list,2)
+  if(il<=k2.AND.k2<=iu) then
+     if(kadr<=isiz) then
+        !! add to existing
+        self%list(kadr,k2)=kitem
      else
-        call log_error(m_name,s_name,2,error_fatal,'List array not large enough')
+        call log_error(m_name,s_name,1,error_fatal,'List array not large enough')
      end if
+  else
+     call log_error(m_name,s_name,2,error_fatal,'List array not large enough')
+  end if
 
 end subroutine ls_add
 subroutine ls_copy(self,kadr1,k1,kadr2,k2,klen)
 
-     !! arguments
+  !! arguments
   type(ls_t), intent(inout) :: self   !< list
   integer(ki4) , intent(in) :: kadr1 !< first entry of list subarray
   integer(ki4) , intent(in) :: k1 !< second entry of list
@@ -242,28 +242,28 @@ subroutine ls_copy(self,kadr1,k1,kadr2,k2,klen)
   integer(ki4) , intent(in) :: k2 !< second entry of list
   integer(ki4) , intent(in) :: klen !< length of list subarray
 
-     !! local
+  !! local
   character(*), parameter :: s_name='ls_copy' !< subroutine name
   integer(ki4) :: isiz  !< local variable
   integer(ki4):: il  !< local variable
   integer(ki4):: iu  !< local variable
   integer(ki4):: ioff  !< local variable
 
-     !! test storage
-     ioff=klen-1
-     isiz=size(self%list,1)
-     il=lbound(self%list,2)
-     iu=ubound(self%list,2)
-     if(il<=k1.AND.k1<=iu.AND.il<=k2.AND.k2<=iu) then
-        if(kadr1+ioff<=isiz.AND.kadr2+ioff<=isiz) then
-           !! add to existing
-           self%list(kadr2:kadr2+ioff,k2)=self%list(kadr1:kadr1+ioff,k1)
-        else
-           call log_error(m_name,s_name,1,error_fatal,'List array not large enough')
-        end if
+  !! test storage
+  ioff=klen-1
+  isiz=size(self%list,1)
+  il=lbound(self%list,2)
+  iu=ubound(self%list,2)
+  if(il<=k1.AND.k1<=iu.AND.il<=k2.AND.k2<=iu) then
+     if(kadr1+ioff<=isiz.AND.kadr2+ioff<=isiz) then
+        !! add to existing
+        self%list(kadr2:kadr2+ioff,k2)=self%list(kadr1:kadr1+ioff,k1)
      else
-        call log_error(m_name,s_name,2,error_fatal,'List array not large enough')
+        call log_error(m_name,s_name,1,error_fatal,'List array not large enough')
      end if
+  else
+     call log_error(m_name,s_name,2,error_fatal,'List array not large enough')
+  end if
 
 end subroutine ls_copy
 

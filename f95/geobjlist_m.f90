@@ -536,11 +536,11 @@ subroutine geobjlist_addcube(self)
   real(kr4) :: zdelta   !< temporary cube separation
   integer(ki4), dimension(36), parameter :: icube= &!< vtk description of cube surface triangles
   (/2,      0,        3,        3,        0,        1,        1, &
-  5,        0,        5,        4,        0,        5,        1, &
-  6,        6,        1,        3,        6,        3,        7, &
-  7,        3,        2,        0,        4,        2,        4, &
-  7,        2,        7,        4,        6,        6,        4, &
-  5/)
+5     ,        0,        5,        4,        0,        5,        1, &
+6     ,        6,        1,        3,        6,        3,        7, &
+7     ,        3,        2,        0,        4,        2,        4, &
+7     ,        2,        7,        4,        6,        6,        4, &
+5     /)
   !     check external cubes present
   if (self%nbdcub==0) return
   ! allocate new geobjlist position storage
@@ -843,7 +843,7 @@ subroutine geobjlist_spectfm(self,kt,pars,ktyp)
   !! arguments
   type(geobjlist_t), intent(inout) :: self !< geobj list data
   integer(ki4), intent(in) :: kt   !< transform or inverse
-  real(kr8), intent(in) :: pars(:)  !< parameters for special transform
+  real(kr8), intent(in), dimension(:) :: pars  !< parameters for special transform
   integer(ki4), intent(in) :: ktyp   !< type of special transform
 
   !! local
@@ -1402,14 +1402,14 @@ subroutine geobjlist_bin(self,btree)
   ilsplit=.false.
 
   !! loop over depth
-  do 99 j=1,btree%ndepth
+  loop_99 : do j=1,btree%ndepth
      idepth=j
      id=1+mod(j-1,3)
      ! first entry in list is 0 (empty node)
      iempt=2
      iltest=.true.
      ! loop over volumes down to level j
-     do 9 k=1,last
+     loop_9 : do k=1,last
 
         !! test for empty node
         ileaf=btree%pter(3,k)
@@ -1521,33 +1521,40 @@ subroutine geobjlist_bin(self,btree)
         end if
 
 
-9           continue
-        first=last+1
-        last=btree%nt
-        ! copy the 0 list back to 2 list, overwriting
-        call ls_copy(btree%objectls,1,0,1,2,iempt-1)
-        btree%objectls%nlist=iempt-1
+     end do loop_9
+     first=last+1
+     last=btree%nt
+     ! copy the 0 list back to 2 list, overwriting
+     call ls_copy(btree%objectls,1,0,1,2,iempt-1)
+     btree%objectls%nlist=iempt-1
 
-        if (iltest) then
-           exit
-        end if
-99          continue
+     if (iltest) then
+        exit
+     end if
+  end do loop_99
 
-        if (.not.iltest) then
-           call log_error(m_name,s_name,2,error_warning, &
- &         'binary tree not completed-increase quantising and/or depth and/or minobj')
-        end if
+  if (.not.iltest) then
+     call log_error(m_name,s_name,2,error_warning, &
+ &   'binary tree not completed-increase quantising and/or depth and/or minobj')
+  end if
 
-        btree%ndepth=idepth
+  btree%ndepth=idepth
 
 end subroutine geobjlist_bin
 !---------------------------------------------------------------------
 !> sort objects into bins (one object may goto many bins)
 subroutine geobjlist_mbin(self,btree)
-        !! arguments
+  !! arguments
   type(geobjlist_t), intent(inout) :: self !< geobj list data
   type(btree_t), intent(inout) :: btree !< btree data
-        !! local
+  !! Note that btree%desc(1,k),btree%pter(2,k),btree%pter(3,k)
+  !! have different meaning depending whether node is terminal:
+  !! Entry           |   Not terminal        |           Terminal         |
+  !! btree%desc(1,k) | Splitting direction   | 0                          |
+  !! btree%pter(2,k) | Pointer to child node | Address of objects in cell |
+  !! btree%pter(3,k) | Pointer to child node | -1 (skip)  or -2 (empty)   |
+
+  !! local
   character(*), parameter :: s_name='geobjlist_mbin' !< subroutine name
   integer(ki4) :: first  !< local variable
   integer(ki4) :: last  !< local variable
@@ -1577,178 +1584,169 @@ subroutine geobjlist_mbin(self,btree)
   integer(ki2) :: ichildn  !< local variable
   integer(ki2) :: id1  !< local variable
 
+  first=1
+  last=1
+  ilsplit=.false.
+  ittype=btree%nttype
 
-        ! Note that btree%desc(1,k),btree%pter(2,k),btree%pter(3,k)
-        ! have different meaning depending whether node is terminal:
-        ! Entry           |   Not terminal        |           Terminal         |
-        ! btree%desc(1,k) | Splitting direction   | 0                          |
-        ! btree%pter(2,k) | Pointer to child node | Address of objects in cell |
-        ! btree%pter(3,k) | Pointer to child node | -1 (skip)  or -2 (empty)   |
+  !! loop over depth
+  loop_99 : do j=1,btree%ndepth
+     idepth=j
+     id=1+mod(j-1,3)
+     if (ittype==1 ) then
+        ixyz=(/1,1,1/)
+        ixyz(id)=2
+     else
+        if ( j==1 ) then
+           ixyz=btree%nxyz
+        else
+           ixyz=(/2,2,2/)
+        end if
+     end if
 
+     ! first entry in list is 0 (empty node)
+     iempt=2
+     iltest=.true.
+     ! loop over volumes down to level j
+     loop_9 : do k=1,last
 
-        first=1
-        last=1
-        ilsplit=.false.
-        ittype=btree%nttype
-
-        !! loop over depth
-        do 99 j=1,btree%ndepth
-           idepth=j
-           id=1+mod(j-1,3)
-           if (ittype==1 ) then
-              ixyz=(/1,1,1/)
-              ixyz(id)=2
+        !! test for empty node
+        ileaf=btree%pter(3,k)
+        if (ileaf==-2.OR. (k<first.AND.ileaf/=-1) ) then
+           ! no object address to worry about
+           cycle
+        else
+           inadr=btree%pter(2,k)
+           inls=btree%objectls%list(inadr,2)
+           if (ileaf==-1) then
+              ! no need to process further, except for object address
+              ilsplit=.false.
            else
-              if ( j==1 ) then
-                 ixyz=btree%nxyz
+              if (inls<=self%minobj) then
+                 ! no need to process further, except for object address
+                 ilsplit=.false.
+                 ileaf=-1
               else
-                 ixyz=(/2,2,2/)
-              end if
-           end if
+                 !! test for criterion P
+                 ! define child boxes
+                 call btree_mdefn(btree,ixyz,k,id1,iextn,icorna,ichildn,ibsiz)
+                 ! loop over child boxes
+                 loop_child: do i=1,ichildn
+                    box(:,1)=float(icorna(:,i))
+                    box(:,2)=float(icorna(:,i)+ibsiz)
+                    if (i==1) then
+                       ! set 1-ls to 1 =list of unassigned
+                       do l=1,inls
+                          call ls_add(btree%objectls,l+2,1,1)
+                       end do
+                       iadr0=iempt
+                    end if
+                    ! loop over list, assign to new ls
+                    in0=0
+                    ! address of number of entries
+                    iadr01=iadr0
 
-           ! first entry in list is 0 (empty node)
-           iempt=2
-           iltest=.true.
-           ! loop over volumes down to level j
-           do 9 k=1,last
+                    iadr0=iadr0+1
 
-              !! test for empty node
-              ileaf=btree%pter(3,k)
-              if (ileaf==-2.OR. (k<first.AND.ileaf/=-1) ) then
-                 ! no object address to worry about
-                 cycle
-              else
-                 inadr=btree%pter(2,k)
-                 inls=btree%objectls%list(inadr,2)
-                 if (ileaf==-1) then
-                    ! no need to process further, except for object address
+                    loop_list: do l=1,inls
+
+                       inext=btree%objectls%list(inadr+l,2)
+                       iobj%geobj=self%obj2(inext)%ptr
+                       iobj%objtyp=self%obj2(inext)%typ
+                       if ( geobj_inbox( iobj,self%posl,self%nodl,box )  ) then
+                          ! add to 0-ls (iadr0)
+                          call ls_add(btree%objectls,iadr0,0,inext)
+                          iadr0=iadr0+1
+                          in0=in0+1
+                          ! mark as assigned in 1-ls
+                          call ls_add(btree%objectls,l+2,1,0)
+                       end if
+
+                    end do loop_list
+                    iadra(i)=iadr01
+                    ina(i)=in0
+                    !  complete 0 list (with number of entries)
+                    call ls_add(btree%objectls,iadr01,0,in0)
+                 end do loop_child
+
+                 ! check all assigned
+                 inl1=0
+                 do l=1,inls
+                    in1=btree%objectls%list(inadr+l,1)
+                    if (in1>0) then
+                       call log_error(m_name,s_name,1,error_warning,'object unassigned')
+                       inl1=inl1+1
+                    end if
+                 end do
+                 self%ngunassigned=self%ngunassigned+inl1
+
+                 ! test whether object numbers changed
+                 ilall=.true.
+                 do i=1,ichildn
+                    ilall=(ilall.and.(ina(i)==inls))
+                 end do
+                 if (ilall) then
+                    ileaf=-1
                     ilsplit=.false.
                  else
-                    if (inls<=self%minobj) then
-                       ! no need to process further, except for object address
-                       ilsplit=.false.
-                       ileaf=-1
-                    else
-                       !! test for criterion P
-                       ! define child boxes
-                       call btree_mdefn(btree,ixyz,k,id1,iextn,icorna,ichildn,ibsiz)
-                       ! loop over child boxes
-                       loop_child: do i=1,ichildn
-                          box(:,1)=float(icorna(:,i))
-                          box(:,2)=float(icorna(:,i)+ibsiz)
-                          if (i==1) then
-                             ! set 1-ls to 1 =list of unassigned
-                             do l=1,inls
-                                call ls_add(btree%objectls,l+2,1,1)
-                             end do
-                             iadr0=iempt
-                          end if
-                          ! loop over list, assign to new ls
-                          in0=0
-                          ! address of number of entries
-                          iadr01=iadr0
-
-                          iadr0=iadr0+1
-
-                          loop_list: do l=1,inls
-
-                             inext=btree%objectls%list(inadr+l,2)
-                             iobj%geobj=self%obj2(inext)%ptr
-                             iobj%objtyp=self%obj2(inext)%typ
-                             if ( geobj_inbox( iobj,self%posl,self%nodl,box )  ) then
-                                ! add to 0-ls (iadr0)
-                                call ls_add(btree%objectls,iadr0,0,inext)
-                                iadr0=iadr0+1
-                                in0=in0+1
-                                ! mark as assigned in 1-ls
-                                call ls_add(btree%objectls,l+2,1,0)
-                             end if
-
-                          end do loop_list
-                          iadra(i)=iadr01
-                          ina(i)=in0
-                          !  complete 0 list (with number of entries)
-                          call ls_add(btree%objectls,iadr01,0,in0)
-                       end do loop_child
-
-                       ! check all assigned
-                       inl1=0
-                       do l=1,inls
-                          in1=btree%objectls%list(inadr+l,1)
-                          if (in1>0) then
-                             call log_error(m_name,s_name,1,error_warning,'object unassigned')
-                             inl1=inl1+1
-                          end if
-                       end do
-                       self%ngunassigned=self%ngunassigned+inl1
-
-                       ! test whether object numbers changed
-                       ilall=.true.
-                       do i=1,ichildn
-                          ilall=(ilall.and.(ina(i)==inls))
-                       end do
-                       if (ilall) then
-                          ileaf=-1
-                          ilsplit=.false.
-                       else
-                          ilsplit=.true.
-                       end if
-                    end if
+                    ilsplit=.true.
                  end if
               end if
+           end if
+        end if
 
-              if (ilsplit) then
-                 ! criterion satisfied
-                 iadd=iadr0-1
-                 iempt=iadr0
-                 ! not able to quit on this pass
-                 iltest=.false.
-                 ! update btree
-                 do i=1,ichildn
-                    if (ina(i)==0) iadra(i)=-2
-                 end do
-                 call btree_madd(btree,ixyz,k,iadra,id1,iextn,icorna,ichildn,ibsiz)
-              else
-                 ! put list of entries including no. entries at end of 0 list
-                 iadr00=iempt
-                 call ls_copy(btree%objectls,inadr,2,iadr00,0,inls+1)
-                 iadd=iadr00+inls
-                 iempt=iadd+1
-                 ! ensure node gets no more processing
-                 btree%pter(2,k)=iadr00
-                 btree%pter(3,k)=ileaf
-              end if
+        if (ilsplit) then
+           ! criterion satisfied
+           iadd=iadr0-1
+           iempt=iadr0
+           ! not able to quit on this pass
+           iltest=.false.
+           ! update btree
+           do i=1,ichildn
+              if (ina(i)==0) iadra(i)=-2
+           end do
+           call btree_madd(btree,ixyz,k,iadra,id1,iextn,icorna,ichildn,ibsiz)
+        else
+           ! put list of entries including no. entries at end of 0 list
+           iadr00=iempt
+           call ls_copy(btree%objectls,inadr,2,iadr00,0,inls+1)
+           iadd=iadr00+inls
+           iempt=iadd+1
+           ! ensure node gets no more processing
+           btree%pter(2,k)=iadr00
+           btree%pter(3,k)=ileaf
+        end if
 
 
-9                 continue
-              first=last+1
-              last=btree%nt
-              ! copy the 0 list back to 2 list, overwriting
-              call ls_copy(btree%objectls,1,0,1,2,iadd)
-              btree%objectls%nlist=iempt-1
+     end do loop_9
+     first=last+1
+     last=btree%nt
+     ! copy the 0 list back to 2 list, overwriting
+     call ls_copy(btree%objectls,1,0,1,2,iadd)
+     btree%objectls%nlist=iempt-1
 
-              if (iltest) then
-                 exit
-              end if
-99                continue
+     if (iltest) then
+        exit
+     end if
+  end do loop_99
 
-              if (.not.iltest) then
-                 call log_error(m_name,s_name,2,error_warning, &
- &               'binary tree not completed-increase quantising number and depth')
-              end if
+  if (.not.iltest) then
+     call log_error(m_name,s_name,2,error_warning, &
+ &   'binary tree not completed-increase quantising number and depth')
+  end if
 
-              btree%ndepth=idepth
+  btree%ndepth=idepth
 
 end subroutine geobjlist_mbin
 !---------------------------------------------------------------------
 !> read dat file
 subroutine geobjlist_dread(self,kread)
-              !! arguments
+  !! arguments
   type(geobjlist_t), intent(out) :: self   !< geobj list data
   integer(ki4), intent(inout) :: kread   !< input channel for dat file
-              !integer(ki4), intent(in), optional :: kopt   !< options
+  !integer(ki4), intent(in), optional :: kopt   !< options
 
-              !! local
+  !! local
   character(*), parameter :: s_name='geobjlist_dread' !< subroutine name
   integer(ki4) :: itri !< local variable
   integer(ki4) :: iquad !< local variable
@@ -1767,165 +1765,165 @@ subroutine geobjlist_dread(self,kread)
   integer(ki4) :: islen   !< length of first field entry
   type(datline_t) :: datl !< local variable
 
-              ! two main loops
+  ! two main loops
 
-              !! first count objects
-              itri=0
-              iquad=0
-              ipt=0
+  !! first count objects
+  itri=0
+  iquad=0
+  ipt=0
 
-              iskip=0
-              start_first_loop_over_file : do
-                 read(kread,fmt='(a80)',iostat=status) ibuf2
-                 ibuf1=adjustl(ibuf2)
-                 !D      write(*,*) iskip, ibuf1(1:10)
-                 if (ibuf1(1:10)=='BEGIN BULK') goto 1
-                 iskip=iskip+1
-              end do start_first_loop_over_file
-              !error exit
-              call log_error(m_name,s_name,1,error_fatal,'BEGIN BULK not found')
+  iskip=0
+  start_first_loop_over_file : do
+     read(kread,fmt='(a80)',iostat=status) ibuf2
+     ibuf1=adjustl(ibuf2)
+     !D      write(*,*) iskip, ibuf1(1:10)
+     if (ibuf1(1:10)=='BEGIN BULK') goto 1
+     iskip=iskip+1
+  end do start_first_loop_over_file
+  !error exit
+  call log_error(m_name,s_name,1,error_fatal,'BEGIN BULK not found')
 
-1                 continue
-              first_loop_over_file : do
-                 read(kread,fmt='(a80)',iostat=status) ibuf2
-                 call log_read_check(m_name,s_name,2,status)
-                 ibuf1=adjustl(ibuf2)
-                 if (ibuf1(1:1)=='$') cycle
-                 if (ibuf1(1:7)=='ENDDATA') goto 2
+1     continue
+  first_loop_over_file : do
+     read(kread,fmt='(a80)',iostat=status) ibuf2
+     call log_read_check(m_name,s_name,2,status)
+     ibuf1=adjustl(ibuf2)
+     if (ibuf1(1:1)=='$') cycle
+     if (ibuf1(1:7)=='ENDDATA') goto 2
 
-                 ! call datline_entry(ibuf2,field)
-                 fieldin=ibuf2(1:8)
-                 islen=len_trim(fieldin)
-                 if (fieldin(islen:islen)=='*') fieldin(islen:islen)=' '
-                 field=adjustl(fieldin)
+     ! call datline_entry(ibuf2,field)
+     fieldin=ibuf2(1:8)
+     islen=len_trim(fieldin)
+     if (fieldin(islen:islen)=='*') fieldin(islen:islen)=' '
+     field=adjustl(fieldin)
 
-                 call datline_read(datl,ibuf2,kread)
+     call datline_read(datl,ibuf2,kread)
 
-                 entry_type: select case ( field )
-                 case ('CTRIA3  ')
-                    itri=itri+1
-                 case ('CQUAD4  ')
-                    iquad=iquad+1
-                 case ('GRID    ')
-                    ipt=ipt+1
-                 end select entry_type
+     entry_type: select case ( field )
+     case ('CTRIA3  ')
+        itri=itri+1
+     case ('CQUAD4  ')
+        iquad=iquad+1
+     case ('GRID    ')
+        ipt=ipt+1
+     end select entry_type
 
-              end do first_loop_over_file
+  end do first_loop_over_file
 
-              ! warning
-              call log_error(m_name,s_name,1,error_warning,'ENDDATA not found')
+  ! warning
+  call log_error(m_name,s_name,1,error_warning,'ENDDATA not found')
 
-2                 continue
-              rewind(kread,iostat=status)
-              call log_read_check(m_name,s_name,3,status)
+2     continue
+  rewind(kread,iostat=status)
+  call log_read_check(m_name,s_name,3,status)
 
-              !! allocation of geobjlist storage
-              ig=itri+iquad
-              inod=3*itri+4*iquad
-              if (ig*ipt==0) then
-                 ! error exit
-                 call log_error(m_name,s_name,1,error_fatal,'no objects found')
-              end if
-              call geobjlist_iinit(self,ipt,ig,inod,2,1)
-              !      self%ngtype=2
-              !      self%np=ipt
-              !      self%ng=ig
-              !      self%nnod=inod
-              !      self%ngunassigned=0
-              !      allocate(self%posl%pos(self%np), stat=status)
-              !      call log_alloc_check(m_name,s_name,3,status)
-              !      allocate(self%obj(self%ng), stat=status)
-              !      allocate(self%obj2(self%ng), stat=status)
-              !      call log_alloc_check(m_name,s_name,4,status)
-              !      allocate(self%nodl(self%nnod), stat=status)
-              !      call log_alloc_check(m_name,s_name,5,status)
+  !! allocation of geobjlist storage
+  ig=itri+iquad
+  inod=3*itri+4*iquad
+  if (ig*ipt==0) then
+     ! error exit
+     call log_error(m_name,s_name,1,error_fatal,'no objects found')
+  end if
+  call geobjlist_iinit(self,ipt,ig,inod,2,1)
+  !      self%ngtype=2
+  !      self%np=ipt
+  !      self%ng=ig
+  !      self%nnod=inod
+  !      self%ngunassigned=0
+  !      allocate(self%posl%pos(self%np), stat=status)
+  !      call log_alloc_check(m_name,s_name,3,status)
+  !      allocate(self%obj(self%ng), stat=status)
+  !      allocate(self%obj2(self%ng), stat=status)
+  !      call log_alloc_check(m_name,s_name,4,status)
+  !      allocate(self%nodl(self%nnod), stat=status)
+  !      call log_alloc_check(m_name,s_name,5,status)
 
-              !! second loop  place objects in geobjlist
-              innod=0
-              inpt=0
-              inobj=0
+  !! second loop  place objects in geobjlist
+  innod=0
+  inpt=0
+  inobj=0
 
-              start_second_loop_over_file : do j=1,iskip+1
-                 read(kread,fmt='(a80)',iostat=status) ibuf2
-                 call log_read_check(m_name,s_name,6,status)
-              end do start_second_loop_over_file
+  start_second_loop_over_file : do j=1,iskip+1
+     read(kread,fmt='(a80)',iostat=status) ibuf2
+     call log_read_check(m_name,s_name,6,status)
+  end do start_second_loop_over_file
 
-              second_loop_over_file : do
-                 read(kread,fmt='(a80)',iostat=status) ibuf2
-                 call log_read_check(m_name,s_name,7,status)
-                 ibuf1=adjustl(ibuf2)
-                 if (ibuf1(1:1)=='$') cycle
-                 if (ibuf1(1:7)=='ENDDATA') exit
+  second_loop_over_file : do
+     read(kread,fmt='(a80)',iostat=status) ibuf2
+     call log_read_check(m_name,s_name,7,status)
+     ibuf1=adjustl(ibuf2)
+     if (ibuf1(1:1)=='$') cycle
+     if (ibuf1(1:7)=='ENDDATA') exit
 
-                 call datline_read(datl,ibuf2,kread)
-                 call datline_fieldtype(datl)
-                 call datline_split(datl)
+     call datline_read(datl,ibuf2,kread)
+     call datline_fieldtype(datl)
+     call datline_split(datl)
 
-                 !     write(*,*) 'datl%flds8(1)', datl%flds8(1)
-                 entry_type2: select case ( datl%flds8(1) )
-                 case ('CTRIA3  ', 'CQUAD4  ', 'CTRIA6  ')
-                    read(datl%flds8(1)(6:6),'(I1)') inn
-                    do i=1,inn+2
-                       if (datl%type=='large') then
-                          read(datl%flds16(i),*) iarray(i)
-                       else
-                          read(datl%flds8(i+1),*) iarray(i)
-                       end if
-                    end do
-                    inobj=inobj+1
-                    self%obj2(inobj)%ptr=innod+1
-                    !C 1st object numbers are ignored, assumed consecutive
-                    ! these are body numbers
-                    self%obj(inobj)%weight=iarray(2)
-                    self%nodl(innod+1:innod+inn)=iarray(3:2+inn)
-                    innod=innod+inn
-                    select case (inn)
-                    case(3)
-                       self%obj2(inobj)%typ=VTK_TRIANGLE
-                    case(4,8)
-                       self%obj2(inobj)%typ=VTK_QUAD
-                    case(6)
-                       self%obj2(inobj)%typ=VTK_TRIANGLE
-                    end select
+     !     write(*,*) 'datl%flds8(1)', datl%flds8(1)
+     entry_type2: select case ( datl%flds8(1) )
+     case ('CTRIA3  ', 'CQUAD4  ', 'CTRIA6  ')
+        read(datl%flds8(1)(6:6),'(I1)') inn
+        do i=1,inn+2
+           if (datl%type=='large') then
+              read(datl%flds16(i),*) iarray(i)
+           else
+              read(datl%flds8(i+1),*) iarray(i)
+           end if
+        end do
+        inobj=inobj+1
+        self%obj2(inobj)%ptr=innod+1
+        !C 1st object numbers are ignored, assumed consecutive
+        ! these are body numbers
+        self%obj(inobj)%weight=iarray(2)
+        self%nodl(innod+1:innod+inn)=iarray(3:2+inn)
+        innod=innod+inn
+        select case (inn)
+        case(3)
+           self%obj2(inobj)%typ=VTK_TRIANGLE
+        case(4,8)
+           self%obj2(inobj)%typ=VTK_QUAD
+        case(6)
+           self%obj2(inobj)%typ=VTK_TRIANGLE
+        end select
 
-                 case ('GRID    ')
-                    do i=1,2
-                       if (datl%type=='large') then
-                          read(datl%flds16(i),*) iarray(i)
-                       else
-                          read(datl%flds8(i+1),*) iarray(i)
-                       end if
-                    end do
-                    do i=1,3
-                       if (datl%type=='large') then
-                          read(datl%flds16(i+2),*) zarray(i)
-                       else
-                          read(datl%flds8(i+3),*) zarray(i)
-                       end if
-                    end do
-                    inpt=inpt+1
-                    !C implicit assumption that iarray(1)=inpt
-                    !C coordinate system set by iarray(2)
-                    self%posl%pos(inpt)%posvec=zarray(1:3)
-                 case ('CORD2R  ')
-                    !C TO DO
-                 end select entry_type2
+     case ('GRID    ')
+        do i=1,2
+           if (datl%type=='large') then
+              read(datl%flds16(i),*) iarray(i)
+           else
+              read(datl%flds8(i+1),*) iarray(i)
+           end if
+        end do
+        do i=1,3
+           if (datl%type=='large') then
+              read(datl%flds16(i+2),*) zarray(i)
+           else
+              read(datl%flds8(i+3),*) zarray(i)
+           end if
+        end do
+        inpt=inpt+1
+        !C implicit assumption that iarray(1)=inpt
+        !C coordinate system set by iarray(2)
+        self%posl%pos(inpt)%posvec=zarray(1:3)
+     case ('CORD2R  ')
+        !C TO DO
+     end select entry_type2
 
-              end do second_loop_over_file
+  end do second_loop_over_file
 
-              print '("number of objects read = ",i10)',inobj
-              print '("number of nodes read = ",i10)',innod
-              print '("number of points read = ",i10)',inpt
-              call log_value("number of objects read ",inobj)
-              call log_value("number of nodes read ",innod)
-              call log_value("number of points read ",inpt)
+  print '("number of objects read = ",i10)',inobj
+  print '("number of nodes read = ",i10)',innod
+  print '("number of points read = ",i10)',inpt
+  call log_value("number of objects read ",inobj)
+  call log_value("number of nodes read ",innod)
+  call log_value("number of points read ",inpt)
 
 end subroutine geobjlist_dread
 !---------------------------------------------------------------------
 !> initialise geobjlist from dat file data
 subroutine geobjlist_iinit(self,knpt,knobj,knnod,kgtype,kopt)
 
-              !! arguments
+  !! arguments
   type(geobjlist_t), intent(out) :: self   !< geobj list data
   integer(ki4), intent(in)  :: knpt !< number of points in geobjlist
   integer(ki4), intent(in)  :: knobj !< number of objects in geobjlist
@@ -1933,78 +1931,78 @@ subroutine geobjlist_iinit(self,knpt,knobj,knnod,kgtype,kopt)
   integer(ki4), intent(in) :: kgtype   !< default type of object
   integer(ki4), intent(in) :: kopt   !< if nonzero, allocate weight as well
 
-              !! local
+  !! local
   character(*), parameter :: s_name='geobjlist_iinit' !< subroutine name
 
-              self%np=knpt
-              self%ng=knobj
-              self%nnod=knnod
-              self%ngtype=kgtype
-              self%ngunassigned=0
-              allocate(self%posl%pos(self%np), stat=status)
-              call log_alloc_check(m_name,s_name,1,status)
-              if (kgtype==1.OR.kopt/=0) then
-                 allocate(self%obj(self%ng), stat=status)
-                 call log_alloc_check(m_name,s_name,2,status)
-                 self%nwset=max(1,kopt)
-              end if
-              if (kgtype/=1) then
-                 allocate(self%nodl(self%nnod), stat=status)
-                 call log_alloc_check(m_name,s_name,3,status)
-                 allocate(self%obj2(self%ng), stat=status)
-                 call log_alloc_check(m_name,s_name,4,status)
-                 self%nwset=kopt
-              end if
+  self%np=knpt
+  self%ng=knobj
+  self%nnod=knnod
+  self%ngtype=kgtype
+  self%ngunassigned=0
+  allocate(self%posl%pos(self%np), stat=status)
+  call log_alloc_check(m_name,s_name,1,status)
+  if (kgtype==1.OR.kopt/=0) then
+     allocate(self%obj(self%ng), stat=status)
+     call log_alloc_check(m_name,s_name,2,status)
+     self%nwset=max(1,kopt)
+  end if
+  if (kgtype/=1) then
+     allocate(self%nodl(self%nnod), stat=status)
+     call log_alloc_check(m_name,s_name,3,status)
+     allocate(self%obj2(self%ng), stat=status)
+     call log_alloc_check(m_name,s_name,4,status)
+     self%nwset=kopt
+  end if
 
 end subroutine geobjlist_iinit
 !---------------------------------------------------------------------
 !> copy geobjlist to another
 subroutine geobjlist_copy(selfin,selfout,kopt)
 
-              !! arguments
+  !! arguments
   type(geobjlist_t), intent(in) :: selfin  !< geobj list data
   type(geobjlist_t), intent(out) :: selfout   !< geobj list data
   integer(ki4), intent(in) :: kopt   !< if nonzero, try to copy weights
 
-              !! local
+  !! local
   character(*), parameter :: s_name='geobjlist_copy' !< subroutine name
 
-              selfout%np=selfin%np
-              selfout%ng=selfin%ng
-              selfout%nnod=selfin%nnod
-              selfout%ngtype=selfin%ngtype
-              selfout%ngunassigned=selfin%ngunassigned
-              allocate(selfout%posl%pos(selfout%np), stat=status)
-              call log_alloc_check(m_name,s_name,1,status)
-              !     selfout%posl=selfin%posl
-              do j=1,selfout%np
-                 selfout%posl%pos(j)%posvec=selfin%posl%pos(j)%posvec
-              end do
+  selfout%np=selfin%np
+  selfout%ng=selfin%ng
+  selfout%nnod=selfin%nnod
+  selfout%ngtype=selfin%ngtype
+  selfout%ngunassigned=selfin%ngunassigned
+  allocate(selfout%posl%pos(selfout%np), stat=status)
+  call log_alloc_check(m_name,s_name,1,status)
+  !     selfout%posl=selfin%posl
+  do j=1,selfout%np
+     selfout%posl%pos(j)%posvec=selfin%posl%pos(j)%posvec
+  end do
 
-              if (selfin%ngtype==1.OR.kopt/=0) then
-                 allocate(selfout%obj(selfout%ng), stat=status)
-                 call log_alloc_check(m_name,s_name,2,status)
-                 selfout%nwset=max(1,kopt)
-                 if (selfin%nwset/=0.OR.selfin%ngtype==1) then
-                    selfout%obj(1:selfout%ng)%weight=selfin%obj(1:selfout%ng)%weight
-                 end if
-              end if
-              if (selfin%ngtype/=1) then
-                 allocate(selfout%nodl(selfout%nnod), stat=status)
-                 call log_alloc_check(m_name,s_name,3,status)
-                 selfout%nodl=selfin%nodl
-                 allocate(selfout%obj2(selfout%ng), stat=status)
-                 call log_alloc_check(m_name,s_name,4,status)
-                 selfout%obj2(1:selfout%ng)%ptr=selfin%obj2(1:selfout%ng)%ptr
-                 selfout%obj2(1:selfout%ng)%typ=selfin%obj2(1:selfout%ng)%typ
-                 selfout%nwset=kopt
-              end if
+  if (selfin%ngtype==1.OR.kopt/=0) then
+     allocate(selfout%obj(selfout%ng), stat=status)
+     call log_alloc_check(m_name,s_name,2,status)
+     selfout%nwset=max(1,kopt)
+     if (selfin%nwset/=0.OR.selfin%ngtype==1) then
+        selfout%obj(1:selfout%ng)%weight=selfin%obj(1:selfout%ng)%weight
+     end if
+  end if
+  if (selfin%ngtype/=1) then
+     allocate(selfout%nodl(selfout%nnod), stat=status)
+     call log_alloc_check(m_name,s_name,3,status)
+     selfout%nodl=selfin%nodl
+     allocate(selfout%obj2(selfout%ng), stat=status)
+     call log_alloc_check(m_name,s_name,4,status)
+     selfout%obj2(1:selfout%ng)%ptr=selfin%obj2(1:selfout%ng)%ptr
+     selfout%obj2(1:selfout%ng)%typ=selfin%obj2(1:selfout%ng)%typ
+     selfout%nwset=kopt
+  end if
 
 end subroutine geobjlist_copy
 !---------------------------------------------------------------------
 !> create some special geobjlists
 subroutine geobjlist_create(self,kchar,prc,pzc,prs,pzs,knear,pdist)
-              !! arguments
+  !! arguments
   type(geobjlist_t), intent(inout) :: self !< geobj list data
   character(*),intent(in) :: kchar !< type of geobj to create
   real(kr8), dimension(:), intent(in) :: prc !< \f$ R \f$ values of contour
@@ -2014,7 +2012,7 @@ subroutine geobjlist_create(self,kchar,prc,pzc,prs,pzs,knear,pdist)
   integer(ki4), dimension(:), intent(in) :: knear !< nearest segment of silhouette
   real(kr8), dimension(:), intent(in) :: pdist !< distances of contour from silhouette
 
-              !! local
+  !! local
   character(*), parameter :: s_name='geobjlist_create' !< subroutine name
   integer(ki4) :: inc    !<  length of contour in segments
   integer(ki4) :: inseg    !<  length of silhouette in segments
@@ -2026,112 +2024,112 @@ subroutine geobjlist_create(self,kchar,prc,pzc,prs,pzs,knear,pdist)
   integer(ki4), dimension(geobj_max_entry_table) :: inodl !< one object as nodes
 
 
-              inc=size(prc)
-              inseg=size(prs)
-              plot_type: select case (kchar)
-              case ('points')
-                 ! points and weights
-                 self%ngtype=1
-                 self%nwset=1
-                 self%np=inseg
-                 !! allocate storage
-                 if(self%np>0) then
-                    !        if (allocated(self%posl%pos)) deallocate(self%posl%pos)
-                    allocate(self%posl%pos(self%np),self%obj(self%np),stat=status)
-                    call log_alloc_check(m_name,s_name,1,status)
-                 else
-                    call log_error(m_name,s_name,2,error_fatal,'No silhouette data')
-                 end if
-                 self%posl%np=self%np
-                 !! define positions
-                 do j=1,inseg
-                    self%posl%pos(j)%posvec(1)=prs(j)
-                    self%posl%pos(j)%posvec(2)=0
-                    self%posl%pos(j)%posvec(3)=pzs(j)
-                 end do
-                 print '("number of geobj coordinates created = ",i10)',self%np
-                 call log_value("number of geobj coordinates created ",self%np)
-                 !! define weights
-                 self%ng=self%np
-                 do j=1,inseg
-                    self%obj(j)%weight=pdist(j)
-                 end do
+  inc=size(prc)
+  inseg=size(prs)
+  plot_type: select case (kchar)
+  case ('points')
+     ! points and weights
+     self%ngtype=1
+     self%nwset=1
+     self%np=inseg
+     !! allocate storage
+     if(self%np>0) then
+        !        if (allocated(self%posl%pos)) deallocate(self%posl%pos)
+        allocate(self%posl%pos(self%np),self%obj(self%np),stat=status)
+        call log_alloc_check(m_name,s_name,1,status)
+     else
+        call log_error(m_name,s_name,2,error_fatal,'No silhouette data')
+     end if
+     self%posl%np=self%np
+     !! define positions
+     do j=1,inseg
+        self%posl%pos(j)%posvec(1)=prs(j)
+        self%posl%pos(j)%posvec(2)=0
+        self%posl%pos(j)%posvec(3)=pzs(j)
+     end do
+     print '("number of geobj coordinates created = ",i10)',self%np
+     call log_value("number of geobj coordinates created ",self%np)
+     !! define weights
+     self%ng=self%np
+     do j=1,inseg
+        self%obj(j)%weight=pdist(j)
+     end do
 
-              case ('triangles')
-                 ! surface grid of triangles
-                 self%ngtype=2
-                 self%nwset=1
-                 self%np=inseg+inc
+  case ('triangles')
+     ! surface grid of triangles, joining silhouette to contour
+     self%ngtype=2
+     self%nwset=1
+     self%np=inseg+inc
 
-                 !! allocate position storage
-                 if(self%np>0) then
-                    !        if (allocated(self%posl%pos)) deallocate(self%posl%pos)
-                    allocate(self%posl%pos(self%np),self%obj(self%np),stat=status)
-                    call log_alloc_check(m_name,s_name,11,status)
-                 else
-                    call log_error(m_name,s_name,12,error_fatal,'No position data')
-                 end if
-                 self%posl%np=self%np
-                 !! define positions
-                 do j=1,inseg
-                    self%posl%pos(j)%posvec(1)=prs(j)
-                    self%posl%pos(j)%posvec(2)=0
-                    self%posl%pos(j)%posvec(3)=pzs(j)
-                 end do
-                 do j=inseg+1,self%np
-                    self%posl%pos(j)%posvec(1)=prc(j-inseg)
-                    self%posl%pos(j)%posvec(2)=0
-                    self%posl%pos(j)%posvec(3)=pzc(j-inseg)
-                 end do
-                 ! end of position creation
-                 print '("number of geobj coordinates created = ",i10)',self%np
-                 call log_value("number of geobj coordinates created ",self%np)
+     !! allocate position storage
+     if(self%np>0) then
+        !        if (allocated(self%posl%pos)) deallocate(self%posl%pos)
+        allocate(self%posl%pos(self%np),self%obj(self%np),stat=status)
+        call log_alloc_check(m_name,s_name,11,status)
+     else
+        call log_error(m_name,s_name,12,error_fatal,'No position data')
+     end if
+     self%posl%np=self%np
+     !! define positions
+     do j=1,inseg
+        self%posl%pos(j)%posvec(1)=prs(j)
+        self%posl%pos(j)%posvec(2)=0
+        self%posl%pos(j)%posvec(3)=pzs(j)
+     end do
+     do j=inseg+1,self%np
+        self%posl%pos(j)%posvec(1)=prc(j-inseg)
+        self%posl%pos(j)%posvec(2)=0
+        self%posl%pos(j)%posvec(3)=pzc(j-inseg)
+     end do
+     ! end of position creation
+     print '("number of geobj coordinates created = ",i10)',self%np
+     call log_value("number of geobj coordinates created ",self%np)
 
-                 innd=1
-                 ! CELLS and CELL_TYPES
-                 inobj=inseg-1
-                 inumpts=3
-                 insto=inobj*(1+inumpts)
-                 ! create geobj storage
-                 self%ng=inobj
-                 allocate(self%obj2(self%ng), stat=status)
-                 call log_alloc_check(m_name,s_name,14,status)
-                 self%nnod=insto-inobj
-                 allocate(self%nodl(self%nnod), stat=status)
-                 call log_alloc_check(m_name,s_name,15,status)
-                 do j=1,inobj
-                    ! triangle nodes (array positions, starting at unity)
-                    inodl(1)=j
-                    inodl(2)=j+1
-                    inodl(3)=inseg+knear(j)
-                    do k=1,inumpts
-                       self%nodl(innd-1+k)=inodl(k)
-                    end do
-                    self%obj2(j)%ptr=innd
-                    self%obj2(j)%typ=inumpts
-                    innd=innd+inumpts
-                 end do
-                 innd=innd-1
-                 ! now set cell type as triangle
-                 do j=1,self%ng
-                    self%obj2(j)%typ=VTK_TRIANGLE
-                 end do
+     innd=1
+     ! CELLS and CELL_TYPES
+     inobj=inseg-1
+     inumpts=3
+     insto=inobj*(1+inumpts)
+     ! create geobj storage
+     self%ng=inobj
+     allocate(self%obj2(self%ng), stat=status)
+     call log_alloc_check(m_name,s_name,14,status)
+     self%nnod=insto-inobj
+     allocate(self%nodl(self%nnod), stat=status)
+     call log_alloc_check(m_name,s_name,15,status)
+     do j=1,inobj
+        ! triangle nodes (array positions, starting at unity)
+        inodl(1)=j
+        inodl(2)=j+1
+        inodl(3)=inseg+knear(j)
+        do k=1,inumpts
+           self%nodl(innd-1+k)=inodl(k)
+        end do
+        self%obj2(j)%ptr=innd
+        self%obj2(j)%typ=inumpts
+        innd=innd+inumpts
+     end do
+     innd=innd-1
+     ! now set cell type as triangle
+     do j=1,self%ng
+        self%obj2(j)%typ=VTK_TRIANGLE
+     end do
 
-                 print '("number of geobj created = ",i10)',self%ng
-                 call log_value("number of geobj created ",self%ng)
+     print '("number of geobj created = ",i10)',self%ng
+     call log_value("number of geobj created ",self%ng)
 
-              end select plot_type
+  end select plot_type
 
-              call log_error(m_name,s_name,70,log_info,'geobjlist created')
+  call log_error(m_name,s_name,70,log_info,'geobjlist created')
 
 end subroutine geobjlist_create
 !---------------------------------------------------------------------
 !> compress points
 subroutine geobjlist_ptcompress(self)
-              !! arguments
+  !! arguments
   type(geobjlist_t), intent(inout) :: self !< geobj list data
 
-              !! local
+  !! local
   character(*), parameter :: s_name='geobjlist_ptcompress' !< subroutine name
   real(kr4), dimension(:,:), allocatable :: rwork2 !< real 2D work array
   integer(ki4), dimension(:), allocatable :: iwork !< integer work array
@@ -2145,80 +2143,80 @@ subroutine geobjlist_ptcompress(self)
   integer(ki4) :: inode !< node number
   integer(ki4) :: ista !< start of loop
 
-              allocate(iwork(2*self%nnod), stat=status)
-              call log_alloc_check(m_name,s_name,1,status)
+  allocate(iwork(2*self%nnod), stat=status)
+  call log_alloc_check(m_name,s_name,1,status)
 
-              inpt=0
-              ! set up list of points needed for objects
-              do j=1,self%ng
-                 innd=self%obj2(j)%ptr
-                 ityp=self%obj2(j)%typ
-                 inumpts=geobj_entry_table(ityp)
-                 !! loop over points defining object
-                 do k=1,inumpts
-                    inpt=inpt+1
-                    iwork(inpt)=self%nodl(innd-1+k)
-                 end do
-              end do
+  inpt=0
+  ! set up list of points needed for objects
+  do j=1,self%ng
+     innd=self%obj2(j)%ptr
+     ityp=self%obj2(j)%typ
+     inumpts=geobj_entry_table(ityp)
+     !! loop over points defining object
+     do k=1,inumpts
+        inpt=inpt+1
+        iwork(inpt)=self%nodl(innd-1+k)
+     end do
+  end do
 
-              !! order points (using SLATEC)
-              call isort(iwork, idums, inpt, 1)
+  !! order points (using SLATEC)
+  call isort(iwork, idums, inpt, 1)
 
-              !! compress list of points, removing duplicates
-              inptc=1
-              iw=iwork(1)
-              do j=2,inpt
-                 if (iwork(j)==iw) cycle
-                 iw=iwork(j)
-                 inptc=inptc+1
-                 iwork(inptc)=iw
-              end do
+  !! compress list of points, removing duplicates
+  inptc=1
+  iw=iwork(1)
+  do j=2,inpt
+     if (iwork(j)==iw) cycle
+     iw=iwork(j)
+     inptc=inptc+1
+     iwork(inptc)=iw
+  end do
 
-              !set up replacement posl array and destroy old posl
-              allocate(rwork2(3,self%np),stat=status)
-              call log_alloc_check(m_name,s_name,2,status)
-              do j=1,self%np
-                 rwork2(:,j)=self%posl%pos(j)%posvec
-              end do
-              deallocate(self%posl%pos)
-              ! copy back sorted and compressed version
-              allocate(self%posl%pos(inptc),stat=status)
-              call log_alloc_check(m_name,s_name,3,status)
-              do j=1,inptc
-                 self%posl%pos(j)%posvec=rwork2(:,iwork(j))
-              end do
-              self%posl%np=inptc
-              self%np=inptc
-              ! sort out nodes array
-              ista=1
-              do k=1,self%nnod
-                 inode=self%nodl(k)
-                 do j=ista,inptc
-                    if (inode==iwork(j)) then
-                       self%nodl(k)=j
-                       ista=j
-                       goto 1
-                    end if
-                 end do
-                 do j=1,ista-1
-                    if (inode==iwork(j)) then
-                       self%nodl(k)=j
-                       ista=j
-                       goto 1
-                    end if
-                 end do
-                 call log_error(m_name,s_name,1,error_fatal,'No matching node')
-1                    continue
-              end do
+  !set up replacement posl array and destroy old posl
+  allocate(rwork2(3,self%np),stat=status)
+  call log_alloc_check(m_name,s_name,2,status)
+  do j=1,self%np
+     rwork2(:,j)=self%posl%pos(j)%posvec
+  end do
+  deallocate(self%posl%pos)
+  ! copy back sorted and compressed version
+  allocate(self%posl%pos(inptc),stat=status)
+  call log_alloc_check(m_name,s_name,3,status)
+  do j=1,inptc
+     self%posl%pos(j)%posvec=rwork2(:,iwork(j))
+  end do
+  self%posl%np=inptc
+  self%np=inptc
+  ! sort out nodes array
+  ista=1
+  do k=1,self%nnod
+     inode=self%nodl(k)
+     do j=ista,inptc
+        if (inode==iwork(j)) then
+           self%nodl(k)=j
+           ista=j
+           goto 1
+        end if
+     end do
+     do j=1,ista-1
+        if (inode==iwork(j)) then
+           self%nodl(k)=j
+           ista=j
+           goto 1
+        end if
+     end do
+     call log_error(m_name,s_name,1,error_fatal,'No matching node')
+1        continue
+  end do
 
 end subroutine geobjlist_ptcompress
 !---------------------------------------------------------------------
 !> orient triangles consistently
 subroutine geobjlist_orientri(self)
-              !! arguments
+  !! arguments
   type(geobjlist_t), intent(inout) :: self !< geobj list data
 
-              !! local
+  !! local
   character(*), parameter :: s_name='geobjlist_orientri' !< subroutine name
   integer(ki4), dimension(:), allocatable :: imark !< mark objects as processed
   integer(ki4), dimension(:), allocatable :: iptob !< points to objects
@@ -2236,7 +2234,7 @@ subroutine geobjlist_orientri(self)
   integer(ki4) :: ikp !< k+1
   integer(ki4) :: ista !< start of loop over objects
   integer(ki4) :: ifp !< first point working
-              !W      integer(ki4) :: ij !< diagnostic j !W
+  !W      integer(ki4) :: ij !< diagnostic j !W
   integer(ki4) :: ipt1 !< index of first point of face
   integer(ki4) :: ip1 !< index of first point of face
   integer(ki4) :: ipp1 !< index of first point of face
@@ -2247,187 +2245,187 @@ subroutine geobjlist_orientri(self)
   integer(ki4) :: i2 !< object index
   integer(ki4) :: imatch !< no. of matches
   integer(ki4) :: iki4=1 !< type for stack
-              !     logical stack_empty ! not needed
+  !     logical stack_empty ! not needed
 
-              !! produce index of points to objects
-              allocate(iptob(self%nnod),iobjs(self%nnod),stat=status)
-              call log_alloc_check(m_name,s_name,1,status)
-              allocate(indx(self%nnod),stat=status)
-              call log_alloc_check(m_name,s_name,2,status)
-              allocate(indxfp(self%np+1),stat=status)
-              call log_alloc_check(m_name,s_name,3,status)
-              ip=0
-              do j=1,self%ng
-                 ityp=self%obj2(j)%typ
-                 if (ityp==VTK_TRIANGLE) then
-                    ! triangles only
-                    innd=self%obj2(j)%ptr
-                    inumpts=geobj_entry_table(ityp)
-                    !! loop over points defining object, add corresponding edges
-                    do k=1,inumpts
-                       ip=ip+1
-                       indx(ip)=ip
-                       iobjs(ip)=j
-                       iptob(ip)=self%nodl(innd-1+k)
-                    end do
-                 end if
-              end do
+  !! produce index of points to objects
+  allocate(iptob(self%nnod),iobjs(self%nnod),stat=status)
+  call log_alloc_check(m_name,s_name,1,status)
+  allocate(indx(self%nnod),stat=status)
+  call log_alloc_check(m_name,s_name,2,status)
+  allocate(indxfp(self%np+1),stat=status)
+  call log_alloc_check(m_name,s_name,3,status)
+  ip=0
+  do j=1,self%ng
+     ityp=self%obj2(j)%typ
+     if (ityp==VTK_TRIANGLE) then
+        ! triangles only
+        innd=self%obj2(j)%ptr
+        inumpts=geobj_entry_table(ityp)
+        !! loop over points defining object, add corresponding edges
+        do k=1,inumpts
+           ip=ip+1
+           indx(ip)=ip
+           iobjs(ip)=j
+           iptob(ip)=self%nodl(innd-1+k)
+        end do
+     end if
+  end do
 
-              !W      write(*,*) 'iptob',iptob !W
+  !W      write(*,*) 'iptob',iptob !W
 
-              call isort(iptob,indx,self%nnod,2)
+  call isort(iptob,indx,self%nnod,2)
 
-              !W      write(*,*) 'iptob',iptob !W
-              !W      write(*,*) 'indx',indx !W
-              !! index of first points
-              inptx=1
-              ifp=iptob(1)
-              indxfp(1)=ifp
-              do j=2,self%nnod
-                 if (iptob(j)==ifp) cycle
-                 ifp=iptob(j)
-                 inptx=inptx+1
-                 indxfp(inptx)=j
-              end do
-              ! use distance to next entry to define number of entries
-              indxfp(self%np+1)=self%nnod+1
-              !W     write(*,*) 'indxfp',indxfp !W
+  !W      write(*,*) 'iptob',iptob !W
+  !W      write(*,*) 'indx',indx !W
+  !! index of first points
+  inptx=1
+  ifp=iptob(1)
+  indxfp(1)=ifp
+  do j=2,self%nnod
+     if (iptob(j)==ifp) cycle
+     ifp=iptob(j)
+     inptx=inptx+1
+     indxfp(inptx)=j
+  end do
+  ! use distance to next entry to define number of entries
+  indxfp(self%np+1)=self%nnod+1
+  !W     write(*,*) 'indxfp',indxfp !W
 
-              !! to business
-              allocate(imark(self%ng),stat=status)
-              call log_alloc_check(m_name,s_name,5,status)
-              imark=0
-              call stack_init(iki4,2)
+  !! to business
+  allocate(imark(self%ng),stat=status)
+  call log_alloc_check(m_name,s_name,5,status)
+  imark=0
+  call stack_init(iki4,2)
 
-              ista=0
+  ista=0
 
-              ! loop over edges on stack
-              stack_loop: do
+  ! loop over edges on stack
+  stack_loop: do
 
-                 if (stack_empty(iki4,2)) then
-                    ! try to add edge to stack
-                    do j=ista+1,self%ng
-                       ij=j
-                       if (imark(j)==0) then
-                          ityp=self%obj2(j)%typ
-                          if (ityp==VTK_TRIANGLE) then
-                             ! triangles only
-                             innd=self%obj2(j)%ptr
-                             inumpts=geobj_entry_table(ityp)
-                             !! loop over points defining object, add corresponding edges
-                             do k=1,inumpts
-                                ikp=1+mod(k,inumpts)
-                                iedge(1)=self%nodl(innd-1+k)
-                                iedge(2)=self%nodl(innd-1+ikp)
-                                call stack_add(iki4,2,iedge)
-                                imark(j)=1
-                                ista=j
-                             end do
-                             goto 1
-                          end if
-                       end if
-                    end do
-                    ! finished, all objects marked
-                    goto 9
-                 end if
-
-                 ! there is edge on stack
-1                    continue
-                 !W      write(*,*) 'ij',ij !W
-                 !W      write(*,*) 'imark',imark !W
-
-                 !! get an edge
-                 call stack_get(iki4,2,iedge)
-
-                 !W      if (maxval(iedge)>self%nnod) then !W
-                 !W      write(*,*) 'iki4',iki4 !W
-                 !W      call stack_get(iki4,2,iedge) !W
-                 !W      end if !W
-                 !! find adjacent triangles
-                 ! objects associated with edge start point
-                 ipt1=iedge(1)
-                 ip1=indxfp(ipt1)
-                 ipp1=indxfp(ipt1+1)-1
-                 ! objects associated with edge end point
-                 ipt2=iedge(2)
-                 ip2=indxfp(ipt2)
-                 ipp2=indxfp(ipt2+1)-1
-                 ! seek matching objects in list of each point
-                 imatch=0
-                 iobjm=0
-                 do i=ip1,ipp1
-                    i1=indx(i)
-                    do j=ip2,ipp2
-                       i2=indx(j)
-                       !W      write(*,*) 'objs', iobjs(i1),iobjs(i2) !W
-                       if (iobjs(i1)==iobjs(i2)) then
-                          imatch=imatch+1
-                          iobjm(imatch)=iobjs(i1)
-                          if (imatch==2) goto 2
-                       end if
-                    end do
+     if (stack_empty(iki4,2)) then
+        ! try to add edge to stack
+        do j=ista+1,self%ng
+           ij=j
+           if (imark(j)==0) then
+              ityp=self%obj2(j)%typ
+              if (ityp==VTK_TRIANGLE) then
+                 ! triangles only
+                 innd=self%obj2(j)%ptr
+                 inumpts=geobj_entry_table(ityp)
+                 !! loop over points defining object, add corresponding edges
+                 do k=1,inumpts
+                    ikp=1+mod(k,inumpts)
+                    iedge(1)=self%nodl(innd-1+k)
+                    iedge(2)=self%nodl(innd-1+ikp)
+                    call stack_add(iki4,2,iedge)
+                    imark(j)=1
+                    ista=j
                  end do
-                 ! if no matching edge, something is corrupt
-                 if (imatch==0) call log_error(m_name,s_name,1,error_fatal,'No matching object')
-                 ! one matching edge, lies on boundary, will be OK
-                 if (imatch==1) cycle ! stack_loop
-2                    continue
+                 goto 1
+              end if
+           end if
+        end do
+        ! finished, all objects marked
+        goto 9
+     end if
 
-                 ! two matches found
-                 adjacent_objects: select case ( imark(iobjm(1))+imark(iobjm(2)) )
-                 case (0)
-                    ! self-explanatory error, something is corrupt
-                    call log_error(m_name,s_name,2,error_fatal,'One object should be marked')
-                 case (1)
-                    ! find unmarked (new) triangle
-                    do i=1,2
-                       ip=i
-                       if (imark(iobjm(ip))==0) exit
-                    end do
+     ! there is edge on stack
+1        continue
+     !W      write(*,*) 'ij',ij !W
+     !W      write(*,*) 'imark',imark !W
 
-                    iob=iobjm(ip)
-                    innd=self%obj2(iob)%ptr
-                    ityp=self%obj2(iob)%typ
-                    inumpts=geobj_entry_table(ityp)
-                    !! loop over points defining object, find matching
-                    do k=1,inumpts
-                       ikp=1+mod(k,inumpts)
-                       if (self%nodl(innd-1+k)==ipt1) then
-                          if (self%nodl(innd-1+ikp)==ipt2) then
-                             ! swop edge direction and hence triangle orientation
-                             self%nodl(innd-1+k)=ipt2
-                             self%nodl(innd-1+ikp)=ipt1
-                             exit
-                          end if
-                       end if
-                    end do
-                    ! add other edges of object to stack
-                    do k=1,inumpts
-                       ikp=1+mod(k,inumpts)
-                       if (self%nodl(innd-1+k)==ipt2) cycle
-                       iedge(1)=self%nodl(innd-1+k)
-                       iedge(2)=self%nodl(innd-1+ikp)
-                       call stack_add(iki4,2,iedge)
-                    end do
-                    imark(iob)=1
-                 case (2)
-                    ! both objects already marked, skip
-                 end select adjacent_objects
+     !! get an edge
+     call stack_get(iki4,2,iedge)
 
-              end do stack_loop
+     !W      if (maxval(iedge)>self%nnod) then !W
+     !W      write(*,*) 'iki4',iki4 !W
+     !W      call stack_get(iki4,2,iedge) !W
+     !W      end if !W
+     !! find adjacent triangles
+     ! objects associated with edge start point
+     ipt1=iedge(1)
+     ip1=indxfp(ipt1)
+     ipp1=indxfp(ipt1+1)-1
+     ! objects associated with edge end point
+     ipt2=iedge(2)
+     ip2=indxfp(ipt2)
+     ipp2=indxfp(ipt2+1)-1
+     ! seek matching objects in list of each point
+     imatch=0
+     iobjm=0
+     do i=ip1,ipp1
+        i1=indx(i)
+        do j=ip2,ipp2
+           i2=indx(j)
+           !W      write(*,*) 'objs', iobjs(i1),iobjs(i2) !W
+           if (iobjs(i1)==iobjs(i2)) then
+              imatch=imatch+1
+              iobjm(imatch)=iobjs(i1)
+              if (imatch==2) goto 2
+           end if
+        end do
+     end do
+     ! if no matching edge, something is corrupt
+     if (imatch==0) call log_error(m_name,s_name,1,error_fatal,'No matching object')
+     ! one matching edge, lies on boundary, will be OK
+     if (imatch==1) cycle ! stack_loop
+2        continue
 
-9                 continue
-              call stack_delete(iki4)
+     ! two matches found
+     adjacent_objects: select case ( imark(iobjm(1))+imark(iobjm(2)) )
+     case (0)
+        ! self-explanatory error, something is corrupt
+        call log_error(m_name,s_name,2,error_fatal,'One object should be marked')
+     case (1)
+        ! find unmarked (new) triangle
+        do i=1,2
+           ip=i
+           if (imark(iobjm(ip))==0) exit
+        end do
+
+        iob=iobjm(ip)
+        innd=self%obj2(iob)%ptr
+        ityp=self%obj2(iob)%typ
+        inumpts=geobj_entry_table(ityp)
+        !! loop over points defining object, find matching
+        do k=1,inumpts
+           ikp=1+mod(k,inumpts)
+           if (self%nodl(innd-1+k)==ipt1) then
+              if (self%nodl(innd-1+ikp)==ipt2) then
+                 ! swop edge direction and hence triangle orientation
+                 self%nodl(innd-1+k)=ipt2
+                 self%nodl(innd-1+ikp)=ipt1
+                 exit
+              end if
+           end if
+        end do
+        ! add other edges of object to stack
+        do k=1,inumpts
+           ikp=1+mod(k,inumpts)
+           if (self%nodl(innd-1+k)==ipt2) cycle
+           iedge(1)=self%nodl(innd-1+k)
+           iedge(2)=self%nodl(innd-1+ikp)
+           call stack_add(iki4,2,iedge)
+        end do
+        imark(iob)=1
+     case (2)
+        ! both objects already marked, skip
+     end select adjacent_objects
+
+  end do stack_loop
+
+9     continue
+  call stack_delete(iki4)
 
 end subroutine geobjlist_orientri
 !---------------------------------------------------------------------
 !> shell set of tetrahedra
 subroutine geobjlist_shelltets(self,geobjtri)
-              !! arguments
+  !! arguments
   type(geobjlist_t), intent(in) :: self !< geobj list data
   type(geobjlist_t), intent(out) :: geobjtri !< geobj list data for triangles
 
-              !! local
+  !! local
   character(*), parameter :: s_name='geobjlist_shelltets' !< subroutine name
   integer(ki4), dimension(:), allocatable :: imark !< mark objects as processed
   integer(ki4), dimension(:), allocatable :: iptob !< points to objects
@@ -2448,7 +2446,7 @@ subroutine geobjlist_shelltets(self,geobjtri)
   integer(ki4) :: ikpp !< k+2 mod inumpts
   integer(ki4) :: ista !< start of loop over objects
   integer(ki4) :: ifp !< first point working
-              !W      integer(ki4) :: ij !< diagnostic j !W
+  !W      integer(ki4) :: ij !< diagnostic j !W
   integer(ki4) :: ipt1 !< index of first point of face
   integer(ki4) :: ip1 !< index of first point of face
   integer(ki4) :: ipp1 !< index of first point of face
@@ -2470,248 +2468,248 @@ subroutine geobjlist_shelltets(self,geobjtri)
   integer(ki4) :: inobj !< number of surface objects
   integer(ki4) :: iki4=1 !< type for stack
 
-              !! produce index of points to objects
-              allocate(iptob(self%nnod),iobjs(self%nnod),stat=status)
-              call log_alloc_check(m_name,s_name,1,status)
-              allocate(indx(self%nnod),stat=status)
-              call log_alloc_check(m_name,s_name,2,status)
-              allocate(indxfp(self%np+1),stat=status)
-              call log_alloc_check(m_name,s_name,3,status)
+  !! produce index of points to objects
+  allocate(iptob(self%nnod),iobjs(self%nnod),stat=status)
+  call log_alloc_check(m_name,s_name,1,status)
+  allocate(indx(self%nnod),stat=status)
+  call log_alloc_check(m_name,s_name,2,status)
+  allocate(indxfp(self%np+1),stat=status)
+  call log_alloc_check(m_name,s_name,3,status)
 
-              allocate(iwork(2*self%nnod),stat=status)
-              call log_alloc_check(m_name,s_name,4,status)
-              ip=0
-              do j=1,self%ng
-                 ityp=self%obj2(j)%typ
-                 if (ityp==10) then
-                    ! tetrahedra only
-                    innd=self%obj2(j)%ptr
-                    inumpts=geobj_entry_table(ityp)
-                    !! loop over points defining object, index by object
-                    do k=1,inumpts
-                       ip=ip+1
-                       indx(ip)=ip
-                       iobjs(ip)=j
-                       iptob(ip)=self%nodl(innd-1+k)
-                    end do
-                 end if
-              end do
+  allocate(iwork(2*self%nnod),stat=status)
+  call log_alloc_check(m_name,s_name,4,status)
+  ip=0
+  do j=1,self%ng
+     ityp=self%obj2(j)%typ
+     if (ityp==10) then
+        ! tetrahedra only
+        innd=self%obj2(j)%ptr
+        inumpts=geobj_entry_table(ityp)
+        !! loop over points defining object, index by object
+        do k=1,inumpts
+           ip=ip+1
+           indx(ip)=ip
+           iobjs(ip)=j
+           iptob(ip)=self%nodl(innd-1+k)
+        end do
+     end if
+  end do
 
-              !W      write(*,*) 'iptob',iptob !W
+  !W      write(*,*) 'iptob',iptob !W
 
-              call isort(iptob,indx,self%nnod,2)
+  call isort(iptob,indx,self%nnod,2)
 
-              !W      write(*,*) 'iptob',iptob !W
-              !W      write(*,*) 'indx',indx !W
-              !! index of first points
-              inptx=1
-              ifp=iptob(1)
-              indxfp(1)=ifp
-              do j=2,self%nnod
-                 if (iptob(j)==ifp) cycle
-                 ifp=iptob(j)
-                 inptx=inptx+1
-                 indxfp(inptx)=j
-              end do
-              ! use distance to next entry to define number of entries
-              indxfp(self%np+1)=self%nnod+1
-              !W      write(*,*) 'indxfp',indxfp !W
+  !W      write(*,*) 'iptob',iptob !W
+  !W      write(*,*) 'indx',indx !W
+  !! index of first points
+  inptx=1
+  ifp=iptob(1)
+  indxfp(1)=ifp
+  do j=2,self%nnod
+     if (iptob(j)==ifp) cycle
+     ifp=iptob(j)
+     inptx=inptx+1
+     indxfp(inptx)=j
+  end do
+  ! use distance to next entry to define number of entries
+  indxfp(self%np+1)=self%nnod+1
+  !W      write(*,*) 'indxfp',indxfp !W
 
-              !! to business
-              allocate(imark(self%ng),stat=status)
-              call log_alloc_check(m_name,s_name,5,status)
-              imark=0
-              call stack_init(iki4,3)
+  !! to business
+  allocate(imark(self%ng),stat=status)
+  call log_alloc_check(m_name,s_name,5,status)
+  imark=0
+  call stack_init(iki4,3)
 
-              ista=0
+  ista=0
 
-              ! loop over faces on stack
-              stack_loop: do
+  ! loop over faces on stack
+  stack_loop: do
 
-                 if (stack_empty(iki4,3)) then
-                    ! try to add face to stack
-                    do j=ista+1,self%ng
-                       ij=j
-                       if (imark(j)==0) then
-                          ityp=self%obj2(j)%typ
-                          if (ityp==10) then
-                             ! tetrahedra only
-                             innd=self%obj2(j)%ptr
-                             inumpts=geobj_entry_table(ityp)
-                             !! loop over points defining object, add corresponding faces
-                             do k=1,inumpts
-                                ikp=1+mod(k,inumpts)
-                                ikpp=1+mod(ikp,inumpts)
-                                iface(1)=self%nodl(innd-1+k)
-                                iface(2)=self%nodl(innd-1+ikp)
-                                iface(3)=self%nodl(innd-1+ikpp)
-                                call stack_add(iki4,3,iface)
-                                imark(j)=1
-                                ista=j
-                             end do
-                             goto 1
-                          end if
-                       end if
-                    end do
-                    ! finished, all objects marked
-                    goto 9
-                 end if
-
-                 ! there is face on stack
-1                    continue
-                 !W      write(*,*) 'ij',ij !W
-                 !W      write(*,*) 'imark',imark !W
-
-                 !! get an face
-                 call stack_get(iki4,3,iface)
-
-                 !W      if (maxval(iface)>self%nnod) then !W
-                 !W      write(*,*) 'iki4',iki4 !W
-                 !W      call stack_get(iki4,3,iface) !W
-                 !W      end if !W
-                 !! find adjacent triangles
-                 ! objects associated with face 1 point
-                 ipt1=iface(1)
-                 ip1=indxfp(ipt1)
-                 ipp1=indxfp(ipt1+1)-1
-                 ! objects associated with face 2 point
-                 ipt2=iface(2)
-                 ip2=indxfp(ipt2)
-                 ipp2=indxfp(ipt2+1)-1
-                 ! objects associated with face 3 point
-                 ipt3=iface(3)
-                 ip3=indxfp(ipt3)
-                 ipp3=indxfp(ipt3+1)-1
-                 ! seek matching objects in list of each point
-                 imatch=0
-                 iobjm=0
-                 do i=ip1,ipp1
-                    i1=indx(i)
-                    do j=ip2,ipp2
-                       i2=indx(j)
-                       !W      write(*,*) 'objs', iobjs(i1),iobjs(i2) !W
-                       if (iobjs(i1)==iobjs(i2)) then
-                          do k=ip3,ipp3
-                             i3=indx(k)
-                             if (iobjs(i1)==iobjs(i3)) then
-                                imatch=imatch+1
-                                iobjm(imatch)=iobjs(i1)
-                                if (imatch==2) goto 2
-                             end if
-                          end do
-                       end if
-                    end do
+     if (stack_empty(iki4,3)) then
+        ! try to add face to stack
+        do j=ista+1,self%ng
+           ij=j
+           if (imark(j)==0) then
+              ityp=self%obj2(j)%typ
+              if (ityp==10) then
+                 ! tetrahedra only
+                 innd=self%obj2(j)%ptr
+                 inumpts=geobj_entry_table(ityp)
+                 !! loop over points defining object, add corresponding faces
+                 do k=1,inumpts
+                    ikp=1+mod(k,inumpts)
+                    ikpp=1+mod(ikp,inumpts)
+                    iface(1)=self%nodl(innd-1+k)
+                    iface(2)=self%nodl(innd-1+ikp)
+                    iface(3)=self%nodl(innd-1+ikpp)
+                    call stack_add(iki4,3,iface)
+                    imark(j)=1
+                    ista=j
                  end do
-                 ! if no matching face, something is corrupt
-                 if (imatch==0) call log_error(m_name,s_name,1,error_fatal,'No matching object')
-                 ! one matching face, add to boundary geobjl
-                 if (imatch==1)  then
-                    do k=1,3
-                       inw=inw+1
-                       iwork(inw)=iface(k)
-                    end do
-                    cycle ! stack_loop
+                 goto 1
+              end if
+           end if
+        end do
+        ! finished, all objects marked
+        goto 9
+     end if
+
+     ! there is face on stack
+1        continue
+     !W      write(*,*) 'ij',ij !W
+     !W      write(*,*) 'imark',imark !W
+
+     !! get an face
+     call stack_get(iki4,3,iface)
+
+     !W      if (maxval(iface)>self%nnod) then !W
+     !W      write(*,*) 'iki4',iki4 !W
+     !W      call stack_get(iki4,3,iface) !W
+     !W      end if !W
+     !! find adjacent triangles
+     ! objects associated with face 1 point
+     ipt1=iface(1)
+     ip1=indxfp(ipt1)
+     ipp1=indxfp(ipt1+1)-1
+     ! objects associated with face 2 point
+     ipt2=iface(2)
+     ip2=indxfp(ipt2)
+     ipp2=indxfp(ipt2+1)-1
+     ! objects associated with face 3 point
+     ipt3=iface(3)
+     ip3=indxfp(ipt3)
+     ipp3=indxfp(ipt3+1)-1
+     ! seek matching objects in list of each point
+     imatch=0
+     iobjm=0
+     do i=ip1,ipp1
+        i1=indx(i)
+        do j=ip2,ipp2
+           i2=indx(j)
+           !W      write(*,*) 'objs', iobjs(i1),iobjs(i2) !W
+           if (iobjs(i1)==iobjs(i2)) then
+              do k=ip3,ipp3
+                 i3=indx(k)
+                 if (iobjs(i1)==iobjs(i3)) then
+                    imatch=imatch+1
+                    iobjm(imatch)=iobjs(i1)
+                    if (imatch==2) goto 2
                  end if
-2                    continue
-
-                 ! two matches found
-                 adjacent_objects: select case ( imark(iobjm(1))+imark(iobjm(2)) )
-                 case (0)
-                    ! self-explanatory error, something is corrupt
-                    call log_error(m_name,s_name,2,error_fatal,'One object should be marked')
-                 case (1)
-                    ! find unmarked (new) tet
-                    do i=1,2
-                       ip=i
-                       if (imark(iobjm(ip))==0) exit
-                    end do
-
-                    iob=iobjm(ip)
-                    innd=self%obj2(iob)%ptr
-                    ityp=self%obj2(iob)%typ
-                    inumpts=geobj_entry_table(ityp)
-                    !! ignore matching face, add other faces to stack
-                    !! loop over points defining object
-                    do k=1,inumpts
-                       ikp=1+mod(k,inumpts)
-                       ikpp=1+mod(ikp,inumpts)
-                       ifacen(1)=self%nodl(innd-1+k)
-                       ifacen(2)=self%nodl(innd-1+ikp)
-                       ifacen(3)=self%nodl(innd-1+ikpp)
-                       ipnmax=maxval(ifacen)
-                       ipnmin=minval(ifacen)
-                       iptmax=maxval(iface)
-                       iptmin=minval(iface)
-                       if ( ipnmax==iptmax.AND.ipnmin==iptmin.AND.sum(ifacen)==sum(iface) ) then
-                          ! do not add
-                       else
-                          ! add other faces of object to stack
-                          call stack_add(iki4,3,ifacen)
-                       end if
-                    end do
-                    imark(iob)=1
-                 case (2)
-                    ! both objects already marked, skip
-                 end select adjacent_objects
-
-              end do stack_loop
-
-9                 continue
-              call stack_delete(iki4)
-
-              ! create new geobjl
-              ityp=VTK_TRIANGLE
-              inumpts=geobj_entry_table(ityp)
-              inobj=inw/inumpts
-              call geobjlist_iinit(geobjtri,self%np,inobj,inw,2,1)
-              ! copy node list and points list
-              geobjtri%nodl=iwork
-              geobjtri%posl%pos=self%posl%pos
-              innd=1
-              do j=1,inobj
-                 ! triangle definitions
-                 geobjtri%obj2(j)%ptr=innd
-                 geobjtri%obj2(j)%typ=ityp
-                 innd=innd+inumpts
               end do
-              ! remove unnecessary points
-              call geobjlist_ptcompress(geobjtri)
+           end if
+        end do
+     end do
+     ! if no matching face, something is corrupt
+     if (imatch==0) call log_error(m_name,s_name,1,error_fatal,'No matching object')
+     ! one matching face, add to boundary geobjl
+     if (imatch==1)  then
+        do k=1,3
+           inw=inw+1
+           iwork(inw)=iface(k)
+        end do
+        cycle ! stack_loop
+     end if
+2        continue
+
+     ! two matches found
+     adjacent_objects: select case ( imark(iobjm(1))+imark(iobjm(2)) )
+     case (0)
+        ! self-explanatory error, something is corrupt
+        call log_error(m_name,s_name,2,error_fatal,'One object should be marked')
+     case (1)
+        ! find unmarked (new) tet
+        do i=1,2
+           ip=i
+           if (imark(iobjm(ip))==0) exit
+        end do
+
+        iob=iobjm(ip)
+        innd=self%obj2(iob)%ptr
+        ityp=self%obj2(iob)%typ
+        inumpts=geobj_entry_table(ityp)
+        !! ignore matching face, add other faces to stack
+        !! loop over points defining object
+        do k=1,inumpts
+           ikp=1+mod(k,inumpts)
+           ikpp=1+mod(ikp,inumpts)
+           ifacen(1)=self%nodl(innd-1+k)
+           ifacen(2)=self%nodl(innd-1+ikp)
+           ifacen(3)=self%nodl(innd-1+ikpp)
+           ipnmax=maxval(ifacen)
+           ipnmin=minval(ifacen)
+           iptmax=maxval(iface)
+           iptmin=minval(iface)
+           if ( ipnmax==iptmax.AND.ipnmin==iptmin.AND.sum(ifacen)==sum(iface) ) then
+              ! do not add
+           else
+              ! add other faces of object to stack
+              call stack_add(iki4,3,ifacen)
+           end if
+        end do
+        imark(iob)=1
+     case (2)
+        ! both objects already marked, skip
+     end select adjacent_objects
+
+  end do stack_loop
+
+9     continue
+  call stack_delete(iki4)
+
+  ! create new geobjl
+  ityp=VTK_TRIANGLE
+  inumpts=geobj_entry_table(ityp)
+  inobj=inw/inumpts
+  call geobjlist_iinit(geobjtri,self%np,inobj,inw,2,1)
+  ! copy node list and points list
+  geobjtri%nodl=iwork
+  geobjtri%posl%pos=self%posl%pos
+  innd=1
+  do j=1,inobj
+     ! triangle definitions
+     geobjtri%obj2(j)%ptr=innd
+     geobjtri%obj2(j)%typ=ityp
+     innd=innd+inumpts
+  end do
+  ! remove unnecessary points
+  call geobjlist_ptcompress(geobjtri)
 
 end subroutine geobjlist_shelltets
 !---------------------------------------------------------------------
 !> perform calculation of density
 subroutine geobjlist_query(self,btree,query)
-              !! arguments
+  !! arguments
   type(geobjlist_t), intent(inout) :: self !< geobj list data
   type(btree_t), intent(inout) :: btree !< btree data
   type(queryset_t), intent(inout) :: query   !< query position data
 
-              !! local
+  !! local
   character(*), parameter :: s_name='geobjlist_query' !< subroutine name
   type(geobj_t) :: iobj !< geo object
   integer(ki4) :: inode  !< local variable
 
-              ! loop over query positions
-              do j=1,query%np
-                 iobj%geobj=j
-                 iobj%objtyp=self%ngtype
-                 call btree_find(btree,iobj,query,inode)
-                 call geobjlist_querynode(self,btree,inode,query%which,query%res(j))
-              end do
-              ! any additional smoothing
+  ! loop over query positions
+  do j=1,query%np
+     iobj%geobj=j
+     iobj%objtyp=self%ngtype
+     call btree_find(btree,iobj,query,inode)
+     call geobjlist_querynode(self,btree,inode,query%which,query%res(j))
+  end do
+  ! any additional smoothing
 
 end subroutine geobjlist_query
 
 subroutine geobjlist_querynode(self,btree,knode,kchar,pres)
 
-              !! arguments
+  !! arguments
   type(geobjlist_t), intent(inout) :: self !< geobj list data
   type(btree_t), intent(in) :: btree   !< binary tree data
   integer(ki4), intent(in) :: knode   !< node
   character(*),intent(in):: kchar !< control output
   real(kr4), intent(out) :: pres   !< query result
 
-              !! local
+  !! local
   character(*), parameter :: s_name='geobjlist_querynode' !< subroutine name
   integer(ki4) :: in  !< local variable
   integer(ki4) :: iadr  !< local variable
@@ -2734,121 +2732,121 @@ subroutine geobjlist_querynode(self,btree,knode,kchar,pres)
   integer(ki4) :: inode  !< local variable
   integer(ki4) :: in1  !< local variable
 
-              !      type(posvecl_t) :: btree_floatvec
+  !      type(posvecl_t) :: btree_floatvec
 
-              if (knode<=0) then
-                 !        call log_error(m_name,s_name,1,error_warning,'Empty node found in binary tree')
-                 pres=0.
-              else
-                 ! calculate volume
+  if (knode<=0) then
+     !        call log_error(m_name,s_name,1,error_warning,'Empty node found in binary tree')
+     pres=0.
+  else
+     ! calculate volume
 
-                 ! extent
-                 iext=btree%exten(:,btree%desc(2,knode))
-                 ! convert
-                 iexp=2**iext
-                 zext=btree_floatvec(iexp)
-                 zextt=position_invqtfm(zext,self%quantfm)
-                 iz=0
-                 iexp=(/iz,iz,iz/)
-                 zorig=btree_floatvec(iexp)
-                 zorigt=position_invqtfm(zorig,self%quantfm)
-                 zvol=(zextt%posvec(1)-zorigt%posvec(1))* &
- &               (zextt%posvec(2)-zorigt%posvec(2))* &
- &               (zextt%posvec(3)-zorigt%posvec(3))
+     ! extent
+     iext=btree%exten(:,btree%desc(2,knode))
+     ! convert
+     iexp=2**iext
+     zext=btree_floatvec(iexp)
+     zextt=position_invqtfm(zext,self%quantfm)
+     iz=0
+     iexp=(/iz,iz,iz/)
+     zorig=btree_floatvec(iexp)
+     zorigt=position_invqtfm(zorig,self%quantfm)
+     zvol=(zextt%posvec(1)-zorigt%posvec(1))* &
+ &   (zextt%posvec(2)-zorigt%posvec(2))* &
+ &   (zextt%posvec(3)-zorigt%posvec(3))
 
-                 diagnostic_type: select case (kchar)
-                 case('density')
-                    if (zvol>0.) then
-                       iadr=btree%pter(2,knode)
-                       in=btree%objectls%list(iadr,2)
-                       if (in==0) then
-                          call log_error(m_name,s_name,2,error_warning,'Empty node found in binary tree')
-                          !! empty list
-                          pres=0.
-                       else
-                          zsum=0.
-                          do jj=1,in
-                             iaobj=btree%objectls%list(iadr+jj,2)
-                             zobj=self%obj(iaobj)%weight
-                             zsum=zsum+zobj
-                          end do
-                          pres=zsum/zvol
-                       end if
-                    else
+     diagnostic_type: select case (kchar)
+     case('density')
+        if (zvol>0.) then
+           iadr=btree%pter(2,knode)
+           in=btree%objectls%list(iadr,2)
+           if (in==0) then
+              call log_error(m_name,s_name,2,error_warning,'Empty node found in binary tree')
+              !! empty list
+              pres=0.
+           else
+              zsum=0.
+              do jj=1,in
+                 iaobj=btree%objectls%list(iadr+jj,2)
+                 zobj=self%obj(iaobj)%weight
+                 zsum=zsum+zobj
+              end do
+              pres=zsum/zvol
+           end if
+        else
 
-                       call log_error(m_name,s_name,3,error_warning,'Zero volume node found in binary tree')
-                       pres=0.
-                    end if
+           call log_error(m_name,s_name,3,error_warning,'Zero volume node found in binary tree')
+           pres=0.
+        end if
 
-                 case('adaptive density')
-                    if (zvol>0.) then
-                       iadr=btree%pter(2,knode)
-                       in=btree%objectls%list(iadr,2)
-                       if (in==0) then
-                          call log_error(m_name,s_name,2,error_warning,'Empty node found in binary tree')
-                          !! empty list
-                          pres=0.
-                       else
-                          ! base node
-                          zsum=0.
-                          do jj=1,in
-                             iaobj=btree%objectls%list(iadr+jj,2)
-                             zobj=self%obj(iaobj)%weight
-                             zsum=zsum+zobj
-                          end do
-                          pres=zsum
-                          ! adjacent node
-                          iupnode=btree%pter(1,knode)
-                          inode=btree%pter(2,iupnode)
-                          if (inode==knode) inode=btree%pter(3,iupnode)
-                          iadr=btree%pter(2,inode)
-                          in1=btree%objectls%list(iadr,2)
-                          if (in1/=0.AND.in1/=in) then
-                             ! add contrib from adjacent node (note same vol guaranteed)
-                             do jj=1,in1
-                                iaobj=btree%objectls%list(iadr+jj,2)
-                                zobj=self%obj(iaobj)%weight
-                                zsum=zsum+zobj
-                             end do
-                             pres=0.5*zsum
-                          end if
-                          pres=pres/zvol
-                       end if
-                    else
-
-                       call log_error(m_name,s_name,3,error_warning,'Zero volume node found in binary tree')
-                       pres=0.
-                    end if
-
-                 case('flux density')
-                    if (zvol>0.) then
-                       zcen=0.5*(zextt%posvec+zorigt%posvec)
-                       zerg=sqrt( max(0.,dot_product(zcen,zcen)) )
-                       ! do not include c=slite in calc of vel
-                       zbeta = sqrt(zerg*(zerg+2.*const_rmass))/(zerg+const_rmass)
-                       iadr=btree%pter(2,knode)
-                       in=btree%objectls%list(iadr,2)
-                       if (in==0) then
-                          call log_error(m_name,s_name,4,error_warning,'Empty node found in binary tree')
-                          !! empty list
-                          pres=0.
-                       else
-                          zsum=0.
-                          do jj=1,in
-                             iaobj=btree%objectls%list(iadr+jj,2)
-                             zobj=self%obj(iaobj)%weight
-                             zsum=zsum+zobj
-                          end do
-                          znorm=zbeta*zerg**2
-                          pres=znorm*zsum/zvol
-                       end if
-                    else
-
-                       call log_error(m_name,s_name,5,error_warning,'Zero volume node found in binary tree')
-                       pres=0.
-                    end if
-                 end select diagnostic_type
+     case('adaptive density')
+        if (zvol>0.) then
+           iadr=btree%pter(2,knode)
+           in=btree%objectls%list(iadr,2)
+           if (in==0) then
+              call log_error(m_name,s_name,2,error_warning,'Empty node found in binary tree')
+              !! empty list
+              pres=0.
+           else
+              ! base node
+              zsum=0.
+              do jj=1,in
+                 iaobj=btree%objectls%list(iadr+jj,2)
+                 zobj=self%obj(iaobj)%weight
+                 zsum=zsum+zobj
+              end do
+              pres=zsum
+              ! adjacent node
+              iupnode=btree%pter(1,knode)
+              inode=btree%pter(2,iupnode)
+              if (inode==knode) inode=btree%pter(3,iupnode)
+              iadr=btree%pter(2,inode)
+              in1=btree%objectls%list(iadr,2)
+              if (in1/=0.AND.in1/=in) then
+                 ! add contrib from adjacent node (note same vol guaranteed)
+                 do jj=1,in1
+                    iaobj=btree%objectls%list(iadr+jj,2)
+                    zobj=self%obj(iaobj)%weight
+                    zsum=zsum+zobj
+                 end do
+                 pres=0.5*zsum
               end if
+              pres=pres/zvol
+           end if
+        else
+
+           call log_error(m_name,s_name,3,error_warning,'Zero volume node found in binary tree')
+           pres=0.
+        end if
+
+     case('flux density')
+        if (zvol>0.) then
+           zcen=0.5*(zextt%posvec+zorigt%posvec)
+           zerg=sqrt( max(0.,dot_product(zcen,zcen)) )
+           ! do not include c=slite in calc of vel
+           zbeta = sqrt(zerg*(zerg+2.*const_rmass))/(zerg+const_rmass)
+           iadr=btree%pter(2,knode)
+           in=btree%objectls%list(iadr,2)
+           if (in==0) then
+              call log_error(m_name,s_name,4,error_warning,'Empty node found in binary tree')
+              !! empty list
+              pres=0.
+           else
+              zsum=0.
+              do jj=1,in
+                 iaobj=btree%objectls%list(iadr+jj,2)
+                 zobj=self%obj(iaobj)%weight
+                 zsum=zsum+zobj
+              end do
+              znorm=zbeta*zerg**2
+              pres=znorm*zsum/zvol
+           end if
+        else
+
+           call log_error(m_name,s_name,5,error_warning,'Zero volume node found in binary tree')
+           pres=0.
+        end if
+     end select diagnostic_type
+  end if
 
 end subroutine geobjlist_querynode
 
