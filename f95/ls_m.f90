@@ -186,7 +186,7 @@ subroutine ls_write1(self,kadr,kout)
      end if
      loop_1 : do j=1,in
         iout(j)=self%list(kadr+j,2)
-     end do loop1
+     end do loop_1
   else
      call log_error(m_name,s_name,2,error_fatal,'List array bound exceeded')
   end if

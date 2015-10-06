@@ -349,7 +349,7 @@ subroutine beq_readequil(self,infile,kfldspec)
   logical, parameter :: debug=.TRUE. !< flag for e16.9 output
   logical, parameter :: opbdry=.FALSE. !< flag for o/p of boundary and limiter data
   logical :: unitused !< flag to test unit is available
-  logical :: needfixup=.FALSE. !< flag special SMARDDA fix up
+  logical :: needfixup=.FALSE. !< flag special SMITER fix up
   integer(ki4) :: istatus   !< inner status variable
   integer(ki4) :: iin   !< input channel for object data structure
   integer(ki4) :: nw  !< EFIT number of grid points in R-direction
@@ -446,7 +446,7 @@ subroutine beq_readequil(self,infile,kfldspec)
      if (status/=0) then
         call log_error(m_name,s_name,5,error_fatal,'Error reading line of data after first')
      else if (ibuff(1:4)=='XXXX') then
-        ! check for SMARDDA special fix-up
+        ! check for SMITER special fix-up
         needfixup=.TRUE.
         cycle
      else
