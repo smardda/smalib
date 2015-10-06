@@ -106,7 +106,7 @@ program vtktfmprog
   call vfile_init(file%vtkout,iched,nplot)
 !     write(*,*) 'iched=',iched
   call geobjlist_writev(geobjl,'geometry',nplot)
-  call vfile_iscalarwrite(bods,nscal,'Body','CELL',nplot,0)
+  call vfile_iscalarwrite(bods,nscal,'Body','CELL',nplot,1)
   call clock_stop(30)
 !--------------------------------------------------------------------------
 !! cleanup and closedown

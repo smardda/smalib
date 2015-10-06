@@ -1352,6 +1352,7 @@ subroutine geobjlist_paneltfm(self,kbods,numerics)
   deallocate(zpansum)
   deallocate(ipansum)
   deallocate(ibodpan)
+  self%nwset=0
   deallocate(self%obj)
 
 end subroutine geobjlist_paneltfm
