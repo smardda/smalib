@@ -293,10 +293,10 @@ subroutine geoq_psilimiter(self)
   self%beq%btotbdry=sqrt( max(0.,(self%beq%bpbdry**2+(zf/zr)**2)) )
 
   call log_error(m_name,s_name,1,log_info,'Reference boundary values')
-  call log_value("SMITER-BEQ psiltr ",self%beq%psiltr)
-  call log_value("SMITER-BEQ rbdry ",self%beq%rbdry)
-  call log_value("SMITER-BEQ bpbdry ",self%beq%bpbdry)
-  call log_value("SMITER-BEQ btotbdry ",self%beq%btotbdry)
+  call log_value("SMITER-GEOQ psiltr ",self%beq%psiltr)
+  call log_value("SMITER-GEOQ rbdry ",self%beq%rbdry)
+  call log_value("SMITER-GEOQ bpbdry ",self%beq%bpbdry)
+  call log_value("SMITER-GEOQ btotbdry ",self%beq%btotbdry)
 
   call log_error(m_name,s_name,2,log_info,'Object limits ')
   call log_value("OBJECT LIMIT psimax ",zpsimax)
@@ -395,10 +395,10 @@ subroutine geoq_psisilh(self)
   self%beq%btotbdry=sqrt( max(0.,(self%beq%bpbdry**2+(zf/zr)**2)) )
 
   call log_error(m_name,s_name,1,log_info,'Reference boundary values')
-  call log_value("SMITER-BEQ psiltr ",self%beq%psiltr)
-  call log_value("SMITER-BEQ rbdry ",self%beq%rbdry)
-  call log_value("SMITER-BEQ bpbdry ",self%beq%bpbdry)
-  call log_value("SMITER-BEQ btotbdry ",self%beq%btotbdry)
+  call log_value("SMITER-GEOQ psiltr ",self%beq%psiltr)
+  call log_value("SMITER-GEOQ rbdry ",self%beq%rbdry)
+  call log_value("SMITER-GEOQ bpbdry ",self%beq%bpbdry)
+  call log_value("SMITER-GEOQ btotbdry ",self%beq%btotbdry)
 
 
 end subroutine geoq_psisilh

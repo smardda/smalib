@@ -26,7 +26,7 @@ module bcontrol_m
      character(len=80)  :: cartv   !< \f$ \bf{B} \f$ in Cartesians
      character(len=80)  :: allcartv   !< all \f$ \bf{B} \f$ in Cartesians
      character(len=80)  :: fptv    !< vtk plot file of functions of \f$ (\psi,\theta) \f$
-     character(len=80)  :: allgeoq  !< plot file of all vtk info needed for SMITER-BEQ
+     character(len=80)  :: allgeoq  !< plot file of all vtk info needed for SMITER-GEOQ
      character(len=80)  :: frzv    !< vtk plot file of functions of \f$ (R,Z) \f$
      character(len=80)  :: frzzeta    !< vtk plot file of functions of \f$ (R,Z,\zeta) \f$
      character(len=80)  :: frzxi    !< vtk plot file of functions of \f$ (R,Z,\xi) \f$
@@ -41,7 +41,7 @@ module bcontrol_m
      logical  :: cartv   !< \f$ \bf{B} \f$ in Cartesians
      logical  :: allcartv   !< all \f$ \bf{B} \f$ in Cartesians
      logical  :: fptv    !< vtk plot file of functions of \f$ (\psi,\theta) \f$
-     logical  :: allgeoq    !< plot file of all vtk info needed for SMITER-BEQ
+     logical  :: allgeoq    !< plot file of all vtk info needed for SMITER-GEOQ
      logical  :: frzv    !< vtk plot file of functions of \f$ (R,Z) \f$
      logical  :: frzzeta    !< vtk plot file of functions of \f$ (R,Z,\zeta) \f$
      logical  :: frzxi    !< vtk plot file of functions of \f$ (R,Z,\xi) \f$
