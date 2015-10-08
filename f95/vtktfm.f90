@@ -28,6 +28,8 @@ program vtktfmprog
   use datline_m
   use stack_m
 
+  use bods_m
+
   implicit none
 
 
@@ -36,14 +38,18 @@ program vtktfmprog
   type(vfiles_t)     :: file      !< names of files
   type(vnumerics_t)  :: numerics  !< numerical control parameters
   type(geobjlist_t)  :: geobjl      !< geometrical objects
+  type(geobjlist_t)  :: igeobjl      !< more geometrical objects
   type(date_time_t) :: timestamp !< timestamp of run
   character(len=80) :: fileroot !< reference name for all files output by run
   character(len=80),save :: iched !< vtk field file descriptor
 
   integer(ki4), dimension(:), allocatable :: bods !< array of bodies for geometrical objects
+  integer(ki4), dimension(:), allocatable :: ibods !< array of more bodies for geometrical objects
   integer(ki4):: nplot !< unit for vtk files
   integer(ki4):: nin !< unit for other data
+  integer(ki4):: cpstart !< start number of copies
   integer(ki4):: nscal !< number of scalars (body identifiers)
+  integer(ki4):: iopt=0 !< option for bodies
   integer(ki4):: j !< loop variable
 !--------------------------------------------------------------------------
 !! initialise timing
@@ -84,10 +90,27 @@ program vtktfmprog
 !! read  geobjl data
 
   call clock_start(4,'geobjlist_read time')
-  call geobjlist_read(geobjl,file%vtkdata,iched)
+  if (file%nvtkdata==1) then
+! just one file with Body data
+     call geobjlist_read(geobjl,file%vtkdata(1),iched)
 !     write(*,*) 'first',(geobjl%nodl(j),j=1,20)
-  nin=0
-  call vfile_iscalarread(bods,nscal,file%vtkdata,'Body',nin,1)
+     nin=0
+     call vfile_iscalarread(bods,nscal,file%vtkdata(1),'Body',nin,1)
+  else
+     call geobjlist_read(geobjl,file%vtkdata(1),iched)
+     call bods_init(bods,geobjl,101)
+     call geobjlist_close()
+     cpstart=2
+     do j=1,file%nvtkdata
+        call geobjlist_read(igeobjl,file%vtkdata(j),iched)
+!     write(*,*) 'first',(geobjl%nodl(j),j=1,20)
+        call geobjlist_cumulate(geobjl,igeobjl,cpstart,file%vtkcopies(j),iopt)
+        call bods_cumulate(bods,igeobjl,j,cpstart,file%vtkcopies(j),iopt)
+        cpstart=1
+        call geobjlist_delete(igeobjl)
+        call geobjlist_close()
+     end do
+  end if
 !! check nscal vs objl
   call clock_stop(4)
 !--------------------------------------------------------------------------
@@ -106,6 +129,7 @@ program vtktfmprog
   call vfile_init(file%vtkout,iched,nplot)
 !     write(*,*) 'iched=',iched
   call geobjlist_writev(geobjl,'geometry',nplot)
+  nscal=ubound(bods,1)
   call vfile_iscalarwrite(bods,nscal,'Body','CELL',nplot,1)
   call clock_stop(30)
 !--------------------------------------------------------------------------

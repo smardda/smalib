@@ -26,7 +26,7 @@ module geobjlist_h
      real(kr4), dimension(3,2) :: binbb !< bb for geobj binning
      real(kr4) :: tolerance !< max distance from face
      real(kr4) :: minmaxtolerance !< min max distance from face
-     integer(ki4) :: nbdcub !< number of extra bounding cubes
+     integer(ki4) :: nbdcub=0 !< number of extra bounding cubes
      real(kr4) :: dilen   !< inner cube separation from geometry
      real(kr4) :: dolen   !< outer cube separation from inner
      type(quantfm_t)    :: quantfm !< geobj \f$ x \f$ to mesh units  scaling

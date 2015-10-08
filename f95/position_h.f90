@@ -4,6 +4,7 @@ module position_h
 
 ! public types
 
+  logical, parameter :: POSITION_OVERRIDE_IFMIF=.FALSE. !< use values required by IFMIF project
   type, public :: posvecl_t
      real(kr4), dimension(3) :: posvec !< position vector
   end type posvecl_t
@@ -29,6 +30,7 @@ module position_h
      real(kr4), dimension(3) :: offset !< offset vector
      real(kr4), dimension(3,3) :: matrix  !< maxtrix of transform
      integer(ki4) :: ntfm !< type of position vector transform
+     character(len=20) :: id !< identifies transformation
   end type tfmdata_t
 
 

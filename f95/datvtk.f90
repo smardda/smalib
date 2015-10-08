@@ -141,7 +141,7 @@ program datvtkprog
 
   call clock_start(30,'outfile_init time')
 !     write(*,*) 'iched=',iched
-  call bods_init(bods,geobjl)
+  call bods_init(bods,geobjl,1)
   divide_type: select case(optarg(3:3))
   case('d','s')
 !! write out as separate files

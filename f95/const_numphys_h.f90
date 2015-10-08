@@ -6,14 +6,13 @@ module const_numphys_h
   private
 
 
-!! 4 byte pi
-  real(kr4) , parameter, public :: const_pi= 3.14159265_kr4 !< type variable
+  real(kr4) , parameter, public :: const_pi= 3.14159265_kr4 !<   4 byte pi
 
-!! 8 byte pi
-  real(kr8) , parameter, public :: const_pid = 3.14159265358979_kr8 !< type variable
+  real(kr8) , parameter, public :: const_pid = 3.14159265358979_kr8 !<   8 byte pi
 
-!! neutron mass etc
-  real(kr8) , parameter, public :: & !< MCNP values
+!> neutron mass etc
+!! MCNP values
+  real(kr8) , parameter, public :: & !< 
  &const_aneut  = 1.008664967_kr8,            & !< Neutron mass in a.m.u..
  &const_avogad = 6.022043446928244e+23_kr8,     & !< Avogadro's number.
  &const_mneut  = .001_kr8*const_aneut/const_avogad,       & !< Neutron mass in kg
@@ -24,14 +23,13 @@ module const_numphys_h
  &const_rmass = 939.56563_kr8,              & !< rest mass of neutron in MeV
  &const_slite  = 299.7925_kr8                  !< Speed of light divided by 1e6
 
-! infinity for particle push
-  real(kr4) , parameter, public :: const_pushinf = 1.e+8_kr4 !< type variable
+  real(kr4) , parameter, public :: const_pushinf = 1.e+8_kr4 !<  infinity for particle push
 
-! epsilon for particle push
-  real(kr4) , parameter, public :: const_pusheps = 1.e-8_kr4 !< type variable
-  real(kr8) , parameter, public :: const_epsbdry = 1.e-6_kr8 !< type variable
+  real(kr4) , parameter, public :: const_pusheps = 1.e-8_kr4 !<  epsilon for particle push
+  real(kr8) , parameter, public :: const_epsbdry = 1.e-6_kr8 !<  epsilon for particle push
 
-! golden ratio
-  real(kr8) , parameter, public :: const_golden = (1+sqrt(5._kr8))/2 !< type variable
+  real(kr8) , parameter, public :: const_golden = (1+sqrt(5._kr8))/2 !<  golden ratio
+
+  real(kr4) , parameter, public :: const_degrad = const_pi/180 !<  degrees to radians conversion factor
 
 end module const_numphys_h

@@ -58,6 +58,7 @@ gfile_m.f90 \
 datline_h.f90 \
 datline_m.f90 \
 stack_m.f90 \
+bods_m.f90 \
 vtktfm.f90
  
 PROG = vtktfm
@@ -109,6 +110,7 @@ vtktfm.f90 : gfile_m.mod
 vtktfm.f90 : datline_h.mod
 vtktfm.f90 : datline_m.mod
 vtktfm.f90 : stack_m.mod
+vtktfm.f90 : bods_m.mod
 const_numphys_h.f90 : const_kind_m.mod
 control_h.f90 : const_kind_m.mod
 control_h.f90 : position_h.mod
@@ -193,3 +195,21 @@ datline_m.f90 : datline_h.mod
 stack_m.f90 : const_kind_m.mod
 stack_m.f90 : const_numphys_h.mod
 stack_m.f90 : log_m.mod
+bods_m.f90 : const_kind_m.mod
+bods_m.f90 : log_m.mod
+bods_m.f90 : const_numphys_h.mod
+bods_m.f90 : position_h.mod
+bods_m.f90 : geobjlist_h.mod
+bods_m.f90 : position_m.mod
+bods_m.f90 : control_h.mod
+bods_m.f90 : vcontrol_h.mod
+bods_m.f90 : posang_h.mod
+bods_m.f90 : ls_m.mod
+bods_m.f90 : btree_m.mod
+bods_m.f90 : geobj_m.mod
+bods_m.f90 : query_m.mod
+bods_m.f90 : posang_m.mod
+bods_m.f90 : datline_h.mod
+bods_m.f90 : datline_m.mod
+bods_m.f90 : vfile_m.mod
+bods_m.f90 : geobjlist_m.mod

@@ -25,7 +25,8 @@ module bods_m
 ! public subroutines
   public :: &
  &bods_init, & !< initialise dat vtk file bodies
- &bods_write !< write out bodies in separate files
+ &bods_write, & !< write out bodies in separate files
+ &bods_cumulate !< cumulate body information
 
 ! public types
 !integer(ki4), parameter, public :: bods_made_up_data=1
@@ -42,11 +43,12 @@ module bods_m
   contains
 !---------------------------------------------------------------------
 !> initialise dat vtk file bodies
-subroutine bods_init(kself,geobjl)
+subroutine bods_init(kself,geobjl,blockno)
 
   !! arguments
   integer(ki4), dimension(:), allocatable, intent(out) :: kself !< local variable
   type(geobjlist_t), intent(in) :: geobjl   !< geobj list data
+  integer(ki4), intent(in) :: blockno !< first block number
 
   !! local
   character(*), parameter :: s_name='bods_init' !< subroutine name
@@ -68,7 +70,7 @@ subroutine bods_init(kself,geobjl)
      end do
   else
      do j=1,iobod
-        kself(j)=1
+        kself(j)=blockno
      end do
   end if
 
@@ -173,5 +175,60 @@ subroutine bods_write(kself,knbod,geobjl,fileroot,kctyp,kheader)
   end do
 
 end subroutine bods_write
+
+!---------------------------------------------------------------------
+!> cumulate body information
+subroutine bods_cumulate(kself,geobjl,nfile,start,copy,kopt)
+
+  !! arguments
+  integer(ki4), dimension(:), allocatable, intent(inout) :: kself !< local variable
+  type(geobjlist_t), intent(in) :: geobjl   !< geobj list data
+  integer(ki4), intent(in) :: nfile   !< number of file
+  integer(ki4), intent(in) :: start !< start number of copies required
+  integer(ki4), intent(in) :: copy !< stop number of copies required
+  integer(ki4), intent(in) :: kopt   !< if nonzero, try to copy weights
+
+  !! local
+  character(*), parameter :: s_name='bods_cumulate' !< subroutine name
+  integer(ki4)  :: icopy !< actual number of copies required
+  integer(ki4)  :: ibod !< number of objects in kself
+  integer(ki4)  :: inbod !< number of objects in geobjl
+  integer(ki4), dimension(:), allocatable :: iwork !< integer work array
+  integer(ki4) :: ing !< number of objects in geobjlist
+
+  if (copy<=0) return
+  icopy=copy+1-start
+  !! allocate array
+  ibod=ubound(kself,1)
+  ing=geobjl%ng
+  if(ing<0) &
+ &call log_error(m_name,s_name,2,error_fatal,'No bodies data')
+
+  inbod=ibod+ing*icopy
+  !set up replacement bodies array and destroy old bodies
+  allocate(iwork(inbod), stat=status)
+  call log_alloc_check(m_name,s_name,6,status)
+  do j=1,ibod
+     iwork(j)=kself(j)
+  end do
+  i=ibod+1
+  !! copy from geobjlist and integer convert
+  do k=start,copy
+     do j=1,ing
+        if (allocated(geobjl%obj)) then
+           iwork(i)=100*(100*nfile+k)+geobjl%obj(j)%weight+0.5
+        else
+           iwork(i)=100*nfile+k
+        end if
+        i=i+1
+     end do
+  end do
+  deallocate(kself)
+  allocate(kself(inbod), stat=status)
+  call log_alloc_check(m_name,s_name,7,status)
+  kself=iwork
+  deallocate(iwork)
+
+end subroutine bods_cumulate
 
 end module bods_m

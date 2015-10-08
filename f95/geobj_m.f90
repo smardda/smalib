@@ -42,7 +42,8 @@ module geobj_m
   end type geobj_t
 
 !public variables
-  integer(ki4), dimension(27), parameter, public :: geobj_entry_table = & !< local variable
+!> table from ParaView manual
+  integer(ki4), dimension(27), parameter, public :: geobj_entry_table = & 
  &(/1,0,2,0,3,0,0,4,4,4,8,8,6,5,10,12,0,0,0,0,3,6,8,10,20,15,13/)
 !     1 2 3 4 5 6 7 8 9 0 1 2 3 4 5  6  7 8 9 0 1 2 3 4  5  6  7
   integer(ki4), parameter, public :: geobj_max_entry_table = 20 !< local variable

@@ -272,38 +272,66 @@ subroutine position_writev(self,kplot)
 end subroutine position_writev
 !---------------------------------------------------------------------
 !> read position control data
-subroutine position_readcon(ztfmdata,kin)
+subroutine position_readcon(ztfmdata,kin,flag)
 
   !! arguments
   type(tfmdata_t), intent(out) :: ztfmdata   !< position transform numeric controls
-  integer(ki4) :: kin  !< local variable
+  integer(ki4) :: kin  !< unit for input
+  integer(ki4), optional :: flag  !< local variable
 
   !! local
   character(*), parameter :: s_name='position_readcon' !< subroutine name
   real(kr4), dimension(3,3):: position_matrix  !< local variable
   real(kr4), dimension(3):: position_scale  !< local variable
   real(kr4), dimension(3):: position_offset  !< local variable
-  integer(ki4):: position_transform  !< local variable
+  integer(ki4):: position_transform  !< transformation type
+  character(len=20) :: transform_desc !< describes transformation type
+  character(len=20) :: transform_id !< identifies transformation
+  integer(ki4), parameter :: npdict = 10 !< size of dictionary
+  !> dictionary of long name transformations
+  character(len=24), dimension(npdict), parameter :: dictlong = & !< 
+ &(/'cartesian_scale         ','scale+offset            ',&
+ &'full_matrix_mult+offset ','offset+full_matrix_mult ',&
+ &'five                    ','poloidal_tilt           ',&
+ &'toroidal_tilt           ','toroidal_rotate         ',&
+ &'poloidal_rotate         ','radial_tilt             '/)
+  !> dictionary of short name transformations
+  character(len=6), dimension(npdict), parameter :: dictshort = & !< 
+ &(/'scale ','offsca','matoff','offmat','five  ',&
+ &'poltil','tortil','torrot','polrot',&
+ &'radtil' /)
+  !> integer dictionary of transformations
+  integer(ki4), dimension(npdict), parameter :: dictn = & !< 
+ &(/1,2,3,4,5, &
+ &6,7,12,22, &
+ &42/)
 
   !! position parameters
   namelist /positionparameters/ &
  &position_matrix , &
  &position_scale , &
  &position_offset , &
- &position_transform
+ &position_transform, &
+ &transform_desc, &
+ &transform_id
+
 
   !! set default position parameters
   ! default identity
-  position_transform=1
+  position_transform=0
+  transform_desc='cartesian_scale'
   position_matrix(1,:)=(/1.,  0.,  0. /)
   position_matrix(2,:)=(/0.,  1.,  0. /)
   position_matrix(3,:)=(/0.,  0.,  1. /)
   position_scale=(/1.,  1.,  1. /)
   position_offset=(/0.,  0.,  0. /)
+  transform_id='id'
 
   !!read position parameters
   read(kin,nml=positionparameters,iostat=status)
+  if (present(flag)) flag=status
   if(status/=0) then
+     if (present(flag)) return
      call log_error(m_name,s_name,1,error_fatal,'Error reading position parameters')
      print '("Fatal error reading position parameters")'
   end if
@@ -312,10 +340,18 @@ subroutine position_readcon(ztfmdata,kin)
   !! check for valid data
   if(all(position_scale==0)) &
  &call log_error(m_name,s_name,2,error_fatal,'position_scale must be > 0')
-  if(position_transform<1) &
- &call log_error(m_name,s_name,3,error_fatal,'position_transform must be > 0')
+  if(position_transform<1) then
+     !! try for a dictionary match
+     do j=1,npdict
+        if (transform_desc==trim(dictshort(j))) then
+           position_transform=dictn(j)
+        else if (transform_desc==trim(dictlong(j))) then
+           position_transform=dictn(j)
+        end if
+     end do
+  end if
 
-  if (position_transform==3) then
+  if (POSITION_OVERRIDE_IFMIF.AND.position_transform==3) then
      ! FZK's transform
      position_matrix(1,:)=(/0.,  0.,  1. /)
      position_matrix(2,:)=(/-1.,  0.,  0. /)
@@ -330,6 +366,7 @@ subroutine position_readcon(ztfmdata,kin)
   ztfmdata%scale=position_scale
   ztfmdata%offset=position_offset
   ztfmdata%ntfm=position_transform
+  ztfmdata%id=transform_id
 
 end subroutine position_readcon
 !---------------------------------------------------------------------
