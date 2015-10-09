@@ -1,0 +1,18 @@
+!>
+!!
+!! This module writes the output Tt{.out} file for hdsgen.
+!!
+!! \Bold{Type}
+!!
+!! File handling; Object-oriented module.
+!!
+!! \Bold{Purpose}
+!!
+!! Used by codes \Tt{hdsgen}
+!!
+!! \Bold{Function}
+!!
+!! This module writes the output Tt{.out} file for hdsgen.
+!!
+!!
+!<

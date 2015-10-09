@@ -17,6 +17,10 @@ module geobjlist_m
   use datline_h
   use datline_m
   use stack_m
+  use posang_m
+  use datline_h
+  use datline_m
+  use stack_m
 
   implicit none
   private
