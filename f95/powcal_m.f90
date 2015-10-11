@@ -515,7 +515,7 @@ subroutine powcal_move(self,gshadl,btree)
               zelt%ie=i
               do j=imlevel,inlevel
                  zelt%je=j
-                 call powelt_move5(zelt,self,gshadl,btree)
+                 call powelt_move(zelt,self,gshadl,btree)
               end do
            end do
         end select calcn_type
@@ -605,6 +605,43 @@ subroutine powcal_writev(self,kchar,kplot)
   integer(ki4) :: ing   !< save objlist variable
 
   plot_type: select case (kchar)
+  case('psi-theta-zeta')
+     ! rearrange nodl, keep copy of structure in work and ing
+     call log_alloc_check(m_name,s_name,11,status)
+     ing=self%powres%geobjl%ng
+     ! ??reset number of objects to be output according to refine_level statistics input
+     self%powres%geobjl%ng=ing*powelt_table(self%powres%n%nlevel,2)/powelt_table(infilelevel,2)
+     self%powres%geobjl%ng=self%powres%npowe
+     allocate(work(3*self%powres%geobjl%ng), stat=status)
+     work=self%powres%geobjl%nodl(1:3*self%powres%geobjl%ng)
+     call geobjlist_nodlmv(self%powres%geobjl,infilelevel,1,self%powres%npowe)
+     call geobjlist_writev(self%powres%geobjl,'geometry',kplot)
+     ! restore nodl
+     self%powres%geobjl%nodl(1:3*self%powres%geobjl%ng)=work
+     deallocate(work)
+     call vfile_rscalarwrite(self%powres%powa,self%powres%geobjl%ng,'Q-avg','CELL',kplot,0)
+     call vfile_rscalarwrite(self%powres%pows,self%powres%geobjl%ng,'Q-dev','CELL',kplot,0)
+     self%powres%geobjl%ng=ing
+
+  case('allpsi-theta-zeta')
+     ! reset number of objects to be output according to refine_level input
+     ing=self%powres%geobjl%ng
+     self%powres%geobjl%ng=ing*powelt_table(self%powres%n%nlevel,2)/powelt_table(infilelevel,2)
+     if (infilelevel>self%powres%n%nlevel) then
+        allocate(work(3*self%powres%geobjl%ng), stat=status)
+        call log_alloc_check(m_name,s_name,31,status)
+        work=self%powres%geobjl%nodl(1:3*self%powres%geobjl%ng)
+        call geobjlist_nodlmv(self%powres%geobjl,infilelevel,self%powres%n%nlevel,self%powres%npowe)
+     end if
+     call geobjlist_writev(self%powres%geobjl,'geometry',kplot)
+     call vfile_rscalarwrite(abs(self%powres%pow),self%powres%geobjl%ng,'Q','CELL',kplot,0)
+     if (infilelevel>self%powres%n%nlevel) then
+        ! restore nodl
+        self%powres%geobjl%nodl(1:3*self%powres%geobjl%ng)=work
+     end if
+     ! restore number of objects
+     self%powres%geobjl%ng=ing
+
   case('cartesian')
      ! replace R-Z-xi positions with Cartesian
      allocate(workpos(self%powres%geobjl%np), stat=status)

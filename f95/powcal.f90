@@ -71,6 +71,7 @@ program powcalprog
 
   integer(ki4):: nplot !< unit for vtk files
   integer(ki4):: nin=0 !< unit for other data
+  integer(ki4):: ifldspec !< field specification
   real(kr8):: zivac !< value of I in field file
   real(kr8):: zfac !< ratio of I in different field files
 !--------------------------------------------------------------------------
@@ -113,7 +114,13 @@ program powcalprog
 !! beq part data output by geoq
 
   call clock_start(3,'geoq_init time')
+  call beq_readcheck(powcal%powres%beq,file%geoq,ifldspec)
+  fld_specn: select case (ifldspec)
+  case(1)
+  call beq_readpart(powcal%powres%beq,file%geoq)
+  case default
   call beq_readplus(powcal%powres%beq,file%geoq)
+  end select fld_specn
   call clock_stop(3)
 !--------------------------------------------------------------------------
 !! special vacuum field file

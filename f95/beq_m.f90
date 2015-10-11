@@ -25,6 +25,7 @@ module beq_m
   beq_init,   & !< create  beq data structure
   beq_delete,   & !< delete  beq data structure
   beq_readv, & !< read in visualisation format (TO DO)
+  beq_readcheck, & !< check field as mapped or 3-cpt
   beq_readpart, & !< read field data needed by AFWS
   beq_readplus, & !< read field data needed by MSUS
   beq_writeg, & !< write in gnuplot format
@@ -1195,6 +1196,57 @@ subroutine beq_readv(self)
 
 end subroutine beq_readv
 !---------------------------------------------------------------------
+!> check field as mapped or 3-cpt
+subroutine beq_readcheck(self,infile,kfldspec)
+
+  !! arguments
+  type(beq_t), intent(out) :: self   !< object data structure
+  character(*),intent(in) :: infile !< name of input file
+  integer(ki4),intent(out) :: kfldspec !< field spec
+
+  !! local
+  character(*), parameter :: s_name='beq_readcheck' !< subroutine name
+  logical :: unitused !< flag to test unit is available
+
+  !! get file unit
+  do i=99,1,-1
+     inquire(i,opened=unitused)
+     if(.not.unitused)then
+        nin=i
+        exit
+     end if
+  end do
+
+  !! open file
+  open(unit=nin,file=infile,status='OLD',form='FORMATTED',iostat=status)
+  if(status/=0)then
+     !! error opening file
+     call log_error(m_name,s_name,1,error_fatal,'Error opening beq data structure file')
+  else
+     call log_error(m_name,s_name,2,log_info,'beq data structure file opened')
+  end if
+
+  ! skip header data
+  do i=1,20
+     read(nin,fmt='(a)',iostat=status) ibuff
+     call log_read_check(m_name,s_name,3,status)
+     if (adjustl(ibuff)=='fldspec') exit
+  end do
+
+  if (adjustl(ibuff)/='fldspec') then
+     ! fldspec string not found
+     call log_error(m_name,s_name,3,error_warning,'Object data is mapped')
+     kfldspec=1
+  else
+
+  read(nin,*,iostat=status) kfldspec
+  call log_read_check(m_name,s_name,4,status)
+  end if
+
+  close(nin)
+
+end subroutine beq_readcheck
+!---------------------------------------------------------------------
 !> read field data needed by AFWS
 subroutine beq_readpart(self,infile)
 
@@ -1290,7 +1342,18 @@ subroutine beq_readpart(self,infile)
   call spl2d_initpart( self%rjac )
   read(nin,*,iostat=status) ibuff
 
+! added 'plus parts'
+  read(nin,*,iostat=status) ibuff
+  read(nin,*,iostat=status) self%n%fldspec
+  if(status/=0)then
   call log_error(m_name,s_name,60,log_info,'beq read in from data file')
+  end if
+  call log_read_check(m_name,s_name,4,status)
+  read(nin,*,iostat=status) ibuff
+  read(nin,*,iostat=status) self%n%vacfile
+  call log_read_check(m_name,s_name,63,status)
+
+  call log_error(m_name,s_name,64,log_info,'beq plus 2 read in from data file')
 
 end subroutine beq_readpart
 !---------------------------------------------------------------------
@@ -1890,16 +1953,13 @@ subroutine beq_write(self,kout)
   write(kout,*,iostat=status) 'rjac --- 2d spline'
   call spl2d_write( self%rjac,kout )
   write(kout,*,iostat=status) 'end of 2d spline'
+
   write(kout,*,iostat=status) 'srmin'
   write(kout,*,iostat=status) self%srmin
-  if(status/=0) then
-     call log_error(m_name,s_name,40,error_fatal,'Error writing object data')
-  end if
+  call log_write_check(m_name,s_name,40,status)
   write(kout,*,iostat=status) 'srmax'
   write(kout,*,iostat=status) self%srmax
-  if(status/=0) then
-     call log_error(m_name,s_name,41,error_fatal,'Error writing object data')
-  end if
+  call log_write_check(m_name,s_name,41,status)
 
 end subroutine beq_write
 !---------------------------------------------------------------------
@@ -1916,54 +1976,34 @@ subroutine beq_writepart(self,kout)
 
   write(kout,*,iostat=status) 'mr'
   write(kout,*,iostat=status) self%mr
-  if(status/=0) then
-     call log_error(m_name,s_name,4,error_fatal,'Error writing object data')
-  end if
+  call log_write_check(m_name,s_name,4,status)
   write(kout,*,iostat=status) 'rcen'
   write(kout,*,iostat=status) self%n%rcen
-  if(status/=0) then
-     call log_error(m_name,s_name,17,error_fatal,'Error writing object data')
-  end if
+  call log_write_check(m_name,s_name,17,status)
   write(kout,*,iostat=status) 'zcen'
   write(kout,*,iostat=status) self%n%zcen
-  if(status/=0) then
-     call log_error(m_name,s_name,18,error_fatal,'Error writing object data')
-  end if
+  call log_write_check(m_name,s_name,18,status)
   write(kout,*,iostat=status) 'psiaxis'
   write(kout,*,iostat=status) self%psiaxis
-  if(status/=0) then
-     call log_error(m_name,s_name,34,error_fatal,'Error writing object data')
-  end if
+  call log_write_check(m_name,s_name,34,status)
   write(kout,*,iostat=status) 'psibdry'
   write(kout,*,iostat=status) self%psibdry
-  if(status/=0) then
-     call log_error(m_name,s_name,35,error_fatal,'Error writing object data')
-  end if
+  call log_write_check(m_name,s_name,35,status)
   write(kout,*,iostat=status) 'psiqbdry'
   write(kout,*,iostat=status) self%psiqbdry
-  if(status/=0) then
-     call log_error(m_name,s_name,36,error_fatal,'Error writing object data')
-  end if
+  call log_write_check(m_name,s_name,36,status)
   write(kout,*,iostat=status) 'rbdry'
   write(kout,*,iostat=status) self%rbdry
-  if(status/=0) then
-     call log_error(m_name,s_name,37,error_fatal,'Error writing object data')
-  end if
+  call log_write_check(m_name,s_name,37,status)
   write(kout,*,iostat=status) 'bpbdry'
   write(kout,*,iostat=status) self%bpbdry
-  if(status/=0) then
-     call log_error(m_name,s_name,38,error_fatal,'Error writing object data')
-  end if
+  call log_write_check(m_name,s_name,38,status)
   write(kout,*,iostat=status) 'btotbdry'
   write(kout,*,iostat=status) self%btotbdry
-  if(status/=0) then
-     call log_error(m_name,s_name,39,error_fatal,'Error writing object data')
-  end if
+  call log_write_check(m_name,s_name,39,status)
   write(kout,*,iostat=status) 'f'
   write(kout,*,iostat=status) self%f
-  if(status/=0) then
-     call log_error(m_name,s_name,40,error_fatal,'Error writing object data')
-  end if
+  call log_write_check(m_name,s_name,40,status)
 
   write(kout,*,iostat=status) 'r --- 2d spline'
   call spl2d_write( self%r,kout )
@@ -1974,6 +2014,15 @@ subroutine beq_writepart(self,kout)
   write(kout,*,iostat=status) 'rjac --- 2d spline'
   call spl2d_write( self%rjac,kout )
   write(kout,*,iostat=status) 'end of 2d spline'
+
+! added 'plus parts'
+  write(kout,*,iostat=status) 'fldspec'
+  write(kout,*,iostat=status) self%n%fldspec
+  call log_write_check(m_name,s_name,4,status)
+  write(kout,*,iostat=status) 'vacfile'
+  write(kout,*,iostat=status) self%n%vacfile
+  call log_write_check(m_name,s_name,63,status)
+
 
 end subroutine beq_writepart
 !---------------------------------------------------------------------

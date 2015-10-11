@@ -325,7 +325,7 @@ subroutine position_readcon(ztfmdata,kin,flag)
   position_matrix(3,:)=(/0.,  0.,  1. /)
   position_scale=(/1.,  1.,  1. /)
   position_offset=(/0.,  0.,  0. /)
-  transform_id='id'
+  transform_id='unit'
 
   !!read position parameters
   read(kin,nml=positionparameters,iostat=status)
@@ -366,7 +366,7 @@ subroutine position_readcon(ztfmdata,kin,flag)
   ztfmdata%scale=position_scale
   ztfmdata%offset=position_offset
   ztfmdata%ntfm=position_transform
-  ztfmdata%id=transform_id
+!ID  ztfmdata%id=transform_id
 
 end subroutine position_readcon
 !---------------------------------------------------------------------

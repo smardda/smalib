@@ -271,7 +271,7 @@ subroutine vcontrol_read(file,numerics)
   call log_alloc_check(m_name,s_name,47,status)
   allocate(numerics%vptfm%ntfm(max_number_of_transforms), stat=status)
   call log_alloc_check(m_name,s_name,48,status)
-  allocate(numerics%vptfm%id(max_number_of_transforms), stat=status)
+!ID  allocate(numerics%vptfm%id(max_number_of_transforms), stat=status)
   call log_alloc_check(m_name,s_name,49,status)
   !! transform array parameters
   do j=1,max_number_of_transforms
@@ -284,7 +284,7 @@ subroutine vcontrol_read(file,numerics)
 !F11 write(*,*) 'ztfmdata%offset',ztfmdata%offset
      numerics%vptfm%matrix(:,:,j)=ztfmdata%matrix
      numerics%vptfm%ntfm(j)=ztfmdata%ntfm
-     numerics%vptfm%id(j)=ztfmdata%id
+!ID     numerics%vptfm%id(j)=ztfmdata%id
   end do
   call log_value('No transforms present',intfm)
 
@@ -294,12 +294,12 @@ subroutine vcontrol_read(file,numerics)
         numerics%pantfm(j)=0
         cycle
      end if
-     do k=1,intfm
-        if (transform_id(j)==numerics%vptfm%id(k)) then
-           numerics%pantfm(j)=numerics%vptfm%ntfm(k)
-           exit
-        end if
-     end do
+!ID     do k=1,intfm
+!ID        if (transform_id(j)==numerics%vptfm%id(k)) then
+!ID           numerics%pantfm(j)=numerics%vptfm%ntfm(k)
+!ID           exit
+!ID        end if
+!ID     end do
   end do
   !! final check
   do j=1,inpan

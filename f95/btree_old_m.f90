@@ -163,11 +163,7 @@ subroutine btree_init(self,numerics)
   self%hxyz=hxyz
   self%mtype=imtype
 
-  if (ittype==2) then
-     iquante=numerics%nquante-1
-  else
   iquante=numerics%nquante
-  end if
   self%nexten=1
   self%exten(:,1)=(/iquante,iquante,iquante/)
 
@@ -730,13 +726,13 @@ subroutine btree_mdefn(self,kxyz,knode,kd,kextn,kcorna,kchildn,kbsiz)
         end if
      end do
      ichil=1
-  else if (knode==1) then
-     ! root of tree, size of octree
-     ichil=3
-     kd=3+kchildn
-  else
+  else if (all(kxyz==2)) then
      ! octree
      ichil=2
+     kd=3+kchildn
+  else
+     ! general nx x ny x nz tree
+     ichil=3
      kd=3+kchildn
   end if
 
@@ -963,7 +959,6 @@ subroutine btree_mfind(self,obj,poslis,knode)
   integer(ki2), dimension(3) :: iext  !< local variable
   integer(ki2), dimension(3) :: icorn  !< local variable
   integer(ki2), dimension(3) :: ixyz  !< local variable
-  integer(ki2), dimension(3) :: iofftype  !< local variable
   integer(ki2):: iquant !< max scaled extent of tree (log)
 
   ! check for point
@@ -973,11 +968,6 @@ subroutine btree_mfind(self,obj,poslis,knode)
   if (self%nttype==1) then
      ! btree_find more appropriate for BSP
      call log_error(m_name,s_name,2,error_fatal,'Called with wrong tree type')
-  else if (self%nttype==2) then
-     ! the magic factor or one for octree
-     iofftype=0
-  else
-     iofftype=0
   end if
 
   ! top level analysis
@@ -986,7 +976,7 @@ subroutine btree_mfind(self,obj,poslis,knode)
   inobj=obj%geobj
   zpos=poslis%pos(inobj)
   ivec=int(zpos%posvec)
-  iquant=self%exten(2,self%desc(2,1))+iofftype(2)
+  iquant=self%exten(2,self%desc(2,1))
   do jj=1,3
      inxyz(jj)=ishft(ivec(jj),-iquant)
      if (inxyz(jj).ge.ixyz(jj)) then
@@ -1047,7 +1037,7 @@ subroutine btree_mfind(self,obj,poslis,knode)
      ! corner
      icorn=self%corner(:,knode)
      ! extent
-     iext=self%exten(:,self%desc(2,knode))+iofftype
+     iext=self%exten(:,self%desc(2,knode))
 
      if ( .not.geobj_innbox( obj,poslis,icorn,iext )  ) then
 
