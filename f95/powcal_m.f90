@@ -141,6 +141,9 @@ subroutine powcal_init(self,numerics,plot,gnumerics)
      allocate(self%powres%psista(self%powres%geobjl%ng), stat=status)
      call log_alloc_check(m_name,s_name,4,status)
   case('afws')
+     ! set size of psista array
+     allocate(self%powres%psista(self%powres%geobjl%ng), stat=status)
+     call log_alloc_check(m_name,s_name,5,status)
      ! limits on psi-theta interpolation
      call spl2d_ptlimits(self%powres%beq%rjac,self%powres%psimin,self%powres%psimax,&
      self%powres%thetamin,self%powres%thetamax)
@@ -663,7 +666,7 @@ subroutine powcal_writev(self,kchar,kplot)
      ! restore nodl
      self%powres%geobjl%nodl(1:3*self%powres%geobjl%ng)=work
      deallocate(work)
-     call vfile_rscalarwrite(self%powres%powa,self%powres%geobjl%ng,'Q-avg','CELL',kplot,0)
+     call vfile_rscalarwrite(self%powres%powa,self%powres%geobjl%ng,'Q-avg','CELL',kplot,1)
      call vfile_rscalarwrite(self%powres%pows,self%powres%geobjl%ng,'Q-dev','CELL',kplot,0)
      self%powres%geobjl%ng=ing
 
@@ -683,7 +686,7 @@ subroutine powcal_writev(self,kchar,kplot)
         call geobjlist_nodlmv(self%powres%geobjl,infilelevel,self%n%nlevel,self%powres%npowe)
      end if
      call geobjlist_writev(self%powres%geobjl,'geometry',kplot)
-     call vfile_rscalarwrite(self%powres%pow,self%powres%geobjl%ng,'Qs','CELL',kplot,0)
+     call vfile_rscalarwrite(self%powres%pow,self%powres%geobjl%ng,'Qs','CELL',kplot,1)
      if (allocated(self%powres%psista)) then
         call vfile_rscalarwrite(self%powres%psista,self%powres%geobjl%ng,'psista','CELL',kplot,0)
      end if

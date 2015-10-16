@@ -30,7 +30,7 @@ module position_h
      real(kr4), dimension(3) :: offset !< offset vector
      real(kr4), dimension(3,3) :: matrix  !< maxtrix of transform
      integer(ki4) :: ntfm !< type of position vector transform
-     character(len=20) :: id !< identifies transformation
+!     character(len=20) :: id !< identifies transformation
   end type tfmdata_t
 
 

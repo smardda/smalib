@@ -114,7 +114,8 @@ program powcalprog
 !! beq part data output by geoq
 
   call clock_start(3,'geoq_init time')
-  call beq_readcheck(powcal%powres%beq,file%geoq,ifldspec)
+  call beq_readcheck(powcal%powres%beq,file%geoq)
+  ifldspec=powcal%powres%beq%n%fldspec
   fld_specn: select case (ifldspec)
   case(1)
   call beq_readpart(powcal%powres%beq,file%geoq)

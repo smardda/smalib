@@ -14,6 +14,7 @@ program hdsgen
   use ls_m
   use btree_m
   use mtest_m
+  use termplane_h
   use pcle_h
   use pcle_m
   use geobjlist_h

@@ -912,12 +912,13 @@ subroutine odes_rjstep1(self,kerr,pf,rjspl2d)
   real(kr8) :: zepst  !< local variable
   real(kr8) :: zpsi  !< local variable
   real(kr8) :: t  !< local variable
+  real(kr8), dimension(mpdim,3) :: gdia !< diagnostic
 
      kerr=0
      zpsi=self%vecp%pos(self%ndt)%posvec(1)
      g=self%vecp%pos(self%ndt)%posvec(2)
      t=self%vecp%pos(self%ndt)%posvec(3)
-     call odes_rjfunct(t,g,gdot,zpsi,pf,rjspl2d)
+     call odes_rjfunct(t,g,gdot,zpsi,gdia,pf,rjspl2d)
      gn=abs(g)
      gdotn=abs(gdot)
      zepst =self%n%epsr*gn+self%n%epsa
@@ -1409,13 +1410,14 @@ subroutine odes_rkf23p(pfunct,pt,pdt,py,py2,py3,pdia,&
 end subroutine odes_rkf23p
 !---------------------------------------------------------------------
 !> special function \f$ R/J \f$
-subroutine odes_rjfunct(pt,py,pydot,psi,pf,rjspl2d)
+subroutine odes_rjfunct(pt,py,pydot,psi,pdia,pf,rjspl2d)
 
      !! arguments
   real(kr8), intent(inout) :: pt   !< \f$ \zeta \f$ (not needed)
   real(kr8), intent(inout) :: py   !< \f$ \theta \f$
   real(kr8), intent(inout) :: pydot  !< \f$ d\theta d\zeta \f$
   real(kr8), intent(inout) :: psi   !< \f$ \psi \f$ fixed for trajectory
+  real(kr8), intent(out), dimension(mpdim,*) :: pdia !< diagnostic
   real(kr8), intent(in) :: pf   !< \f$ f \f$
   type(spl2d_t), intent(inout) :: rjspl2d   !< \f$ R/J \f$ spline
 

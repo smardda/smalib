@@ -1197,16 +1197,16 @@ subroutine beq_readv(self)
 end subroutine beq_readv
 !---------------------------------------------------------------------
 !> check field as mapped or 3-cpt
-subroutine beq_readcheck(self,infile,kfldspec)
+subroutine beq_readcheck(self,infile)
 
   !! arguments
   type(beq_t), intent(out) :: self   !< object data structure
   character(*),intent(in) :: infile !< name of input file
-  integer(ki4),intent(out) :: kfldspec !< field spec
 
   !! local
   character(*), parameter :: s_name='beq_readcheck' !< subroutine name
   logical :: unitused !< flag to test unit is available
+  integer(ki4) :: ifldspec !< field spec
 
   !! get file unit
   do i=99,1,-1
@@ -1236,12 +1236,13 @@ subroutine beq_readcheck(self,infile,kfldspec)
   if (adjustl(ibuff)/='fldspec') then
      ! fldspec string not found
      call log_error(m_name,s_name,3,error_warning,'Object data is mapped')
-     kfldspec=1
+     ifldspec=1
   else
 
-  read(nin,*,iostat=status) kfldspec
+  read(nin,*,iostat=status) ifldspec
   call log_read_check(m_name,s_name,4,status)
   end if
+  self%n%fldspec=ifldspec
 
   close(nin)
 
