@@ -140,6 +140,7 @@ subroutine powcal_init(self,numerics,plot,gnumerics)
      ! set size of psista array
      allocate(self%powres%psista(self%powres%geobjl%ng), stat=status)
      call log_alloc_check(m_name,s_name,4,status)
+     self%powres%psista=0
   case('afws')
      ! set size of psista array
      allocate(self%powres%psista(self%powres%geobjl%ng), stat=status)

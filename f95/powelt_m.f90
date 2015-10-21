@@ -321,16 +321,6 @@ subroutine powelt_dep(self,powcal,gshadl)
      ! psibdry is not quantised
      zpsid=zpsi-powcal%powres%beq%psibdry
      zpow=zbdotn*edgprof_fn(powcal%edgprof,zpsid)
-     !!WD         write(*,*) 'inpow,iflag,zpsi,pow,weight=',inpow,iflag,zpsi,& !WD
-     !!WD  &      powcal%powres%pow(inpow),& !WD
-     !!WD  &      powcal%powres%geobjl%obj(inpow)%weight !WD
-     !         if (powcal%powres%slfac==0) then
-     !            zpow=powcal%powres%fpfac*zbdotn*exp(powcal%powres%rblfac*zpsid)
-     !         else
-     !            zpow=powcal%powres%fpfac*zbdotn*&
-     !     &      exp(powcal%powres%slfac**2+powcal%powres%rblfac*zpsid)*&
-     !     &      erfc(powcal%powres%slfac+powcal%powres%rblfac*zpsid/(2*powcal%powres%slfac))
-     !         end if
      powcal%powres%pow(inpow)=zpow
      powcal%powres%psista(inpow)=zpsi
      !        write(*,*) inpow, zpow, zbdotn, zpsi

@@ -1343,18 +1343,31 @@ subroutine beq_readpart(self,infile)
   call spl2d_initpart( self%rjac )
   read(nin,*,iostat=status) ibuff
 
-! added 'plus parts'
-  read(nin,*,iostat=status) ibuff
-  read(nin,*,iostat=status) self%n%fldspec
   if(status/=0)then
   call log_error(m_name,s_name,60,log_info,'beq read in from data file')
   end if
+
+! added 'plus parts'
+  read(nin,*,iostat=status) ibuff
+  read(nin,*,iostat=status) self%n%fldspec
   call log_read_check(m_name,s_name,4,status)
   read(nin,*,iostat=status) ibuff
   read(nin,*,iostat=status) self%n%vacfile
   call log_read_check(m_name,s_name,63,status)
+  ! ripple field data
+  read(nin,*,iostat=status) ibuff
+  read(nin,*,iostat=status) self%n%mrip
+  call log_read_check(m_name,s_name,64,status)
+  read(nin,*,iostat=status) ibuff
+  read(nin,*,iostat=status) self%ivac
+  call log_read_check(m_name,s_name,65,status)
+  if (self%n%mrip/=0) then
+     read(nin,*,iostat=status) ibuff
+     read(nin,*,iostat=status) self%n%arip
+     call log_read_check(m_name,s_name,66,status)
+  end if
 
-  call log_error(m_name,s_name,64,log_info,'beq plus 2 read in from data file')
+  call log_error(m_name,s_name,70,log_info,'beq plus 2 read in from data file')
 
 end subroutine beq_readpart
 !---------------------------------------------------------------------
@@ -2023,6 +2036,18 @@ subroutine beq_writepart(self,kout)
   write(kout,*,iostat=status) 'vacfile'
   write(kout,*,iostat=status) self%n%vacfile
   call log_write_check(m_name,s_name,63,status)
+  ! ripple field data
+  write(kout,*,iostat=status) 'mrip'
+  write(kout,*,iostat=status) self%n%mrip
+  call log_write_check(m_name,s_name,64,status)
+  write(kout,*,iostat=status) 'ivac'
+  write(kout,*,iostat=status) self%ivac
+  call log_write_check(m_name,s_name,65,status)
+  if (self%n%mrip/=0) then
+     write(kout,*,iostat=status) 'arip'
+     write(kout,*,iostat=status) self%n%arip
+     call log_write_check(m_name,s_name,66,status)
+  end if
 
 
 end subroutine beq_writepart
@@ -2383,7 +2408,7 @@ subroutine beq_readcon(selfn,kin)
   beq_rmove=0.
   beq_zmove=0.
   beq_fscale=1
-  beq_mrip=1
+  beq_mrip=0
   beq_irip=0.
   beq_arip=0.
   beq_psiref=1
@@ -2508,7 +2533,7 @@ subroutine beq_readcon(selfn,kin)
      selfn%zetamax=beq_zetamax
   else if(selfn%zetaopt==2) then
      if (beq_nzetap==0) then
-        if (beq_mrip/=0) then
+        if (beq_mrip>0) then
            selfn%zetamin=-const_pid/beq_mrip
            selfn%zetamax=const_pid/beq_mrip
            selfn%nzetp=beq_mrip
@@ -3533,7 +3558,7 @@ subroutine beq_b(self,posang,kopt)
      zparip=posang
      zparip%vec=0
      ! get ripple
-     if (self%n%vacfile=='null') then
+     if (self%n%vacfile(1:4)=='null') then
         if (self%n%mrip/=0) then
            ! 'ripple' includes toroidal field
            posang%vec(3)=0
