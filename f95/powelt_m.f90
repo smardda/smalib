@@ -352,6 +352,7 @@ subroutine powelt_move(self,powcal,gshadl,btree)
   real(kr4), dimension(3) :: znormal !< unit normal vector
   real(kr4), dimension(3) :: znormalptz !< unit normal vector in ptz
   real(kr8), dimension(3) :: znormald !< unit normal vector
+  real(kr8) :: lenpath !< length of path in \f$ t \f$
   real(kr8) :: zdfac !< direction factor
   real(kr8) :: zs !< \f$ \pm 1 \f$
   real(kr8) :: zpdotn !< path dotted with normal vector
@@ -362,8 +363,8 @@ subroutine powelt_move(self,powcal,gshadl,btree)
   integer(ki4) :: inode  !< local variable
   integer(ki4) :: nobjhit=0  !< local variable
   integer(ki4) :: ibacktr !< flag if back-tracking
-  type(posnode_t) :: xo !< local variable
-  type(posnode_t) :: xn !< local variable
+  type(posnode_t) :: xo !< position variable
+  type(posnode_t) :: xn !< position variable
   type(posvecl_t) :: zpos1   !< one position data
   type(posvecl_t) :: zpos2   !< one position data
   type(posveclis_t) :: rposl   !< list of position data
@@ -455,9 +456,13 @@ subroutine powelt_move(self,powcal,gshadl,btree)
 
 100   continue
   ! time step loop for path
+  lenpath=0
   ierr=0
+  lcoll=.FALSE.
   !     powcal%odes%near=0
   loop_path: do
+
+     lenpath=lenpath+abs(powcal%odes%dt)
 
      call odes_rjstep(powcal%odes,ierr,zf,zdfac,powcal%powres%beq%rjac)
      ! check for termination due to solution failure on this field-line
@@ -467,9 +472,11 @@ subroutine powelt_move(self,powcal,gshadl,btree)
         ! check for collision or exit from computational domain
         xn%posvec=powcal%odes%vecp%pos(powcal%odes%ndt)%posvec
         xn%node=0
-        ! find new node and position if hits boundary
-        call pcle_move(xo,xn,1,gshadl,btree,nobjhit)
-        lcoll=(nobjhit/=0)
+        if (abs(lenpath)>1) then
+          ! find new node and position if hits boundary
+          call pcle_move(xo,xn,1,gshadl,btree,nobjhit)
+          lcoll=(nobjhit/=0)
+        end if
         if (lcoll) then
            powcal%odes%vecp%pos(powcal%odes%ndt)%posvec=xn%posvec
            ! mark as really a collision, not just due to leaving volume
@@ -485,7 +492,8 @@ subroutine powelt_move(self,powcal,gshadl,btree)
      ! check for termination due to overlong trajectory (number of steps)
      if (powcal%odes%ndt>=powcal%odes%n%stepmax) exit
      ! this one covered when test exit from domain
-     if (abs(powcal%odes%vecp%pos(powcal%odes%ndt)%posvec(3)-zt0)>abs(powcal%odes%n%tmax-zt0)) exit
+     ! if (abs(powcal%odes%vecp%pos(powcal%odes%ndt)%posvec(3)-zt0)>abs(powcal%odes%n%tmax-zt0)) exit
+     if (abs(lenpath)>abs(powcal%odes%n%tmax-zt0)) exit
 
   end do loop_path
 

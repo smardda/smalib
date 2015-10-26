@@ -211,8 +211,9 @@ subroutine pcle_move(selfo,selfn,kstep,geol,btree,kobj)
      zposn=zzpos
   end if
 
-  ! find inode, starting node
-  if (kstep==0) then
+  inode=selfo%node
+  if (kstep==0.OR.inode==0) then
+     ! find inode, starting node, if not defined or on first step
      ! calculate inode from position
      status=0
      if (.not.allocated(zposl%pos)) allocate(zposl%pos(1), stat=status)
@@ -224,13 +225,11 @@ subroutine pcle_move(selfo,selfn,kstep,geol,btree,kobj)
      iobj%geobj=1
      zposl%pos(1)=zposo
      call btree_mfind(btree,iobj,zposl,inode)
-  else
-     ! copy from input
-     inode=selfo%node
-     if (inode<=0) then
-        call log_error(m_name,s_name,2,error_warning,'Bad particle node ')
-        return
-     end if
+  end if
+  ! check
+  if (inode<=0) then
+     call log_error(m_name,s_name,2,error_warning,'Bad particle node ')
+     return
   end if
 
   !! main working

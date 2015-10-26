@@ -2510,7 +2510,7 @@ subroutine beq_readcon(selfn,kin)
      selfn%rcen=beq_rcen
      selfn%zcen=beq_zcen
   end if
-  if(selfn%psiopt==1) then
+  if(selfn%psiopt==1.OR.selfn%psiopt==3) then
      selfn%psimin=beq_psimin
      selfn%psimax=beq_psimax
   end if
@@ -2603,6 +2603,18 @@ subroutine beq_psilt(self)
         !  psi decreases outward
         self%n%psimin=self%psiotr+zdelta
         self%n%psimax=self%psiltr-zdelta
+     end if
+  else if (self%n%psiopt==3) then
+     zpsimin=min(self%n%psimin, self%n%psimax)
+     zpsimax=max(self%n%psimin, self%n%psimax)
+     if (rsig>0) then
+        !  psi increases outward
+        self%n%psimin=zpsimin
+        self%n%psimax=zpsimax
+     else
+        !  psi decreases outward
+        self%n%psimin=zpsimax
+        self%n%psimax=zpsimin
      end if
   end if
 

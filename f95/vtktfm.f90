@@ -7,9 +7,11 @@ program vtktfmprog
   use vcontrol_h
   use log_m
   use clock_m
+  use beq_h
   use posang_h
   use posang_m
   use spl2d_m
+  use spl3d_m
 
   use position_h
   use geobjlist_h
@@ -80,7 +82,7 @@ program vtktfmprog
 !! start log
   call log_init(fileroot,timestamp)
 !--------------------------------------------------------------------------
-!! read control file (nominally)
+!! read control file
 
   call clock_start(2,'vcontrol_init time')
   call vcontrol_init(fileroot)

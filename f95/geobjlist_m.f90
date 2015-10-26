@@ -129,6 +129,7 @@ subroutine geobjlist_delete(self)
 
   deallocate(self%posl%pos)
   if (self%ngtype==1.OR.self%nwset/=0) then
+!    if (allocated(self%obj)) deallocate(self%obj)
      deallocate(self%obj)
   end if
   if (self%ngtype/=1) then

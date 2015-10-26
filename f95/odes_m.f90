@@ -1426,7 +1426,7 @@ subroutine odes_rjfunct(pt,py,pydot,psi,pdia,pf,rjspl2d)
   real(kr8) :: zrj   !< \f$ R/J \f$ value
 
      call spl2d_eval(rjspl2d,psi,py,zrj)
-     pydot=zrj/pf
+     pydot=zrj/pf !< sign change kludge
      !D     write(*,*) pt,py,pydot,psi,pf !D
 
 end subroutine odes_rjfunct

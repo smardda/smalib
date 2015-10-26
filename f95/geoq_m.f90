@@ -39,7 +39,6 @@ module geoq_m
   end type geoq_t
 
 !public variables
-!     logical, parameter :: geoq_override_afws=.TRUE. !< use values required by AFWS project
 
 ! private types
 
@@ -181,7 +180,7 @@ subroutine geoq_init(self)
         self%beq%psibdry=max(self%beq%psiqbdry,self%beq%psiltr)
      end if
      ! geoq_override for specific project
-     if (beq_override_afws) then
+     if (BEQ_OVERRIDE_AFWS) then
         call log_error(m_name,s_name,49,log_info,'override for AFWS')
         self%beq%psibdry=self%beq%psiltr
      end if
@@ -194,7 +193,7 @@ subroutine geoq_init(self)
         self%beq%psibdry=max(self%beq%psiqbdry,self%beq%psixpt)
      end if
      ! geoq_override for specific project
-     if (beq_override_afws) then
+     if (BEQ_OVERRIDE_AFWS) then
         call log_error(m_name,s_name,49,log_info,'override for AFWS')
         self%beq%psibdry=self%beq%psixpt
         self%beq%psiltr=self%beq%psixpt
