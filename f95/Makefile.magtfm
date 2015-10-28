@@ -1,37 +1,10 @@
 # basic Makefile
- 
-# Fortran compiler
-
-# gfortran
-#F90=gfortran
-#intel fortran
-F90=ifort
-
-#library option
-DBG=
-DBG=g
-
-# Fortran compiler flags
-
-#gfortran
-#F90FLAGS = -g -fbacktrace -fbounds-check -fexceptions
-#intel fortran
-#F90FLAGS =   -O3 -C
-F90FLAGS = -debug -debug-parameters all -trace -fpe0 -fp-stack-check -check -warn unused -warn declarations
-#F90FLAGS =   -xW
-
-# Extra files to clean
-EXTRA_CLEAN_FILES = *.T
-
-# Module extension
-MOD=.mod
-
-# Libraries
-LIBS = ./LIB/lib$(DBG).a
-#LIBS = ./LIB/lib.a
-
 
 # config file.
+include ../config/config.inc
+ 
+# Libraries
+LIBS = ./LIB/lib$(DBG).a
 
 SOURCES = \
 const_kind_m.f90 \
