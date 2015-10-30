@@ -96,7 +96,7 @@ program magtfmprog
 
   call clock_start(6,'field transform time')
 !     line below needed for debugging version to run
-  write(*,*) 'mysterious output',(apb%pos3(j),j=1,2)
+!  write(*,*) 'this output helps gfortran sometimes',(apb%pos3(j),j=1,2)
 !     write(*,*) 'second',((numerics%panbod(i,j),i=1,2),j=1,9)
   call apb_convert(apb,numerics,0,spl3d_rpower,iphchange)
   call spl3d_init(spl3d,apb%field,apb%ncpt,numerics%n0,&

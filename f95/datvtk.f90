@@ -97,7 +97,7 @@ program datvtkprog
 
 !! start log
   call log_init(fileroot,timestamp)
-  write(*,*) 'mysterious op ', fileroot
+!  write(*,*) 'this output helps gfortran sometimes', fileroot
 !--------------------------------------------------------------------------
 !sk  !! read control file (nominally)
 !sk

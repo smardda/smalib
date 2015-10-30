@@ -120,7 +120,7 @@ program vtktfmprog
 
   call clock_start(6,'position transform time')
 !     line below needed for debugging version to run
-  write(*,*) 'mysterious output',(geobjl%nodl(j),j=1,2)
+!  write(*,*) 'this output helps gfortran sometimes',(geobjl%nodl(j),j=1,2)
 !     write(*,*) 'second',((numerics%panbod(i,j),i=1,2),j=1,9)
   call geobjlist_paneltfm(geobjl,bods,numerics)
   call clock_stop(6)

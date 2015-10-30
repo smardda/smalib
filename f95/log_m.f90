@@ -90,7 +90,7 @@ subroutine log_error(modname,subname,point,severity,errormessage)
   !! arguments
   character(*), intent(in) :: modname  !< module name
   character(*), intent(in) :: subname  !< subprogram name
-  integer(ki4), intent(in) :: point    !< calling point
+  integer(ki4(in) :: point    !< calling point
   integer(ki4), intent(in) :: severity !< error severity
   character(*), intent(in) :: errormessage  !< error message
 
@@ -111,16 +111,16 @@ subroutine log_error(modname,subname,point,severity,errormessage)
      seriouserrors=seriouserrors+1
      write(nlog,'(a)') 'FATAL ERROR - run terminated'
      call log_close
-     stop
+     stop 1
 
      !!serious error
   else if(severity==error_serious) then
      seriouserrors=seriouserrors+1
      if(seriouserrors>=maxseriouserrors)then
         !!close down
-        write(nlog,'(a)') 'TOO MANY SERIOUS ERROR - run terminated'
+        write(nlog,'(a)') 'TOO MANY SERIOUS ERRORS - run terminated'
         call log_close
-        stop
+        stop 1
 
      end if
 
