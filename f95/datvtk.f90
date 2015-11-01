@@ -1,4 +1,4 @@
-program datvtkprog
+program datvtk_p
 
   use const_kind_m
   use const_numphys_h
@@ -35,7 +35,7 @@ program datvtkprog
 
 
 ! Local variables
-  character(*), parameter :: m_name='datvtkprog' !< module name
+  character(*), parameter :: m_name='datvtk' !< module name
   type(vfiles_t)     :: file      !< names of files
   type(vnumerics_t)  :: numerics  !< numerical control parameters
   type(geobjlist_t)  :: geobjl      !< geometrical objects
@@ -61,12 +61,12 @@ program datvtkprog
 
   call date_time_init(timestamp)
   call clock_init(30)
-  call clock_start(1,'datvtkprog run time')
+  call clock_start(1,'datvtk run time')
 !--------------------------------------------------------------------------
 !! print header
 
   print *, '----------------------------------------------------'
-  print *, 'datvtkprog: convert dat to vtk geometry file'
+  print *, 'datvtk: convert dat to vtk geometry file'
   print *, '----------------------------------------------------'
   print '(a)', timestamp%long
 !--------------------------------------------------------------------------
@@ -74,7 +74,7 @@ program datvtkprog
   if(command_argument_count()<1) then
 !! no file root specified
      print *, 'Fatal error: no file root name specified.'
-     print *, 'To run datvtkprog type at the command line:'
+     print *, 'To run datvtk type at the command line:'
      print *, '   datvtk fileroot [opt]'
      stop
   else
@@ -164,4 +164,4 @@ program datvtkprog
   call clock_delete
 !--------------------------------------------------------------------------
 
-end program datvtkprog
+end program datvtk_p

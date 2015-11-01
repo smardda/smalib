@@ -1,4 +1,4 @@
-program geoqprog
+program geoq_p
 
   use const_kind_m
   use const_numphys_h
@@ -69,7 +69,7 @@ program geoqprog
 !! print header
 
   print *, '----------------------------------------------------'
-  print *, 'geoq: test geoq '
+  print *, 'geoq: combined geometry and equilibrium processing '
   print *, '----------------------------------------------------'
   print '(a)', timestamp%long
 !--------------------------------------------------------------------------
@@ -305,4 +305,4 @@ program geoqprog
   call clock_delete
 !--------------------------------------------------------------------------
 
-end program geoqprog
+end program geoq_p

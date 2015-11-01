@@ -90,7 +90,7 @@ subroutine log_error(modname,subname,point,severity,errormessage)
   !! arguments
   character(*), intent(in) :: modname  !< module name
   character(*), intent(in) :: subname  !< subprogram name
-  integer(ki4(in) :: point    !< calling point
+  integer(ki4), intent(in) :: point    !< calling point
   integer(ki4), intent(in) :: severity !< error severity
   character(*), intent(in) :: errormessage  !< error message
 

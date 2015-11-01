@@ -1,4 +1,4 @@
-program powcalprog
+program powcal_p
 
   use const_kind_m
   use const_numphys_h
@@ -84,7 +84,7 @@ program powcalprog
 !! print header
 
   print *, '----------------------------------------------------'
-  print *, 'powcal: test powcal'
+  print *, 'powcal: surface power deposition calculation '
   print *, '----------------------------------------------------'
   print '(a)', timestamp%long
 !--------------------------------------------------------------------------
@@ -255,4 +255,4 @@ program powcalprog
   call clock_delete
 !--------------------------------------------------------------------------
 
-end program powcalprog
+end program powcal_p

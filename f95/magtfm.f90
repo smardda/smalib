@@ -1,4 +1,4 @@
-program magtfmprog
+program magtfm_p
 
   use const_kind_m
   use const_numphys_h
@@ -25,7 +25,7 @@ program magtfmprog
 
 
 ! Local variables
-  character(*), parameter :: m_name='magtfmprog' !< module name
+  character(*), parameter :: m_name='magtfm' !< module name
   type(mfiles_t)     :: file      !< names of files
   type(apb_t)     :: apb      !< applied field input data structure
   type(apb_t)     :: apbsave      !< applied field saved data structure
@@ -49,12 +49,12 @@ program magtfmprog
 
   call date_time_init(timestamp)
   call clock_init(30)
-  call clock_start(1,'magtfmprog run time')
+  call clock_start(1,'magtfm run time')
 !--------------------------------------------------------------------------
 !! print header
 
   print *, '----------------------------------------------------'
-  print *, 'magtfmprog: transform applied field file'
+  print *, 'magtfm: transform applied field file'
   print *, '----------------------------------------------------'
   print '(a)', timestamp%long
 !--------------------------------------------------------------------------
@@ -62,7 +62,7 @@ program magtfmprog
   if(command_argument_count()<1) then
 !! no file root specified
      print *, 'Fatal error: no file root name specified.'
-     print *, 'To run magtfmprog type at the command line:'
+     print *, 'To run magtfm type at the command line:'
      print *, '   magtfm fileroot'
      stop
   else
@@ -179,4 +179,4 @@ program magtfmprog
   call clock_delete
 !--------------------------------------------------------------------------
 
-end program magtfmprog
+end program magtfm_p

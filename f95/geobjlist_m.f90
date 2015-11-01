@@ -1613,13 +1613,14 @@ end subroutine geobjlist_bin
 subroutine geobjlist_mbin(self,btree)
   !! arguments
   type(geobjlist_t), intent(inout) :: self !< geobj list data
-  type(btree_t), intent(inout) :: btree !< btree data
+  !> btree data
   !! Note that btree%desc(1,k),btree%pter(2,k),btree%pter(3,k)
   !! have different meaning depending whether node is terminal:
   !! Entry           |   Not terminal        |           Terminal         |
   !! btree%desc(1,k) | Splitting direction   | 0                          |
   !! btree%pter(2,k) | Pointer to child node | Address of objects in cell |
   !! btree%pter(3,k) | Pointer to child node | -1 (skip)  or -2 (empty)   |
+  type(btree_t), intent(inout) :: btree 
 
   !! local
   character(*), parameter :: s_name='geobjlist_mbin' !< subroutine name

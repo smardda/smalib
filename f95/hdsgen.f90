@@ -1,4 +1,4 @@
-program hdsgen
+program hdsgen_p
 
   use const_kind_m
   use const_numphys_h
@@ -203,4 +203,4 @@ program hdsgen
 
 !--------------------------------------------------------------------------
 
-end program hdsgen
+end program hdsgen_p

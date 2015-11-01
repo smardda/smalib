@@ -471,6 +471,7 @@ subroutine beq_readequil(self,infile,kfldspec)
 
   if (isfixedh==0) then
      read(iin,*,iostat=istatus)xdim,zdim,rzero,rgrid,zmid
+     if (debug) write(*,*) 'Header lines from eqdsk file---'
      if (debug) write(*,cfmt1)xdim,zdim,rzero,rgrid,zmid
      if(istatus/=0) then
         call log_error(m_name,s_name,10,error_fatal,'Error reading xdim etc.')

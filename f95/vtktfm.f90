@@ -1,4 +1,4 @@
-program vtktfmprog
+program vtktfm_p
 
   use const_kind_m
   use const_numphys_h
@@ -36,7 +36,7 @@ program vtktfmprog
 
 
 ! Local variables
-  character(*), parameter :: m_name='vtktfmprog' !< module name
+  character(*), parameter :: m_name='vtktfm' !< module name
   type(vfiles_t)     :: file      !< names of files
   type(vnumerics_t)  :: numerics  !< numerical control parameters
   type(geobjlist_t)  :: geobjl      !< geometrical objects
@@ -58,12 +58,12 @@ program vtktfmprog
 
   call date_time_init(timestamp)
   call clock_init(30)
-  call clock_start(1,'vtktfmprog run time')
+  call clock_start(1,'vtktfm run time')
 !--------------------------------------------------------------------------
 !! print header
 
   print *, '----------------------------------------------------'
-  print *, 'vtktfmprog: transform vtk geometry file'
+  print *, 'vtktfm: transform vtk geometry file'
   print *, '----------------------------------------------------'
   print '(a)', timestamp%long
 !--------------------------------------------------------------------------
@@ -71,7 +71,7 @@ program vtktfmprog
   if(command_argument_count()<1) then
 !! no file root specified
      print *, 'Fatal error: no file root name specified.'
-     print *, 'To run vtktfmprog type at the command line:'
+     print *, 'To run vtktfm type at the command line:'
      print *, '   vtktfm fileroot'
      stop
   else
@@ -145,4 +145,4 @@ program vtktfmprog
   call clock_delete
 !--------------------------------------------------------------------------
 
-end program vtktfmprog
+end program vtktfm_p

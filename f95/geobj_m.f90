@@ -332,8 +332,7 @@ subroutine geobj_linehits(self,poso,posn,posl,nodl,posh,ps,psmin,lhit)
 end subroutine geobj_linehits
 !---------------------------------------------------------------------
 !> return .true. if face intersects binning box
-!> unrolled loop version for general brick
-
+!! unrolled loop version for general brick
 function geobj_trihitsbox(xc,hh,xnodes)
 
   implicit none
