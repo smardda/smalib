@@ -4,6 +4,7 @@ program magtfm_p
   use const_numphys_h
   use date_time_m
   use mcontrol_h
+  use dcontrol_h
   use apb_h
   use log_m
   use clock_m

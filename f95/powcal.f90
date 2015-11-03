@@ -8,6 +8,7 @@ program powcal_p
   use beq_h
   use posang_h
   use pcontrol_h
+  use dcontrol_h
   use pcontrol_m
   use beq_m
   use beqan_h

@@ -4,7 +4,7 @@ program datvtk_p
   use const_numphys_h
   use date_time_m
   use control_h
-  use vcontrol_h
+  use dcontrol_h
   use log_m
   use clock_m
   use spl2d_m
@@ -22,7 +22,7 @@ program datvtk_p
   use query_m
   use geobjlist_m
 
-  use vcontrol_m
+  use dcontrol_m
   use vfile_m
   use gfile_m
   use datline_h
@@ -36,8 +36,8 @@ program datvtk_p
 
 ! Local variables
   character(*), parameter :: m_name='datvtk' !< module name
-  type(vfiles_t)     :: file      !< names of files
-  type(vnumerics_t)  :: numerics  !< numerical control parameters
+  type(dfiles_t)     :: file      !< names of files
+  type(dnumerics_t)  :: numerics  !< numerical control parameters
   type(geobjlist_t)  :: geobjl      !< geometrical objects
   type(geobjlist_t)  :: geobj2      !< geometrical objects
   type(date_time_t) :: timestamp !< timestamp of run
@@ -80,10 +80,6 @@ program datvtk_p
   else
 !!get fileroot
      call get_command_argument(1,value=fileroot)
-     iltest=(command_argument_count()==2)
-     if (iltest) then
-        call get_command_argument(2,value=optarg)
-     end if
 !! strip any final '.dat' string
      islen=len_trim(fileroot)
      if (islen>4) then
@@ -91,21 +87,30 @@ program datvtk_p
            fileroot(islen-3:islen)='    '
         end if
      end if
-  end if
+     iltest=(command_argument_count()==2)
+     if (iltest) then
+        call get_command_argument(2,value=optarg)
+! strip leading dash one day perhaps
 
-! strip leading dash
+! pad with x's
+        i=len_trim(optarg)
+        if (i==2) optarg(3:3)='x'
+        if (i==1) optarg(2:3)='xx'
+     end if
+  end if
 
 !! start log
   call log_init(fileroot,timestamp)
 !  write(*,*) 'this output helps gfortran sometimes', fileroot
 !--------------------------------------------------------------------------
-!sk  !! read control file (nominally)
-!sk
-!sk      call clock_start(2,'vcontrol_init time')
-!sk      call vcontrol_init(fileroot)
-!  open(file='rpiu.dat',unit=nread)
-!sk      call vcontrol_read(file,numerics)
-!sk      call clock_stop(2)
+!! read control file in case of silhouette data
+
+  if (optarg(1:1)=='c') then
+     call clock_start(2,'dcontrol_init time')
+     call dcontrol_init(fileroot)
+     call dcontrol_read(file,numerics)
+     call clock_stop(2)
+  end if
 !--------------------------------------------------------------------------
 !! do the main work
 !! read  geobjl data
@@ -115,6 +120,9 @@ program datvtk_p
   case('v')
      call geobjlist_read(geobjl,trim(fileroot)//'.vtk',iched)
      inquire(file=trim(fileroot)//'.vtk',number=nread)
+  case('c')
+     call geobjlist_create3d(geobjl,numerics)
+     iched='converted dat files in '//fileroot//'.ctl'
   case default
      iched='converted dat file '//fileroot//'.dat'
      call dfile_init(fileroot,nread)

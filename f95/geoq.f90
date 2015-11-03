@@ -4,6 +4,7 @@ program geoq_p
   use const_numphys_h
   use date_time_m
   use control_h
+  use dcontrol_h
   use log_m
   use clock_m
   use beq_h

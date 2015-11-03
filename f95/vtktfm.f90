@@ -5,6 +5,7 @@ program vtktfm_p
   use date_time_m
   use control_h
   use vcontrol_h
+  use dcontrol_h
   use log_m
   use clock_m
   use beq_h

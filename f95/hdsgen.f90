@@ -3,6 +3,7 @@ program hdsgen_p
   use const_kind_m
   use const_numphys_h
   use control_h
+  use dcontrol_h
   use date_time_m
   use control_m
   use log_m

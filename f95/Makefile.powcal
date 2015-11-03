@@ -15,6 +15,7 @@ clock_m.f90 \
 beq_h.f90 \
 posang_h.f90 \
 pcontrol_h.f90 \
+dcontrol_h.f90 \
 pcontrol_m.f90 \
 beq_m.f90 \
 beqan_h.f90 \
@@ -90,6 +91,7 @@ powcal.f90 : clock_m.mod
 powcal.f90 : beq_h.mod
 powcal.f90 : posang_h.mod
 powcal.f90 : pcontrol_h.mod
+powcal.f90 : dcontrol_h.mod
 powcal.f90 : pcontrol_m.mod
 powcal.f90 : beq_m.mod
 powcal.f90 : beqan_h.mod
@@ -141,6 +143,7 @@ beq_h.f90 : spl2d_m.mod
 beq_h.f90 : spl3d_m.mod
 posang_h.f90 : const_kind_m.mod
 pcontrol_h.f90 : const_kind_m.mod
+dcontrol_h.f90 : const_kind_m.mod
 pcontrol_m.f90 : const_kind_m.mod
 pcontrol_m.f90 : const_numphys_h.mod
 pcontrol_m.f90 : log_m.mod
@@ -228,11 +231,16 @@ geobjlist_m.f90 : geobjlist_h.mod
 geobjlist_m.f90 : position_m.mod
 geobjlist_m.f90 : control_h.mod
 geobjlist_m.f90 : vcontrol_h.mod
+geobjlist_m.f90 : dcontrol_h.mod
 geobjlist_m.f90 : posang_h.mod
 geobjlist_m.f90 : ls_m.mod
 geobjlist_m.f90 : btree_m.mod
 geobjlist_m.f90 : geobj_m.mod
 geobjlist_m.f90 : query_m.mod
+geobjlist_m.f90 : posang_m.mod
+geobjlist_m.f90 : datline_h.mod
+geobjlist_m.f90 : datline_m.mod
+geobjlist_m.f90 : stack_m.mod
 geobjlist_m.f90 : posang_m.mod
 geobjlist_m.f90 : datline_h.mod
 geobjlist_m.f90 : datline_m.mod

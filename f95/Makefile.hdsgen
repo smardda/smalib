@@ -10,6 +10,7 @@ SOURCES = \
 const_kind_m.f90 \
 const_numphys_h.f90 \
 control_h.f90 \
+dcontrol_h.f90 \
 date_time_m.f90 \
 control_m.f90 \
 log_m.f90 \
@@ -65,6 +66,7 @@ distclean: clean
 hdsgen.f90 : const_kind_m.mod
 hdsgen.f90 : const_numphys_h.mod
 hdsgen.f90 : control_h.mod
+hdsgen.f90 : dcontrol_h.mod
 hdsgen.f90 : date_time_m.mod
 hdsgen.f90 : control_m.mod
 hdsgen.f90 : log_m.mod
@@ -93,6 +95,7 @@ hdsgen.f90 : spl2d_m.mod
 const_numphys_h.f90 : const_kind_m.mod
 control_h.f90 : const_kind_m.mod
 control_h.f90 : position_h.mod
+dcontrol_h.f90 : const_kind_m.mod
 control_m.f90 : const_kind_m.mod
 control_m.f90 : log_m.mod
 control_m.f90 : position_h.mod
@@ -156,6 +159,7 @@ geobjlist_m.f90 : geobjlist_h.mod
 geobjlist_m.f90 : position_m.mod
 geobjlist_m.f90 : control_h.mod
 geobjlist_m.f90 : vcontrol_h.mod
+geobjlist_m.f90 : dcontrol_h.mod
 geobjlist_m.f90 : posang_h.mod
 geobjlist_m.f90 : ls_m.mod
 geobjlist_m.f90 : btree_m.mod
