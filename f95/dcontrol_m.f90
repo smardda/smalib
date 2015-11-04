@@ -83,7 +83,8 @@ subroutine dcontrol_read(file,numerics,plot)
   logical :: filefound !< true if file exists
 
   character(len=80) :: r_input_file  !< position coordinate 1 data input file
-  character(len=80) :: z_input_file  !< position coordinate 1 data input file
+  character(len=80) :: z_input_file !< position coordinate 2 data input file
+  character(len=80) :: rz_input_file  !< position coordinate 1 & 2 data input file
   character(len=80) :: transform_type  !< transform type
   real(kr8) :: start_angle !< start angle
   real(kr8) :: finish_angle !< finish angle
@@ -99,7 +100,8 @@ subroutine dcontrol_read(file,numerics,plot)
   !! file names
   namelist /progfiles/ &
  &r_input_file, &
- &z_input_file
+ &z_input_file, &
+ &rz_input_file
 
   !! transformation parameters
   namelist /datvtk_parameters/ &
@@ -117,19 +119,21 @@ subroutine dcontrol_read(file,numerics,plot)
   !! read input file names
   r_input_file='null'
   z_input_file='null'
+  rz_input_file='null'
   read(nin,nml=progfiles,iostat=status)
   if(status/=0) then
-     call log_error(m_name,s_name,1,error_fatal,'Error reading input filenames')
      print '("Fatal error reading input filenames")'
+     call log_error(m_name,s_name,1,error_fatal,'Error reading input filenames')
   end if
 
   file%rfile = r_input_file
   file%zfile = z_input_file
+  file%rzfile = rz_input_file
 
   !!check files exist
 
   call log_value("datvtk data file, r_input_file",trim(file%rfile))
-  if(file%rfile.NE.'null') then
+  if(file%rfile/='null') then
      inquire(file=r_input_file,exist=filefound)
      if(.not.filefound) then
         !! error opening file
@@ -138,12 +142,20 @@ subroutine dcontrol_read(file,numerics,plot)
      end if
   end if
   call log_value("datvtk data file, r_input_file",trim(file%zfile))
-  if(file%zfile.NE.'null') then
+  if(file%zfile/='null') then
      inquire(file=z_input_file,exist=filefound)
      if(.not.filefound) then
         !! error opening file
         print '("Fatal error: Unable to find datvtk data file, ",a)',z_input_file
         call log_error(m_name,s_name,3,error_fatal,'datvtk data file not found')
+     end if
+  end if
+  if(file%rzfile/='null') then
+     inquire(file=rz_input_file,exist=filefound)
+     if(.not.filefound) then
+        !! error opening file
+        print '("Fatal error: Unable to find datvtk data file, ",a)',rz_input_file
+        call log_error(m_name,s_name,4,error_fatal,'datvtk data file not found')
      end if
   end if
 
@@ -211,51 +223,78 @@ subroutine dcontrol_read(file,numerics,plot)
   end if
 
   if (present(plot)) then
-  !! store values
-  plot%vtk = plot_vtk
-  plot%gnu = plot_gnu
+     !! store values
+     plot%vtk = plot_vtk
+     plot%gnu = plot_gnu
   end if
 
   call dcontrol_close
 
   !---------------------------------------------------------------------
   !! read silhouette files
-  call log_value("r input file",trim(r_input_file))
-  open(unit=nin,file=r_input_file,status='OLD')
+  if (rz_input_file=='null') then
+     call log_value("r input file",trim(r_input_file))
+     open(unit=nin,file=r_input_file,status='OLD',stat=status)
+     call log_open_check(m_name,s_name,40,status)
 
-  i=0
-  do
-     read(nin,*,iostat=status) zdum
-     if(status/=0) exit
-     i=i+1
-  end do
-  allocate(numerics%r(i),numerics%z(i),stat=status)
-  call log_alloc_check(m_name,s_name,41,status)
-  numerics%npos=i
+     i=0
+     do
+        read(nin,*,iostat=status) zdum
+        if(status/=0) exit
+        i=i+1
+     end do
+     allocate(numerics%r(i),numerics%z(i),stat=status)
+     call log_alloc_check(m_name,s_name,41,status)
+     numerics%npos=i
 
-  !! read into store values
-  rewind(nin,iostat=status)
-  call log_read_check(m_name,s_name,42,status)
-  do j=1,i
-     read(nin,*,iostat=status) numerics%r(j)
-     call log_read_check(m_name,s_name,43,status)
-  end do
-  call log_value("number of values read from r input file",i)
+     !! read into store values
+     rewind(nin,iostat=status)
+     call log_read_check(m_name,s_name,42,status)
+     do j=1,i
+        read(nin,*,iostat=status) numerics%r(j)
+        call log_read_check(m_name,s_name,43,status)
+     end do
+     call log_value("number of values read from r input file",i)
 
-  call dcontrol_close
+     call dcontrol_close
 
-  call log_value("z input file",trim(z_input_file))
-  open(unit=nin,file=z_input_file,status='OLD')
+     call log_value("z input file",trim(z_input_file))
+     open(unit=nin,file=z_input_file,status='OLD',stat=status)
+     call log_open_check(m_name,s_name,44,status)
 
-  i=0
-  !! read into store values
-  do j=1,numerics%npos
-     i=i+1
-     read(nin,*,iostat=status) numerics%z(j)
-     call log_read_check(m_name,s_name,44,status)
-  end do
+     i=0
+     !! read into store values
+     do j=1,numerics%npos
+        i=i+1
+        read(nin,*,iostat=status) numerics%z(j)
+        call log_read_check(m_name,s_name,46,status)
+     end do
+     call log_value("number of values read from z input file",i)
 
-  call log_value("number of values read from z input file",i)
+  else
+     call log_value("rz input file",trim(rz_input_file))
+     open(unit=nin,file=rz_input_file,status='OLD',stat=status)
+     call log_open_check(m_name,s_name,50,status)
+
+     i=0
+     do
+        read(nin,*,iostat=status) zdum, zdum
+        if(status/=0) exit
+        i=i+1
+     end do
+     allocate(numerics%r(i),numerics%z(i),stat=status)
+     call log_alloc_check(m_name,s_name,51,status)
+     numerics%npos=i
+
+     !! read into store values
+     rewind(nin,iostat=status)
+     call log_read_check(m_name,s_name,52,status)
+     do j=1,i
+        read(nin,*,iostat=status) numerics%r(j),numerics%z(j)
+        call log_read_check(m_name,s_name,53,status)
+     end do
+     call log_value("number of values read from rz input file",i)
+  end if
 
   call dcontrol_close
 

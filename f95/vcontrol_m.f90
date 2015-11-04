@@ -25,6 +25,8 @@ module vcontrol_m
   integer(ki4) :: l !< loop counter
   integer(ki4) :: ij !< loop counter
   integer(ki4) :: islen !< string length
+  integer(ki4), dimension(:), allocatable :: iwork1 !< work array
+  integer(ki4), dimension(:), allocatable :: iwork2 !< work array
   character(len=80) :: root !< file root
 
   contains
@@ -74,30 +76,35 @@ subroutine vcontrol_read(file,numerics)
   !!local
   character(*), parameter :: s_name='vcontrol_read' !< subroutine name
   integer(ki4), parameter  :: maximum_number_of_files=100 !< maximum number of files allowed
+  integer(ki4), parameter  :: maximum_number_of_panels=100 !< maximum number of panels allowed
   character(len=80), dimension(maximum_number_of_files) :: vtk_input_file !< vtk format geometry data input file
   integer(ki4), dimension(maximum_number_of_files) :: number_of_copies !< number of copies to make of input file
   character(len=80), dimension(maximum_number_of_files) :: vtk_label  !< labels vtk format geometry data input file
   integer(ki4), dimension(maximum_number_of_files) :: vtk_label_number !< numeric label for input file (not used)
   character(len=20) :: angle_units  !< units, either radian(s) or degree(s)
+  character(len=20) :: option !< for defining panels and their transforms
   character(len=80) :: vtk_output_file  !< vtk format geometry data output file
   integer(ki4) :: number_of_panels !< number of panels for which bodies defined
   integer(ki4) :: number_of_transforms !< number of panels for which transform defined
   integer(ki4) :: max_number_of_files !< number >= no. of files for which transform defined
   integer(ki4) :: max_number_of_panels !< number >= no. of panels for which transform defined
   integer(ki4) :: max_number_of_transforms !< number >= no. of panels for which transform defined
-  integer(ki4), parameter  :: maximum_number_of_panels=100 !< maximum number of panels allowed
-  integer(ki4), dimension(maximum_number_of_panels) :: panel_transform !< number of transform to apply
+  integer(ki4), dimension(2*maximum_number_of_panels) :: panel_transform !< number of transform to apply
   character(len=20), dimension(maximum_number_of_panels) :: transform_id !< id of transform to apply
-  integer(ki4), dimension(2,maximum_number_of_panels) :: panel_bodies !< bodies defining a panel
+  integer(ki4), dimension(2*maximum_number_of_panels) :: panel_bodies !< bodies defining a panel
   logical :: filefound !< true of file exists
+  logical :: lflag !< flags if no panel transforms defined
   type(tfmdata_t) :: ztfmdata   !< position transform numeric controls
   integer(ki4) :: infil=0 !< number of files detected
   integer(ki4) :: inpan=0 !< number of panels detected
+  integer(ki4) :: inbod=0 !< number of bodies detected
+  integer(ki4) :: ipan=0 !< panel counter
   integer(ki4) :: intfm=0 !< number of transforms detected
   integer(ki4) :: iflag=0 !< allow position_readcon to return on error
 
   !> misc parameters, unusually comes first
   namelist /miscparameters/ &
+ &option, &
  &max_number_of_files, angle_units, &
  &max_number_of_panels,max_number_of_transforms,&
  &number_of_panels,number_of_transforms
@@ -121,6 +128,7 @@ subroutine vcontrol_read(file,numerics)
   number_of_panels = 0
   number_of_transforms = 0
   angle_units = 'radians'
+  option = 'split_panels'
 
   !!read misc parameters
   read(nin,nml=miscparameters,iostat=status)
@@ -150,6 +158,11 @@ subroutine vcontrol_read(file,numerics)
   if(angle_units(1:6)/='degree'.AND.angle_units(1:6)/='radian') then
      call log_value("angle_units not recognised",angle_units)
      call log_error(m_name,s_name,14,error_warning,'radians assumed')
+  end if
+  if(option(1:5)/='split'.AND.option(1:5)/='panel'.AND.option(1:5)/='tagge') then
+     call log_value("option not recognised",option)
+     call log_error(m_name,s_name,15,error_warning,'split panels assumed')
+     option='split'
   end if
   numerics%angles=angle_units(1:6)
 
@@ -200,13 +213,13 @@ subroutine vcontrol_read(file,numerics)
      file%vtkcopies(j)   = number_of_copies(j)
   end do
 
-!! strip any final '.vtk' string
-     islen=len_trim(vtk_output_file)
-     if (islen>4) then
-        if (vtk_output_file(islen-3:islen)=='.vtk') then
-           file%vtkout = vtk_output_file(:islen-4)
-        end if
+  !! strip any final '.vtk' string
+  islen=len_trim(vtk_output_file)
+  if (islen>4) then
+     if (vtk_output_file(islen-3:islen)=='.vtk') then
+        file%vtkout = vtk_output_file(:islen-4)
      end if
+  end if
 
   !> create output file names from root
   !! output file
@@ -235,44 +248,134 @@ subroutine vcontrol_read(file,numerics)
 
   !! check for valid panel data
   ! check number of panels against actuals
-  do j=1,maximum_number_of_panels
-     if (panel_bodies(1,j)<=0) exit
-     inpan=j
+  do j=2*maximum_number_of_panels,1,-1
+     inbod=j
+     if (panel_bodies(j)>0) exit
+     inbod=0
   end do
-  call log_value("actual number of panels",inpan)
-  if (inpan==0) &
+  if (inbod==0) &
  &call log_error(m_name,s_name,33,error_fatal,'No panels present')
-  numerics%npans=inpan
-  do j=1,inpan
-     if (panel_transform(j)<0.AND.transform_id(j)=='null') then
-        call log_value("panel number",j)
-        call log_error(m_name,s_name,34,error_fatal,'Transform not defined')
+
+  defn_option: select case (option(1:5))
+  case ('split')
+     inpan=(inbod+1)/2
+     call log_value("actual number of panels",inpan)
+     ipan=0
+     numerics%npans=inpan
+     do j=1,inbod,2
+        ipan=ipan+1
+        if (panel_transform(j)<0.AND.transform_id(ipan)=='null') then
+           call log_value("panel number",ipan)
+           call log_error(m_name,s_name,34,error_fatal,'Transform not defined')
+        end if
+        if (panel_bodies(j+1)<=0) panel_bodies(j+1)=panel_bodies(j)
+     end do
+     inbod=2*inpan ! make sure even
+
+  case ('panel')
+     inpan=inbod
+     call log_value("actual number of panels",inpan)
+     if (inpan>maximum_number_of_panels) &
+ &   call log_error(m_name,s_name,36,error_fatal,'maximum_number_of_panels too small')
+     numerics%npans=inpan
+     do j=1,inpan
+        if (panel_transform(j)<0.AND.transform_id(j)=='null') then
+           call log_value("panel number",j)
+           call log_error(m_name,s_name,37,error_fatal,'Transform not defined')
+        end if
+     end do
+     ! double up panel bodies
+     do j=inpan,1,-1
+        panel_bodies(2*j)=panel_bodies(j)
+        panel_bodies(2*j-1)=panel_bodies(j)
+     end do
+
+  case ('tagge')
+     inpan=(inbod+1)/2
+     call log_value("actual number of panels",inpan)
+     numerics%npans=inpan
+     ipan=0
+     lflag=(maxval(panel_transform)>0)
+     do j=1,inbod,2
+        ipan=ipan+1
+        if (panel_bodies(j)<0) then
+           call log_value("panel number",ipan)
+           call log_error(m_name,s_name,41,error_fatal,'bodies not defined')
+        end if
+        if (panel_bodies(j+1)<0) then
+           call log_value("panel number",ipan)
+           call log_error(m_name,s_name,42,error_fatal,'Transform tag must be non-negative')
+        end if
+        if (lflag) then
+        if (panel_transform(j)<0) then
+           call log_value("panel number",ipan)
+           call log_error(m_name,s_name,43,error_fatal,'Transform tag must be non-negative')
+        end if
+        if (panel_transform(j+1)<0.AND.transform_id(ipan)=='null') then
+           call log_value("panel number",ipan)
+           call log_error(m_name,s_name,44,error_fatal,'Transform not defined')
+        end if
+        else
+! define panel_transform using body tags
+        panel_transform(j)=panel_bodies(j+1)
+        panel_transform(j+1)=panel_bodies(j+1)
+        end if
+     end do
+     ! resolve tags
+     allocate(iwork1(2*maximum_number_of_panels),iwork2(2*maximum_number_of_panels),stat=status)
+     iwork1=0
+     iwork2=-1
+     call log_alloc_check(m_name,s_name,45,status)
+     ipan=0
+     do j=1,inbod,2
+        ipan=ipan+1
+        iwork1(ipan)=panel_bodies(j)
+        do i=1,inbod,2
+           if (panel_transform(i)==panel_bodies(j+1)) then
+              iwork2(ipan)=panel_transform(i+1)
+              exit
+           end if
+        end do
+     end do
+     ! test for error
+     if (minval(iwork2(:inpan))<0) then
+        call log_error(m_name,s_name,46,error_fatal,'Transforms not fully defined')
      end if
-     if (panel_bodies(2,j)<=0) panel_bodies(2,j)=panel_bodies(1,j)
-  end do
+     ! double up panel bodies
+     do i=inpan,1,-1
+        panel_bodies(2*i)=iwork1(i)
+        panel_bodies(2*i-1)=iwork1(i)
+     end do
+     panel_transform(:inpan)=iwork2(:inpan)
+     inbod=2*inpan ! make sure even
+     deallocate(iwork1,iwork2)
+  end select defn_option
 
   !! allocate and assign
   !! panel transform parameters
   allocate(numerics%pantfm(inpan), stat=status)
-  call log_alloc_check(m_name,s_name,43,status)
+  call log_alloc_check(m_name,s_name,50,status)
   numerics%pantfm=panel_transform(:inpan)
   !! panel bodies
   allocate(numerics%panbod(2,inpan), stat=status)
-  call log_alloc_check(m_name,s_name,49,status)
-  numerics%panbod=panel_bodies(:,:inpan)
+  call log_alloc_check(m_name,s_name,51,status)
+  do i=1,inpan
+    numerics%panbod(1,i)=panel_bodies(2*i-1)
+    numerics%panbod(2,i)=panel_bodies(2*i)
+  end do
 
   !---------------------------------------------------------------------
   ! define transformations
   allocate(numerics%vptfm%scale(3,max_number_of_transforms), stat=status)
-  call log_alloc_check(m_name,s_name,45,status)
+  call log_alloc_check(m_name,s_name,55,status)
   allocate(numerics%vptfm%offset(3,max_number_of_transforms), stat=status)
-  call log_alloc_check(m_name,s_name,46,status)
+  call log_alloc_check(m_name,s_name,56,status)
   allocate(numerics%vptfm%matrix(3,3,max_number_of_transforms), stat=status)
-  call log_alloc_check(m_name,s_name,47,status)
+  call log_alloc_check(m_name,s_name,57,status)
   allocate(numerics%vptfm%ntfm(max_number_of_transforms), stat=status)
-  call log_alloc_check(m_name,s_name,48,status)
-!ID  allocate(numerics%vptfm%id(max_number_of_transforms), stat=status)
-  call log_alloc_check(m_name,s_name,49,status)
+  call log_alloc_check(m_name,s_name,58,status)
+  !ID  allocate(numerics%vptfm%id(max_number_of_transforms), stat=status)
+  call log_alloc_check(m_name,s_name,59,status)
   !! transform array parameters
   do j=1,max_number_of_transforms
      call log_value('read namelist',j)
@@ -281,10 +384,10 @@ subroutine vcontrol_read(file,numerics)
      intfm=j
      numerics%vptfm%scale(:,j)=ztfmdata%scale
      numerics%vptfm%offset(:,j)=ztfmdata%offset
-!F11 write(*,*) 'ztfmdata%offset',ztfmdata%offset
+     !F11 write(*,*) 'ztfmdata%offset',ztfmdata%offset
      numerics%vptfm%matrix(:,:,j)=ztfmdata%matrix
      numerics%vptfm%ntfm(j)=ztfmdata%ntfm
-!ID     numerics%vptfm%id(j)=ztfmdata%id
+     !ID     numerics%vptfm%id(j)=ztfmdata%id
   end do
   call log_value('No transforms present',intfm)
 
@@ -294,23 +397,23 @@ subroutine vcontrol_read(file,numerics)
         numerics%pantfm(j)=0
         cycle
      end if
-!ID     do k=1,intfm
-!ID        if (transform_id(j)==numerics%vptfm%id(k)) then
-!ID           numerics%pantfm(j)=numerics%vptfm%ntfm(k)
-!ID           exit
-!ID        end if
-!ID     end do
+     !ID     do k=1,intfm
+     !ID        if (transform_id(j)==numerics%vptfm%id(k)) then
+     !ID           numerics%pantfm(j)=numerics%vptfm%ntfm(k)
+     !ID           exit
+     !ID        end if
+     !ID     end do
   end do
   !! final check
   do j=1,inpan
      if (numerics%pantfm(j)<0.OR.&
  &   numerics%pantfm(j)>intfm) then
         call log_value("panel number",j)
-        call log_error(m_name,s_name,50,error_fatal,'Transform not defined')
+        call log_error(m_name,s_name,60,error_fatal,'Transform not defined')
      end if
   end do
   numerics%vptfm%ntfmtyp=intfm
-!F11 write(*,*) 'numerics%pantfm(j)',(numerics%pantfm(j),j=1,inpan)
+  !F11 write(*,*) 'numerics%pantfm(j)',(numerics%pantfm(j),j=1,inpan)
 
 end subroutine vcontrol_read
 

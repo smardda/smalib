@@ -23,6 +23,7 @@ module dcontrol_h
      character(len=80)  :: log           !< log file
      character(len=80)  :: rfile         !< file with position coordinate 1 data
      character(len=80)  :: zfile         !< file with position coordinate 2 data
+     character(len=80)  :: rzfile         !< file with position coordinate 1 & 2 data
      character(len=80)  :: vtk   !< vtk file
      character(len=80)  :: gnu !< gnuplot file
   end type dfiles_t

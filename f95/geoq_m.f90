@@ -29,7 +29,8 @@ module geoq_m
   geoq_psilimiter,   & !< calculate limits of limiter object
   geoq_psisilh,   & !< calculate \f$ \psi \f$ of silhouette object
   geoq_dsilhcont,   & !< distance between silhouette and flux contour
-  geoq_writev    !< write (vtk)  geoq data structure
+  geoq_writev, &    !< write (vtk)  geoq data structure
+  geoq_writeg    !< write (gnuplot)  geoq data structure
 
 ! public types
 !> data structure describing geometrical objects and equilibrium field
@@ -748,5 +749,44 @@ subroutine geoq_writev(self,kchar,kplot)
   end select plot_type
 
 end subroutine geoq_writev
+
+!---------------------------------------------------------------------
+!> write (gnu)  geoq data structure
+subroutine geoq_writeg(self,kchar,kout)
+
+  !! arguments
+  type(geoq_t), intent(inout) :: self !< geometrical objects and equilibrium data
+  character(*), intent(in) :: kchar  !< case
+  integer(ki4) :: kout   !< output channel for gnuplot data
+
+  !! local
+  character(*), parameter :: s_name='geoq_writeg' !< subroutine name
+  type(posang_t) :: posang !< position and vector involving angles
+
+  plot_type: select case (kchar)
+  case('gnusil')
+        ! positions in R-Z-zeta space
+        do j=1,self%objl%np
+           posang%pos=self%objl%posl%pos(j)%posvec
+           posang%opt=0 ; posang%units=-3
+           call posang_invtfm(posang,0)
+           write(kout,'(1x,i9,'//cfmt2v,iostat=status) &
+&          j,posang%pos(1),posang%pos(2),posang%pos(3)
+           call log_write_check(m_name,s_name,1,status)
+        end do
+  case('gnusilm')
+        ! positions in psi-theta-zeta space
+        do j=1,self%objl%np
+           posang%pos=self%objl%posl%pos(j)%posvec
+           posang%opt=0 ; posang%units=-3
+           call posang_invtfm(posang,0)
+           call posang_psitfm(posang,self%beq)
+           write(kout,'(1x,i9,'//cfmt2v,iostat=status) &
+&          j,posang%pos(1),posang%pos(2),posang%pos(3)
+           call log_write_check(m_name,s_name,2,status)
+        end do
+  end select plot_type
+
+end subroutine geoq_writeg
 
 end module geoq_m

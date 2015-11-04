@@ -161,10 +161,11 @@ program geoq_p
 
   select case (ifldspec)
   case (2,3)
-! these options are not valid and suppressed
+! these options are not valid so are suppressed
      plot%fptv=.FALSE.
      plot%allgeoq=.FALSE.
      plot%gnuptz=.FALSE.
+     plot%gnusilm=.FALSE.
      plot%cartv=.FALSE.
 ! this one not implemented (or needed?)
      plot%frzv=.FALSE.
@@ -281,11 +282,29 @@ program geoq_p
   end if
 
   if(plot%frzxi) then
-     call clock_start(24,'vfile_rzxi time')
+     call clock_start(24,'vfile_frzxi time')
      call vfile_init(file%frzxi,'frzxi',nplot)
      call geoq_writev(geoq,'frzxi',nplot)
      call vfile_close
      call clock_stop(24)
+  end if
+
+  !! silhouette of geometry in (R,Z)
+  if(plot%gnusil) then
+     call clock_start(25,'vfile_gnusil time')
+     call gfile_init(file%gnusil,'gnusil',nprint)
+     call geoq_writeg(geoq,'gnusil',nprint)
+     call gfile_close
+     call clock_stop(25)
+  end if
+
+  !! silhouette of geometry in (psi,theta)
+  if(plot%gnusilm) then
+     call clock_start(26,'vfile_gnusilm time')
+     call gfile_init(file%gnusilm,'gnusilm',nprint)
+     call geoq_writeg(geoq,'gnusilm',nprint)
+     call gfile_close
+     call clock_stop(26)
   end if
 !--------------------------------------------------------------------------
 !! output file

@@ -497,6 +497,7 @@ subroutine beq_readequil(self,infile,kfldspec)
      if(istatus/=0) then
         call log_error(m_name,s_name,50,error_fatal,'Error reading xdim etc.')
      end if
+     if (debug) write(*,*) 'Header lines from eqdsk file---'
      if (debug) write(*,cfmt1)xdim,zdim,rzero,rgrid,zmid
      read(iin,cfmtdh,iostat=istatus)rmaxis,zmaxis,ssimag1,ssibry1,bcentr
      if(istatus/=0) then
@@ -1527,7 +1528,6 @@ subroutine beq_writeg(self,kchar,kout)
   character(*), intent(in) :: kchar  !< case
   integer(ki4), intent(in) :: kout   !< output channel for object data structure
 
-
   !! local
   character(*), parameter :: s_name='beq_writeg' !< subroutine name
 
@@ -1539,12 +1539,11 @@ subroutine beq_writeg(self,kchar,kout)
            !     write(kout,'(2(1x,i4),4(2x,g12.5))',iostat=status) &
            write(kout,'(2(1x,i4),'//cfmt2v,iostat=status) &
  &         i-1,j-1,self%r%pos1(i),self%r%pos2(j),self%r%sampl(i,j),self%z%sampl(i,j)
+           call log_write_check(m_name,s_name,1,status)
         end do
         write(kout,*,iostat=status) ' '
+        call log_write_check(m_name,s_name,2,status)
      end do
-     if(status/=0) then
-        call log_error(m_name,s_name,1,error_fatal,'Error writing R-Z')
-     end if
 
   case default
 

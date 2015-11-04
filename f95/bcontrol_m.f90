@@ -33,6 +33,8 @@ module bcontrol_m
      character(len=80)  :: geofld  !< vtk plot file of geometry and field
      character(len=80)  :: geofldq  !< vtk plot file of quantised geometry and field
      character(len=80)  :: gnu !< gnuplot file of \f$ \psi(R,Z) \f$
+     character(len=80)  :: gnusil !< gnuplot file of silhouette as function of \f$ (R,Z) \f$
+     character(len=80)  :: gnusilm !< gnuplot file of silhouette as function of \f$ (\psi,\theta) \f$
   end type bfiles_t
 
 
@@ -48,6 +50,8 @@ module bcontrol_m
      logical  :: geofld  !< vtk plot file of geometry and field
      logical  :: geofldq  !< vtk plot file of quantised geometry and field
      logical  :: gnu !< gnuplot file of \f$ \psi(R,Z) \f$
+     logical  :: gnusil !< gnuplot file of silhouette as function of \f$ (R,Z) \f$
+     logical  :: gnusilm !< gnuplot file of silhouette as function of \f$ (\psi,\theta) \f$
      logical  :: gnuptz !< gnuplot file of \f$ fns(\psi,\theta) \f$
   end type bplots_t
 
@@ -130,6 +134,8 @@ subroutine bcontrol_read(file,numerics,plot)
   logical :: plot_geofld_quantised !< vtk plot selector
   logical :: plot_gnu !< gnu plot selector
   logical :: plot_gnuptz !< gnuptz plot selector
+  logical :: plot_gnusil !< gnusil plot selector
+  logical :: plot_gnusilm !< gnusilm plot selector
 
   !! file names
   namelist /inputfiles/ &
@@ -152,7 +158,9 @@ subroutine bcontrol_read(file,numerics,plot)
  &plot_geofld, &
  &plot_geofld_quantised, &
  &plot_gnu, &
- &plot_gnuptz
+ &plot_gnuptz, &
+ &plot_gnusil, &
+ &plot_gnusilm
 
   !! read input file names
   vtk_input_file='null'
@@ -237,6 +245,8 @@ subroutine bcontrol_read(file,numerics,plot)
   file%geofldq    =trim(root)//"_geofldq"
   !!gnu file roots
   file%gnu     =trim(root)//"_gnu"
+  file%gnusil     =trim(root)//"_gnusil"
+  file%gnusilm     =trim(root)//"_gnusilm"
 
   !! set default misc parameters
   dummy_number = 10
@@ -266,6 +276,8 @@ subroutine bcontrol_read(file,numerics,plot)
   plot_geofld_quantised = .false.
   plot_gnu = .false.
   plot_gnuptz = .false.
+  plot_gnusil = .false.
+  plot_gnusilm = .false.
 
   !!read plot selections
   read(nin,nml=plotselections,iostat=status)
@@ -286,6 +298,8 @@ subroutine bcontrol_read(file,numerics,plot)
   plot%geofldq     = plot_geofld_quantised
   plot%gnu     = plot_gnu
   plot%gnuptz     = plot_gnuptz
+  plot%gnusil     = plot_gnusil
+  plot%gnusilm     = plot_gnusilm
 
   call beq_readcon(numerics,nin)
 
