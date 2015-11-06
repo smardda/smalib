@@ -234,7 +234,7 @@ subroutine dcontrol_read(file,numerics,plot)
   !! read silhouette files
   if (rz_input_file=='null') then
      call log_value("r input file",trim(r_input_file))
-     open(unit=nin,file=r_input_file,status='OLD',stat=status)
+     open(unit=nin,file=r_input_file,status='OLD',iostat=status)
      call log_open_check(m_name,s_name,40,status)
 
      i=0
@@ -259,7 +259,7 @@ subroutine dcontrol_read(file,numerics,plot)
      call dcontrol_close
 
      call log_value("z input file",trim(z_input_file))
-     open(unit=nin,file=z_input_file,status='OLD',stat=status)
+     open(unit=nin,file=z_input_file,status='OLD',iostat=status)
      call log_open_check(m_name,s_name,44,status)
 
      i=0
@@ -273,7 +273,7 @@ subroutine dcontrol_read(file,numerics,plot)
 
   else
      call log_value("rz input file",trim(rz_input_file))
-     open(unit=nin,file=rz_input_file,status='OLD',stat=status)
+     open(unit=nin,file=rz_input_file,status='OLD',iostat=status)
      call log_open_check(m_name,s_name,50,status)
 
      i=0

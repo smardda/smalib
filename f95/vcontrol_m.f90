@@ -90,8 +90,8 @@ subroutine vcontrol_read(file,numerics)
   integer(ki4) :: max_number_of_panels !< number >= no. of panels for which transform defined
   integer(ki4) :: max_number_of_transforms !< number >= no. of panels for which transform defined
   integer(ki4), dimension(2*maximum_number_of_panels) :: panel_transform !< number of transform to apply
-  character(len=20), dimension(maximum_number_of_panels) :: transform_id !< id of transform to apply
-  integer(ki4), dimension(2*maximum_number_of_panels) :: panel_bodies !< bodies defining a panel
+  character(len=20), dimension(maximum_number_of_panels) :: transform_id !< INACTIVE id of transform to apply
+  integer(ki4), dimension(2*maximum_number_of_panels) :: panel_bodies !< bodies defining the geometry
   logical :: filefound !< true of file exists
   logical :: lflag !< flags if no panel transforms defined
   type(tfmdata_t) :: ztfmdata   !< position transform numeric controls
@@ -169,6 +169,7 @@ subroutine vcontrol_read(file,numerics)
   !---------------------------------------------------------------------
   !! read input file names and associated data
   vtk_input_file='null'
+  vtk_output_file='null'
   number_of_copies=1
   vtk_label='null'
   vtk_label_number=0
@@ -213,12 +214,16 @@ subroutine vcontrol_read(file,numerics)
      file%vtkcopies(j)   = number_of_copies(j)
   end do
 
-  !! strip any final '.vtk' string
-  islen=len_trim(vtk_output_file)
-  if (islen>4) then
-     if (vtk_output_file(islen-3:islen)=='.vtk') then
-        file%vtkout = vtk_output_file(:islen-4)
+  if(vtk_output_file(j)/='null') then
+     !! strip any final '.vtk' string
+     islen=len_trim(vtk_output_file)
+     if (islen>4) then
+        if (vtk_output_file(islen-3:islen)=='.vtk') then
+           file%vtkout = vtk_output_file(:islen-4)
+        end if
      end if
+  else
+     file%vtkout = trim(root)
   end if
 
   !> create output file names from root

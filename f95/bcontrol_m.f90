@@ -206,8 +206,8 @@ subroutine bcontrol_read(file,numerics,plot)
      inquire(file=vtk_input_file,exist=filefound)
      if(.not.filefound) then
         !! error opening file
-        print '("Fatal error: Unable to find Beq field data file, ",a)',vtk_input_file
-        call log_error(m_name,s_name,3,error_fatal,'Beq field data file not found')
+        print '("Fatal error: Unable to find Beq geometry data file, ",a)',vtk_input_file
+        call log_error(m_name,s_name,3,error_fatal,'Beq geometry data file not found')
      end if
   end if
 

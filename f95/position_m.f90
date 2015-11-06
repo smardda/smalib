@@ -281,9 +281,9 @@ subroutine position_readcon(ztfmdata,kin,flag)
 
   !! local
   character(*), parameter :: s_name='position_readcon' !< subroutine name
-  real(kr4), dimension(3,3):: position_matrix  !< local variable
-  real(kr4), dimension(3):: position_scale  !< local variable
-  real(kr4), dimension(3):: position_offset  !< local variable
+  real(kr4), dimension(3,3):: position_matrix  !< transformation matrix 3x3
+  real(kr4), dimension(3):: position_scale  !< transformation scale 3-vector
+  real(kr4), dimension(3):: position_offset  !< transformation offset 3-vector
   integer(ki4):: position_transform  !< transformation type
   character(len=20) :: transform_desc !< describes transformation type
   character(len=20) :: transform_id !< identifies transformation
@@ -294,13 +294,18 @@ subroutine position_readcon(ztfmdata,kin,flag)
  &'full_matrix_mult+offset ','offset+full_matrix_mult ',&
  &'five                    ','poloidal_tilt           ',&
  &'toroidal_tilt           ','toroidal_rotate         ',&
- &'poloidal_rotate         ','radial_tilt             '/)
+ &'poloidal_rotate         ','minor_radial            '/)
   !> dictionary of short name transformations
   character(len=6), dimension(npdict), parameter :: dictshort = & !< 
  &(/'scale ','offsca','matoff','offmat','five  ',&
  &'poltil','tortil','torrot','polrot',&
- &'radtil' /)
+ &'radial' /)
   !> integer dictionary of transformations
+  !! 2-digit representations, first denotes coordinate system
+  !! 0 - Cartesian, 1 - (R,Z,zeta), 2 - (psi,theta,zeta), 3&4 - (r,theta,zeta)
+  !! second denotes
+  !! 1 - scale, 2 - scale+offset, 3 - full matrix mult+offset, 4 - offset+full matrix mult
+  !! Only solid body transformations (and not five) are actually implemented
   integer(ki4), dimension(npdict), parameter :: dictn = & !< 
  &(/1,2,3,4,5, &
  &6,7,12,22, &
@@ -320,6 +325,7 @@ subroutine position_readcon(ztfmdata,kin,flag)
   ! default identity
   position_transform=0
   transform_desc='cartesian_scale'
+!DOC position_matrix=(/1.,0.,0.,0.,1.,0.,0.,0.,1./)
   position_matrix(1,:)=(/1.,  0.,  0. /)
   position_matrix(2,:)=(/0.,  1.,  0. /)
   position_matrix(3,:)=(/0.,  0.,  1. /)
