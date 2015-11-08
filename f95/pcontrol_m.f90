@@ -91,7 +91,7 @@ subroutine pcontrol_read(file,numerics,onumerics,edgprof,plot)
   character(len=80) :: geoq_input_file  !< geoq output format data input file
   character(len=80) :: lau_input_file  !< launch data input file
   logical :: filefound !< true of file exists
-  integer(ki4) :: dummy_number !< dummy
+  integer(ki4) :: max_number_of_tracks !< maximum number of tracks 
   logical :: plot_cartv !< DUPLICATE  vtk plot selector
   logical :: plot_powstatx !< vtk plot selector
   logical :: plot_allcartv !< DUPLICATE  vtk plot selector
@@ -118,7 +118,7 @@ subroutine pcontrol_read(file,numerics,onumerics,edgprof,plot)
 
   !! misc parameters
   namelist /miscparameters/ &
- &dummy_number
+ &max_number_of_tracks
 
   !! plot selection parameters
   namelist /plotselections/ &
@@ -236,7 +236,7 @@ subroutine pcontrol_read(file,numerics,onumerics,edgprof,plot)
   file%flinends    =trim(root)//"_flinends"
 
   !! set default misc parameters
-  dummy_number = 10
+  max_number_of_tracks = 100
 
   !!read misc parameters
   read(nin,nml=miscparameters,iostat=status)
@@ -246,11 +246,11 @@ subroutine pcontrol_read(file,numerics,onumerics,edgprof,plot)
   end if
 
   !! check for valid data
-  if(dummy_number<0) &
- &call log_error(m_name,s_name,11,error_fatal,'dummy_number must be >=0')
+  if(max_number_of_tracks<0) &
+ &call log_error(m_name,s_name,11,error_fatal,'max_number_of_tracks must be >=0')
 
 
-  !W     numerics%ndummy = dummy_number
+  numerics%mtrack = max_number_of_tracks
 
   !! set default plot selections
   plot_cartv = .false.
@@ -283,9 +283,7 @@ subroutine pcontrol_read(file,numerics,onumerics,edgprof,plot)
   plot%powx   = plot_powx
   plot%wall   = plot_wall
   plot%ptzv    = plot_ptzv
-  plot%flinx = plot_flincart
   plot%flinx    = plot_flinx
-  plot%flinm = plot_flinptz
   plot%flinm    = plot_flinm
   plot%allptzv     = plot_allptzv
   plot%geofld    = plot_geofld

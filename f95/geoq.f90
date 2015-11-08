@@ -164,6 +164,7 @@ program geoq_p
 ! these options are not valid so are suppressed
      plot%geoqmm=.FALSE.
      plot%gnuptz=.FALSE.
+     plot%gnum=.FALSE.
      plot%gnusilm=.FALSE.
      plot%geoqx=.FALSE.
 ! this one not implemented (or needed?)
@@ -232,8 +233,8 @@ program geoq_p
      call clock_stop(18)
   end if
 
-  if(plot%gnuptz) then
-     call clock_start(19,'gfile_gnuptz time')
+  if(plot%gnum) then
+     call clock_start(19,'gfile_gnum time')
      call gfile_init(trim(file%gnu)//'_R','R sample in psi-theta space',nprint)
      call spl2d_writeg(geoq%beq%r,'sampl',nprint)
      call gfile_close

@@ -62,7 +62,8 @@ module bcontrol_m
      logical  :: gnu !< gnuplot file of \f$ \psi(R,Z) \f$
      logical  :: gnusil !< gnuplot file of silhouette as function of \f$ (R,Z) \f$
      logical  :: gnusilm !< gnuplot file of silhouette as function of \f$ (\psi,\theta) \f$
-     logical  :: gnuptz !< gnuplot file of \f$ fns(\psi,\theta) \f$
+     logical  :: gnuptz
+     logical  :: gnum !< gnuplot file of \f$ fns(\psi,\theta) \f$
   end type bplots_t
 
 
@@ -148,7 +149,8 @@ subroutine bcontrol_read(file,numerics,plot)
   logical :: plot_geofldx !< vtk plot selector
   logical :: plot_geofld_quantised !< vtk plot selector
   logical :: plot_gnu !< gnu plot selector
-  logical :: plot_gnuptz !< gnuptz plot selector
+  logical :: plot_gnuptz
+  logical :: plot_gnum !< gnum plot selector
   logical :: plot_gnusil !< gnusil plot selector
   logical :: plot_gnusilm !< gnusilm plot selector
 
@@ -179,6 +181,7 @@ subroutine bcontrol_read(file,numerics,plot)
  &plot_geofld_quantised, &
  &plot_gnu, &
  &plot_gnuptz, &
+ &plot_gnum, &
  &plot_gnusil, &
  &plot_gnusilm
 
@@ -306,6 +309,7 @@ subroutine bcontrol_read(file,numerics,plot)
   plot_geofld_quantised = .false.
   plot_gnu = .false.
   plot_gnuptz = .false.
+  plot_gnum = .false.
   plot_gnusil = .false.
   plot_gnusilm = .false.
 
@@ -330,7 +334,8 @@ subroutine bcontrol_read(file,numerics,plot)
   plot%geofldx    = plot_geofldx
   plot%geofldq     = plot_geofld_quantised
   plot%gnu     = plot_gnu
-  plot%gnuptz     = plot_gnuptz
+  plot%gnuptz = plot_gnuptz
+  plot%gnum     = plot_gnum
   plot%gnusil     = plot_gnusil
   plot%gnusilm     = plot_gnusilm
   if (plot_frzxi) then
@@ -341,6 +346,10 @@ subroutine bcontrol_read(file,numerics,plot)
   plot%geoqm = plot_allgeoq
   file%geoqm = file%allgeoq
   call log_error(m_name,s_name,21,error_warning,'Obsolete file handling feature activated')
+  end if
+  if (plot_gnuptz) then
+  plot%gnum = plot_gnuptz
+  call log_error(m_name,s_name,22,error_warning,'Obsolete file handling feature activated')
   end if
 
   call beq_readcon(numerics,nin)

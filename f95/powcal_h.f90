@@ -27,6 +27,9 @@ module powcal_h
      real(kr8) :: qpara0 !< parallel reference flux (W/sqm)
    ! additions for powcal
      character(len=80) :: caltype !< type of calculation ('afws', 'msus', 'msum')
+     integer(ki4)  :: mtrack !< maximum number of tracks to follow (<= hardwired parameter)
+     integer(ki4)  :: ntrack !< if non-zero, number of tracks to follow
+     integer(ki4), dimension(:), allocatable  :: trackno !< array containing track element numbers
      integer(ki4)  :: nanalau !< type of analytic definition of launch
      integer(ki4)  :: nlaupow !< calculate power deposited on launch geometry
      integer(ki4)  :: nshapow !< calculate power deposited on shadowing geometry

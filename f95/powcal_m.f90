@@ -133,9 +133,9 @@ subroutine powcal_init(self,numerics,plot,gnumerics)
   call edgprof_factors(self%edgprof,&
  &self%powres%beq%rbdry,self%powres%beq%bpbdry,self%powres%beq%btotbdry,zsign)
   ! track controls
-  self%powres%flincart=plot%flincart
+  self%powres%flincart=plot%flinx
   self%powres%flinends=plot%flinends
-  self%powres%flinptz=plot%flinptz
+  self%powres%flinptz=plot%flinm
 
   calcn_type: select case (self%n%caltype)
   case('msus')
@@ -405,6 +405,9 @@ subroutine powcal_readcon(selfn,kin)
   integer(ki4) :: refine_level   !< level of refinement to be used
   integer(ki4) :: shadow_control   !< control shadowing
   character(len=80) :: calculation_type !< calculation type
+  integer(ki4) :: number_of_tracks !< nonzero, only compute selected tracks
+  integer(ki4), parameter  :: maximum_number_of_tracks=100 !< maximum number of tracks allowed
+  integer(ki4), dimension(maximum_number_of_tracks) :: element_numbers !< tracks selected by element number
   logical :: termination_planes !<  termination planes present
   integer(ki4) :: analytic_launch_type !< analytic launch type
   integer(ki4) :: power_on_launch_geo !< power on launch geometry
@@ -415,6 +418,7 @@ subroutine powcal_readcon(selfn,kin)
  &q_parallel0, &
  &diffusion_length, &
  &calculation_type, &
+ &number_of_tracks, element_numbers, &
  &termination_planes, &
  &analytic_launch_type, power_on_launch_geo, power_on_shadow_geo
 
@@ -429,6 +433,11 @@ subroutine powcal_readcon(selfn,kin)
   q_parallel0=-1_kr8
 
   calculation_type='unset'
+  number_of_tracks=0
+  if (selfn%mtrack>maximum_number_of_tracks) then
+     call log_error(m_name,s_name,10,error_warning,'maximum_number_of_tracks parameter too small')
+  end if
+  element_numbers=0
   termination_planes=.FALSE.
   analytic_launch_type=0
   power_on_launch_geo=0
@@ -460,6 +469,10 @@ subroutine powcal_readcon(selfn,kin)
  &call log_error(m_name,s_name,24,error_fatal,'power_on_launch_geo must be >=0 and <=10')
   if(power_on_shadow_geo<0.OR.power_on_shadow_geo>10) &
  &call log_error(m_name,s_name,25,error_fatal,'power_on_shadow_geo must be >=0 and <=10')
+  if(number_of_tracks<0) &
+ &call log_error(m_name,s_name,26,error_fatal,'number_of_tracks must be non-negative')
+  if(number_of_tracks>0.AND.minval(element_numbers)<0) &
+ &call log_error(m_name,s_name,27,error_fatal,'element numbers must be non-negative')
 
   !! store values
   selfn%f=power_split
@@ -471,6 +484,15 @@ subroutine powcal_readcon(selfn,kin)
   selfn%qpara0=q_parallel0
 
   selfn%caltype=calculation_type
+  selfn%ntrack=number_of_tracks
+  if (number_of_tracks>0) then
+     allocate(selfn%trackno(selfn%ntrack), stat=status)
+     call log_alloc_check(m_name,s_name,30,status)
+     do j=1,number_of_tracks
+        selfn%trackno(j)=element_numbers(j)+1
+     end do
+  end if
+
   selfn%ltermplane=termination_planes
   selfn%nanalau=analytic_launch_type
   selfn%nlaupow=power_on_launch_geo
@@ -612,12 +634,12 @@ subroutine powcal_writev(self,kchar,kplot)
   plot_type: select case (kchar)
   case('psi-theta-zeta')
      ! rearrange nodl, keep copy of structure in work and ing
-     call log_alloc_check(m_name,s_name,11,status)
      ing=self%powres%geobjl%ng
      ! ??reset number of objects to be output according to refine_level statistics input
      self%powres%geobjl%ng=ing*powelt_table(self%powres%n%nlevel,2)/powelt_table(infilelevel,2)
      self%powres%geobjl%ng=self%powres%npowe
      allocate(work(3*self%powres%geobjl%ng), stat=status)
+     call log_alloc_check(m_name,s_name,11,status)
      work=self%powres%geobjl%nodl(1:3*self%powres%geobjl%ng)
      call geobjlist_nodlmv(self%powres%geobjl,infilelevel,1,self%powres%npowe)
      call geobjlist_writev(self%powres%geobjl,'geometry',kplot)
