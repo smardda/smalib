@@ -472,7 +472,7 @@ subroutine powelt_move(self,powcal,gshadl,btree)
         ! check for collision or exit from computational domain
         xn%posvec=powcal%odes%vecp%pos(powcal%odes%ndt)%posvec
         xn%node=0
-        if (abs(lenpath)>1) then
+        if (abs(lenpath)>powcal%odes%n%termcon(1)) then
           ! find new node and position if hits boundary
           call pcle_move(xo,xn,1,gshadl,btree,nobjhit)
           lcoll=(nobjhit/=0)
@@ -501,7 +501,7 @@ subroutine powelt_move(self,powcal,gshadl,btree)
   ip=powcal%odes%ndt
   powcal%odes%vecp%np=ip
   !
-  if (ibacktr==ipback.AND.powcal%powres%flinptz) then
+  if (ibacktr==ipback.AND.powcal%powres%flinm) then
      ! open file to record ptz track
      write(ibuff,'(''elt= '',I5,'' sub= '',I2,'' trackptz'')') self%ie,self%je
      write(icfile,'(''trackptz'',I5.5,I2.2)') self%ie,self%je
@@ -516,7 +516,7 @@ subroutine powelt_move(self,powcal,gshadl,btree)
      close(nplot)
   end if
 
-  if (ibacktr==ipback.AND.powcal%powres%flincart) then
+  if (ibacktr==ipback.AND.powcal%powres%flinx) then
      ! open file to record Cartesian track
      write(ibuff,'(''elt= '',I5,'' sub= '',I2,'' track'')') self%ie,self%je
      write(icfile,'(''track'',I5.5,I2.2)') self%ie,self%je
@@ -853,7 +853,7 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
   ip=powcal%odes%ndt
   powcal%odes%vecp%np=ip
   !
-  if (ibacktr==ipback.AND.powcal%powres%flinptz) then
+  if (ibacktr==ipback.AND.powcal%powres%flinm) then
      ! open file to record RZxi
      write(ibuff,'(''elt= '',I5,'' sub= '',I2,'' lenpath= '',1pg12.5,'' objhit= '',I8)') &
  &   self%ie,self%je,lenpath,nobjhit
@@ -877,7 +877,7 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
      close(nplot)
   end if
 
-  if (ibacktr==ipback.AND.powcal%powres%flincart) then
+  if (ibacktr==ipback.AND.powcal%powres%flinx) then
      ! write track in Cartesian coordinates
      ! first convert track
      allocate(wposl%pos(ip), stat=status)
@@ -1187,7 +1187,7 @@ subroutine powelt_move2(self,powcal,gshadl,btree)
   ip=powcal%odes%ndt
   powcal%odes%vecp%np=ip
   !
-  if (ibacktr==ipback.AND.powcal%powres%flinptz) then
+  if (ibacktr==ipback.AND.powcal%powres%flinm) then
      ! open file to record RZxi
      write(ibuff,'(''elt= '',I5,'' sub= '',I2,'' trackptz'')') self%ie,self%je
      write(icfile,'(''trackptz'',I5.5,I2.2)') self%ie,self%je
@@ -1202,7 +1202,7 @@ subroutine powelt_move2(self,powcal,gshadl,btree)
      close(nplot)
   end if
 
-  if (ibacktr==ipback.AND.powcal%powres%flincart) then
+  if (ibacktr==ipback.AND.powcal%powres%flinx) then
      ! open file to record Cartesian track
      write(ibuff,'(''elt= '',I5,'' sub= '',I2,'' track'')') self%ie,self%je
      write(icfile,'(''track'',I5.5,I2.2)') self%ie,self%je
@@ -1507,7 +1507,7 @@ subroutine powelt_move3(self,powcal,gshadl,btree)
   ip=powcal%odes%ndt
   powcal%odes%vecp%np=ip
   !
-  if (ibacktr==ipback.AND.powcal%powres%flinptz) then
+  if (ibacktr==ipback.AND.powcal%powres%flinm) then
      ! open file to record RZxi
      write(ibuff,'(''elt= '',I5,'' sub= '',I2,'' lenpath= '',1pg12.5,'' objhit= '',I8)') &
  &   self%ie,self%je,lenpath,nobjhit
@@ -1531,7 +1531,7 @@ subroutine powelt_move3(self,powcal,gshadl,btree)
      close(nplot)
   end if
 
-  if (ibacktr==ipback.AND.powcal%powres%flincart) then
+  if (ibacktr==ipback.AND.powcal%powres%flinx) then
      ! write track in Cartesian coordinates
      ! first convert track
      allocate(wposl%pos(ip), stat=status)
@@ -1902,7 +1902,7 @@ subroutine powelt_move4(self,powcal,gshadl,btree)
   ip=powcal%odes%ndt
   powcal%odes%vecp%np=ip
   !
-  if (ibacktr==ipback.AND.powcal%powres%flinptz) then
+  if (ibacktr==ipback.AND.powcal%powres%flinm) then
      ! open file to record RZxi
      write(ibuff,'(''elt= '',I5,'' sub= '',I2,'' lenpath= '',1pg12.5,'' objhit= '',I8)') &
  &   self%ie,self%je,lenpath,nobjhit
@@ -1926,7 +1926,7 @@ subroutine powelt_move4(self,powcal,gshadl,btree)
      close(nplot)
   end if
 
-  if (ibacktr==ipback.AND.powcal%powres%flincart) then
+  if (ibacktr==ipback.AND.powcal%powres%flinx) then
      ! write track in Cartesian coordinates
      ! first convert track
      allocate(wposl%pos(ip), stat=status)
@@ -2307,7 +2307,7 @@ subroutine powelt_move5(self,powcal,gshadl,btree)
   ip=powcal%odes%ndt
   powcal%odes%vecp%np=ip
   !
-  if (ibacktr==ipback.AND.powcal%powres%flinptz) then
+  if (ibacktr==ipback.AND.powcal%powres%flinm) then
      ! open file to record RZxi
      write(ibuff,'(''elt= '',I5,'' sub= '',I2,'' lenpath= '',1pg12.5,'' objhit= '',I8)') &
  &   self%ie,self%je,lenpath,nobjhit
@@ -2331,7 +2331,7 @@ subroutine powelt_move5(self,powcal,gshadl,btree)
      close(nplot)
   end if
 
-  if (ibacktr==ipback.AND.powcal%powres%flincart) then
+  if (ibacktr==ipback.AND.powcal%powres%flinx) then
      ! write track in Cartesian coordinates
      ! first convert track
      allocate(wposl%pos(ip), stat=status)

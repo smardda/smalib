@@ -1692,6 +1692,7 @@ subroutine beq_writev(self,kchar,kplot)
            ztheta=self%n%thetamin+(j-1)*self%dtheta
            do i=1,self%n%npsi+1
               zpsi=self%n%psimin +(i-1)*self%dpsi
+              zc1=zpsi
               call spl2d_eval(self%rjac,zpsi,ztheta,zc2)
               ! evaluate I aka f at psi
               call spleval(self%f,self%mr,self%psiaxis,self%psiqbdry,zpsi,zc3,1)

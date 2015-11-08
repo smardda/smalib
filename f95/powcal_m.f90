@@ -62,6 +62,8 @@ module powcal_m
   real(kr8) :: zdum !< dummy real
   logical :: iltest !< logical flag
   integer(ki4) :: infilelevel   !< max refinement level from input
+  integer(ki4), dimension(:), allocatable :: work !< save objlist variable
+  real(kr4), dimension(:), allocatable :: rwork !< real workspace
 
   contains
 !---------------------------------------------------------------------
@@ -605,7 +607,6 @@ subroutine powcal_writev(self,kchar,kplot)
   !! local
   character(*), parameter :: s_name='powcal_writev' !< subroutine name
   type(posvecl_t), dimension(:), allocatable :: workpos !< save objlist variable
-  integer(ki4), dimension(:), allocatable :: work !< save objlist variable
   integer(ki4) :: ing   !< save objlist variable
 
   plot_type: select case (kchar)
@@ -687,10 +688,15 @@ subroutine powcal_writev(self,kchar,kplot)
         call geobjlist_nodlmv(self%powres%geobjl,infilelevel,self%n%nlevel,self%powres%npowe)
      end if
      call geobjlist_writev(self%powres%geobjl,'geometry',kplot)
-     call vfile_rscalarwrite(self%powres%pow,self%powres%geobjl%ng,'Qs','CELL',kplot,1)
+     allocate(rwork(self%powres%geobjl%ng), stat=status)
+     call log_alloc_check(m_name,s_name,42,status)
+     rwork=abs(self%powres%pow(:self%powres%geobjl%ng))
+     call vfile_rscalarwrite(rwork,self%powres%geobjl%ng,'Q','CELL',kplot,1)
+     deallocate(rwork)
      if (allocated(self%powres%psista)) then
         call vfile_rscalarwrite(self%powres%psista,self%powres%geobjl%ng,'psista','CELL',kplot,0)
      end if
+     call vfile_rscalarwrite(self%powres%pow,self%powres%geobjl%ng,'Qs','CELL',kplot,0)
      if (infilelevel>self%n%nlevel) then
         ! restore nodl
         self%powres%geobjl%nodl(1:3*self%powres%geobjl%ng)=work

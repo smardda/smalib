@@ -92,16 +92,20 @@ subroutine pcontrol_read(file,numerics,onumerics,edgprof,plot)
   character(len=80) :: lau_input_file  !< launch data input file
   logical :: filefound !< true of file exists
   integer(ki4) :: dummy_number !< dummy
-  logical :: plot_cartv !< vtk plot selector
-  logical :: plot_allcartv !< vtk plot selector
+  logical :: plot_cartv !< DUPLICATE  vtk plot selector
+  logical :: plot_powstatx !< vtk plot selector
+  logical :: plot_allcartv !< DUPLICATE  vtk plot selector
+  logical :: plot_powx !< vtk plot selector
   logical :: plot_wall !< vtk plot selector
-  logical :: plot_ptzv !< vtk plot selector
-  logical :: plot_flincart !< vtk plot selector
+  logical :: plot_ptzv !< INERT vtk plot selector
+  logical :: plot_flincart !< DUPLICATE  vtk plot selector
+  logical :: plot_flinx !< vtk plot selector
   logical :: plot_flinends !< gnu plot selector
-  logical :: plot_flinptz !< vtk plot selector
-  logical :: plot_allptzv !< vtk plot selector
-  logical :: plot_geofld !< vtk plot selector
-  logical :: plot_geofld_quantised !< vtk plot selector
+  logical :: plot_flinptz !< DUPLICATE  vtk plot selector
+  logical :: plot_flinm !< vtk plot selector
+  logical :: plot_allptzv !< INERT vtk plot selector
+  logical :: plot_geofld !< INERT vtk plot selector
+  logical :: plot_geofld_quantised !< INERT vtk plot selector
   logical :: plot_gnu !< gnu plot selector
 
   !! file names
@@ -119,11 +123,15 @@ subroutine pcontrol_read(file,numerics,onumerics,edgprof,plot)
   !! plot selection parameters
   namelist /plotselections/ &
  &plot_cartv, &
+ &plot_powstatx, &
  &plot_allcartv, &
+ &plot_powx, &
  &plot_wall, &
  &plot_ptzv, &
  &plot_flincart, &
+ &plot_flinx, &
  &plot_flinptz, &
+ &plot_flinm, &
  &plot_allptzv, &
  &plot_geofld, &
  &plot_geofld_quantised, &
@@ -211,11 +219,15 @@ subroutine pcontrol_read(file,numerics,onumerics,edgprof,plot)
 
   !!vtk file roots
   file%cartv     =trim(root)//"_cartv"
+  file%powstatx     =trim(root)//"_powstatx"
   file%allcartv     =trim(root)//"_allcartv"
+  file%powx     =trim(root)//"_powx"
   file%wall     =trim(root)//"_wall"
   file%ptzv    =trim(root)//"_ptzv"
   file%flincart    =trim(root)//"_flincart"
+  file%flinx    =trim(root)//"_flinx"
   file%flinptz    =trim(root)//"_flinptz"
+  file%flinm    =trim(root)//"_flinm"
   file%allptzv    =trim(root)//"_allptzv"
   file%geofld =trim(root)//"_geofld"
   file%geofldq    =trim(root)//"_geofldq"
@@ -242,11 +254,15 @@ subroutine pcontrol_read(file,numerics,onumerics,edgprof,plot)
 
   !! set default plot selections
   plot_cartv = .false.
+  plot_powstatx = .false.
   plot_allcartv = .false.
+  plot_powx = .false.
   plot_wall = .false.
   plot_ptzv = .false.
   plot_flincart = .false.
+  plot_flinx = .false.
   plot_flinptz = .false.
+  plot_flinm = .false.
   plot_allptzv = .false.
   plot_geofld = .false.
   plot_geofld_quantised = .false.
@@ -261,12 +277,16 @@ subroutine pcontrol_read(file,numerics,onumerics,edgprof,plot)
   end if
 
   !! store values
-  plot%cartv   = plot_cartv
-  plot%allcartv   = plot_allcartv
+  plot%powstatx = plot_cartv
+  plot%powstatx   = plot_powstatx
+  plot%powx = plot_allcartv
+  plot%powx   = plot_powx
   plot%wall   = plot_wall
   plot%ptzv    = plot_ptzv
-  plot%flincart    = plot_flincart
-  plot%flinptz    = plot_flinptz
+  plot%flinx = plot_flincart
+  plot%flinx    = plot_flinx
+  plot%flinm = plot_flinptz
+  plot%flinm    = plot_flinm
   plot%allptzv     = plot_allptzv
   plot%geofld    = plot_geofld
   plot%geofldq     = plot_geofld_quantised

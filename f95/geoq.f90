@@ -162,11 +162,10 @@ program geoq_p
   select case (ifldspec)
   case (2,3)
 ! these options are not valid so are suppressed
-     plot%fptv=.FALSE.
-     plot%allgeoq=.FALSE.
+     plot%geoqmm=.FALSE.
      plot%gnuptz=.FALSE.
      plot%gnusilm=.FALSE.
-     plot%cartv=.FALSE.
+     plot%geoqx=.FALSE.
 ! this one not implemented (or needed?)
      plot%frzv=.FALSE.
   case default
@@ -174,8 +173,8 @@ program geoq_p
   end select
 !! optionally read in ripple data
   if (geoq%beq%n%vacfile/='null') then
-     if(plot%cartv.OR.plot%allcartv.OR. &
- &   plot%allgeoq.OR.plot%geofld.OR.plot%frzzeta.OR.plot%frzxi) then
+     if(plot%geoqx.OR.plot%geoqvolx.OR. &
+ &   plot%geoqm.OR.plot%geofldx.OR.plot%frzzeta.OR.plot%geoqmm) then
         call moutfile_read(geoq%beq%n%vacfile,zivac,nin)
         call spl3d_read(geoq%beq%vacfld,geoq%beq%n%vacfile,nin)
      end if
@@ -183,27 +182,27 @@ program geoq_p
 !--------------------------------------------------------------------------
 !!plots
 !!plot cartesian B
-  if(plot%cartv) then
-     call clock_start(10,'vfile_cartv time')
-     call vfile_init(file%cartv,'B in cartesian space',nplot)
+  if(plot%geoqx) then
+     call clock_start(10,'vfile_geoqx time')
+     call vfile_init(file%geoqx,'B in cartesian space',nplot)
      call beq_writev(geoq%beq,'cartesian',nplot)
      call vfile_close
      call clock_stop(10)
   end if
 
 !!plot cartesian all B
-  if(plot%allcartv) then
-     call clock_start(11,'vfile_allcartv time')
-     call vfile_init(file%allcartv,'B in all cartesian space',nplot)
+  if(plot%geoqvolx) then
+     call clock_start(11,'vfile_geoqvolx time')
+     call vfile_init(file%geoqvolx,'B in all cartesian space',nplot)
      call beq_writev(geoq%beq,'allcartesian',nplot)
      call vfile_close
      call clock_stop(11)
   end if
 
 !!plots for psi-theta space
-  if(plot%fptv) then
-     call clock_start(16,'vfile_fptv time')
-     call vfile_init(file%fptv,'fields in psi-theta space',nplot)
+  if(plot%geoqmm) then
+     call clock_start(16,'vfile_geoqmm time')
+     call vfile_init(file%geoqmm,'fields in psi-theta space',nplot)
      call beq_writev(geoq%beq,'psi-theta',nplot)
      call vfile_close
      call clock_stop(16)
@@ -251,19 +250,19 @@ program geoq_p
   end if
 
 !!plot all geobjs
-  if(plot%allgeoq) then
-     call clock_start(20,'vfile_all time')
+  if(plot%geoqm) then
+     call clock_start(20,'vfile_geoqm time')
      write(vtkdesc,'(A3,1X,A18,I3)') 'all','Integer_Parameter=',geoq%objl%nparam
-     call vfile_init(file%allgeoq,vtkdesc,nplot)
+     call vfile_init(file%geoqm,vtkdesc,nplot)
 ! in psi-theta-zeta position space
      call geoq_writev(geoq,'all',nplot)
      call vfile_close
      call clock_stop(20)
   end if
 
-  if(plot%geofld) then
-     call clock_start(22,'vfile_allcart time')
-     call vfile_init(file%geofld,'allcart',nplot)
+  if(plot%geofldx) then
+     call clock_start(22,'vfile_geofldx time')
+     call vfile_init(file%geofldx,'allcart',nplot)
      ibuf=geoq%beq%n%vacfile
 !BB! in Cartesians, omit ripple contribution
 !BB         geoq%beq%n%vacfile='null'
@@ -279,14 +278,6 @@ program geoq_p
      call geoq_writev(geoq,'frzzeta',nplot)
      call vfile_close
      call clock_stop(23)
-  end if
-
-  if(plot%frzxi) then
-     call clock_start(24,'vfile_frzxi time')
-     call vfile_init(file%frzxi,'frzxi',nplot)
-     call geoq_writev(geoq,'frzxi',nplot)
-     call vfile_close
-     call clock_stop(24)
   end if
 
   !! silhouette of geometry in (R,Z)

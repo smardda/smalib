@@ -204,18 +204,18 @@ program powcal_p
 !! power diagnostics
 
 !!plot cartesian power
-  if(plot%cartv) then
-     call clock_start(10,'vfile_cartv time')
-     call vfile_init(file%cartv,'power in cartesian space',nplot)
+  if(plot%powstatx) then
+     call clock_start(10,'vfile_powstatx time')
+     call vfile_init(file%powstatx,'power in cartesian space',nplot)
      call powcal_writev(powcal,'cartesian',nplot)
      call vfile_close
      call clock_stop(10)
   end if
 
 !!plot cartesian power statistics
-  if(plot%allcartv) then
-     call clock_start(11,'vfile_allcartv time')
-     call vfile_init(file%allcartv,'power statistics in cartesians',nplot)
+  if(plot%powx) then
+     call clock_start(11,'vfile_powx time')
+     call vfile_init(file%powx,'power statistics in cartesians',nplot)
      call powcal_writev(powcal,'allcartesian',nplot)
      call vfile_close
      call clock_stop(11)

@@ -4,6 +4,7 @@ program hdsgen_p
   use const_numphys_h
   use control_h
   use dcontrol_h
+  use vcontrol_h
   use date_time_m
   use control_m
   use log_m
@@ -24,11 +25,13 @@ program hdsgen_p
   use outfile_m
   use hdsfile_m
   use query_m
+  use beq_h
   use posang_m
   use datline_h
   use datline_m
   use stack_m
   use spl2d_m
+  use spl3d_m
 
   implicit none
 
@@ -119,14 +122,14 @@ program hdsgen_p
 !!plot HDS
   if(plot%hds) then
      call clock_start(10,'vfile_hds time')
-     call vfile_init(file%hdsv,'hds lowest',nplot)
+     call vfile_init(file%hdsm,'hds lowest',nplot)
      call btree_writev(btree,numerics,'hds lowest',nplot)
      call vfile_close
      call clock_stop(10)
   end if
 
 !!plot HDS quantised (default)
-  if(plot%hdsbin) then
+  if(plot%hdsq) then
      call clock_start(11,'vfile_hdsq time')
      call vfile_init(file%hdsq,'hds quantised',nplot)
      call btree_writev(btree,numerics,'hds quantised',nplot)
@@ -155,9 +158,9 @@ program hdsgen_p
   end if
 
 !!plot all geobjs
-  if(plot%allgeobjq) then
-     call clock_start(16,'vfile_allgeobjq time')
-     call vfile_init(file%allgeobjq,'all geobjq',nplot)
+  if(plot%geoptq) then
+     call clock_start(16,'vfile_allgeoptq time')
+     call vfile_init(file%geoptq,'all geoptq',nplot)
 ! in quantised space
      call geobjlist_writev(geobjl,'all quantised',nplot)
      call vfile_close

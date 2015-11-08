@@ -93,7 +93,7 @@ subroutine vcontrol_read(file,numerics)
   character(len=20), dimension(maximum_number_of_panels) :: transform_id !< INACTIVE id of transform to apply
   integer(ki4), dimension(2*maximum_number_of_panels) :: panel_bodies !< bodies defining the geometry
   logical :: filefound !< true of file exists
-  logical :: lflag !< flags if no panel transforms defined
+  logical :: lflag !< flags if no panel transforms defined (two places)
   type(tfmdata_t) :: ztfmdata   !< position transform numeric controls
   integer(ki4) :: infil=0 !< number of files detected
   integer(ki4) :: inpan=0 !< number of panels detected
@@ -101,6 +101,7 @@ subroutine vcontrol_read(file,numerics)
   integer(ki4) :: ipan=0 !< panel counter
   integer(ki4) :: intfm=0 !< number of transforms detected
   integer(ki4) :: iflag=0 !< allow position_readcon to return on error
+  integer(ki4) :: icode !< body code when copies present
 
   !> misc parameters, unusually comes first
   namelist /miscparameters/ &
@@ -214,7 +215,7 @@ subroutine vcontrol_read(file,numerics)
      file%vtkcopies(j)   = number_of_copies(j)
   end do
 
-  if(vtk_output_file(j)/='null') then
+  if(vtk_output_file/='null') then
      !! strip any final '.vtk' string
      islen=len_trim(vtk_output_file)
      if (islen>4) then
@@ -294,6 +295,7 @@ subroutine vcontrol_read(file,numerics)
         panel_bodies(2*j)=panel_bodies(j)
         panel_bodies(2*j-1)=panel_bodies(j)
      end do
+     inbod=2*inpan
 
   case ('tagge')
      inpan=(inbod+1)/2
@@ -312,18 +314,18 @@ subroutine vcontrol_read(file,numerics)
            call log_error(m_name,s_name,42,error_fatal,'Transform tag must be non-negative')
         end if
         if (lflag) then
-        if (panel_transform(j)<0) then
-           call log_value("panel number",ipan)
-           call log_error(m_name,s_name,43,error_fatal,'Transform tag must be non-negative')
-        end if
-        if (panel_transform(j+1)<0.AND.transform_id(ipan)=='null') then
-           call log_value("panel number",ipan)
-           call log_error(m_name,s_name,44,error_fatal,'Transform not defined')
-        end if
+           if (panel_transform(j)<0) then
+              call log_value("panel number",ipan)
+              call log_error(m_name,s_name,43,error_fatal,'Transform tag must be non-negative')
+           end if
+           if (panel_transform(j+1)<0.AND.transform_id(ipan)=='null') then
+              call log_value("panel number",ipan)
+              call log_error(m_name,s_name,44,error_fatal,'Transform not defined')
+           end if
         else
-! define panel_transform using body tags
-        panel_transform(j)=panel_bodies(j+1)
-        panel_transform(j+1)=panel_bodies(j+1)
+           ! define panel_transform using body tags
+           panel_transform(j)=panel_bodies(j+1)
+           panel_transform(j+1)=panel_bodies(j+1)
         end if
      end do
      ! resolve tags
@@ -356,6 +358,27 @@ subroutine vcontrol_read(file,numerics)
      deallocate(iwork1,iwork2)
   end select defn_option
 
+  !! check number of copies matches, i.e. if there are 10 copies of body 5, then
+  !! bodies with codes 501...510 must appear in panel_bodies
+
+  !write(*,*) inbod, (panel_bodies(l), l=1,inbod)
+  if (maxval(panel_bodies(:inbod))>100) then
+     do j=1,infil
+        do k=1,number_of_copies(j)
+           icode=j*100+k
+
+           do l=1,inbod
+              lflag=(panel_bodies(l)==icode)
+              if (lflag) exit
+           end do
+           if (.NOT.lflag) then
+              call log_value("panel code number",icode)
+              call log_error(m_name,s_name,49,error_fatal,'No matching body')
+           end if
+
+        end do
+     end do
+  end if
   !! allocate and assign
   !! panel transform parameters
   allocate(numerics%pantfm(inpan), stat=status)
@@ -365,8 +388,8 @@ subroutine vcontrol_read(file,numerics)
   allocate(numerics%panbod(2,inpan), stat=status)
   call log_alloc_check(m_name,s_name,51,status)
   do i=1,inpan
-    numerics%panbod(1,i)=panel_bodies(2*i-1)
-    numerics%panbod(2,i)=panel_bodies(2*i)
+     numerics%panbod(1,i)=panel_bodies(2*i-1)
+     numerics%panbod(2,i)=panel_bodies(2*i)
   end do
 
   !---------------------------------------------------------------------

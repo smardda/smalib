@@ -23,15 +23,20 @@ module bcontrol_m
      character(len=80)  :: equil         !< generic equilibrium type file name
      character(len=80)  :: vtkdata         !< vtk input data file
      character(len=80)  :: laudata         !< launch data
-     character(len=80)  :: cartv   !< \f$ \bf{B} \f$ in Cartesians
-     character(len=80)  :: allcartv   !< all \f$ \bf{B} \f$ in Cartesians
-     character(len=80)  :: fptv    !< vtk plot file of functions of \f$ (\psi,\theta) \f$
-     character(len=80)  :: allgeoq  !< plot file of all vtk info needed for SMITER-GEOQ
-     character(len=80)  :: frzv    !< vtk plot file of functions of \f$ (R,Z) \f$
-     character(len=80)  :: frzzeta    !< vtk plot file of functions of \f$ (R,Z,\zeta) \f$
-     character(len=80)  :: frzxi    !< vtk plot file of functions of \f$ (R,Z,\xi) \f$
-     character(len=80)  :: geofld  !< vtk plot file of geometry and field
-     character(len=80)  :: geofldq  !< vtk plot file of quantised geometry and field
+     character(len=80)  :: cartv   !< DUPLICATE  \f$ \bf{B} \f$ in Cartesians
+     character(len=80)  :: geoqx   !< \f$ \bf{B} \f$ in Cartesians
+     character(len=80)  :: allcartv   !< DUPLICATE  all \f$ \bf{B} \f$ in Cartesians
+     character(len=80)  :: geoqvolx   !< all \f$ \bf{B} \f$ in Cartesians
+     character(len=80)  :: fptv    !< DUPLICATE  vtk plot file of functions of \f$ (\psi,\theta) \f$
+     character(len=80)  :: geoqmm    !< vtk plot file of functions of \f$ (\psi,\theta) \f$
+     character(len=80)  :: allgeoq  !< DUPLICATE  plot file of all vtk info needed for SMITER-GEOQ
+     character(len=80)  :: geoqm  !< plot file of all vtk info needed for SMITER-GEOQ
+     character(len=80)  :: frzv    !< INERT vtk plot file of functions of \f$ (R,Z) \f$
+     character(len=80)  :: frzzeta    !< INERT vtk plot file of functions of \f$ (R,Z,\zeta) \f$
+     character(len=80)  :: frzxi    !< DUPLICATE  vtk plot file of functions of \f$ (R,Z,\xi) \f$
+     character(len=80)  :: geofld  !< DUPLICATE  vtk plot file of geometry and field
+     character(len=80)  :: geofldx  !< vtk plot file of geometry and field
+     character(len=80)  :: geofldq  !< INERT vtk plot file of quantised geometry and field
      character(len=80)  :: gnu !< gnuplot file of \f$ \psi(R,Z) \f$
      character(len=80)  :: gnusil !< gnuplot file of silhouette as function of \f$ (R,Z) \f$
      character(len=80)  :: gnusilm !< gnuplot file of silhouette as function of \f$ (\psi,\theta) \f$
@@ -40,15 +45,20 @@ module bcontrol_m
 
   type, public :: bplots_t
    !! vtk plot output selectors
-     logical  :: cartv   !< \f$ \bf{B} \f$ in Cartesians
-     logical  :: allcartv   !< all \f$ \bf{B} \f$ in Cartesians
-     logical  :: fptv    !< vtk plot file of functions of \f$ (\psi,\theta) \f$
-     logical  :: allgeoq    !< plot file of all vtk info needed for SMITER-GEOQ
-     logical  :: frzv    !< vtk plot file of functions of \f$ (R,Z) \f$
-     logical  :: frzzeta    !< vtk plot file of functions of \f$ (R,Z,\zeta) \f$
-     logical  :: frzxi    !< vtk plot file of functions of \f$ (R,Z,\xi) \f$
-     logical  :: geofld  !< vtk plot file of geometry and field
-     logical  :: geofldq  !< vtk plot file of quantised geometry and field
+     logical  :: cartv   !< DUPLICATE  \f$ \bf{B} \f$ in Cartesians
+     logical  :: geoqx   !< \f$ \bf{B} \f$ in Cartesians
+     logical  :: allcartv   !< DUPLICATE  all \f$ \bf{B} \f$ in Cartesians
+     logical  :: geoqvolx   !< all \f$ \bf{B} \f$ in Cartesians
+     logical  :: fptv    !< DUPLICATE  vtk plot file of functions of \f$ (\psi,\theta) \f$
+     logical  :: geoqmm    !< vtk plot file of functions of \f$ (\psi,\theta) \f$
+     logical  :: allgeoq    !< DUPLICATE  plot file of all vtk info needed for SMITER-GEOQ
+     logical  :: geoqm    !< plot file of all vtk info needed for SMITER-GEOQ
+     logical  :: frzv    !< INERT vtk plot file of functions of \f$ (R,Z) \f$
+     logical  :: frzzeta    !< INERT vtk plot file of functions of \f$ (R,Z,\zeta) \f$
+     logical  :: frzxi    !< DUPLICATE  vtk plot file of functions of \f$ (R,Z,\xi) \f$
+     logical  :: geofld  !< DUPLICATE  vtk plot file of geometry and field
+     logical  :: geofldx  !< vtk plot file of geometry and field
+     logical  :: geofldq  !< INERT vtk plot file of quantised geometry and field
      logical  :: gnu !< gnuplot file of \f$ \psi(R,Z) \f$
      logical  :: gnusil !< gnuplot file of silhouette as function of \f$ (R,Z) \f$
      logical  :: gnusilm !< gnuplot file of silhouette as function of \f$ (\psi,\theta) \f$
@@ -123,14 +133,19 @@ subroutine bcontrol_read(file,numerics,plot)
   integer(ki4) :: dummy_number !< dummy
   integer(ki4) :: indot !< position of dot in filename
   integer(ki4) :: ilent !< local variable
-  logical :: plot_cartv !< vtk plot selector
-  logical :: plot_allcartv !< vtk plot selector
-  logical :: plot_fptv !< vtk plot selector
-  logical :: plot_allgeoq !< vtk plot selector
-  logical :: plot_frzv !< vtk plot selector
-  logical :: plot_frzzeta !< vtk plot selector
-  logical :: plot_frzxi !< vtk plot selector
-  logical :: plot_geofld !< vtk plot selector
+  logical :: plot_cartv !< DUPLICATE  vtk plot selector
+  logical :: plot_geoqx !< vtk plot selector
+  logical :: plot_allcartv !< DUPLICATE  vtk plot selector
+  logical :: plot_geoqvolx !< vtk plot selector
+  logical :: plot_fptv !< DUPLICATE  vtk plot selector
+  logical :: plot_geoqmm !< vtk plot selector
+  logical :: plot_allgeoq !< DUPLICATE  vtk plot selector
+  logical :: plot_geoqm !< vtk plot selector
+  logical :: plot_frzv !< INERT vtk plot selector
+  logical :: plot_frzzeta !< INERT vtk plot selector
+  logical :: plot_frzxi !< DUPLICATE  vtk plot selector
+  logical :: plot_geofld !< DUPLICATE  vtk plot selector
+  logical :: plot_geofldx !< vtk plot selector
   logical :: plot_geofld_quantised !< vtk plot selector
   logical :: plot_gnu !< gnu plot selector
   logical :: plot_gnuptz !< gnuptz plot selector
@@ -149,13 +164,18 @@ subroutine bcontrol_read(file,numerics,plot)
   !! plot selection parameters
   namelist /plotselections/ &
  &plot_cartv, &
+ &plot_geoqx, &
  &plot_allcartv, &
+ &plot_geoqvolx, &
  &plot_fptv, &
+ &plot_geoqmm, &
  &plot_allgeoq, &
+ &plot_geoqm, &
  &plot_frzv, &
  &plot_frzzeta, &
  &plot_frzxi, &
  &plot_geofld, &
+ &plot_geofldx, &
  &plot_geofld_quantised, &
  &plot_gnu, &
  &plot_gnuptz, &
@@ -235,13 +255,18 @@ subroutine bcontrol_read(file,numerics,plot)
 
   !!vtk file roots
   file%cartv     =trim(root)//"_cartv"
+  file%geoqx     =trim(root)//"_geoqx"
   file%allcartv     =trim(root)//"_allcartv"
+  file%geoqvolx     =trim(root)//"_geoqvolx"
   file%fptv    =trim(root)//"_fptv"
+  file%geoqmm    =trim(root)//"_geoqmm"
   file%allgeoq    =trim(root)//"_allgeoq"
+  file%geoqm    =trim(root)//"_geoqm"
   file%frzv    =trim(root)//"_frzv"
   file%frzzeta    =trim(root)//"_frzzeta"
   file%frzxi    =trim(root)//"_frzxi"
   file%geofld =trim(root)//"_geofld"
+  file%geofldx =trim(root)//"_geofldx"
   file%geofldq    =trim(root)//"_geofldq"
   !!gnu file roots
   file%gnu     =trim(root)//"_gnu"
@@ -266,13 +291,18 @@ subroutine bcontrol_read(file,numerics,plot)
 
   !! set default plot selections
   plot_cartv = .false.
+  plot_geoqx = .false.
   plot_allcartv = .false.
+  plot_geoqvolx = .false.
   plot_fptv = .false.
+  plot_geoqmm = .false.
   plot_allgeoq = .false.
+  plot_geoqm = .false.
   plot_frzv = .false.
   plot_frzzeta = .false.
   plot_frzxi = .false.
   plot_geofld = .false.
+  plot_geofldx = .false.
   plot_geofld_quantised = .false.
   plot_gnu = .false.
   plot_gnuptz = .false.
@@ -287,19 +317,31 @@ subroutine bcontrol_read(file,numerics,plot)
   end if
 
   !! store values
-  plot%cartv   = plot_cartv
-  plot%allcartv   = plot_allcartv
-  plot%fptv    = plot_fptv
-  plot%allgeoq    = plot_allgeoq
+  plot%geoqx = plot_cartv
+  plot%geoqx   = plot_geoqx
+  plot%geoqvolx = plot_allcartv
+  plot%geoqvolx   = plot_geoqvolx
+  plot%geoqmm = plot_fptv
+  plot%geoqmm    = plot_geoqmm
+  plot%geoqm    = plot_geoqm
   plot%frzv     = plot_frzv
   plot%frzzeta     = plot_frzzeta
-  plot%frzxi     = plot_frzxi
-  plot%geofld    = plot_geofld
+  plot%geofldx = plot_geofld
+  plot%geofldx    = plot_geofldx
   plot%geofldq     = plot_geofld_quantised
   plot%gnu     = plot_gnu
   plot%gnuptz     = plot_gnuptz
   plot%gnusil     = plot_gnusil
   plot%gnusilm     = plot_gnusilm
+  if (plot_frzxi) then
+  plot%geoqm = plot_frzxi
+  file%geoqm = file%frzxi
+  call log_error(m_name,s_name,20,error_warning,'Obsolete file handling feature activated')
+  else if (plot_allgeoq) then
+  plot%geoqm = plot_allgeoq
+  file%geoqm = file%allgeoq
+  call log_error(m_name,s_name,21,error_warning,'Obsolete file handling feature activated')
+  end if
 
   call beq_readcon(numerics,nin)
 

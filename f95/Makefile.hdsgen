@@ -11,6 +11,7 @@ const_kind_m.f90 \
 const_numphys_h.f90 \
 control_h.f90 \
 dcontrol_h.f90 \
+vcontrol_h.f90 \
 date_time_m.f90 \
 control_m.f90 \
 log_m.f90 \
@@ -31,11 +32,13 @@ vfile_m.f90 \
 outfile_m.f90 \
 hdsfile_m.f90 \
 query_m.f90 \
+beq_h.f90 \
 posang_m.f90 \
 datline_h.f90 \
 datline_m.f90 \
 stack_m.f90 \
 spl2d_m.f90 \
+spl3d_m.f90 \
 hdsgen.f90
  
 PROG = hdsgen
@@ -67,6 +70,7 @@ hdsgen.f90 : const_kind_m.mod
 hdsgen.f90 : const_numphys_h.mod
 hdsgen.f90 : control_h.mod
 hdsgen.f90 : dcontrol_h.mod
+hdsgen.f90 : vcontrol_h.mod
 hdsgen.f90 : date_time_m.mod
 hdsgen.f90 : control_m.mod
 hdsgen.f90 : log_m.mod
@@ -87,15 +91,19 @@ hdsgen.f90 : vfile_m.mod
 hdsgen.f90 : outfile_m.mod
 hdsgen.f90 : hdsfile_m.mod
 hdsgen.f90 : query_m.mod
+hdsgen.f90 : beq_h.mod
 hdsgen.f90 : posang_m.mod
 hdsgen.f90 : datline_h.mod
 hdsgen.f90 : datline_m.mod
 hdsgen.f90 : stack_m.mod
 hdsgen.f90 : spl2d_m.mod
+hdsgen.f90 : spl3d_m.mod
 const_numphys_h.f90 : const_kind_m.mod
 control_h.f90 : const_kind_m.mod
 control_h.f90 : position_h.mod
 dcontrol_h.f90 : const_kind_m.mod
+vcontrol_h.f90 : const_kind_m.mod
+vcontrol_h.f90 : position_h.mod
 control_m.f90 : const_kind_m.mod
 control_m.f90 : log_m.mod
 control_m.f90 : position_h.mod
@@ -195,6 +203,9 @@ query_m.f90 : log_m.mod
 query_m.f90 : control_h.mod
 query_m.f90 : position_h.mod
 query_m.f90 : position_m.mod
+beq_h.f90 : const_kind_m.mod
+beq_h.f90 : spl2d_m.mod
+beq_h.f90 : spl3d_m.mod
 posang_m.f90 : const_kind_m.mod
 posang_m.f90 : const_numphys_h.mod
 posang_m.f90 : posang_h.mod
@@ -213,3 +224,9 @@ spl2d_m.f90 : const_numphys_h.mod
 spl2d_m.f90 : log_m.mod
 spl2d_m.f90 : position_h.mod
 spl2d_m.f90 : position_m.mod
+spl3d_m.f90 : const_kind_m.mod
+spl3d_m.f90 : const_numphys_h.mod
+spl3d_m.f90 : log_m.mod
+spl3d_m.f90 : position_h.mod
+spl3d_m.f90 : position_m.mod
+spl3d_m.f90 : spl2d_m.mod

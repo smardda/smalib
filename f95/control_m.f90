@@ -94,11 +94,14 @@ subroutine control_read(file,numerics,plot)
   integer(ki4)  :: i2        !< power of two
   integer(ki4) :: no_geobj_records !< local variable
   integer(ki4) :: margin_type !< local variable
-  logical :: plot_hds !< vtk plot selector
-  logical :: plot_hdsbins !< vtk plot selector
+  logical :: plot_hds !< DUPLICATE vtk plot selector
+  logical :: plot_hdsm !< vtk plot selector
+  logical :: plot_hdsbins !< DUPLICATE vtk plot selector
+  logical :: plot_hdsq !< vtk plot selector
   logical :: plot_geobj !< vtk plot selector
   logical :: plot_lostgeobj !< vtk plot selector
-  logical :: plot_allgeobj_quantised !< vtk plot selector
+  logical :: plot_allgeobj_quantised !< DUPLICATE vtk plot selector
+  logical :: plot_geoptq !< vtk plot selector
   logical :: plot_densitygeobj !< vtk plot selector
 
   !! file names
@@ -123,10 +126,13 @@ subroutine control_read(file,numerics,plot)
   !! plot selection parameters
   namelist /plotselections/ &
  &plot_hds, &
+ &plot_hdsm, &
  &plot_hdsbins, &
+ &plot_hdsq, &
  &plot_geobj, &
  &plot_lostgeobj, &
  &plot_allgeobj_quantised, &
+ &plot_geoptq, &
  &plot_densitygeobj
 
   !! read input file names
@@ -164,10 +170,12 @@ subroutine control_read(file,numerics,plot)
   !!vtk file roots
   file%hdslist     =trim(root)//"_hds"
   file%hdsv  =trim(root)//"_hdsv"
+  file%hdsm  =trim(root)//"_hdsm"
   file%hdsq  =trim(root)//"_hdsq"
   file%geobj =trim(root)//"_geobj"
   file%lostgeobj    =trim(root)//"_lostgeobj"
   file%allgeobjq    =trim(root)//"_allgeobjq"
+  file%geoptq    =trim(root)//"_geoptq"
   file%densitygeobj    =trim(root)//"_densitygeobj"
 
   !! set default numerical parameters
@@ -244,25 +252,33 @@ subroutine control_read(file,numerics,plot)
 
   !! set default plot selections
   plot_hds = .false.
+  plot_hdsm = .false.
   plot_hdsbins = .false.
+  plot_hdsq = .false.
   plot_geobj = .false.
   plot_lostgeobj = .false.
   plot_allgeobj_quantised = .false.
+  plot_geoptq = .false.
   plot_densitygeobj = .false.
 
   !!read plot selections
-  read(nin,nml=plotselections,iostat=status)
+!  write(*,nml=plotselections)
+!  read(nin,nml=plotselections,iostat=status)
+!  write(*,nml=plotselections)
   if(status/=0) then
-     call log_error(m_name,s_name,12,error_fatal,'Error reading plot selections')
      print '("Fatal error reading plot selections")'
+     call log_error(m_name,s_name,12,error_fatal,'Error reading plot selections')
   end if
 
   !! store values
-  plot%hds   = plot_hds
+  plot%hdsm = plot_hds
+  plot%hdsm   = plot_hdsm
   plot%hdsbin    = plot_hdsbins
+  plot%hdsq    = plot_hdsq
   plot%geobj    = plot_geobj
   plot%lostgeobj     = plot_lostgeobj
   plot%allgeobjq     = plot_allgeobj_quantised
+  plot%geoptq     = plot_geoptq
   plot%densitygeobj     = plot_densitygeobj
 
 end  subroutine control_read
@@ -285,7 +301,8 @@ subroutine control_dread(file,numerics,plot)
   logical :: filefound !< true of file exists
   logical :: plot_density_quantised !< vtk plot selector
   logical :: plot_allgeobj !< vtk plot selector
-  logical :: plot_hdsbins !< vtk plot selector
+  logical :: plot_hdsbins !< DUPLICATE vtk plot selector
+  logical :: plot_hdsq !< vtk plot selector
 
   integer(ki4) :: geometrical_type !< type of geometry
   real(kr4) :: min_tolerance !< numerical parameter
@@ -316,7 +333,8 @@ subroutine control_dread(file,numerics,plot)
   namelist /plotselections/ &
  &plot_density_quantised, &
  &plot_allgeobj, &
- &plot_hdsbins
+ &plot_hdsbins, &
+ &plot_hdsq
 
   !! read input file names
   read(nin,nml=inputfiles,iostat=status)
@@ -416,11 +434,13 @@ subroutine control_dread(file,numerics,plot)
   file%denq     =trim(root)//"_denq"
   file%allgeobj  =trim(root)//"_allgeobj"
   file%hdsv  =trim(root)//"_hdsv"
+  file%hdsm  =trim(root)//"_hdsm"
 
   !! set default plot selections
   plot_density_quantised = .false.
   plot_allgeobj = .false.
   plot_hdsbins = .false.
+  plot_hdsq = .false.
 
   !!read plot selections
   read(nin,nml=plotselections,iostat=status)
@@ -433,6 +453,7 @@ subroutine control_dread(file,numerics,plot)
   plot%denq   = plot_density_quantised
   plot%allgeobj    = plot_allgeobj
   plot%hdsbin    = plot_hdsbins
+  plot%hdsq    = plot_hdsq
 
 end  subroutine control_dread
 
@@ -626,7 +647,8 @@ subroutine control_mread(file,numerics,plot)
   logical :: plot_move_positions !< vtk plot selector
   logical :: plot_points !< vtk plot selector
   logical :: plot_allgeobj !< vtk plot selector
-  logical :: plot_hdsbins !< vtk plot selector
+  logical :: plot_hdsbins !< DUPLICATE vtk plot selector
+  logical :: plot_hdsq !< vtk plot selector
 
   integer(ki4) :: geometrical_type !< type of geometry
   real(kr4) :: min_tolerance !< numerical parameter
@@ -658,7 +680,8 @@ subroutine control_mread(file,numerics,plot)
  &plot_move_positions, &
  &plot_points, &
  &plot_allgeobj, &
- &plot_hdsbins
+ &plot_hdsbins, &
+ &plot_hdsq
 
   !! read input file names
   read(nin,nml=inputfiles,iostat=status)
@@ -758,6 +781,7 @@ subroutine control_mread(file,numerics,plot)
   file%movq     =trim(root)//"_movq"
   file%allgeobj  =trim(root)//"_allgeobj"
   file%hdsv  =trim(root)//"_hdsv"
+  file%hdsm  =trim(root)//"_hdsm"
   file%pts     =trim(root)//"_pts"
   file%ptsq     =trim(root)//"_ptsq"
 
@@ -766,6 +790,7 @@ subroutine control_mread(file,numerics,plot)
   plot_points = .false.
   plot_allgeobj = .false.
   plot_hdsbins = .false.
+  plot_hdsq = .false.
 
   !!read plot selections
   read(nin,nml=plotselections,iostat=status)
@@ -778,6 +803,7 @@ subroutine control_mread(file,numerics,plot)
   plot%movq   = plot_move_positions
   plot%allgeobj    = plot_allgeobj
   plot%hdsbin    = plot_hdsbins
+  plot%hdsq    = plot_hdsq
   plot%ptsq    = plot_points
 
 end  subroutine control_mread

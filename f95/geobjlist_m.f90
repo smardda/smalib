@@ -109,6 +109,7 @@ subroutine geobjlist_init(self,vtkfile,numerics)
   self%nquant=numerics%nquante
   self%tfmdata=numerics%position_coord_tfm
   self%ngunassigned=0
+  self%nwset=0
 
   !! read coords
   call geobjlist_read(self,vtkfile)
@@ -131,6 +132,7 @@ subroutine geobjlist_delete(self)
 
   deallocate(self%posl%pos)
   if (self%ngtype==1.OR.self%nwset/=0) then
+     !  write(*,*) self%ngtype,self%nwset
      !    if (allocated(self%obj)) deallocate(self%obj)
      deallocate(self%obj)
   end if
