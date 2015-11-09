@@ -290,6 +290,14 @@ subroutine pcontrol_read(file,numerics,onumerics,edgprof,plot)
   plot%geofldq     = plot_geofld_quantised
   plot%gnu     = plot_gnu
   plot%flinends    = plot_flinends
+  if (plot_flincart) then
+  plot%flinx = plot_flincart
+  call log_error(m_name,s_name,30,error_warning,'Obsolete file handling feature activated')
+  end if
+  if (plot_flinptz) then
+  plot%flinm = plot_flinptz
+  call log_error(m_name,s_name,31,error_warning,'Obsolete file handling feature activated')
+  end if
 
   call powcal_readcon(numerics,nin)
 

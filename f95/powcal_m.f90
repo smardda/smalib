@@ -133,9 +133,9 @@ subroutine powcal_init(self,numerics,plot,gnumerics)
   call edgprof_factors(self%edgprof,&
  &self%powres%beq%rbdry,self%powres%beq%bpbdry,self%powres%beq%btotbdry,zsign)
   ! track controls
-  self%powres%flincart=plot%flinx
+  self%powres%flinx=plot%flinx
   self%powres%flinends=plot%flinends
-  self%powres%flinptz=plot%flinm
+  self%powres%flinm=plot%flinm
 
   calcn_type: select case (self%n%caltype)
   case('msus')
