@@ -138,8 +138,8 @@ subroutine control_read(file,numerics,plot)
   !! read input file names
   read(nin,nml=inputfiles,iostat=status)
   if(status/=0) then
-     call log_error(m_name,s_name,1,error_fatal,'Error reading input filenames')
      print '("Fatal error reading input filenames")'
+     call log_error(m_name,s_name,1,error_fatal,'Error reading input filenames')
   end if
 
   file%vtkdata   = vtk_input_file
@@ -195,8 +195,8 @@ subroutine control_read(file,numerics,plot)
   !!read numerical parameters
   read(nin,nml=numericalparameters,iostat=status)
   if(status/=0) then
-     call log_error(m_name,s_name,5,error_fatal,'Error reading numerical parameters')
      print '("Fatal error reading numerical parameters")'
+     call log_error(m_name,s_name,5,error_fatal,'Error reading numerical parameters')
   end if
 
   !! check for valid data
@@ -339,8 +339,8 @@ subroutine control_dread(file,numerics,plot)
   !! read input file names
   read(nin,nml=inputfiles,iostat=status)
   if(status/=0) then
-     call log_error(m_name,s_name,1,error_fatal,'Error reading input filenames')
      print '("Fatal error reading input filenames")'
+     call log_error(m_name,s_name,1,error_fatal,'Error reading input filenames')
   end if
 
   file%vtkdata   = vtk_input_file
@@ -385,8 +385,8 @@ subroutine control_dread(file,numerics,plot)
   !!read numerical parameters
   read(nin,nml=numericalparameters,iostat=status)
   if(status/=0) then
-     call log_error(m_name,s_name,5,error_fatal,'Error reading numerical parameters')
      print '("Fatal error reading numerical parameters")'
+     call log_error(m_name,s_name,5,error_fatal,'Error reading numerical parameters')
   end if
 
   !! check for valid data
@@ -445,8 +445,8 @@ subroutine control_dread(file,numerics,plot)
   !!read plot selections
   read(nin,nml=plotselections,iostat=status)
   if(status/=0) then
-     call log_error(m_name,s_name,6,error_fatal,'Error reading plot selections')
      print '("Fatal error reading plot selections")'
+     call log_error(m_name,s_name,6,error_fatal,'Error reading plot selections')
   end if
 
   !! store values
@@ -513,8 +513,8 @@ subroutine control_lread(file,numbers,plot)
   !! read input file names
   read(nin,nml=inputfiles,iostat=status)
   if(status/=0) then
-     call log_error(m_name,s_name,1,error_fatal,'Error reading input filenames')
      print '("Fatal error reading input filenames")'
+     call log_error(m_name,s_name,1,error_fatal,'Error reading input filenames')
   end if
 
   file%vtkdata   = vtk_input_file
@@ -553,8 +553,8 @@ subroutine control_lread(file,numbers,plot)
   !!read numerical parameters
   read(nin,nml=numericalparameters,iostat=status)
   if(status/=0) then
-     call log_error(m_name,s_name,5,error_fatal,'Error reading numerical parameters')
      print '("Fatal error reading numerical parameters")'
+     call log_error(m_name,s_name,5,error_fatal,'Error reading numerical parameters')
   end if
 
   !! check for valid data
@@ -617,8 +617,8 @@ subroutine control_lread(file,numbers,plot)
   !!read plot selections
   read(nin,nml=plotselections,iostat=status)
   if(status/=0) then
-     call log_error(m_name,s_name,6,error_fatal,'Error reading plot selections')
      print '("Fatal error reading plot selections")'
+     call log_error(m_name,s_name,6,error_fatal,'Error reading plot selections')
   end if
 
   !! store values
@@ -686,8 +686,8 @@ subroutine control_mread(file,numerics,plot)
   !! read input file names
   read(nin,nml=inputfiles,iostat=status)
   if(status/=0) then
-     call log_error(m_name,s_name,1,error_fatal,'Error reading input filenames')
      print '("Fatal error reading input filenames")'
+     call log_error(m_name,s_name,1,error_fatal,'Error reading input filenames')
   end if
 
   file%vtkdata   = vtk_input_file
@@ -732,8 +732,8 @@ subroutine control_mread(file,numerics,plot)
   !!read numerical parameters
   read(nin,nml=numericalparameters,iostat=status)
   if(status/=0) then
-     call log_error(m_name,s_name,5,error_fatal,'Error reading numerical parameters')
      print '("Fatal error reading numerical parameters")'
+     call log_error(m_name,s_name,5,error_fatal,'Error reading numerical parameters')
   end if
 
   !! check for valid data
@@ -795,8 +795,8 @@ subroutine control_mread(file,numerics,plot)
   !!read plot selections
   read(nin,nml=plotselections,iostat=status)
   if(status/=0) then
-     call log_error(m_name,s_name,6,error_fatal,'Error reading plot selections')
      print '("Fatal error reading plot selections")'
+     call log_error(m_name,s_name,6,error_fatal,'Error reading plot selections')
   end if
 
   !! store values
@@ -857,8 +857,8 @@ subroutine control_btree(numerics,kin)
   !!read btree parameters
   read(kin,nml=btreeparameters,iostat=status)
   if(status/=0) then
-     call log_error(m_name,s_name,1,error_fatal,'Error reading btree parameters')
      print '("Fatal error reading btree parameters")'
+     call log_error(m_name,s_name,1,error_fatal,'Error reading btree parameters')
   end if
 
 

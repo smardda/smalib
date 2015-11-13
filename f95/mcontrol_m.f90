@@ -129,8 +129,8 @@ subroutine mcontrol_read(file,numerics,plot)
   mag_input_file='null'
   read(nin,nml=magfiles,iostat=status)
   if(status/=0) then
-     call log_error(m_name,s_name,1,error_fatal,'Error reading input filenames')
      print '("Fatal error reading input filenames")'
+     call log_error(m_name,s_name,1,error_fatal,'Error reading input filenames')
   end if
 
   file%magdata   = mag_input_file
@@ -184,8 +184,8 @@ subroutine mcontrol_read(file,numerics,plot)
   !!read misc parameters
   read(nin,nml=miscparameters,iostat=status)
   if(status/=0) then
-     call log_error(m_name,s_name,10,error_fatal,'Error reading misc parameters')
      print '("Fatal error reading misc parameters")'
+     call log_error(m_name,s_name,10,error_fatal,'Error reading misc parameters')
   end if
 
   !! check for valid data
@@ -238,8 +238,8 @@ subroutine mcontrol_read(file,numerics,plot)
   !!read plot selections
   read(nin,nml=plotselections,iostat=status)
   if(status/=0) then
-     call log_error(m_name,s_name,22,error_fatal,'Error reading plot selections')
      print '("Fatal error reading plot selections")'
+     call log_error(m_name,s_name,22,error_fatal,'Error reading plot selections')
   end if
 
   !! store values

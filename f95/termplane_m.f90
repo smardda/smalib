@@ -68,8 +68,8 @@ subroutine termplane_readcon(self,kin)
   !!read termplane position parameters
   read(kin,nml=termplaneparameters,iostat=status)
   if(status/=0) then
-     call log_error(m_name,s_name,1,error_fatal,'Error reading termplane parameters')
      print '("Fatal error reading termplane parameters")'
+     call log_error(m_name,s_name,1,error_fatal,'Error reading termplane parameters')
   end if
 
   nactive=0

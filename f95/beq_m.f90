@@ -2423,8 +2423,8 @@ subroutine beq_readcon(selfn,kin)
   !!read beq parameters
   read(kin,nml=beqparameters,iostat=status)
   if(status/=0) then
-     call log_error(m_name,s_name,1,error_fatal,'Error reading beq parameters')
      print '("Fatal error reading beq parameters")'
+     call log_error(m_name,s_name,1,error_fatal,'Error reading beq parameters')
   end if
 
 

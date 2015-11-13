@@ -134,8 +134,8 @@ subroutine vcontrol_read(file,numerics)
   !!read misc parameters
   read(nin,nml=miscparameters,iostat=status)
   if(status/=0) then
-     call log_error(m_name,s_name,1,error_fatal,'Error reading misc parameters')
      print '("Fatal error reading misc parameters")'
+     call log_error(m_name,s_name,1,error_fatal,'Error reading misc parameters')
   end if
 
   !! check for valid data
@@ -176,8 +176,8 @@ subroutine vcontrol_read(file,numerics)
   vtk_label_number=0
   read(nin,nml=vtkfiles,iostat=status)
   if(status/=0) then
-     call log_error(m_name,s_name,21,error_fatal,'Error reading input filenames')
      print '("Fatal error reading input filenames")'
+     call log_error(m_name,s_name,21,error_fatal,'Error reading input filenames')
   end if
 
   ! check number of files against actuals
@@ -417,7 +417,8 @@ subroutine vcontrol_read(file,numerics)
      numerics%vptfm%ntfm(j)=ztfmdata%ntfm
      !ID     numerics%vptfm%id(j)=ztfmdata%id
   end do
-  call log_value('No transforms present',intfm)
+  call log_value('Return flag = ',iflag)
+  call log_value('Number of transforms present = ',intfm)
 
   ! assign transform numbers
   do j=1,inpan

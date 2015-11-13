@@ -282,6 +282,7 @@ subroutine geobjlist_read(self,infile,kched,kin)
   print '("number of geobj coordinates read = ",i10)',self%np
   call log_value("number of geobj coordinates read ",self%np)
 
+  self%nwset=0
   geobject_typer : select case (ivtktyp)
   case(1)
      ! skip to POINT_DATA, ignore CELL and CELL_TYPES etc.

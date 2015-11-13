@@ -504,8 +504,8 @@ subroutine query_readcon(querydata,kin)
   !!read query position parameters
   read(kin,nml=querypositionparameters,iostat=status)
   if(status/=0) then
-     call log_error(m_name,s_name,1,error_fatal,'Error reading query position parameters')
      print '("Fatal error reading query position parameters")'
+     call log_error(m_name,s_name,1,error_fatal,'Error reading query position parameters')
   end if
 
 

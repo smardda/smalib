@@ -446,8 +446,8 @@ subroutine powcal_readcon(selfn,kin)
   !!read powcal parameters
   read(kin,nml=powcalparameters,iostat=status)
   if(status/=0) then
-     call log_error(m_name,s_name,1,error_fatal,'Error reading powcal parameters')
      print '("Fatal error reading powcal parameters")'
+     call log_error(m_name,s_name,1,error_fatal,'Error reading powcal parameters')
   end if
 
   !! check for valid data

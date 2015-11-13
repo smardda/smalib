@@ -157,6 +157,7 @@ program datvtk_p
   case default
      call vfile_init(trim(fileroot)//'_out',iched,nplot)
      call geobjlist_writev(geobjl,'geometry',nplot)
+     if (optarg(3:3)=='m') bods=1 ! suppress body information
      call vfile_iscalarwrite(bods,size(bods),'Body','CELL',nplot,1)
   end select divide_type
   call clock_stop(30)

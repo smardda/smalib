@@ -143,8 +143,8 @@ subroutine edgprof_readcon(self,kin)
      !!read edgprof parameters
      read(ninep,nml=edgprofparameters,iostat=status)
      if(status/=0) then
-        call log_error(m_name,s_name,1,error_fatal,'Error reading edgprofparameters')
         print '("Fatal error reading edgprofparameters")'
+        call log_error(m_name,s_name,1,error_fatal,'Error reading edgprofparameters')
      end if
 
      call lowor(profile_formula,1,len_trim(profile_formula))

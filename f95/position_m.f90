@@ -338,8 +338,8 @@ subroutine position_readcon(ztfmdata,kin,flag)
   if (present(flag)) flag=status
   if(status/=0) then
      if (present(flag)) return
-     call log_error(m_name,s_name,1,error_fatal,'Error reading position parameters')
      print '("Fatal error reading position parameters")'
+     call log_error(m_name,s_name,1,error_fatal,'Error reading position parameters')
   end if
 
 
