@@ -119,9 +119,9 @@ program hdsgen_p
 !! sorted btree and geobjl data diagnostics
 
 
-!!plot HDS
-  if(plot%hds) then
-     call clock_start(10,'vfile_hds time')
+!!plot mapped HDS
+  if(plot%hdsm) then
+     call clock_start(10,'vfile_hdsm time')
      call vfile_init(file%hdsm,'hds lowest',nplot)
      call btree_writev(btree,numerics,'hds lowest',nplot)
      call vfile_close
@@ -138,11 +138,11 @@ program hdsgen_p
   end if
 
 !!plot assigned geobj
-  if(plot%geobj) then
+  if(plot%geobjq) then
      call clock_start(14,'vfile_assignedgeobj time')
-     call vfile_init(file%geobj,'assigned geobj',nplot)
+     call vfile_init(file%geobjq,'assigned geobj',nplot)
 ! in quantised space
-     call geobjlist_writev(geobjl,'assigned quantised',nplot)
+     call geobjlist_writev(geobjl,'geometry',nplot)
      call vfile_close
      call clock_stop(14)
   end if
@@ -157,7 +157,7 @@ program hdsgen_p
      call clock_stop(15)
   end if
 
-!!plot all geobjs
+!!plot all geobj points
   if(plot%geoptq) then
      call clock_start(16,'vfile_allgeoptq time')
      call vfile_init(file%geoptq,'all geoptq',nplot)

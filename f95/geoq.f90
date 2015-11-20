@@ -52,6 +52,7 @@ program geoq_p
   character(len=80) :: fileroot !< reference name for all files output by run
   character(len=80) :: fileq !< equil file name
   character(len=256) :: vtkdesc !< descriptor line for vtk files
+  character(len=80) :: mapfld !< field output in geoqm file
 
   integer(ki4):: nplot !< unit for vtk files
   integer(ki4):: nprint !< unit for gnuplot files
@@ -169,7 +170,9 @@ program geoq_p
      plot%geoqx=.FALSE.
 ! this one not implemented (or needed?)
      plot%frzv=.FALSE.
+     mapfld='frzxi'
   case default
+     mapfld='all'
      call beq_dia(geoq%beq)
   end select
 !! optionally read in ripple data
@@ -253,10 +256,10 @@ program geoq_p
 !!plot all geobjs
   if(plot%geoqm) then
      call clock_start(20,'vfile_geoqm time')
-     write(vtkdesc,'(A3,1X,A18,I3)') 'all','Integer_Parameter=',geoq%objl%nparam
+     write(vtkdesc,'(A3,1X,A18,I3)') mapfld(1:3),'Integer_Parameter=',geoq%objl%nparam
      call vfile_init(file%geoqm,vtkdesc,nplot)
-! in psi-theta-zeta position space
-     call geoq_writev(geoq,'all',nplot)
+! in mapped position space
+     call geoq_writev(geoq,mapfld,nplot)
      call vfile_close
      call clock_stop(20)
   end if

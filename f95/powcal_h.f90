@@ -26,7 +26,7 @@ module powcal_h
      integer(ki4)  :: shadow !< shadowing calculation if positive
      real(kr8) :: qpara0 !< parallel reference flux (W/sqm)
    ! additions for powcal
-     character(len=80) :: caltype !< type of calculation ('afws', 'msus', 'msum')
+     character(len=80) :: caltype !< type of calculation ('afws','local', 'msus','global', 'msum','middle')
      integer(ki4)  :: mtrack !< maximum number of tracks to follow (<= hardwired parameter)
      integer(ki4)  :: ntrack !< if non-zero, number of tracks to follow
      integer(ki4), dimension(:), allocatable  :: trackno !< array containing track element numbers

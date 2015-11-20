@@ -164,7 +164,7 @@ module beq_h
 ! public variables
   integer(ki4), public, parameter :: beq_spline_order=4 !< set to four for cubic splines (use of tc01a assumes cubic splines)
   logical, public :: beq_nobinq !< flag whether \f$ B \f$ data in EQDSK file
-  logical, parameter :: BEQ_OVERRIDE_AFWS=.TRUE. !< use values required by AFWS project
-  logical, parameter :: BEQ_OVERRIDE_FTU=.TRUE. !< use values required by FTU project
+  logical, parameter :: BEQ_OVERRIDE_ITER=.TRUE. !< use values required by ITER project
+  logical, parameter :: BEQ_OVERRIDE_FTU=.FALSE. !< use values required by FTU project
 
 end module beq_h

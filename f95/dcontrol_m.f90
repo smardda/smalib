@@ -104,7 +104,7 @@ subroutine dcontrol_read(file,numerics,plot)
  &rz_input_file
 
   !! transformation parameters
-  namelist /datvtk_parameters/ &
+  namelist /datvtkparameters/ &
  &transform_type,&
  &start_angle, finish_angle, &
  &start_position, finish_position, &
@@ -177,7 +177,7 @@ subroutine dcontrol_read(file,numerics,plot)
   number_of_divisions = 10
 
   !!read datvtk parameters
-  read(nin,nml=datvtk_parameters,iostat=status)
+  read(nin,nml=datvtkparameters,iostat=status)
   if(status/=0) then
      print '("Fatal error reading datvtk parameters")'
      call log_error(m_name,s_name,10,error_fatal,'Error reading datvtk parameters')

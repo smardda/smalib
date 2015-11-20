@@ -80,6 +80,7 @@ subroutine odes_init(self,numerics)
   self%nfacup=ifacup
   self%nfacdn=ifacdn
   self%ffac=zffac
+  ! is overwritten below
   self%npdim=ipdim
   self%nsord=isord
 
@@ -144,7 +145,7 @@ subroutine odes_readcon(selfn,kin)
  &rel_error, abs_error, initial_dt, max_numsteps, max_zeta
 
   !! set default odes parameters
-  system_order=1
+  system_order=0
   start_control=0
   termination_control=0
   termination_parameters=0._kr8
@@ -272,12 +273,13 @@ subroutine odes_rjstep(self,kerr,pf,pdfac,rjspl2d)
 end subroutine odes_rjstep
 !---------------------------------------------------------------------
 !> phi-stepping for axisymm 3-D vector field
-subroutine odes_1ststepcon(self,kerr,pdfaca,psi,rispldr,rispldz)
+subroutine odes_1ststepcon(self,kerr,pdfaca,firstcall,psi,rispldr,rispldz)
 
   !! arguments
   type(odes_t), intent(inout) :: self   !< object data structure
   integer(ki4), intent(inout) :: kerr   !< error flag
   real(kr8), dimension(*), intent(in) :: pdfaca   !< direction factor array
+  integer(ki4), intent(inout) :: firstcall  !< flag up first step of new trajectory
   type(spl2d_t), intent(inout) :: psi !< spl2d object data structure
   type(spl2d_t), intent(inout) :: rispldr !< derivative spl2d object data structure
   type(spl2d_t), intent(inout) :: rispldz !< derivative spl2d object data structure
@@ -300,7 +302,6 @@ subroutine odes_1ststepcon(self,kerr,pdfaca,psi,rispldr,rispldz)
   real(kr8) :: rso !< local variable
   real(kr8) :: t !< local variable
   integer(ki4) :: ik  !< winding number
-  integer(ki4), save :: first_call=1  !< winding number
 
   g=self%vecp%pos(self%ndt)%posvec(1:2)
   !     t=self%vecp%pos(self%ndt)%posvec(3)
@@ -323,8 +324,8 @@ subroutine odes_1ststepcon(self,kerr,pdfaca,psi,rispldr,rispldz)
   end if
   g3d=abs(g3-g2)
   ! Soderlind control requires value from older timestep
-  if (first_call==1) then
-     first_call=0
+  if (firstcall==1) then
+     firstcall=0
      g3do=g3d
   else
      g3do=self%g3do(1:2)
@@ -762,7 +763,7 @@ subroutine odes_4thstep(self,kerr,pdfaca,pf,psi,dspldr,dspldz)
 end subroutine odes_4thstep
 !---------------------------------------------------------------------
 !> extra-special timestepping for axisymm 3-D vector field
-subroutine odes_4thstepcon(self,kerr,pdfaca,pf,psi,dspldr,dspldz)
+subroutine odes_4thstepcon(self,kerr,pdfaca,firstcall,pf,psi,dspldr,dspldz)
 
   !! arguments
   type(odes_t), intent(inout) :: self   !< object data structure
@@ -772,6 +773,7 @@ subroutine odes_4thstepcon(self,kerr,pdfaca,pf,psi,dspldr,dspldz)
   type(spl2d_t), intent(inout) :: psi !< spl2d object data structure
   type(spl2d_t), intent(inout) :: dspldr !< derivative spl2d object data structure
   type(spl2d_t), intent(inout) :: dspldz !< derivative spl2d object data str`
+  integer(ki4), intent(inout) :: firstcall  !< flag up first step of new trajectory
 
   !! local
   character(*), parameter :: s_name='odes_4thstepcon' !< subroutine name
@@ -792,7 +794,6 @@ subroutine odes_4thstepcon(self,kerr,pdfaca,pf,psi,dspldr,dspldz)
   real(kr8) :: rso !< local variable
   real(kr8) :: t !< local variable
   integer(ki4) :: ik  !< winding number
-  integer(ki4), save :: first_call=1  !< winding number
 
   g=self%vecp%pos(self%ndt)%posvec
   t=self%t
@@ -817,8 +818,8 @@ subroutine odes_4thstepcon(self,kerr,pdfaca,pf,psi,dspldr,dspldz)
      g3d=abs(g3-g2)
   end if
   ! Soderlind control (and Zadunaisky) requires value from older timestep
-  if (first_call==1) then
-     first_call=0
+  if (firstcall==1) then
+     firstcall=0
      g3do=g3d
   else
      g3do=self%g3do
@@ -1190,7 +1191,7 @@ end subroutine odes_4thstep1
 !> RKF 23 step
 subroutine odes_rkf23n(pfunct,pt,pdt,py,py2,py3,pdia,&
      psi,pf,rjspl2d)
-     !     rkf23 scheme for AFWS work
+     !     rkf23 scheme for ITER work
   real(kr8), intent(in) :: pt !< starting time
   real(kr8), intent(in) :: pdt !< timestep
   real(kr8), intent(inout) :: py !< starting value
@@ -1235,7 +1236,7 @@ end subroutine odes_rkf23n
 !---------------------------------------------------------------------
 !> RKF 23 step for R and Z
 subroutine odes_rkf23a(pfunct,pt,pdt,py,py2,py3,pdia,pdfaca,rispldr,rispldz)
-     !     rkf23 scheme for MSUS work
+     !     rkf23 scheme for 'msus','global' work
   real(kr8), intent(in) :: pt !< starting time
   real(kr8), intent(in) :: pdt !< timestep
   real(kr8),  intent(inout), dimension(mpdim) :: py !< starting value
@@ -1277,7 +1278,7 @@ end subroutine odes_rkf23a
 !> RKF 23 step for explicit t-dependence
 subroutine odes_rkf23m(pfunct,pt,pdt,py,py2,py3,pdia,&
      pdfaca,pf,dspldr,dspldz)
-     !     rkf23 scheme for MSUS work
+     !     rkf23 scheme for 'msus','global' work
   real(kr8), intent(in) :: pt !< starting time
   real(kr8), intent(in) :: pdt !< timestep
   real(kr8),  intent(inout), dimension(mpdim) :: py !< starting value
@@ -1322,7 +1323,7 @@ end subroutine odes_rkf23m
 !> RKF 23 step for 3-D vector, t-dependence
 subroutine odes_rkf23d(pfunct,pt,pdt,py,py2,py3,pdia,&
      pdfaca,spl3d,dspldr,dspldz)
-     !     rkf23 scheme for MSUS work
+     !     rkf23 scheme for 'msus','global' work
   real(kr8), intent(in) :: pt !< starting time
   real(kr8), intent(in) :: pdt !< timestep
   real(kr8),  intent(inout), dimension(mpvdim) :: py !< starting value
@@ -1367,7 +1368,7 @@ end subroutine odes_rkf23d
 !> RKF 23 step for 3-D vector, t-dependence
 subroutine odes_rkf23p(pfunct,pt,pdt,py,py2,py3,pdia,&
      pdfaca,pf,dspldr,dspldz)
-     !     rkf23 scheme for MSUS work
+     !     rkf23 scheme for 'msus','global' work
   real(kr8), intent(in) :: pt !< starting time
   real(kr8), intent(in) :: pdt !< timestep
   real(kr8),  intent(inout), dimension(mpvdim) :: py !< starting value
@@ -1549,11 +1550,11 @@ subroutine odes_4thfunct(pt,py,pydot,pdia,pdfaca,pf,dspldr,dspldz)
      pydot(1)=-pdfaca(1)*zdpdz
      pydot(2)=pdfaca(2)*zdpdr
      pydot(3)=pdfaca(3)*pf/(py(1)-pdfaca(4))
+     !D     write(*,*) 'pt,py,pydot,zvecf=',pt,py,pydot,zvecf !D
      !D     write(*,*) pt,py,pydot !D
      pdia(1,1)=-zdpdz
      pdia(2,1)=zdpdr
      pdia(3,1)=pf
-     !D     write(*,*) 'pt,py,pydot,zvecf=',pt,py,pydot,zvecf !D
 
 end subroutine odes_4thfunct
 !---------------------------------------------------------------------

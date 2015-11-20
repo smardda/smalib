@@ -26,15 +26,15 @@ module beq_m
   beq_delete,   & !< delete  beq data structure
   beq_readv, & !< read in visualisation format (TO DO)
   beq_readcheck, & !< check field as mapped or 3-cpt
-  beq_readpart, & !< read field data needed by AFWS
-  beq_readplus, & !< read field data needed by MSUS
+  beq_readpart, & !< read field data needed by ITER
+  beq_readplus, & !< read field data needed by 'msus','global'
   beq_writeg, & !< write in gnuplot format
   beq_writev, & !< write in visualisation format
   beq_write, & !< write in data structure format
-  beq_writepart, & !< write field data needed by AFWS
-  beq_deletepart, & !< delete field data used by AFWS
-  beq_writeplus, & !< write field data needed by MSUS
-  beq_deleteplus, & !< delete field data used by MSUS
+  beq_writepart, & !< write field data needed by ITER
+  beq_deletepart, & !< delete field data used by ITER
+  beq_writeplus, & !< write field data needed by 'msus','global'
+  beq_deleteplus, & !< delete field data used by 'msus','global'
   beq_dia, &  !< calculate diagnostics and output
   beq_spl2d, & !< initialise spline data structure from beq
   beq_readcon, &  !< namelist input of controls
@@ -364,20 +364,20 @@ subroutine beq_readequil(self,infile,kfldspec)
   integer(ki4), dimension(2) :: js=0 !< second index of number
   integer(ki4) :: isfixedh  !< flag fixed-format input for header
   integer(ki4) :: isfixed  !< flag fixed-format input
-  real(kr8) :: bcentr !< EFIT vacuum toroidal field at r=rcentr
-  real(kr8) :: cpasma !< EFIT computed plasma current
-  real(kr8) :: rgrid !< EFIT variable
-  real(kr8) :: rmaxis !< EFIT variable
-  real(kr8) :: rzero !< EFIT variable
+  real(kr8) :: bcentr !< EFIT vacuum toroidal field at r=rcentr ignored
+  real(kr8) :: cpasma !< EFIT computed plasma current in A ignored
+  real(kr8) :: rgrid !< EFIT Minimum R in metre of rectangular computational box
+  real(kr8) :: rmaxis !< EFIT plasma centre (magnetic axis) in metre
+  real(kr8) :: rzero !< EFIT variable ignored
   real(kr8) :: ssibry1 !< EFIT poloidal flux at the boundary (Wb/rad)
-  real(kr8) :: ssibry2 !< EFIT poloidal flux at the boundary (Wb/rad)
+  real(kr8) :: ssibry2 !< EFIT poloidal flux at the boundary (Wb/rad) ignored
   real(kr8) :: ssimag1 !< EFIT poloidal flux at the magnetic axis (Wb/rad)
-  real(kr8) :: ssimag2 !< EFIT poloidal flux at the magnetic axis (Wb/rad)
-  real(kr8) :: xdim !< EFIT vacuum toroidal field at r=rcentr
-  real(kr8) :: xdum !< EFIT variable
-  real(kr8) :: zdim !< EFIT variable
-  real(kr8) :: zmaxis !< EFIT variable
-  real(kr8) :: zmid !< EFIT variable
+  real(kr8) :: ssimag2 !< EFIT poloidal flux at the magnetic axis (Wb/rad) ignored
+  real(kr8) :: xdim !< EFIT Horizontal dimension in metre of computational box
+  real(kr8) :: xdum !< EFIT variable ignored
+  real(kr8) :: zdim !< EFIT Vertical dimension in metre of computational box
+  real(kr8) :: zmaxis !< EFIT plasma centre (magnetic axis) in metre
+  real(kr8) :: zmid !< EFIT centre of computational box in metre originally ignored
   real(kr8) :: zpsic !< diagnostic variable
   integer(ki4) :: nbbbs  !< EFIT number of points describing boundary
   integer(ki4) :: limitr  !< EFIT number of points describing limitr
@@ -469,6 +469,7 @@ subroutine beq_readequil(self,infile,kfldspec)
   read(iin,'(a80)')ibuff
   if (needfixup) read(iin,'(a80)')ibuff
 
+  ! EFIT G EQDSK defined at https://fusion.gat.com/theory/Efitgeqdsk
   if (isfixedh==0) then
      read(iin,*,iostat=istatus)xdim,zdim,rzero,rgrid,zmid
      if (debug) write(*,*) 'Header lines from eqdsk file---'
@@ -515,6 +516,27 @@ subroutine beq_readequil(self,infile,kfldspec)
      end if
      if (debug) write(*,cfmt1)zmaxis,xdum,ssibry2,xdum,xdum
   end if
+
+  call log_error(m_name,s_name,90,log_info,'Geometry parameters from EFIT')
+  call log_value('Domain size in R xdim=',xdim)
+  call log_value('Domain size in Z zdim=',zdim)
+  call log_value('Domain start in R rgrid=',rgrid)
+  call log_value('Domain centre in Z (originally ignored) zmid=',zmid)
+  call log_error(m_name,s_name,91,log_info,'Centre of domain in Z is assumed to be Z=0')
+  call log_error(m_name,s_name,92,log_info,'Plasma parameters from EFIT')
+  call log_value('Flux at centre ssimag1=',ssimag1)
+  call log_value('Flux at boundary ssibry1=',ssibry1)
+  call log_value('Plasma centre in R rmaxis=',rmaxis)
+  call log_value('Plasma centre in Z zmaxis=',zmaxis)
+  call log_error(m_name,s_name,93,log_info,'Check consistency with other plasma data')
+  if (debug) write(*,*) 'Geometry parameters from EFIT'
+  if (debug) write(*,*) 'Domain size xdim=',xdim ,'zdim=',zdim
+  if (debug) write(*,*) 'Domain start rgrid=',rgrid, 'Domain middle (ignored) zmid=',zmid
+  if (debug) write(*,*) 'Centre of domain in Z is assumed to be Z=0'
+  if (debug) write(*,*) 'Plasma parameters from EFIT'
+  if (debug) write(*,*) 'Fluxes at centre ssimag1=',ssimag1, 'boundary ssibry1=',ssibry1
+  if (debug) write(*,*) 'Plasma centre rmaxis=',rmaxis, 'zmaxis=',zmaxis
+  if (debug) write(*,*) 'Check consistency with other plasma data'
 
   ! fpol array
   !! allocate fpol storage and read
@@ -592,16 +614,16 @@ subroutine beq_readequil(self,infile,kfldspec)
   self%psibdry=self%psiqbdry
   self%rmin=rgrid
   self%rmax=rgrid+xdim
-  self%zmin=-zdim/2
-  self%zmax=zdim/2
+  self%zmin=zmid-zdim/2
+  self%zmax=zmid+zdim/2
   self%rqcen=rmaxis
   self%zqcen=zmaxis
 
   fld_specn: select case (kfldspec)
   case(1,3)
-     if (BEQ_OVERRIDE_AFWS) then
-        call log_error(m_name,s_name,49,log_info,'override for AFWS')
-        ! special for afws project to align current and toroidal field
+     if (BEQ_OVERRIDE_ITER) then
+        call log_error(m_name,s_name,49,log_info,'override for ITER')
+        ! special for ITER to align current and toroidal field
         if (ssimag1>ssibry1) then
            self%psiaxis=-ssimag1
            self%psiqbdry=-ssibry1
@@ -613,9 +635,9 @@ subroutine beq_readequil(self,infile,kfldspec)
         end if
      end if
   case(2)
-     if (BEQ_OVERRIDE_FTU) then
-        call log_error(m_name,s_name,49,log_info,'override for FTU')
-        ! special for FTU project to align current and toroidal field
+     if (BEQ_OVERRIDE_ITER) then
+        call log_error(m_name,s_name,48,log_info,'override for ITER')
+        ! special for ITER project to align current and toroidal field
         ! possibly also in case where psi increases from axis
         self%f=-self%f
      end if
@@ -916,9 +938,9 @@ subroutine beq_readequ(self,infile,kfldspec)
 
   fld_specn: select case (kfldspec)
   case(1,3)
-     if (BEQ_OVERRIDE_AFWS) then
-        call log_error(m_name,s_name,49,log_info,'override for AFWS')
-        ! special for afws project to align current and toroidal field
+     if (BEQ_OVERRIDE_ITER) then
+        call log_error(m_name,s_name,49,log_info,'override for ITER')
+        ! special for ITER to align current and toroidal field
         if (psic>psib) then
            self%psiaxis=-psic
            self%psiqbdry=-psib
@@ -1047,9 +1069,9 @@ subroutine beq_readana(self,beqan,kfldspec)
 
   fld_specn: select case (kfldspec)
   case(1,3)
-     if (BEQ_OVERRIDE_AFWS) then
-        call log_error(m_name,s_name,49,log_info,'override for AFWS')
-        ! special for afws project to align current and toroidal field
+     if (BEQ_OVERRIDE_ITER) then
+        call log_error(m_name,s_name,49,log_info,'override for ITER')
+        ! special for ITER to align current and toroidal field
         if (psic>psib) then
            self%psiaxis=-psic
            self%psibdry=-psib
@@ -1241,8 +1263,8 @@ subroutine beq_readcheck(self,infile)
      ifldspec=1
   else
 
-  read(nin,*,iostat=status) ifldspec
-  call log_read_check(m_name,s_name,4,status)
+     read(nin,*,iostat=status) ifldspec
+     call log_read_check(m_name,s_name,4,status)
   end if
   self%n%fldspec=ifldspec
 
@@ -1250,7 +1272,7 @@ subroutine beq_readcheck(self,infile)
 
 end subroutine beq_readcheck
 !---------------------------------------------------------------------
-!> read field data needed by AFWS
+!> read field data needed by ITER
 subroutine beq_readpart(self,infile)
 
   !! arguments
@@ -1346,10 +1368,10 @@ subroutine beq_readpart(self,infile)
   read(nin,*,iostat=status) ibuff
 
   if(status/=0)then
-  call log_error(m_name,s_name,60,log_info,'beq read in from data file')
+     call log_error(m_name,s_name,60,log_info,'beq read in from data file')
   end if
 
-! added 'plus parts'
+  ! added 'plus parts'
   read(nin,*,iostat=status) ibuff
   read(nin,*,iostat=status) self%n%fldspec
   call log_read_check(m_name,s_name,4,status)
@@ -1373,7 +1395,7 @@ subroutine beq_readpart(self,infile)
 
 end subroutine beq_readpart
 !---------------------------------------------------------------------
-!> read field data needed by MSUS
+!> read field data needed by 'msus','global'
 subroutine beq_readplus(self,infile)
 
   !! arguments
@@ -1759,8 +1781,8 @@ subroutine beq_dia(self)
   call log_error(m_name,s_name,1,log_info,'Map data')
   call log_value("MAP LIMIT psimin ",self%n%psimin)
   call log_value("MAP LIMIT psimax ",self%n%psimax)
-! call log_value("MAP LIMIT thetamin ",self%n%thetamin)
-! call log_value("MAP LIMIT thetamax ",self%n%thetamax)
+  ! call log_value("MAP LIMIT thetamin ",self%n%thetamin)
+  ! call log_value("MAP LIMIT thetamax ",self%n%thetamax)
   call log_value("MAP LIMIT thetamin ",self%n%thetamin+(self%ntmin-1)*self%dtheta)
   call log_value("MAP LIMIT thetamax ",self%n%thetamax+(self%ntmax-1)*self%dtheta)
   call log_value("maximum error in psi ",zperr)
@@ -1980,7 +2002,7 @@ subroutine beq_write(self,kout)
 
 end subroutine beq_write
 !---------------------------------------------------------------------
-!> write field data needed by AFWS
+!> write field data needed by ITER
 subroutine beq_writepart(self,kout)
 
   !! arguments
@@ -2032,7 +2054,7 @@ subroutine beq_writepart(self,kout)
   call spl2d_write( self%rjac,kout )
   write(kout,*,iostat=status) 'end of 2d spline'
 
-! added 'plus parts'
+  ! added 'plus parts'
   write(kout,*,iostat=status) 'fldspec'
   write(kout,*,iostat=status) self%n%fldspec
   call log_write_check(m_name,s_name,4,status)
@@ -2055,7 +2077,7 @@ subroutine beq_writepart(self,kout)
 
 end subroutine beq_writepart
 !---------------------------------------------------------------------
-!> delete field data used by AFWS
+!> delete field data used by ITER
 subroutine beq_deletepart(self)
 
   !! arguments
@@ -2071,7 +2093,7 @@ subroutine beq_deletepart(self)
 
 end subroutine beq_deletepart
 !---------------------------------------------------------------------
-!> write field data needed by MSUS
+!> write field data needed by 'msus','global'
 subroutine beq_writeplus(self,kout)
 
   !! arguments
@@ -2172,7 +2194,7 @@ subroutine beq_writeplus(self,kout)
 
 end subroutine beq_writeplus
 !---------------------------------------------------------------------
-!> delete field data used by MSUS
+!> delete field data used by 'msus','global'
 subroutine beq_deleteplus(self)
 
   !! arguments
@@ -2449,7 +2471,7 @@ subroutine beq_readcon(selfn,kin)
  &call log_error(m_name,s_name,4,error_fatal,'beq_nopt must be small positive integer')
   if(beq_nopt==1.AND.beq_npsi*beq_ntheta<=1) &
  &call log_error(m_name,s_name,4,error_fatal,'dimensions of psi,theta space must be > 1')
-  if(beq_nopt==1.AND.beq_npsi<1) &
+  if(beq_nopt==1.AND.beq_npsi<=1) &
  &call log_error(m_name,s_name,4,error_fatal,'beq_npsi must be > 1')
 
   if(beq_thetaopt<=0.OR.beq_thetaopt>=4) &

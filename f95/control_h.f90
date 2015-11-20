@@ -44,13 +44,13 @@ module control_h
      character(len=80) :: qrydata         !< Query data file
      character(len=80) :: hdslist            !< HDS output
      character(len=80) :: hdsv           !< DUPLICATE vtk plot of HDS
-     character(len=80) :: hdsm           !< vtk plot of HDS in ptz
-     character(len=80) :: hdsq          !< vtk plot of HDS in ptz quantised
-     character(len=80) :: geobj      !< vtk plot of assigned geobj
+     character(len=80) :: hdsm           !< vtk plot of HDS in mapped coords
+     character(len=80) :: hdsq          !< vtk plot of HDS in mapped quantised coords
+     character(len=80) :: geobjq     !< vtk plot of assigned geobj
      character(len=80) :: lostgeobj  !< vtk plot file of unassigned geobj
      character(len=80) :: allgeobj  !< vtk plot file of all geobj
      character(len=80) :: allgeobjq  !< DUPLICATE vtk plot file of all geobj quantised
-     character(len=80) :: geoptq  !< vtk plot file of all geobj in ptz quantised
+     character(len=80) :: geoptq  !< vtk plot file of all geobj in mapped quantised coords
      character(len=80) :: densitygeobj  !< vtk plot file of density geobj
      character(len=80) :: den!< vtk plot file of density field
      character(len=80) :: denq!< vtk plot file of quantised density field
@@ -83,12 +83,13 @@ module control_h
      logical :: hds   !< DUPLICATE vtk plot of hds
      logical :: hdsm   !< vtk plot of hds
      logical :: hdsbin     !< DUPLICATE vtk plot of HDS bbs
-     logical :: hdsq   !< vtk plot of hds in ptz quantised
-     logical :: geobj   !< vtk plot of geobj
+     logical :: hdsq   !< vtk plot of hds in mapped quantised coords
+     logical :: geobj   !< DUPLICATE vtk plot of geobj
+     logical :: geobjq   !< vtk plot of geobjq
      logical :: lostgeobj  !< vtk plot file of unassigned geobj
      logical :: allgeobj  !< vtk plot file of all geobj
      logical :: allgeobjq  !< DUPLICATE vtk plot file of all geobj quantised
-     logical :: geoptq  !< vtk plot file of all geobj in ptz quantised
+     logical :: geoptq  !< vtk plot file of all geobj in mapped quantised coords
      logical :: densitygeobj  !< vtk plot file of density geobj
      logical :: den   !< vtk plot of den
      logical :: denq   !< vtk plot of quantised den

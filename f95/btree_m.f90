@@ -34,11 +34,8 @@ module btree_m
 
 ! public types
 
+  !> type storing tree coord data
   type, public :: btree_t
-   !     private
-   !!
-   !! type storing tree coord data
-   !!
      integer(ki4)  :: nt !< number of entries in tree
      integer(ki4), dimension(:,:), allocatable :: pter !< tree links
      integer(ki2), dimension(:,:), allocatable :: desc !< description
@@ -53,9 +50,8 @@ module btree_m
      integer(ki4):: mtype !< type of margin for quantising
      integer(ki4) :: nttalg !< type of binary tree algorithm for top node
      real(kr4), dimension(3)  :: hxyz !< specified mesh sizes
-
      type(ls_t) :: objectls !< local variable
-   !!
+
   end type btree_t
 
 !public variables

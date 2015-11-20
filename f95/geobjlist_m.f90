@@ -1058,25 +1058,37 @@ subroutine geobjlist_getbb(self,btree)
   self%quantfm%hmin=(/0.,0.,0./)
   zhmin=0.
   imtype=btree%mtype
+
+!! loop always executes at least once, even if imtype=margin_type=0
   do j=0,min(imtype,1)
+     ! effect is to expand  box by 0, h or approx 3h+2h^2, depending on imtype
      if ( (btree%nttype==3).AND.(btree%nttalg==0) ) then
-        self%binbb(lmin,1)=self%binbb(lmin,1)-imtype*zhmin
-        self%binbb(lmin,2)=self%binbb(lmin,2)+imtype*zhmin
+        ! multi-octree, automatic quantisation
+        ! on second pass zhmin is non-zero,
+        self%binbb(:,1)=self%binbb(:,1)-imtype*zhmin
+        self%binbb(:,2)=self%binbb(:,2)+imtype*zhmin
      else
         self%binbb(:,1)=self%binbb(:,1)-imtype*self%quantfm%hmin
         self%binbb(:,2)=self%binbb(:,2)+imtype*self%quantfm%hmin
      end if
+     !
      if (btree%nttype==1) then
+        ! BSP
         self%quantfm%hmin=(self%binbb(:,2)-self%binbb(:,1))/2**self%nquant
      else if (btree%nttype==2) then
+        ! octree
         self%quantfm%hmin=(self%binbb(:,2)-self%binbb(:,1))/2**self%nquant
      else if (btree%nttype==3) then
+        ! multi-octree
         if (btree%nttalg==0) then
+           ! multi-octree, automatic quantisation
            zhmin=(self%binbb(lmin,2)-self%binbb(lmin,1))/2**self%nquant
            self%quantfm%hmin=(/zhmin,zhmin,zhmin/)
         else if (btree%nttalg==1) then
+           ! multi-octree, using hxyz
            self%quantfm%hmin=(self%binbb(:,2)-self%binbb(:,1))/(ixyz*2**self%nquant)
         else if (btree%nttalg==2) then
+           ! multi-octree, using nxyz
            self%quantfm%hmin=(self%binbb(:,2)-self%binbb(:,1))/(ixyz*2**self%nquant)
         end if
      end if

@@ -181,8 +181,8 @@ subroutine geoq_init(self)
         self%beq%psibdry=max(self%beq%psiqbdry,self%beq%psiltr)
      end if
      ! geoq_override for specific project
-     if (BEQ_OVERRIDE_AFWS) then
-        call log_error(m_name,s_name,49,log_info,'override for AFWS')
+     if (BEQ_OVERRIDE_ITER) then
+        call log_error(m_name,s_name,49,log_info,'override for ITER')
         self%beq%psibdry=self%beq%psiltr
      end if
   else if(self%beq%n%bdryopt==4.OR.self%beq%n%bdryopt==8) then
@@ -194,8 +194,8 @@ subroutine geoq_init(self)
         self%beq%psibdry=max(self%beq%psiqbdry,self%beq%psixpt)
      end if
      ! geoq_override for specific project
-     if (BEQ_OVERRIDE_AFWS) then
-        call log_error(m_name,s_name,49,log_info,'override for AFWS')
+     if (BEQ_OVERRIDE_ITER) then
+        call log_error(m_name,s_name,49,log_info,'override for ITER')
         self%beq%psibdry=self%beq%psixpt
         self%beq%psiltr=self%beq%psixpt
      end if

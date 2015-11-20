@@ -308,30 +308,40 @@ subroutine pcontrol_read(file,numerics,onumerics,edgprof,plot)
 end  subroutine pcontrol_read
 !---------------------------------------------------------------------
 !> create consistent controls
-subroutine pcontrol_fix(numerics,onumerics)
+subroutine pcontrol_fix(numerics,onumerics,ifldspec)
 
   !! arguments
   type(pnumerics_t), intent(inout) :: numerics !< input numerical parameters
   type(onumerics_t), intent(inout) :: onumerics !< input ODE numerical parameters
+  integer(ki4), intent(in) :: ifldspec !< field specification
 
   !!local
   character(*), parameter :: s_name='pcontrol_fix' !< subroutine name
 
   calcn_type: select case (numerics%caltype)
-  case('afws')
+  case('afws','local')
      numerics%nanalau=0
      numerics%nlaupow=1
      numerics%nshapow=0
      onumerics%nstartcon=0
      onumerics%ntermcon=0
-  case('msus')
+  case('msus','global')
      numerics%nanalau=0
      numerics%nlaupow=1
      numerics%nshapow=0
      onumerics%nstartcon=1
      onumerics%ntermcon=sign(1,onumerics%ntermcon)
-  case default
+  case default ! 'msum','middle'
   end select calcn_type
+
+  fldspec_type: select case (ifldspec)
+  case(1)
+     onumerics%npdim=1
+  case(2)
+     onumerics%npdim=3
+  case(3)
+     onumerics%npdim=2
+  end select fldspec_type
 
 end  subroutine pcontrol_fix
 

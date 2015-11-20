@@ -99,6 +99,7 @@ subroutine control_read(file,numerics,plot)
   logical :: plot_hdsbins !< DUPLICATE vtk plot selector
   logical :: plot_hdsq !< vtk plot selector
   logical :: plot_geobj !< vtk plot selector
+  logical :: plot_geobjq !< vtk plot selector
   logical :: plot_lostgeobj !< vtk plot selector
   logical :: plot_allgeobj_quantised !< DUPLICATE vtk plot selector
   logical :: plot_geoptq !< vtk plot selector
@@ -109,7 +110,7 @@ subroutine control_read(file,numerics,plot)
  &vtk_input_file
 
   !! numerical parameters
-  namelist /numericalparameters/ &
+  namelist /hdsgenparameters/ &
  &min_geobj_in_bin, &
  &nbins_child, &
  &geometrical_type, &
@@ -130,6 +131,7 @@ subroutine control_read(file,numerics,plot)
  &plot_hdsbins, &
  &plot_hdsq, &
  &plot_geobj, &
+ &plot_geobjq, &
  &plot_lostgeobj, &
  &plot_allgeobj_quantised, &
  &plot_geoptq, &
@@ -172,7 +174,7 @@ subroutine control_read(file,numerics,plot)
   file%hdsv  =trim(root)//"_hdsv"
   file%hdsm  =trim(root)//"_hdsm"
   file%hdsq  =trim(root)//"_hdsq"
-  file%geobj =trim(root)//"_geobj"
+  file%geobjq =trim(root)//"_geobjq"
   file%lostgeobj    =trim(root)//"_lostgeobj"
   file%allgeobjq    =trim(root)//"_allgeobjq"
   file%geoptq    =trim(root)//"_geoptq"
@@ -193,10 +195,10 @@ subroutine control_read(file,numerics,plot)
   type_geobj_coord_scaling=2  ! allows for offset
 
   !!read numerical parameters
-  read(nin,nml=numericalparameters,iostat=status)
+  read(nin,nml=hdsgenparameters,iostat=status)
   if(status/=0) then
-     print '("Fatal error reading numerical parameters")'
-     call log_error(m_name,s_name,5,error_fatal,'Error reading numerical parameters')
+     print '("Fatal error reading hdsgen parameters")'
+     call log_error(m_name,s_name,5,error_fatal,'Error reading hdsgen parameters')
   end if
 
   !! check for valid data
@@ -215,7 +217,7 @@ subroutine control_read(file,numerics,plot)
      call log_error(m_name,s_name,9,error_fatal,'Invalid max_tolerance, need value > 0')
   end if
   if(no_boundary_cubes<0 .OR. no_boundary_cubes>2 ) &
- &call log_error(m_name,s_name,17,error_fatal,'no_boundary_cubes must be >= 0 and <2')
+ &call log_error(m_name,s_name,17,error_fatal,'no_boundary_cubes must be >= 0 and <=2')
   if(no_boundary_cubes/=0 ) then
      if(delta_inner_length<0.0)then
         call log_value("delta_inner_length",delta_inner_length)
@@ -256,6 +258,7 @@ subroutine control_read(file,numerics,plot)
   plot_hdsbins = .false.
   plot_hdsq = .false.
   plot_geobj = .false.
+  plot_geobjq = .false.
   plot_lostgeobj = .false.
   plot_allgeobj_quantised = .false.
   plot_geoptq = .false.
@@ -263,7 +266,7 @@ subroutine control_read(file,numerics,plot)
 
   !!read plot selections
 !  write(*,nml=plotselections)
-!  read(nin,nml=plotselections,iostat=status)
+  read(nin,nml=plotselections,iostat=status)
 !  write(*,nml=plotselections)
   if(status/=0) then
      print '("Fatal error reading plot selections")'
@@ -271,15 +274,23 @@ subroutine control_read(file,numerics,plot)
   end if
 
   !! store values
-  plot%hdsm = plot_hds
   plot%hdsm   = plot_hdsm
   plot%hdsbin    = plot_hdsbins
   plot%hdsq    = plot_hdsq
-  plot%geobj    = plot_geobj
+  plot%geobjq    = plot_geobjq
   plot%lostgeobj     = plot_lostgeobj
   plot%allgeobjq     = plot_allgeobj_quantised
   plot%geoptq     = plot_geoptq
   plot%densitygeobj     = plot_densitygeobj
+  if (plot_hds) then
+  plot%hdsm = plot_hds
+  call log_error(m_name,s_name,20,error_warning,'Obsolete plot selection feature activated')
+  end if
+  if (plot_geobj) then
+  plot%geobjq = plot_geobj
+  call log_error(m_name,s_name,21,error_warning,'Obsolete plot selection feature activated')
+  end if
+
 
 end  subroutine control_read
 
@@ -319,7 +330,7 @@ subroutine control_dread(file,numerics,plot)
  &query_input_file
 
 
-  !! numerical parameters
+  !! numerical parameters (aka hdsgenparameters)
   namelist /numericalparameters/ &
  &geometrical_type, &
  &min_tolerance, &
@@ -665,7 +676,7 @@ subroutine control_mread(file,numerics,plot)
  &query_input_file
 
 
-  !! numerical parameters
+  !! numerical parameters aka hdsgenparameters
   namelist /numericalparameters/ &
  &geometrical_type, &
  &min_tolerance, &
@@ -823,11 +834,10 @@ subroutine control_btree(numerics,kin)
   integer(ki4):: btree_sizeh !< size of list array hoc
   integer(ki4):: btree_sizel !< size of list array
   integer(ki4):: btree_depth !< max depth of tree
-  integer(ki4):: tree_tttalg !< type of tree algorithm
+  integer(ki4):: tree_ttalg !< type of tree algorithm
   integer(ki4), dimension(3) :: tree_nxyz !< top of tree children
   real(kr4), dimension(3) :: tree_hxyz !< top of tree spacings
   integer(ki4):: tree_type !< type of tree
-  integer(ki4):: tree_ttalg !< type of tree
 
   !! btree parameters
   namelist /btreeparameters/ &

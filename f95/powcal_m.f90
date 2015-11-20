@@ -138,12 +138,12 @@ subroutine powcal_init(self,numerics,plot,gnumerics)
   self%powres%flinm=plot%flinm
 
   calcn_type: select case (self%n%caltype)
-  case('msus')
+  case('msus','global')
      ! set size of psista array
      allocate(self%powres%psista(self%powres%geobjl%ng), stat=status)
      call log_alloc_check(m_name,s_name,4,status)
      self%powres%psista=0
-  case('afws')
+  case('afws','local')
      ! set size of psista array
      allocate(self%powres%psista(self%powres%geobjl%ng), stat=status)
      call log_alloc_check(m_name,s_name,5,status)
@@ -211,7 +211,7 @@ subroutine powcal_quant(self,gnumerics)
   call position_qtfmlis(self%powres%geobjl%posl,self%powres%geobjl%quantfm)
 
   calcn_type: select case (self%n%caltype)
-  case('afws')
+  case('afws','local')
      ! psi-theta-zeta case
      ! multiplies RHS of ode
      self%powres%qfac=self%powres%geobjl%quantfm%hmin(2)/self%powres%geobjl%quantfm%hmin(3)
@@ -529,15 +529,26 @@ subroutine powcal_move(self,gshadl,btree)
         end do
      else
         ! no ripple
-        calcn_type: select case (self%powres%beq%n%fldspec)
+        field_type: select case (self%powres%beq%n%fldspec)
         case (3)
-           do i=1,self%powres%npowe
-              zelt%ie=i
-              do j=imlevel,inlevel
-                 zelt%je=j
-                 call powelt_move1(zelt,self,gshadl,btree)
+           calcn_type: select case (self%n%caltype)
+           case ('afws','local')
+              do i=1,self%powres%npowe
+                 zelt%ie=i
+                 do j=imlevel,inlevel
+                    zelt%je=j
+                    call powelt_move0(zelt,self,gshadl,btree)
+                 end do
               end do
-           end do
+           case ('msus','global')
+              do i=1,self%powres%npowe
+                 zelt%ie=i
+                 do j=imlevel,inlevel
+                    zelt%je=j
+                    call powelt_move1(zelt,self,gshadl,btree)
+                 end do
+              end do
+           end select calcn_type
         case default
            do i=1,self%powres%npowe
               zelt%ie=i
@@ -546,9 +557,10 @@ subroutine powcal_move(self,gshadl,btree)
                  call powelt_move(zelt,self,gshadl,btree)
               end do
            end do
-        end select calcn_type
+        end select field_type
      end if
   else if (self%n%ltermplane) then
+     ! more sophisticated termination criteria
      ! ripple defined by vacuum file
      do i=1,self%powres%npowe
         zelt%ie=i
@@ -630,11 +642,15 @@ subroutine powcal_writev(self,kchar,kplot)
   character(*), parameter :: s_name='powcal_writev' !< subroutine name
   type(posvecl_t), dimension(:), allocatable :: workpos !< save objlist variable
   integer(ki4) :: ing   !< save objlist variable
+  integer(ki4) :: iwset   !< record whether weights present in geobjl
+  integer(ki4) :: ifirst=1   !< unity for first call to vfile_rscalarwrite
 
+  ing=self%powres%geobjl%ng
+  iwset=self%powres%geobjl%nwset
+  self%powres%geobjl%nwset=0
   plot_type: select case (kchar)
   case('psi-theta-zeta')
      ! rearrange nodl, keep copy of structure in work and ing
-     ing=self%powres%geobjl%ng
      ! ??reset number of objects to be output according to refine_level statistics input
      self%powres%geobjl%ng=ing*powelt_table(self%powres%n%nlevel,2)/powelt_table(infilelevel,2)
      self%powres%geobjl%ng=self%powres%npowe
@@ -646,13 +662,11 @@ subroutine powcal_writev(self,kchar,kplot)
      ! restore nodl
      self%powres%geobjl%nodl(1:3*self%powres%geobjl%ng)=work
      deallocate(work)
-     call vfile_rscalarwrite(self%powres%powa,self%powres%geobjl%ng,'Q-avg','CELL',kplot,0)
+     call vfile_rscalarwrite(self%powres%powa,self%powres%geobjl%ng,'Q-avg','CELL',kplot,ifirst)
      call vfile_rscalarwrite(self%powres%pows,self%powres%geobjl%ng,'Q-dev','CELL',kplot,0)
-     self%powres%geobjl%ng=ing
 
   case('allpsi-theta-zeta')
      ! reset number of objects to be output according to refine_level input
-     ing=self%powres%geobjl%ng
      self%powres%geobjl%ng=ing*powelt_table(self%powres%n%nlevel,2)/powelt_table(infilelevel,2)
      if (infilelevel>self%powres%n%nlevel) then
         allocate(work(3*self%powres%geobjl%ng), stat=status)
@@ -661,13 +675,11 @@ subroutine powcal_writev(self,kchar,kplot)
         call geobjlist_nodlmv(self%powres%geobjl,infilelevel,self%powres%n%nlevel,self%powres%npowe)
      end if
      call geobjlist_writev(self%powres%geobjl,'geometry',kplot)
-     call vfile_rscalarwrite(abs(self%powres%pow),self%powres%geobjl%ng,'Q','CELL',kplot,0)
+     call vfile_rscalarwrite(abs(self%powres%pow),self%powres%geobjl%ng,'Q','CELL',kplot,ifirst)
      if (infilelevel>self%powres%n%nlevel) then
         ! restore nodl
         self%powres%geobjl%nodl(1:3*self%powres%geobjl%ng)=work
      end if
-     ! restore number of objects
-     self%powres%geobjl%ng=ing
 
   case('cartesian')
      ! replace R-Z-xi positions with Cartesian
@@ -676,7 +688,6 @@ subroutine powcal_writev(self,kchar,kplot)
      workpos=self%powres%geobjl%posl%pos
      self%powres%geobjl%posl%pos=self%powres%vecx%pos
      ! rearrange nodl, keep copy of structure in work and ing
-     ing=self%powres%geobjl%ng
      ! reset number of objects to be output according to refine_level statistics input
      self%powres%geobjl%ng=ing*powelt_table(self%n%nlevel,2)/powelt_table(infilelevel,2)
      self%powres%geobjl%ng=self%powres%npowe
@@ -690,9 +701,8 @@ subroutine powcal_writev(self,kchar,kplot)
      ! restore nodl
      self%powres%geobjl%nodl(1:3*self%powres%geobjl%ng)=work
      deallocate(work)
-     call vfile_rscalarwrite(self%powres%powa,self%powres%geobjl%ng,'Q-avg','CELL',kplot,1)
+     call vfile_rscalarwrite(self%powres%powa,self%powres%geobjl%ng,'Q-avg','CELL',kplot,ifirst)
      call vfile_rscalarwrite(self%powres%pows,self%powres%geobjl%ng,'Q-dev','CELL',kplot,0)
-     self%powres%geobjl%ng=ing
 
   case('allcartesian')
      ! replace R-Z-xi positions with Cartesian
@@ -701,7 +711,6 @@ subroutine powcal_writev(self,kchar,kplot)
      workpos=self%powres%geobjl%posl%pos
      self%powres%geobjl%posl%pos=self%powres%vecx%pos
      ! reset number of objects to be output according to refine_level input
-     ing=self%powres%geobjl%ng
      self%powres%geobjl%ng=ing*powelt_table(self%n%nlevel,2)/powelt_table(infilelevel,2)
      if (infilelevel>self%n%nlevel) then
         allocate(work(3*self%powres%geobjl%ng), stat=status)
@@ -713,7 +722,7 @@ subroutine powcal_writev(self,kchar,kplot)
      allocate(rwork(self%powres%geobjl%ng), stat=status)
      call log_alloc_check(m_name,s_name,42,status)
      rwork=abs(self%powres%pow(:self%powres%geobjl%ng))
-     call vfile_rscalarwrite(rwork,self%powres%geobjl%ng,'Q','CELL',kplot,1)
+     call vfile_rscalarwrite(rwork,self%powres%geobjl%ng,'Q','CELL',kplot,ifirst)
      deallocate(rwork)
      if (allocated(self%powres%psista)) then
         call vfile_rscalarwrite(self%powres%psista,self%powres%geobjl%ng,'psista','CELL',kplot,0)
@@ -725,10 +734,12 @@ subroutine powcal_writev(self,kchar,kplot)
      end if
      self%powres%geobjl%posl%pos=workpos
      deallocate(workpos)
-     ! restore number of objects
-     self%powres%geobjl%ng=ing
 
   end select plot_type
+
+  ! restore weight marker, number of objects
+  self%powres%geobjl%nwset=iwset
+  self%powres%geobjl%ng=ing
 
 end subroutine powcal_writev
 !---------------------------------------------------------------------
@@ -744,15 +755,15 @@ subroutine powcal_refine(self,gshadl,btree)
   character(*), parameter :: s_name='powcal_refine' !< subroutine name
 
   calcn_type: select case (self%n%caltype)
-  case('afws')
-  case('msum')
+  case('afws','local')
+  case('msum','middle')
      ! need launch and shadow obj arrays  (=weight)s
      allocate(self%powres%geobjl%obj(self%powres%geobjl%ng), stat=status)
      self%powres%geobjl%nwset=2
      allocate(gshadl%obj(gshadl%ng), stat=status)
      gshadl%nwset=2
      call log_alloc_check(m_name,s_name,1,status)
-  case('msus')
+  case('msus','global')
      ! need launch obj array (=weight)
      allocate(self%powres%geobjl%obj(self%powres%geobjl%ng), stat=status)
      self%powres%geobjl%nwset=2
@@ -905,9 +916,9 @@ subroutine powcal_delete(self)
   deallocate(self%powres%pows)
   deallocate(self%powres%pow)
   calcn_type: select case (self%n%caltype)
-  case('msus')
+  case('msus','global')
      deallocate(self%powres%psista)
-  case('afws')
+  case('afws','local')
      call beq_deletepart(self%powres%beq)
   case default
      call beq_deleteplus(self%powres%beq)

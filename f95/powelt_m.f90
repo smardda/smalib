@@ -31,14 +31,15 @@ module powelt_m
   powelt_pos, & !< position of element centre in tracking coordinates
   powelt_vec,   & !< magnetic field in cartesians at centre of element
   powelt_normal, & !< normal in cartesians at centre of element
-  powelt_normalptz, & !< normal in tracking coordinates at centre of element
+  powelt_normalm, & !< normal in tracking coordinates at centre of element
   powelt_dep, & !< power deposition formula of element
-  powelt_move, & !< controls field-line motion to/from centre of element
-  powelt_move1, & !< controls field-line motion to/from centre of element axisymm
-  powelt_move2, & !< controls field-line motion to/from centre of element 2nd scheme
-  powelt_move3, & !< controls field-line motion to/from centre of element 3rd scheme
-  powelt_move4, & !< controls field-line motion to/from centre of element 4th scheme
-  powelt_move5, & !< controls field-line motion to/from centre of element 5th scheme
+  powelt_move, & !< motion along fieldline local, axisymm, flux coords
+  powelt_move0, & !< motion along fieldline local, axisymm, cylindricals
+  powelt_move1, & !< motion along fieldline global, axisymm, cylindricals
+  powelt_move2, & !< motion along fieldline global, analytic ripple
+  powelt_move3, & !< motion along fieldline global, ripple field OBSOLETE
+  powelt_move4, & !< motion along fieldline global, ripple field
+  powelt_move5, & !< motion along fieldline 5th scheme for testing
   powelt_avg, & !< average value of power on element
   powelt_devn, & !< normalised deviation of power on element
   powelt_stat, & !< average deviation of power on element
@@ -192,7 +193,7 @@ subroutine powelt_normal(self,powcal,pnormal)
 end subroutine powelt_normal
 !---------------------------------------------------------------------
 !> normal in tracking coordinates at centre of element
-subroutine powelt_normalptz(self,powcal,pnormal)
+subroutine powelt_normalm(self,powcal,pnormal)
 
   !! arguments
   type(powelt_t), intent(in) :: self   !< object data structure
@@ -200,7 +201,7 @@ subroutine powelt_normalptz(self,powcal,pnormal)
   real(kr4), dimension(3), intent(out) :: pnormal !< normal vector
 
   !! local
-  character(*), parameter :: s_name='powelt_normalptz' !< subroutine name
+  character(*), parameter :: s_name='powelt_normalm' !< subroutine name
   real(kr4), dimension(3) :: znormal !< unit normal vector
   real(kr4) :: zmag !< magnitude of normal vector
   type(geobj_t) :: iobj !< object
@@ -212,7 +213,7 @@ subroutine powelt_normalptz(self,powcal,pnormal)
 
   pnormal=znormal
 
-end subroutine powelt_normalptz
+end subroutine powelt_normalm
 !---------------------------------------------------------------------
 !> power deposition formula of element
 subroutine powelt_dep(self,powcal,gshadl)
@@ -247,9 +248,9 @@ subroutine powelt_dep(self,powcal,gshadl)
   if (iflag==2) then
      ! fieldline was not followed to termination
      calcn_type0: select case (powcal%n%caltype)
-     case('afws','msus')
+     case('afws','local','msus','global')
         ! assume unshadowed
-     case('msum')
+     case('msum','middle')
         ! for mid-lane launch, assumed no power deposited  and exit
         powcal%powres%pow(inpow)=0
         return
@@ -262,12 +263,12 @@ subroutine powelt_dep(self,powcal,gshadl)
      zpos1%posvec=zpos
 
      calcn_type: select case (powcal%n%caltype)
-     case('afws','msus')
+     case('afws','local','msus','global')
         ! evaluate B.n from element
         call powelt_vec(self,powcal,zb)
         call powelt_normal(self,powcal,znormal)
         zbdotn=dot_product(zb,znormal)
-     case('msum')
+     case('msum','middle')
         ! use saved object number to get normal and position
         ! only OK if rippled defined via F
         iobj%geobj=powcal%powres%geobjl%obj(inpow)%weight+0.5
@@ -297,16 +298,16 @@ subroutine powelt_dep(self,powcal,gshadl)
 
 
      calcn_type2: select case (powcal%n%caltype)
-     case('afws')
+     case('afws','local')
         ! psi is the position (unquantised)
         zpos2=position_invqtfm(zpos1,powcal%powres%geobjl%quantfm)
         zpsi=zpos2%posvec(1)
-     case('msum')
+     case('msum','middle')
         ! evaluate psi using normalised coordinates
         zr=zpos1%posvec(1)
         zz=zpos1%posvec(2)
         call spl2d_eval(powcal%powres%beq%psi,zr,zz,zpsi)
-     case('msus')
+     case('msus','global')
         ! use saved psi if possible
         if (iflag==1) then
            zpsi=powcal%powres%geobjl%obj(inpow)%weight
@@ -328,7 +329,7 @@ subroutine powelt_dep(self,powcal,gshadl)
 
 end subroutine powelt_dep
 !---------------------------------------------------------------------
-!> controls field-line motion to/from centre of element
+!> motion along fieldline local, axisymm, flux coords
 subroutine powelt_move(self,powcal,gshadl,btree)
 
   !! arguments
@@ -349,13 +350,13 @@ subroutine powelt_move(self,powcal,gshadl,btree)
   real(kr8) :: zt0 !< start value of \f$ t \f$
   type(posang_t) :: zposang   !< posang data structure
   real(kr4), dimension(3) :: znormal !< unit normal vector
-  real(kr4), dimension(3) :: znormalptz !< unit normal vector in ptz
+  real(kr4), dimension(3) :: znormalm !< unit normal vector in mapped coords
   real(kr8), dimension(3) :: znormald !< unit normal vector
   real(kr8) :: lenpath !< length of path in \f$ t \f$
   real(kr8) :: zdfac !< direction factor
   real(kr8) :: zs !< \f$ \pm 1 \f$
   real(kr8) :: zpdotn !< path dotted with normal vector
-  real(kr8) :: zpdotnptz !< path dotted with normal vector in ptz
+  real(kr8) :: zpdotnm !< path dotted with normal vector in mapped coords
   integer(ki4) :: ierr !< error flag
   integer(ki4) :: ip !< entries in track
   type(geobj_t) :: iobj !< geo object
@@ -389,6 +390,8 @@ subroutine powelt_move(self,powcal,gshadl,btree)
   if (powcal%n%shadow>0.AND..NOT.allocated(rposl%pos)) then
      allocate(rposl%pos(1),stat=status)
      call log_alloc_check(m_name,s_name,1,status)
+  else if (powcal%n%shadow<-1) then
+     return
   end if
 
   ! calculate, save and test initial position
@@ -407,9 +410,9 @@ subroutine powelt_move(self,powcal,gshadl,btree)
      call log_error(m_name,s_name,2,error_warning,'Starting theta out of range')
      return
   end if
-  ! Examine start trajectory behaviour in ptz
-  call powelt_normalptz(self,powcal,znormalptz)
-  znormald=znormalptz
+  ! Examine start trajectory behaviour in mapped coords
+  call powelt_normalm(self,powcal,znormalm)
+  znormald=znormalm
   ! start trajectory
   powcal%odes%ndt=1
   powcal%odes%vecp%pos(powcal%odes%ndt)%posvec=zposd
@@ -419,7 +422,7 @@ subroutine powelt_move(self,powcal,gshadl,btree)
   ! set initial time step and guess first new point of track
   call odes_rjstep1(powcal%odes,ierr,powcal%powres%qfac*zf,powcal%powres%beq%rjac)
   xpath=powcal%odes%vecp%pos(powcal%odes%ndt+1)%posvec-zposd
-  zpdotnptz=dot_product(xpath,znormald)
+  zpdotnm=dot_product(xpath,znormald)
 
   ! Check behaviour in Cartesians
   call powelt_normal(self,powcal,znormal)
@@ -439,10 +442,10 @@ subroutine powelt_move(self,powcal,gshadl,btree)
      zs=-zs
   end do
   zpdotn=dot_product(xpath,znormald)
-  if (zpdotn*zpdotnptz*beq_rsig()<0) then
+  if (zpdotn*zpdotnm*beq_rsig()<0) then
      call log_error(m_name,s_name,3,error_warning,'Starting direction uncertain')
-     !        zpdotn=sign(1._kr8,zpdotnptz)
-     write(*,*) inpow, zpdotn, zpdotnptz !DPRT
+     !        zpdotn=sign(1._kr8,zpdotnm)
+     write(*,*) inpow, zpdotn, zpdotnm !DPRT
   end if
   !     zdfac=sign(1._kr8,zpdotn)
   zdfac=sign(powcal%powres%qfac,zpdotn)
@@ -510,11 +513,11 @@ subroutine powelt_move(self,powcal,gshadl,btree)
   powcal%odes%vecp%np=ip
   !
   if (ibacktr==ipback.AND.powcal%powres%flinm) then
-     ! open file to record ptz track
+     ! open file to record mapped track
      write(ibuff,'(''elt= '',I5,'' sub= '',I2,'' trackm'')') self%ie,self%je
      write(icfile,'(''trackm'',I5.5,I2.2)') self%ie,self%je
      call vfile_init(icfile,ibuff,nplot)
-     ! write track in ptz coordinates
+     ! write track in mapped coordinates
      ! de-quantise
      call position_invqtfmlis(powcal%odes%vecp,powcal%powres%geobjl%quantfm)
      call position_writelis(powcal%odes%vecp,'track',nplot)
@@ -559,8 +562,8 @@ subroutine powelt_move(self,powcal,gshadl,btree)
 
 end subroutine powelt_move
 !---------------------------------------------------------------------
-!> controls field-line motion to/from centre of element axisymm
-subroutine powelt_move1(self,powcal,gshadl,btree)
+!> motion along fieldline local, axisymm, cylindricals
+subroutine powelt_move0(self,powcal,gshadl,btree)
 
   !! arguments
   type(powelt_t), intent(in) :: self   !< object data structure
@@ -569,7 +572,7 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
   type(btree_t), intent(inout),optional :: btree !< btree data
 
   !! local
-  character(*), parameter :: s_name='powelt_move1' !< subroutine name
+  character(*), parameter :: s_name='powelt_move0' !< subroutine name
   integer(ki4), parameter :: ipback=0 !< back-track test if unity
   real(kr4), dimension(3) :: zpos !< start position vector
   real(kr8), dimension(3) :: zposd !< start position vector
@@ -579,12 +582,12 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
   real(kr8) :: zt0 !< start value of \f$ t \f$
   type(posang_t) :: zposang   !< posang data structure
   real(kr4), dimension(3) :: znormal !< unit normal vector
-  real(kr4), dimension(3) :: znormalptz !< unit normal vector in ptz
+  real(kr4), dimension(3) :: znormalm !< unit normal vector in mapped coords
   real(kr8), dimension(3) :: znormald !< unit normal vector
   real(kr8), dimension(6) :: zdfaca !< direction factor and offsets
   real(kr8) :: zs !< \f$ \pm 1 \f$
   real(kr8) :: zpdotn !< path dotted with normal vector
-  real(kr8) :: zpdotnptz !< path dotted with normal vector in ptz
+  real(kr8) :: zpdotnm !< path dotted with normal vector in mapped coords
   integer(ki4) :: ierr !< error flag
   integer(ki4) :: ip !< entries in track
   type(geobj_t) :: iobj !< geo object
@@ -610,6 +613,7 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
   real(kr8) :: zmin!< min and max
   real(kr8) :: zmax !< min and max
   real(kr8), dimension(2) :: zk !< sector number
+  integer(ki4), save :: firstcall  !< flag up first step of new trajectory
 
   inpow=powelt_addr(self,powcal%powres%npowe)
   ! check whether looking at small number of tracks
@@ -628,6 +632,8 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
   if (powcal%n%shadow>0.AND..NOT.allocated(rposl%pos)) then
      allocate(rposl%pos(1),stat=status)
      call log_alloc_check(m_name,s_name,1,status)
+  else if (powcal%n%shadow<-1) then
+     return
   end if
   !DVEC      allocate(work1(powcal%odes%n%stepmax),stat=status) !DVEC
   !DVEC      call log_alloc_check(m_name,s_name,0,status) !DVEC
@@ -635,8 +641,8 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
   ! calculate, save and test initial position
   call powelt_pos(self,powcal,zpos)
   ! Examine start trajectory behaviour in RZxi
-  call powelt_normalptz(self,powcal,znormalptz)
-  znormald=znormalptz
+  call powelt_normalm(self,powcal,znormalm)
+  znormald=znormalm
   zposd=zpos
   zt0=zposd(3)
   ! start trajectory
@@ -655,7 +661,7 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
  &powcal%powres%beq%psi,powcal%powres%beq%rispldr,powcal%powres%beq%rispldz,0)
   if (ierr>0) return
   xpath=powcal%odes%vecp%pos(powcal%odes%ndt+1)%posvec-zposd
-  zpdotnptz=dot_product(xpath,znormald)
+  zpdotnm=dot_product(xpath,znormald)
 
   ! Check behaviour in Cartesians
   call powelt_normal(self,powcal,znormal)
@@ -678,9 +684,9 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
      zs=-zs
   end do
   zpdotn=dot_product(xpath,znormald)
-  if (zpdotn*zpdotnptz<0) then
+  if (zpdotn*zpdotnm<0) then
      call log_error(m_name,s_name,3,error_warning,'Starting direction uncertain')
-     write(*,*) inpow, zpdotn, zpdotnptz
+     write(*,*) inpow, zpdotn, zpdotnm
      ! default to shadowed
      powcal%powres%pow(inpow)=0
   end if
@@ -710,6 +716,7 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
 
 100   continue
   ! initialise loop for path
+  firstcall=1
   lenpath=0
   ierr=0
   ! ignore midplane if termination planes present
@@ -734,7 +741,7 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
      !psi! evaluate I aka f at psi
      !psi      call spleval(powcal%powres%beq%f,powcal%powres%beq%mr,powcal%powres%beq%psiaxis,&
      !psi      powcal%powres%beq%psiqbdry,zpsi,zf,1)
-     call odes_1ststepcon(powcal%odes,ierr,zdfaca,&
+     call odes_1ststepcon(powcal%odes,ierr,zdfaca,firstcall,&
  &   powcal%powres%beq%psi,powcal%powres%beq%rispldr,powcal%powres%beq%rispldz)
      ! check for termination due to solution failure on this field-line
      if (ierr>0) exit
@@ -974,9 +981,399 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
      goto 100
   end if
 
+end subroutine powelt_move0
+!---------------------------------------------------------------------
+!> motion along fieldline global, axisymm, cylindricals
+subroutine powelt_move1(self,powcal,gshadl,btree)
+
+  !! arguments
+  type(powelt_t), intent(in) :: self   !< object data structure
+  type(powcal_t), intent(inout) :: powcal !< powcal data structure
+  type(geobjlist_t), intent(inout), optional :: gshadl   !< shadow data structure
+  type(btree_t), intent(inout),optional :: btree !< btree data
+
+  !! local
+  character(*), parameter :: s_name='powelt_move1' !< subroutine name
+  integer(ki4), parameter :: ipback=0 !< back-track test if unity
+  real(kr4), dimension(3) :: zpos !< start position vector
+  real(kr8), dimension(3) :: zposd !< start position vector
+  real(kr8), dimension(3) :: xpath !< start path position vector Cartesians
+  !psi real(kr8) :: zpsi !< value of \f$ \psi \f$
+  real(kr8) :: zzeta !< value of \f$ \zeta \f$
+  real(kr8) :: zt0 !< start value of \f$ t \f$
+  type(posang_t) :: zposang   !< posang data structure
+  real(kr4), dimension(3) :: znormal !< unit normal vector
+  real(kr4), dimension(3) :: znormalm !< unit normal vector in mapped coords
+  real(kr8), dimension(3) :: znormald !< unit normal vector
+  real(kr8), dimension(6) :: zdfaca !< direction factor and offsets
+  real(kr8) :: zs !< \f$ \pm 1 \f$
+  real(kr8) :: zpdotn !< path dotted with normal vector
+  real(kr8) :: zpdotnm !< path dotted with normal vector in mapped coords
+  integer(ki4) :: ierr !< error flag
+  integer(ki4) :: ip !< entries in track
+  type(geobj_t) :: iobj !< geo object
+  integer(ki4) :: inode  !< local variable
+  integer(ki4) :: indt !< shorthand for current timestep number
+  integer(ki4) :: nobjhit  !< local variable
+  integer(ki4) :: ibacktr !< flag if back-tracking
+  type(posnode_t) :: xo !< local variable
+  type(posnode_t) :: xn !< local variable
+  type(posnode_t) :: xm !< local variable
+  real(kr8) :: zf1 !< fraction of path length
+  real(kr8) :: zxi !< value of \f$ \xi \f$
+  real(kr8) :: domlen !< size of (periodic) domain in \f$ \xi \f$
+  real(kr8) :: lenpath !< length of path in \f$ t \f$
+  real(kr8) :: ztime !< time \f$ t \f$
+  real(kr8) :: zdt !< time increment \f$ \Delta t \f$
+  type(posvecl_t) :: zpos1   !< one position data
+  type(posvecl_t) :: zpos2   !< one position data
+  type(posveclis_t) :: rposl   !< list of position data
+  real(kr4) :: phylenpath !< physical length of path
+  logical :: lcoll   !< collision on path
+  logical, parameter :: ilpmidplane=.FALSE.   !<  ignore midplane if termination planes present
+  real(kr8) :: zpsim !< value of \f$ \psi \f$ at field line end (diagnostic)
+  real(kr8), dimension(2) :: zk !< sector number
+  integer(ki4), save :: firstcall  !< flag up first step of new trajectory
+  
+  inpow=powelt_addr(self,powcal%powres%npowe)
+  ! check whether looking at small number of tracks
+  if (powcal%n%ntrack>0) then
+     ! is this element track in the test set
+     do j=1,powcal%n%ntrack
+        if (powcal%n%trackno(j)==inpow) go to 1
+     end do
+     return
+  end if
+1     continue
+  domlen=powcal%powres%beq%domlen(3)
+  ! needed for new termination criteria
+  powcal%n%termp%termstore(1,:)=(/1.e30,1.e30,1.e30/)
+  ! mark powelt as unknown (2) by default
+  powcal%powres%pow(inpow)=2
+  ! needed in shadowed case
+  if (powcal%n%shadow>0.AND..NOT.allocated(rposl%pos)) then
+     allocate(rposl%pos(1),stat=status)
+     call log_alloc_check(m_name,s_name,1,status)
+  else if (powcal%n%shadow<-1) then
+     return
+  end if
+  !DVEC      allocate(work1(powcal%odes%n%stepmax),stat=status) !DVEC
+  !DVEC      call log_alloc_check(m_name,s_name,0,status) !DVEC
+
+  ! calculate, save and test initial position
+  call powelt_pos(self,powcal,zpos)
+  ! Examine start trajectory behaviour in RZxi
+  call powelt_normalm(self,powcal,znormalm)
+  znormald=znormalm
+  zposd=zpos
+  zt0=zposd(3)
+  ! start trajectory
+  powcal%odes%ndt=1
+  powcal%odes%t=zt0
+  powcal%odes%vecp%pos(powcal%odes%ndt)%posvec=zposd
+  powcal%odes%posk(powcal%odes%ndt)=0
+  !psi      call spl2d_eval(powcal%powres%beq%psi,zposd(1),zposd(2),zpsi)
+  !psi! evaluate I aka f at psi
+  !psi      call spleval(powcal%powres%beq%f,powcal%powres%beq%mr,powcal%powres%beq%psiaxis,&
+  !psi      powcal%powres%beq%psiqbdry,zpsi,zf,1)
+  ! set initial time step and guess first new point of track
+  zdfaca(1:3)=powcal%powres%qfaca
+  zdfaca(4:6)=powcal%powres%geobjl%quantfm%offvec
+  call odes_1ststep1(powcal%odes,ierr,zdfaca,&
+ &powcal%powres%beq%psi,powcal%powres%beq%rispldr,powcal%powres%beq%rispldz,0)
+  if (ierr>0) return
+  xpath=powcal%odes%vecp%pos(powcal%odes%ndt+1)%posvec-zposd
+  zpdotnm=dot_product(xpath,znormald)
+
+  ! Check behaviour in Cartesians
+  call powelt_normal(self,powcal,znormal)
+  znormald=znormal
+  ! ensure path is outward from surface
+  xpath=0
+  zs=1
+  do j=0,1
+     ! dequantise
+     zpos1%posvec=powcal%odes%vecp%pos(powcal%odes%ndt+j)%posvec
+     zpos2=position_invqtfm(zpos1,powcal%powres%geobjl%quantfm)
+     ! convert xi to zeta
+     zzeta=zpos2%posvec(3)/powcal%powres%beq%nzets
+     zpos2%posvec(3)=zzeta
+     !
+     zposang%pos=zpos2%posvec
+     zposang%opt=1 ; zposang%units=0
+     call posang_tfm(zposang,-3)
+     xpath=zposang%pos+zs*xpath
+     zs=-zs
+  end do
+  zpdotn=dot_product(xpath,znormald)
+  if (zpdotn*zpdotnm<0) then
+     call log_error(m_name,s_name,3,error_warning,'Starting direction uncertain')
+     write(*,*) inpow, zpdotn, zpdotnm
+     ! default to shadowed
+     powcal%powres%pow(inpow)=0
+  end if
+  ! adjust sign of timestep
+  powcal%odes%dt=sign(1._kr8,zpdotn)*powcal%odes%dt
+  ! scaling factor no longer carries timestep sign
+  zdfaca(1:3)=powcal%powres%qfaca
+  zdfaca(4:6)=powcal%powres%geobjl%quantfm%offvec
+  if (powcal%n%shadow>0) then
+     ! find start point in tree
+     rposl%pos(1)=powcal%odes%vecp%pos(powcal%odes%ndt)
+     rposl%np=1
+     iobj%geobj=1
+     iobj%objtyp=1 ! for point
+     call btree_mfind(btree,iobj,rposl,inode)
+     if (inode<0) then
+        call log_error(m_name,s_name,4,error_warning,'cannot locate start point in tree')
+        return
+     end if
+     xo%posvec=rposl%pos(1)%posvec
+     xo%node=inode
+  end if
+  ibacktr=0
+  if (loutdt) write(170,*)
+  if (loutdt) write(170,*)
+  if (loutdt) write(170,*) '#',self%ie,self%je
+
+100   continue
+  ! initialise loop for path
+  lenpath=0
+  firstcall=1
+  ierr=0
+  !     powcal%odes%near=0
+  ! time step loop for path
+  loop_path: do
+     lcoll=.FALSE.
+     nobjhit=0
+     zpsim=0
+     !     write(*,*) 'step=', powcal%odes%ndt
+
+     ztime=powcal%odes%t
+
+     !psi zposd=xo%posvec
+     !psi call spl2d_eval(powcal%powres%beq%psi,zposd(1),zposd(2),zpsi)
+     !psi! evaluate I aka f at psi
+     !psi      call spleval(powcal%powres%beq%f,powcal%powres%beq%mr,powcal%powres%beq%psiaxis,&
+     !psi      powcal%powres%beq%psiqbdry,zpsi,zf,1)
+     call odes_1ststepcon(powcal%odes,ierr,zdfaca,firstcall,&
+ &   powcal%powres%beq%psi,powcal%powres%beq%rispldr,powcal%powres%beq%rispldz)
+     ! check for termination due to solution failure on this field-line
+     if (ierr>0) exit
+
+     zdt=powcal%odes%t-ztime
+     !DVEC      work1(powcal%odes%ndt-1)=zdt  !DVEC
+     !DVEC      write(*,*) 'tstep'  !DVEC
+     lenpath=lenpath+abs(zdt)
+     if (loutdt) write(170,*) zdt
+
+     if (powcal%n%shadow>0) then
+        ! check for collision or exit from computational domain
+        xn%posvec=powcal%odes%vecp%pos(powcal%odes%ndt)%posvec
+        zxi=powcal%odes%t
+        ! check for leaving periodic cell
+        if (zxi<powcal%powres%beq%n%ximin) then
+           ! interpolate for xm=x(0) and check versus objects
+           zf1=(powcal%powres%beq%n%ximin-ztime)/(zxi-ztime)
+           xm%posvec=(1-zf1)*xo%posvec+zf1*xn%posvec
+           xm%node=0
+           if (abs(lenpath)>powcal%odes%n%termcon(1)) then
+              ! prevent termination due to very short trajectory
+              call pcle_movet(xo,xm,xo%node,gshadl,btree, &
+ &            powcal%n%termp,nobjhit)
+              lcoll=(nobjhit/=0)
+           end if
+           if (lcoll) then
+              powcal%odes%vecp%pos(powcal%odes%ndt)%posvec=xm%posvec
+              call powelt_setpow(self,powcal,nobjhit,xm,inpow,gshadl)
+              exit
+           end if
+           powcal%odes%posk(powcal%odes%ndt)=powcal%odes%posk(powcal%odes%ndt)-1
+           xo=xm
+           xo%posvec(3)=powcal%powres%beq%n%ximax
+           xo%node=0
+           powcal%odes%t=min(powcal%powres%beq%ximaxm, powcal%odes%t+domlen)
+           powcal%odes%vecp%pos(powcal%odes%ndt)%posvec(3)=powcal%odes%t
+
+        else if (zxi>powcal%powres%beq%n%ximax) then
+           ! interpolate for xm=x(2pi) and check versus objects
+           zf1=(powcal%powres%beq%n%ximax-ztime)/(zxi-ztime)
+           xm%posvec=(1-zf1)*xo%posvec+zf1*xn%posvec
+           xm%node=0
+           if (abs(lenpath)>powcal%odes%n%termcon(1)) then
+              ! prevent termination due to very short trajectory
+              call pcle_movet(xo,xm,xo%node,gshadl,btree, &
+ &            powcal%n%termp,nobjhit)
+              lcoll=(nobjhit/=0)
+           end if
+           if (lcoll) then
+              powcal%odes%vecp%pos(powcal%odes%ndt)%posvec=xm%posvec
+              call powelt_setpow(self,powcal,nobjhit,xm,inpow,gshadl)
+              ! record psi at boundary if hit termplane boundary
+              if (nobjhit==-2) zpsim=powcal%powres%geobjl%obj(inpow)%weight
+              exit
+           end if
+           powcal%odes%posk(powcal%odes%ndt)=powcal%odes%posk(powcal%odes%ndt)+1
+           xo=xm
+           xo%posvec(3)=powcal%powres%beq%n%ximin
+           xo%node=0
+           powcal%odes%t=max(powcal%powres%beq%ximinp, powcal%odes%t-domlen)
+           powcal%odes%vecp%pos(powcal%odes%ndt)%posvec(3)=powcal%odes%t
+        end if
+
+        ! find new node and position if hits boundary
+        xn%node=0
+        if (abs(lenpath)>powcal%odes%n%termcon(1)) then
+           ! prevent termination due to very short trajectory
+           call pcle_movet(xo,xn,xo%node,gshadl,btree, &
+ &         powcal%n%termp,nobjhit)
+           lcoll=(nobjhit/=0)
+        end if
+        if (lcoll) then
+           powcal%odes%vecp%pos(powcal%odes%ndt)%posvec=xn%posvec
+           call powelt_setpow(self,powcal,nobjhit,xn,inpow,gshadl)
+           ! record psi at boundary if hit termplane boundary
+           if (nobjhit==-2) zpsim=powcal%powres%geobjl%obj(inpow)%weight
+           !D           write(*,*) 'Final posn',xn%posvec! writediagn
+           exit
+        end if
+        ! save new data
+        xo=xn
+        ! check for near-collision and repeat step (once) if necessary TO DO???
+     end if
+
+     !DP !! psi diagnostic !DP
+     !DP      zr=xo%posvec(1) !DP
+     !DP      zz=xo%posvec(2) !DP
+     !DP      call spl2d_eval(powcal%powres%beq%psi,zr,zz,zpsi) !DP
+     !DP! dequantise xo !DP
+     !DP      zpos1%posvec=xo%posvec !DP
+     !DP      zpos2=position_invqtfm(zpos1,powcal%powres%geobjl%quantfm) !DP
+     !DP     write(*,*) lenpath,zpos2%posvec(1),zpos2%posvec(2),zpsi !DP
+     ! check for termination due to overlong trajectory (number of steps)
+     indt=powcal%odes%ndt
+     if (indt>=powcal%odes%n%stepmax) exit
+     ! or length of path in t
+     ! (often covered when test exit from domain)
+     if (abs(lenpath)>abs(powcal%odes%n%tmax-zt0)) exit
+  end do loop_path
+
+
+  ip=powcal%odes%ndt
+  powcal%odes%vecp%np=ip
+  !
+  if (ibacktr==ipback.AND.powcal%powres%flinm) then
+     ! open file to record RZxi
+     write(ibuff,'(''elt= '',I5,'' sub= '',I2,'' lenpath= '',1pg12.5,'' objhit= '',I8)') &
+ &   self%ie,self%je,lenpath,nobjhit
+     write(icfile,'(''trackm'',I5.5,I2.2)') self%ie,self%je
+     call vfile_init(icfile,ibuff,nplot)
+     ! write track in RZxi coordinates
+     ! de-quantise
+     call position_invqtfmlis(powcal%odes%vecp,powcal%powres%geobjl%quantfm)
+     do l=1,ip
+        powcal%odes%vecp%pos(l)%posvec(3)=&
+ &      powcal%odes%vecp%pos(l)%posvec(3)+2*const_pid*powcal%odes%posk(l)
+     end do
+     call position_writelis(powcal%odes%vecp,'track',nplot)
+     do l=1,ip
+        powcal%odes%vecp%pos(l)%posvec(3)=&
+ &      powcal%odes%vecp%pos(l)%posvec(3)-2*const_pid*powcal%odes%posk(l)
+     end do
+     ! re-quantise
+     call position_qtfmlis(powcal%odes%vecp,powcal%powres%geobjl%quantfm)
+     ! close file
+     close(nplot)
+  end if
+
+  if (ibacktr==ipback.AND.powcal%powres%flinx) then
+     ! write track in Cartesian coordinates
+     ! first convert track
+     allocate(wposl%pos(ip), stat=status)
+     call log_alloc_check(m_name,s_name,10,status)
+     do l=1,ip
+        ! dequantise
+        zpos1%posvec=powcal%odes%vecp%pos(l)%posvec
+        zpos2=position_invqtfm(zpos1,powcal%powres%geobjl%quantfm)
+        ! convert xi to zeta
+        zzeta=(zpos2%posvec(3)+2*const_pid*powcal%odes%posk(l))&
+ &      /powcal%powres%beq%nzets
+        zpos2%posvec(3)=zzeta
+        zposang%pos=zpos2%posvec
+        zposang%opt=1 ; zposang%units=0
+        call posang_tfm(zposang,-3)
+        wposl%pos(l)%posvec=zposang%pos
+     end do
+     wposl%np=ip
+     call position_lenlis(wposl,phylenpath)
+     !DVEC         do l=1,ip-1 !DVEC
+     !DVEC         zr=sqrt(wposl%pos(l)%posvec(1)**2+wposl%pos(l)%posvec(2)**2)/1000 !DVEC
+     !DVEC         wposl%pos(l)%posvec=(wposl%pos(l+1)%posvec-wposl%pos(l)%posvec)/& !DVEC
+     !DVEC      &  (zr*work1(l)) !DVEC
+     !DVEC         end do !DVEC
+     !DVEC         wposl%pos(ip)=wposl%pos(ip-1) !DVEC
+     !DVEC! write track (or field vectors if !DVEC lines executed)
+
+     ! open file to record Cartesian track and write
+     write(ibuff,'(''elt= '',I5,'' sub= '',I2,'' lenpath= '',1pg12.5,'' objhit= '',I8)') &
+ &   self%ie,self%je,phylenpath,nobjhit
+     !        write(ibuff,'(''elt= '',I5,'' sub= '',I2,'' trackx'')') self%ie,self%je
+     write(icfile,'(''trackx'',I5.5,I2.2)') self%ie,self%je
+     call vfile_init(icfile,ibuff,nplot)
+     call position_writelis(wposl,'track',nplot)
+     !DIAG!   dump end point !DIAG
+     !DIAG!        call position_writev(wposl%pos(ip),88) !DIAG
+     ! close file and deallocate
+     deallocate(wposl%pos)
+     !DVEC         deallocate(work1)  !DVEC
+     close(nplot)
+  end if
+
+  if (nobjhit==-2.AND.ibacktr==ipback.AND.powcal%powres%flinends) then
+     ! write first and last points in Cartesian coordinates
+     ! first convert track points
+     allocate(wposl%pos(3), stat=status)
+     call log_alloc_check(m_name,s_name,11,status)
+     wposl%pos(1)%posvec=powcal%odes%vecp%pos(1)%posvec
+     zk(1)=powcal%odes%posk(1)
+     wposl%pos(2)%posvec=xm%posvec
+     zk(2)=powcal%odes%posk(ip)
+     do l=1,2
+        ! dequantise
+        zpos1%posvec=wposl%pos(l)%posvec
+        zpos2=position_invqtfm(zpos1,powcal%powres%geobjl%quantfm)
+        ! convert xi to zeta
+        zzeta=(zpos2%posvec(3)+2*const_pid*zk(l))/powcal%powres%beq%nzets
+        zpos2%posvec(3)=zzeta
+        zposang%pos=zpos2%posvec
+        zposang%opt=1 ; zposang%units=0
+        call posang_tfm(zposang,-3)
+        wposl%pos(l)%posvec=zposang%pos
+     end do
+     wposl%np=3
+     ! open file to record Cartesian track and write
+     wposl%pos(3)%posvec(1)=self%ie
+     wposl%pos(3)%posvec(2)=self%je
+     wposl%pos(3)%posvec(3)=zpsim
+     do l=1,3
+        call position_writev(wposl%pos(l),powcal%powres%nflends)
+     end do
+     ! deallocate
+     deallocate(wposl%pos)
+  end if
+
+  if (ibacktr<ipback) then
+     ibacktr=ipback
+     !        zdfaca(1:3)=-zdfaca(1:3)
+     powcal%odes%ndt=powcal%odes%ndt-1
+     powcal%odes%n%stepmax=2*powcal%odes%n%stepmax
+     powcal%odes%dt=-powcal%odes%dt
+     goto 100
+  end if
+
 end subroutine powelt_move1
 !---------------------------------------------------------------------
-!> controls field-line motion to/from centre of element 2nd scheme
+!> motion along fieldline global, analytic ripple
 subroutine powelt_move2(self,powcal,gshadl,btree)
 
   !! arguments
@@ -995,12 +1392,12 @@ subroutine powelt_move2(self,powcal,gshadl,btree)
   real(kr8) :: zt0 !< start value of \f$ t \f$
   type(posang_t) :: zposang   !< posang data structure
   real(kr4), dimension(3) :: znormal !< unit normal vector
-  real(kr4), dimension(3) :: znormalptz !< unit normal vector in ptz
+  real(kr4), dimension(3) :: znormalm !< unit normal vector in mapped coords
   real(kr8), dimension(3) :: znormald !< unit normal vector
   real(kr8), dimension(3) :: zdfaca !< direction factor
   real(kr8) :: zs !< \f$ \pm 1 \f$
   real(kr8) :: zpdotn !< path dotted with normal vector
-  real(kr8) :: zpdotnptz !< path dotted with normal vector in ptz
+  real(kr8) :: zpdotnm !< path dotted with normal vector in mapped coords
   integer(ki4) :: ierr !< error flag
   integer(ki4) :: ip !< entries in track
   type(geobj_t) :: iobj !< geo object
@@ -1037,13 +1434,15 @@ subroutine powelt_move2(self,powcal,gshadl,btree)
   if (powcal%n%shadow>0.AND..NOT.allocated(rposl%pos)) then
      allocate(rposl%pos(1),stat=status)
      call log_alloc_check(m_name,s_name,1,status)
+  else if (powcal%n%shadow<-1) then
+     return
   end if
 
   ! calculate, save and test initial position
   call powelt_pos(self,powcal,zpos)
   ! Examine start trajectory behaviour in RZxi
-  call powelt_normalptz(self,powcal,znormalptz)
-  znormald=znormalptz
+  call powelt_normalm(self,powcal,znormalm)
+  znormald=znormalm
   zposd=zpos
   zt0=zposd(3)
   ! start trajectory
@@ -1056,7 +1455,7 @@ subroutine powelt_move2(self,powcal,gshadl,btree)
  &powcal%powres%beq%psi,powcal%powres%beq%dpsidr,powcal%powres%beq%dpsidz,0)
   if (ierr>0) return
   xpath=powcal%odes%vecp%pos(powcal%odes%ndt+1)%posvec-zposd
-  zpdotnptz=dot_product(xpath,znormald)
+  zpdotnm=dot_product(xpath,znormald)
 
   ! Check behaviour in Cartesians
   call powelt_normal(self,powcal,znormal)
@@ -1079,9 +1478,9 @@ subroutine powelt_move2(self,powcal,gshadl,btree)
      zs=-zs
   end do
   zpdotn=dot_product(xpath,znormald)
-  if (zpdotn*zpdotnptz<0) then
+  if (zpdotn*zpdotnm<0) then
      call log_error(m_name,s_name,3,error_warning,'Starting direction uncertain')
-     write(*,*) inpow, zpdotn, zpdotnptz
+     write(*,*) inpow, zpdotn, zpdotnm
   end if
   ! adjust sign of timestep
   powcal%odes%dt=sign(1._kr8,zpdotn)*powcal%odes%dt
@@ -1258,7 +1657,7 @@ subroutine powelt_move2(self,powcal,gshadl,btree)
 
 end subroutine powelt_move2
 !---------------------------------------------------------------------
-!> controls field-line motion to/from centre of element 3rd scheme
+!> motion along fieldline global, ripple field OBSOLETE
 subroutine powelt_move3(self,powcal,gshadl,btree)
 
   !! arguments
@@ -1277,12 +1676,12 @@ subroutine powelt_move3(self,powcal,gshadl,btree)
   real(kr8) :: zt0 !< start value of \f$ t \f$
   type(posang_t) :: zposang   !< posang data structure
   real(kr4), dimension(3) :: znormal !< unit normal vector
-  real(kr4), dimension(3) :: znormalptz !< unit normal vector in ptz
+  real(kr4), dimension(3) :: znormalm !< unit normal vector in mapped coords
   real(kr8), dimension(3) :: znormald !< unit normal vector
   real(kr8), dimension(3) :: zdfaca !< direction factor
   real(kr8) :: zs !< \f$ \pm 1 \f$
   real(kr8) :: zpdotn !< path dotted with normal vector
-  real(kr8) :: zpdotnptz !< path dotted with normal vector in ptz
+  real(kr8) :: zpdotnm !< path dotted with normal vector in mapped coords
   integer(ki4) :: ierr !< error flag
   integer(ki4) :: ip !< entries in track
   type(geobj_t) :: iobj !< geo object
@@ -1324,6 +1723,8 @@ subroutine powelt_move3(self,powcal,gshadl,btree)
   if (powcal%n%shadow>0.AND..NOT.allocated(rposl%pos)) then
      allocate(rposl%pos(1),stat=status)
      call log_alloc_check(m_name,s_name,1,status)
+  else if (powcal%n%shadow<-1) then
+     return
   end if
   !DVEC      allocate(work1(powcal%odes%n%stepmax),stat=status) !DVEC
   !DVEC      call log_alloc_check(m_name,s_name,0,status) !DVEC
@@ -1331,8 +1732,8 @@ subroutine powelt_move3(self,powcal,gshadl,btree)
   ! calculate, save and test initial position
   call powelt_pos(self,powcal,zpos)
   ! Examine start trajectory behaviour in RZxi
-  call powelt_normalptz(self,powcal,znormalptz)
-  znormald=znormalptz
+  call powelt_normalm(self,powcal,znormalm)
+  znormald=znormalm
   zposd=zpos
   zt0=0
   ! start trajectory
@@ -1349,7 +1750,7 @@ subroutine powelt_move3(self,powcal,gshadl,btree)
  &powcal%powres%beq%psi,powcal%powres%beq%dpsidr,powcal%powres%beq%dpsidz,0)
   if (ierr>0) return
   xpath=powcal%odes%vecp%pos(powcal%odes%ndt+1)%posvec-zposd
-  zpdotnptz=dot_product(xpath,znormald)
+  zpdotnm=dot_product(xpath,znormald)
 
   ! Check behaviour in Cartesians
   call powelt_normal(self,powcal,znormal)
@@ -1372,9 +1773,9 @@ subroutine powelt_move3(self,powcal,gshadl,btree)
      zs=-zs
   end do
   zpdotn=dot_product(xpath,znormald)
-  if (zpdotn*zpdotnptz<0) then
+  if (zpdotn*zpdotnm<0) then
      call log_error(m_name,s_name,3,error_warning,'Starting direction uncertain')
-     write(*,*) inpow, zpdotn, zpdotnptz
+     write(*,*) inpow, zpdotn, zpdotnm
      ! default to shadowed
      powcal%powres%pow(inpow)=0
   end if
@@ -1638,7 +2039,7 @@ subroutine powelt_move3(self,powcal,gshadl,btree)
 
 end subroutine powelt_move3
 !---------------------------------------------------------------------
-!> controls field-line motion to/from centre of element 4th scheme
+!> motion along fieldline global, ripple field
 subroutine powelt_move4(self,powcal,gshadl,btree)
 
   !! arguments
@@ -1657,12 +2058,12 @@ subroutine powelt_move4(self,powcal,gshadl,btree)
   real(kr8) :: zt0 !< start value of \f$ t \f$
   type(posang_t) :: zposang   !< posang data structure
   real(kr4), dimension(3) :: znormal !< unit normal vector
-  real(kr4), dimension(3) :: znormalptz !< unit normal vector in ptz
+  real(kr4), dimension(3) :: znormalm !< unit normal vector in mapped coords
   real(kr8), dimension(3) :: znormald !< unit normal vector
   real(kr8), dimension(3) :: zdfaca !< direction factor
   real(kr8) :: zs !< \f$ \pm 1 \f$
   real(kr8) :: zpdotn !< path dotted with normal vector
-  real(kr8) :: zpdotnptz !< path dotted with normal vector in ptz
+  real(kr8) :: zpdotnm !< path dotted with normal vector in mapped coords
   integer(ki4) :: ierr !< error flag
   integer(ki4) :: ip !< entries in track
   type(geobj_t) :: iobj !< geo object
@@ -1705,6 +2106,8 @@ subroutine powelt_move4(self,powcal,gshadl,btree)
   if (powcal%n%shadow>0.AND..NOT.allocated(rposl%pos)) then
      allocate(rposl%pos(1),stat=status)
      call log_alloc_check(m_name,s_name,1,status)
+  else if (powcal%n%shadow<-1) then
+     return
   end if
   !DVEC      allocate(work1(powcal%odes%n%stepmax),stat=status) !DVEC
   !DVEC      call log_alloc_check(m_name,s_name,0,status) !DVEC
@@ -1712,8 +2115,8 @@ subroutine powelt_move4(self,powcal,gshadl,btree)
   ! calculate, save and test initial position
   call powelt_pos(self,powcal,zpos)
   ! Examine start trajectory behaviour in RZxi
-  call powelt_normalptz(self,powcal,znormalptz)
-  znormald=znormalptz
+  call powelt_normalm(self,powcal,znormalm)
+  znormald=znormalm
   zposd=zpos
   zt0=0
   ! start trajectory
@@ -1730,7 +2133,7 @@ subroutine powelt_move4(self,powcal,gshadl,btree)
  &powcal%powres%beq%psi,powcal%powres%beq%dpsidr,powcal%powres%beq%dpsidz,0)
   if (ierr>0) return
   xpath=powcal%odes%vecp%pos(powcal%odes%ndt+1)%posvec-zposd
-  zpdotnptz=dot_product(xpath,znormald)
+  zpdotnm=dot_product(xpath,znormald)
 
   ! Check behaviour in Cartesians
   call powelt_normal(self,powcal,znormal)
@@ -1753,9 +2156,9 @@ subroutine powelt_move4(self,powcal,gshadl,btree)
      zs=-zs
   end do
   zpdotn=dot_product(xpath,znormald)
-  if (zpdotn*zpdotnptz<0) then
+  if (zpdotn*zpdotnm<0) then
      call log_error(m_name,s_name,3,error_warning,'Starting direction uncertain')
-     write(*,*) inpow, zpdotn, zpdotnptz
+     write(*,*) inpow, zpdotn, zpdotnm
      ! default to shadowed
      powcal%powres%pow(inpow)=0
   end if
@@ -2037,7 +2440,7 @@ subroutine powelt_move4(self,powcal,gshadl,btree)
 
 end subroutine powelt_move4
 !---------------------------------------------------------------------
-!> controls field-line motion to/from centre of element 5th scheme
+!> motion along fieldline 5th scheme for testing
 subroutine powelt_move5(self,powcal,gshadl,btree)
 
   !! arguments
@@ -2058,12 +2461,12 @@ subroutine powelt_move5(self,powcal,gshadl,btree)
   real(kr8) :: zt0 !< start value of \f$ t \f$
   type(posang_t) :: zposang   !< posang data structure
   real(kr4), dimension(3) :: znormal !< unit normal vector
-  real(kr4), dimension(3) :: znormalptz !< unit normal vector in ptz
+  real(kr4), dimension(3) :: znormalm !< unit normal vector in mapped coords
   real(kr8), dimension(3) :: znormald !< unit normal vector
   real(kr8), dimension(6) :: zdfaca !< direction factor and offsets
   real(kr8) :: zs !< \f$ \pm 1 \f$
   real(kr8) :: zpdotn !< path dotted with normal vector
-  real(kr8) :: zpdotnptz !< path dotted with normal vector in ptz
+  real(kr8) :: zpdotnm !< path dotted with normal vector in mapped coords
   integer(ki4) :: ierr !< error flag
   integer(ki4) :: ip !< entries in track
   type(geobj_t) :: iobj !< geo object
@@ -2088,6 +2491,7 @@ subroutine powelt_move5(self,powcal,gshadl,btree)
   logical :: ilpmidplane   !< is 'midplane' test active
   real(kr8) :: zpsim !< value of \f$ \psi \f$ at field line end (diagnostic)
   real(kr8), dimension(2) :: zk !< sector number
+  integer(ki4), save :: firstcall  !< flag up first step of new trajectory
 
   inpow=powelt_addr(self,powcal%powres%npowe)
   ! check whether looking at small number of tracks
@@ -2106,6 +2510,8 @@ subroutine powelt_move5(self,powcal,gshadl,btree)
   if (powcal%n%shadow>0.AND..NOT.allocated(rposl%pos)) then
      allocate(rposl%pos(1),stat=status)
      call log_alloc_check(m_name,s_name,1,status)
+  else if (powcal%n%shadow<-1) then
+     return
   end if
   !DVEC      allocate(work1(powcal%odes%n%stepmax),stat=status) !DVEC
   !DVEC      call log_alloc_check(m_name,s_name,0,status) !DVEC
@@ -2113,8 +2519,8 @@ subroutine powelt_move5(self,powcal,gshadl,btree)
   ! calculate, save and test initial position
   call powelt_pos(self,powcal,zpos)
   ! Examine start trajectory behaviour in RZxi
-  call powelt_normalptz(self,powcal,znormalptz)
-  znormald=znormalptz
+  call powelt_normalm(self,powcal,znormalm)
+  znormald=znormalm
   zposd=zpos
   zt0=0
   ! start trajectory
@@ -2133,7 +2539,7 @@ subroutine powelt_move5(self,powcal,gshadl,btree)
  &powcal%powres%beq%psi,powcal%powres%beq%dpsidr,powcal%powres%beq%dpsidz,0)
   if (ierr>0) return
   xpath=powcal%odes%vecp%pos(powcal%odes%ndt+1)%posvec-zposd
-  zpdotnptz=dot_product(xpath,znormald)
+  zpdotnm=dot_product(xpath,znormald)
 
   ! Check behaviour in Cartesians
   call powelt_normal(self,powcal,znormal)
@@ -2156,9 +2562,9 @@ subroutine powelt_move5(self,powcal,gshadl,btree)
      zs=-zs
   end do
   zpdotn=dot_product(xpath,znormald)
-  if (zpdotn*zpdotnptz<0) then
+  if (zpdotn*zpdotnm<0) then
      call log_error(m_name,s_name,3,error_warning,'Starting direction uncertain')
-     write(*,*) inpow, zpdotn, zpdotnptz
+     write(*,*) inpow, zpdotn, zpdotnm
      ! default to shadowed
      powcal%powres%pow(inpow)=0
   end if
@@ -2188,6 +2594,7 @@ subroutine powelt_move5(self,powcal,gshadl,btree)
 
 100   continue
   ! initialise loop for path
+  firstcall=1
   lenpath=0
   ierr=0
   ! ignore midplane if termination planes present
@@ -2212,7 +2619,7 @@ subroutine powelt_move5(self,powcal,gshadl,btree)
      ! evaluate I aka f at psi
      call spleval(powcal%powres%beq%f,powcal%powres%beq%mr,powcal%powres%beq%psiaxis,&
      powcal%powres%beq%psiqbdry,zpsi,zf,1)
-     call odes_4thstepcon(powcal%odes,ierr,zdfaca,zf,&
+     call odes_4thstepcon(powcal%odes,ierr,zdfaca,firstcall,zf,&
  &   powcal%powres%beq%psi,powcal%powres%beq%dpsidr,powcal%powres%beq%dpsidz)
      ! check for termination due to solution failure on this field-line
      if (ierr>0) exit
@@ -2631,17 +3038,17 @@ subroutine powelt_setpow(self,powcal,nobjhit,zm,inpow,gshadl)
 
   ihit=nobjhit
   if (lpmidplane) then
-     ! valid exit only if trapped by midplane test (case 'msus')
+     ! valid exit only if trapped by midplane test (case 'msus','global')
      if (nobjhit==-1.OR.nobjhit==0) ihit=1
   end if
 
   if (ihit>0)  then
      ! really a collision
      calcn_type: select case (powcal%n%caltype)
-     case('afws','msus')
+     case('afws','local','msus','global')
         !! shadowed, no power deposited
         powcal%powres%pow(inpow)=0
-     case('msum')
+     case('msum','middle')
         !! hit something, power deposited upon it
         powcal%powres%pow(inpow)=1
         powcal%powres%geobjl%obj(inpow)%weight=ihit
@@ -2649,13 +3056,13 @@ subroutine powelt_setpow(self,powcal,nobjhit,zm,inpow,gshadl)
   else if (ihit<0) then
      ! leaving volume
      calcn_type2: select case (powcal%n%caltype)
-     case('afws')
+     case('afws','local')
         !! unshadowed, power to be deposited in this case
         powcal%powres%pow(inpow)=1
-     case('msum')
+     case('msum','middle')
         !! no  power to be deposited in this case (may be error)
         powcal%powres%pow(inpow)=0
-     case('msus')
+     case('msus','global')
         !! power calculated from psi at exit
         zr=zm%posvec(1)
         zz=zm%posvec(2)

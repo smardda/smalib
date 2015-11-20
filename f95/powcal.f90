@@ -109,7 +109,6 @@ program powcal_p
   call clock_start(2,'pcontrol_init time')
   call pcontrol_init(fileroot)
   call pcontrol_read(file,numerics,onumerics,powcal%edgprof,plot)
-  call pcontrol_fix(numerics,onumerics)
   call clock_stop(2)
 !--------------------------------------------------------------------------
 !! beq part data output by geoq
@@ -123,6 +122,7 @@ program powcal_p
   case default
   call beq_readplus(powcal%powres%beq,file%geoq)
   end select fld_specn
+  call pcontrol_fix(numerics,onumerics,ifldspec)
   call clock_stop(3)
 !--------------------------------------------------------------------------
 !! special vacuum field file
@@ -143,11 +143,9 @@ program powcal_p
   end if
   call clock_stop(9)
 
-  if (powcal%n%nanalau==1) then
+  if (numerics%nanalau==1) then
 !--------------------------------------------------------------------------
 !! special  launch description
-     call clock_start(4,'launch description time')
-     call clock_stop(4)
 !! read  geobjl data (shadowing geometry data)
 !! must have associated X and B data
      call clock_start(5,'shadow geobjlist time')
@@ -171,6 +169,8 @@ program powcal_p
 !! read  HDS  data
 
   call clock_start(6,'hds_init time')
+!     line below needed for debugging version to run
+!     write(*,*) 'debugging output',file%vtkdata
   call hdsfile_dinit(file%hdsdata,timeold)
   call hdsfile_read(gshadl,gnumerics,btree)
 ! rotate and quantise shadowing geometry
@@ -222,7 +222,7 @@ program powcal_p
   end if
 
 !!plot wall power
-! only valid for 'msum' option
+! only valid for 'msum','middle' option
   if(plot%wall) then
      call clock_start(12,'vfile_wall time')
      call vfile_init(file%wall,'wall power in cartesians',nplot)
