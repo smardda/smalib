@@ -19,6 +19,7 @@ module vcontrol_m
   character(*), parameter :: m_name='vcontrol_m' !< module name
   integer(ki4)  :: status   !< error status
   integer(ki4)  :: nin      !< control file unit number
+  integer(ki4)  :: ilog      !< for namelist dump after error
   integer(ki4) :: i !< loop counter
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
@@ -135,6 +136,8 @@ subroutine vcontrol_read(file,numerics)
   read(nin,nml=miscparameters,iostat=status)
   if(status/=0) then
      print '("Fatal error reading misc parameters")'
+     call log_getunit(ilog)
+     write(ilog,nml=miscparameters)
      call log_error(m_name,s_name,1,error_fatal,'Error reading misc parameters')
   end if
 
@@ -177,6 +180,7 @@ subroutine vcontrol_read(file,numerics)
   read(nin,nml=vtkfiles,iostat=status)
   if(status/=0) then
      print '("Fatal error reading input filenames")'
+     write(ilog,nml=vtkfiles)
      call log_error(m_name,s_name,21,error_fatal,'Error reading input filenames')
   end if
 
@@ -249,6 +253,7 @@ subroutine vcontrol_read(file,numerics)
   read(nin,nml=panelarrayparameters,iostat=status)
   if(status/=0) then
      print '("Fatal error reading array parameters")'
+     write(ilog,nml=panelarrayparameters)
      call log_error(m_name,s_name,32,error_fatal,'Error reading array parameters')
   end if
 

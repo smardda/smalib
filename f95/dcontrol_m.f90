@@ -18,6 +18,7 @@ module dcontrol_m
   character(*), parameter :: m_name='dcontrol_m' !< module name
   integer(ki4)  :: status   !< error status
   integer(ki4), save  :: nin      !< control file unit number
+  integer(ki4)  :: ilog      !< for namelist dump after error
   integer(ki4) :: i !< loop counter
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
@@ -123,6 +124,8 @@ subroutine dcontrol_read(file,numerics,plot)
   read(nin,nml=progfiles,iostat=status)
   if(status/=0) then
      print '("Fatal error reading input filenames")'
+     call log_getunit(ilog)
+     write(ilog,nml=progfiles)
      call log_error(m_name,s_name,1,error_fatal,'Error reading input filenames')
   end if
 
@@ -180,6 +183,7 @@ subroutine dcontrol_read(file,numerics,plot)
   read(nin,nml=datvtkparameters,iostat=status)
   if(status/=0) then
      print '("Fatal error reading datvtk parameters")'
+     write(ilog,nml=datvtkparameters)
      call log_error(m_name,s_name,10,error_fatal,'Error reading datvtk parameters')
   end if
 
@@ -218,6 +222,7 @@ subroutine dcontrol_read(file,numerics,plot)
      read(nin,nml=plotselections,iostat=status)
      if(status/=0) then
         print '("Fatal error reading plot selections")'
+        write(ilog,nml=plotselections)
         call log_error(m_name,s_name,50,error_fatal,'Error reading plot selections')
      end if
   end if

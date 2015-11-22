@@ -54,6 +54,7 @@ module powcal_m
   integer(ki4) :: inlevel=1   !< number of subelements at refinement level
   integer(ki4) :: imlevel=1   !< number of subelements at previous refinement level +1
   integer(ki4) :: nin   !< input channel for geobj data
+  integer(ki4)  :: ilog      !< for namelist dump after error
   integer(ki4) :: i !< loop counter
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
@@ -409,6 +410,7 @@ subroutine powcal_readcon(selfn,kin)
   integer(ki4), parameter  :: maximum_number_of_tracks=100 !< maximum number of tracks allowed
   integer(ki4), dimension(maximum_number_of_tracks) :: element_numbers !< tracks selected by element number
   logical :: termination_planes !<  termination planes present
+  logical :: more_profiles !<  use edgprofparameters
   integer(ki4) :: analytic_launch_type !< analytic launch type
   integer(ki4) :: power_on_launch_geo !< power on launch geometry
   integer(ki4) :: power_on_shadow_geo !< power on shadow geometry
@@ -420,6 +422,7 @@ subroutine powcal_readcon(selfn,kin)
  &calculation_type, &
  &number_of_tracks, element_numbers, &
  &termination_planes, &
+ &more_profiles, &
  &analytic_launch_type, power_on_launch_geo, power_on_shadow_geo
 
   !! set default powcal parameters
@@ -439,6 +442,7 @@ subroutine powcal_readcon(selfn,kin)
   end if
   element_numbers=0
   termination_planes=.FALSE.
+  more_profiles=.FALSE.
   analytic_launch_type=0
   power_on_launch_geo=0
   power_on_shadow_geo=0
@@ -447,6 +451,8 @@ subroutine powcal_readcon(selfn,kin)
   read(kin,nml=powcalparameters,iostat=status)
   if(status/=0) then
      print '("Fatal error reading powcal parameters")'
+     call log_getunit(ilog)
+     write(ilog,nml=powcalparameters)
      call log_error(m_name,s_name,1,error_fatal,'Error reading powcal parameters')
   end if
 
@@ -494,6 +500,7 @@ subroutine powcal_readcon(selfn,kin)
   end if
 
   selfn%ltermplane=termination_planes
+  selfn%ledgprof=more_profiles
   selfn%nanalau=analytic_launch_type
   selfn%nlaupow=power_on_launch_geo
   selfn%nshapow=power_on_shadow_geo

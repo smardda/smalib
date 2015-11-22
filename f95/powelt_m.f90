@@ -361,7 +361,11 @@ subroutine powelt_move(self,powcal,gshadl,btree)
   integer(ki4) :: ip !< entries in track
   type(geobj_t) :: iobj !< geo object
   integer(ki4) :: inode  !< local variable
-  integer(ki4) :: nobjhit=0  !< local variable
+  !> Non-zero at fieldline termination
+  !! - (-2) Line hit terminating plane
+  !! - (-1) Line left octree
+  !! - Positive - number of triangle hit
+  integer(ki4) :: nobjhit=0  !< .
   integer(ki4) :: ibacktr !< flag if back-tracking
   type(posnode_t) :: xo !< position variable
   type(posnode_t) :: xn !< position variable
@@ -593,7 +597,11 @@ subroutine powelt_move0(self,powcal,gshadl,btree)
   type(geobj_t) :: iobj !< geo object
   integer(ki4) :: inode  !< local variable
   integer(ki4) :: indt !< shorthand for current timestep number
-  integer(ki4) :: nobjhit  !< local variable
+  !> Non-zero at fieldline termination
+  !! - (-2) Line hit terminating plane
+  !! - (-1) Line left octree
+  !! - Positive - number of triangle hit
+  integer(ki4) :: nobjhit=0  !< .
   integer(ki4) :: ibacktr !< flag if back-tracking
   type(posnode_t) :: xo !< local variable
   type(posnode_t) :: xn !< local variable
@@ -1014,7 +1022,11 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
   type(geobj_t) :: iobj !< geo object
   integer(ki4) :: inode  !< local variable
   integer(ki4) :: indt !< shorthand for current timestep number
-  integer(ki4) :: nobjhit  !< local variable
+  !> Non-zero at fieldline termination
+  !! - (-2) Line hit terminating plane
+  !! - (-1) Line left octree
+  !! - Positive - number of triangle hit
+  integer(ki4) :: nobjhit=0  !< .
   integer(ki4) :: ibacktr !< flag if back-tracking
   type(posnode_t) :: xo !< local variable
   type(posnode_t) :: xn !< local variable
@@ -1403,7 +1415,11 @@ subroutine powelt_move2(self,powcal,gshadl,btree)
   type(geobj_t) :: iobj !< geo object
   integer(ki4) :: inode  !< local variable
   integer(ki4) :: indt !< shorthand for current timestep number
-  integer(ki4) :: nobjhit  !< local variable
+  !> Non-zero at fieldline termination
+  !! - (-2) Line hit terminating plane
+  !! - (-1) Line left octree
+  !! - Positive - number of triangle hit
+  integer(ki4) :: nobjhit=0  !< .
   integer(ki4) :: ibacktr !< flag if back-tracking
   type(posnode_t) :: xo !< local variable
   type(posnode_t) :: xn !< local variable
@@ -1687,7 +1703,11 @@ subroutine powelt_move3(self,powcal,gshadl,btree)
   type(geobj_t) :: iobj !< geo object
   integer(ki4) :: inode  !< local variable
   integer(ki4) :: indt !< shorthand for current timestep number
-  integer(ki4) :: nobjhit  !< local variable
+  !> Non-zero at fieldline termination
+  !! - (-2) Line hit terminating plane
+  !! - (-1) Line left octree
+  !! - Positive - number of triangle hit
+  integer(ki4) :: nobjhit=0  !< .
   integer(ki4) :: ibacktr !< flag if back-tracking
   type(posnode_t) :: xo !< local variable
   type(posnode_t) :: xn !< local variable
@@ -2069,7 +2089,11 @@ subroutine powelt_move4(self,powcal,gshadl,btree)
   type(geobj_t) :: iobj !< geo object
   integer(ki4) :: inode  !< local variable
   integer(ki4) :: indt !< shorthand for current timestep number
-  integer(ki4) :: nobjhit  !< local variable
+  !> Non-zero at fieldline termination
+  !! - (-2) Line hit terminating plane
+  !! - (-1) Line left octree
+  !! - Positive - number of triangle hit
+  integer(ki4) :: nobjhit=0  !< .
   integer(ki4) :: ibacktr !< flag if back-tracking
   type(posnode_t) :: xo !< local variable
   type(posnode_t) :: xn !< local variable
@@ -2472,7 +2496,11 @@ subroutine powelt_move5(self,powcal,gshadl,btree)
   type(geobj_t) :: iobj !< geo object
   integer(ki4) :: inode  !< local variable
   integer(ki4) :: indt !< shorthand for current timestep number
-  integer(ki4) :: nobjhit  !< local variable
+  !> Non-zero at fieldline termination
+  !! - (-2) Line hit terminating plane
+  !! - (-1) Line left octree
+  !! - Positive - number of triangle hit
+  integer(ki4) :: nobjhit=0  !< .
   integer(ki4) :: ibacktr !< flag if back-tracking
   type(posnode_t) :: xo !< local variable
   type(posnode_t) :: xn !< local variable

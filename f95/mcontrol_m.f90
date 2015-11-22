@@ -19,6 +19,7 @@ module mcontrol_m
   character(*), parameter :: m_name='mcontrol_m' !< module name
   integer(ki4)  :: status   !< error status
   integer(ki4),save  :: nin      !< control file unit number
+  integer(ki4)  :: ilog      !< for namelist dump after error
   integer(ki4) :: i !< loop counter
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
@@ -130,6 +131,8 @@ subroutine mcontrol_read(file,numerics,plot)
   read(nin,nml=magfiles,iostat=status)
   if(status/=0) then
      print '("Fatal error reading input filenames")'
+     call log_getunit(ilog)
+     write(ilog,nml=magfiles)
      call log_error(m_name,s_name,1,error_fatal,'Error reading input filenames')
   end if
 
@@ -185,6 +188,7 @@ subroutine mcontrol_read(file,numerics,plot)
   read(nin,nml=miscparameters,iostat=status)
   if(status/=0) then
      print '("Fatal error reading misc parameters")'
+     write(ilog,nml=miscparameters)
      call log_error(m_name,s_name,10,error_fatal,'Error reading misc parameters')
   end if
 
@@ -239,6 +243,7 @@ subroutine mcontrol_read(file,numerics,plot)
   read(nin,nml=plotselections,iostat=status)
   if(status/=0) then
      print '("Fatal error reading plot selections")'
+     write(ilog,nml=plotselections)
      call log_error(m_name,s_name,22,error_fatal,'Error reading plot selections')
   end if
 

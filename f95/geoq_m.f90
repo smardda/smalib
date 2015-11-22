@@ -139,10 +139,11 @@ subroutine geoq_read(self,infileo,infileb)
 
   !! local
   character(*), parameter :: s_name='geoq_read' !< subroutine name
+  integer(ki4), intent(in) :: ifldspec !< field specification
 
   call geobjlist_read(self%objl,infileo)
-  idum=self%beq%n%fldspec
-  call beq_readequil(self%beq,infileb,idum)
+  ifldspec=self%beq%n%fldspec
+  call beq_readequil(self%beq,infileb,ifldspec)
   call log_error(m_name,s_name,70,log_info,'geoq input data files read')
 
 end subroutine geoq_read

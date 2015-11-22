@@ -23,6 +23,7 @@ module control_m
   character(*), parameter :: m_name='control_m' !< module name
   integer(ki4)  :: status   !< error status
   integer(ki4)  :: nin      !< control file unit number
+  integer(ki4)  :: ilog      !< for namelist dump after error
   integer(ki4)  :: i!< loop counter
   integer(ki4)  :: j        !< loop counter
   character(len=80) :: root !< file root
@@ -82,6 +83,7 @@ subroutine control_read(file,numerics,plot)
   logical :: filefound !< true of file exists
   integer(ki4) :: geometrical_type !< type of geometry
   integer(ki4) :: min_geobj_in_bin !< numerical parameter
+  integer(ki4) :: limit_geobj_in_bin !< numerical parameter
   integer(ki4) :: nbins_child  !< numerical parameter
   real(kr4) :: min_tolerance !< numerical parameter
   real(kr4) :: max_tolerance !< numerical parameter
@@ -112,6 +114,7 @@ subroutine control_read(file,numerics,plot)
   !! numerical parameters
   namelist /hdsgenparameters/ &
  &min_geobj_in_bin, &
+ &limit_geobj_in_bin, &
  &nbins_child, &
  &geometrical_type, &
  &min_tolerance, &
@@ -141,6 +144,8 @@ subroutine control_read(file,numerics,plot)
   read(nin,nml=inputfiles,iostat=status)
   if(status/=0) then
      print '("Fatal error reading input filenames")'
+     call log_getunit(ilog)
+     write(ilog,nml=inputfiles)
      call log_error(m_name,s_name,1,error_fatal,'Error reading input filenames')
   end if
 
@@ -182,6 +187,7 @@ subroutine control_read(file,numerics,plot)
 
   !! set default numerical parameters
   min_geobj_in_bin = 10
+  limit_geobj_in_bin = 10
   nbins_child = 10
   geometrical_type = 1
   min_tolerance = 1.0e-3
@@ -198,14 +204,16 @@ subroutine control_read(file,numerics,plot)
   read(nin,nml=hdsgenparameters,iostat=status)
   if(status/=0) then
      print '("Fatal error reading hdsgen parameters")'
+     write(ilog,nml=hdsgenparameters)
      call log_error(m_name,s_name,5,error_fatal,'Error reading hdsgen parameters')
   end if
 
   !! check for valid data
   if(geometrical_type<1) &
  &call log_error(m_name,s_name,16,error_fatal,'geometrical_type must be > 0')
-  if(min_geobj_in_bin<0) &
- &call log_error(m_name,s_name,6,error_fatal,'min_geobj_in_bin must be >=0')
+  limit_geobj_in_bin=max(limit_geobj_in_bin,min_geobj_in_bin)
+  if(limit_geobj_in_bin<0) &
+ &call log_error(m_name,s_name,6,error_fatal,'limit_geobj_in_bin must be >=0')
   if(nbins_child<1) &
  &call log_error(m_name,s_name,7,error_fatal,'nbins_child must be > 0')
   if(min_tolerance<0.0 .or. min_tolerance>max_tolerance) then
@@ -238,7 +246,7 @@ subroutine control_read(file,numerics,plot)
 
 
   numerics%geomtype = geometrical_type
-  numerics%mingeobjinbin = min_geobj_in_bin
+  numerics%mingeobjinbin = limit_geobj_in_bin
   numerics%ngeobj  = no_geobj_records
   numerics%mtype  = margin_type
   numerics%mintolerance = min_tolerance
@@ -265,11 +273,10 @@ subroutine control_read(file,numerics,plot)
   plot_densitygeobj = .false.
 
   !!read plot selections
-!  write(*,nml=plotselections)
   read(nin,nml=plotselections,iostat=status)
-!  write(*,nml=plotselections)
   if(status/=0) then
      print '("Fatal error reading plot selections")'
+     write(ilog,nml=plotselections)
      call log_error(m_name,s_name,12,error_fatal,'Error reading plot selections')
   end if
 
@@ -351,6 +358,7 @@ subroutine control_dread(file,numerics,plot)
   read(nin,nml=inputfiles,iostat=status)
   if(status/=0) then
      print '("Fatal error reading input filenames")'
+     write(ilog,nml=inputfiles)
      call log_error(m_name,s_name,1,error_fatal,'Error reading input filenames')
   end if
 
@@ -397,6 +405,7 @@ subroutine control_dread(file,numerics,plot)
   read(nin,nml=numericalparameters,iostat=status)
   if(status/=0) then
      print '("Fatal error reading numerical parameters")'
+     write(ilog,nml=numericalparameters)
      call log_error(m_name,s_name,5,error_fatal,'Error reading numerical parameters')
   end if
 
@@ -457,6 +466,7 @@ subroutine control_dread(file,numerics,plot)
   read(nin,nml=plotselections,iostat=status)
   if(status/=0) then
      print '("Fatal error reading plot selections")'
+     write(ilog,nml=plotselections)
      call log_error(m_name,s_name,6,error_fatal,'Error reading plot selections')
   end if
 
@@ -525,6 +535,7 @@ subroutine control_lread(file,numbers,plot)
   read(nin,nml=inputfiles,iostat=status)
   if(status/=0) then
      print '("Fatal error reading input filenames")'
+     write(ilog,nml=inputfiles)
      call log_error(m_name,s_name,1,error_fatal,'Error reading input filenames')
   end if
 
@@ -565,6 +576,7 @@ subroutine control_lread(file,numbers,plot)
   read(nin,nml=numericalparameters,iostat=status)
   if(status/=0) then
      print '("Fatal error reading numerical parameters")'
+     write(ilog,nml=numericalparameters)
      call log_error(m_name,s_name,5,error_fatal,'Error reading numerical parameters')
   end if
 
@@ -629,6 +641,7 @@ subroutine control_lread(file,numbers,plot)
   read(nin,nml=plotselections,iostat=status)
   if(status/=0) then
      print '("Fatal error reading plot selections")'
+     write(ilog,nml=plotselections)
      call log_error(m_name,s_name,6,error_fatal,'Error reading plot selections')
   end if
 
@@ -698,6 +711,7 @@ subroutine control_mread(file,numerics,plot)
   read(nin,nml=inputfiles,iostat=status)
   if(status/=0) then
      print '("Fatal error reading input filenames")'
+     write(ilog,nml=inputfiles)
      call log_error(m_name,s_name,1,error_fatal,'Error reading input filenames')
   end if
 
@@ -744,6 +758,7 @@ subroutine control_mread(file,numerics,plot)
   read(nin,nml=numericalparameters,iostat=status)
   if(status/=0) then
      print '("Fatal error reading numerical parameters")'
+     write(ilog,nml=numericalparameters)
      call log_error(m_name,s_name,5,error_fatal,'Error reading numerical parameters')
   end if
 
@@ -807,6 +822,7 @@ subroutine control_mread(file,numerics,plot)
   read(nin,nml=plotselections,iostat=status)
   if(status/=0) then
      print '("Fatal error reading plot selections")'
+     write(ilog,nml=plotselections)
      call log_error(m_name,s_name,6,error_fatal,'Error reading plot selections')
   end if
 
@@ -868,6 +884,7 @@ subroutine control_btree(numerics,kin)
   read(kin,nml=btreeparameters,iostat=status)
   if(status/=0) then
      print '("Fatal error reading btree parameters")'
+     write(ilog,nml=btreeparameters)
      call log_error(m_name,s_name,1,error_fatal,'Error reading btree parameters')
   end if
 

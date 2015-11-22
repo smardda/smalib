@@ -55,6 +55,7 @@ module query_m
 ! private variables
   character(*), parameter :: m_name='query_m' !< module name
   integer   :: status   !< error status
+  integer(ki4)  :: ilog      !< for namelist dump after error
   integer(ki4) :: i !< loop counter
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
@@ -505,6 +506,8 @@ subroutine query_readcon(querydata,kin)
   read(kin,nml=querypositionparameters,iostat=status)
   if(status/=0) then
      print '("Fatal error reading query position parameters")'
+     call log_getunit(ilog)
+     write(ilog,nml=querypositionparameters)
      call log_error(m_name,s_name,1,error_fatal,'Error reading query position parameters')
   end if
 

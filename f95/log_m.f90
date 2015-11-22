@@ -15,6 +15,7 @@ module log_m
   log_open_check,  & !< check file opening
   log_read_check,  & !< check result of read
   log_write_check,  & !< check result of write
+  log_getunit,  & !< get unit number for logging (namelists)
   log_close     !< close log
 
   interface log_value
@@ -201,6 +202,16 @@ subroutine log_write_check(modname,subname,point,status)
 
 
 end subroutine log_write_check
+!---------------------------------------------------------------------
+!> get unit number for logging (namelists)
+subroutine log_getunit(kunit)
+
+  !! arguments
+  integer(ki4), intent(out) :: kunit    !< log unit number
+
+  kunit=nlog
+
+end subroutine log_getunit
 !---------------------------------------------------------------------
 !> close log file
 subroutine log_close

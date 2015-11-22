@@ -143,6 +143,7 @@ beq_h.f90 : spl2d_m.mod
 beq_h.f90 : spl3d_m.mod
 posang_h.f90 : const_kind_m.mod
 pcontrol_h.f90 : const_kind_m.mod
+pcontrol_h.f90 : termplane_h.mod
 dcontrol_h.f90 : const_kind_m.mod
 pcontrol_m.f90 : const_kind_m.mod
 pcontrol_m.f90 : const_numphys_h.mod
@@ -342,6 +343,7 @@ powcal_h.f90 : edgprof_h.mod
 powcal_h.f90 : edgprof_m.mod
 powcal_h.f90 : spl2d_m.mod
 powcal_h.f90 : spl3d_m.mod
+powcal_h.f90 : pcontrol_h.mod
 powcal_h.f90 : termplane_h.mod
 termplane_h.f90 : const_kind_m.mod
 edgprof_h.f90 : const_kind_m.mod
@@ -349,6 +351,7 @@ edgprof_m.f90 : edgprof_h.mod
 edgprof_m.f90 : log_m.mod
 edgprof_m.f90 : const_numphys_h.mod
 edgprof_m.f90 : const_kind_m.mod
+edgprof_m.f90 : pcontrol_h.mod
 termplane_m.f90 : const_kind_m.mod
 termplane_m.f90 : const_numphys_h.mod
 termplane_m.f90 : log_m.mod

@@ -28,6 +28,7 @@ module beqan_m
   integer(ki4),save  :: noutba=6      !< output file unit number
   character(len=80), save :: controlfile !< control file name
   character(len=80), save :: outputfile !< output file name
+  integer(ki4)  :: ilog      !< for namelist dump after error
   integer(ki4) :: i !< loop counter
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
@@ -141,6 +142,8 @@ subroutine beqan_readcon(self,kin)
   read(ninba,nml=equilparameters,iostat=status)
   if(status/=0) then
      call log_error(m_name,s_name,1,error_warning,'Error reading equil parameters')
+     call log_getunit(ilog)
+     write(ilog,nml=equilparameters)
      print '("Error reading equil parameters")'
   end if
 
@@ -224,6 +227,7 @@ subroutine beqan_readcon(self,kin)
   read(ninba,nml=meshparameters,iostat=status)
   if(status/=0) then
      call log_error(m_name,s_name,5,error_warning,'Error reading mesh parameters')
+     write(ilog,nml=meshparameters)
      print '("Error reading mesh parameters")'
   end if
 

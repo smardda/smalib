@@ -89,6 +89,7 @@ module beq_m
   real(kr8), parameter :: epsr=0.01 !< relative tolerance for searches
   integer   :: status   !< error status
   integer(ki4) :: nin   !< input channel for beq data
+  integer(ki4)  :: ilog      !< for namelist dump after error
   integer(ki4) :: i !< loop counter
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
@@ -522,7 +523,7 @@ subroutine beq_readequil(self,infile,kfldspec)
   call log_value('Domain size in Z zdim=',zdim)
   call log_value('Domain start in R rgrid=',rgrid)
   call log_value('Domain centre in Z (originally ignored) zmid=',zmid)
-  call log_error(m_name,s_name,91,log_info,'Centre of domain in Z is assumed to be Z=0')
+  !call log_error(m_name,s_name,91,log_info,'Centre of domain in Z is assumed to be Z=0')
   call log_error(m_name,s_name,92,log_info,'Plasma parameters from EFIT')
   call log_value('Flux at centre ssimag1=',ssimag1)
   call log_value('Flux at boundary ssibry1=',ssibry1)
@@ -531,8 +532,8 @@ subroutine beq_readequil(self,infile,kfldspec)
   call log_error(m_name,s_name,93,log_info,'Check consistency with other plasma data')
   if (debug) write(*,*) 'Geometry parameters from EFIT'
   if (debug) write(*,*) 'Domain size xdim=',xdim ,'zdim=',zdim
-  if (debug) write(*,*) 'Domain start rgrid=',rgrid, 'Domain middle (ignored) zmid=',zmid
-  if (debug) write(*,*) 'Centre of domain in Z is assumed to be Z=0'
+  if (debug) write(*,*) 'Domain start rgrid=',rgrid, 'Domain middle zmid=',zmid
+  !if (debug) write(*,*) 'Centre of domain in Z is assumed to be Z=0'
   if (debug) write(*,*) 'Plasma parameters from EFIT'
   if (debug) write(*,*) 'Fluxes at centre ssimag1=',ssimag1, 'boundary ssibry1=',ssibry1
   if (debug) write(*,*) 'Plasma centre rmaxis=',rmaxis, 'zmaxis=',zmaxis
@@ -2446,6 +2447,8 @@ subroutine beq_readcon(selfn,kin)
   read(kin,nml=beqparameters,iostat=status)
   if(status/=0) then
      print '("Fatal error reading beq parameters")'
+     call log_getunit(ilog)
+     write(ilog,nml=beqparameters)
      call log_error(m_name,s_name,1,error_fatal,'Error reading beq parameters')
   end if
 
@@ -3064,7 +3067,7 @@ subroutine beq_bdryrb(self)
   call log_alloc_check(m_name,s_name,13,status)
   cpsi=abs(zpsioutr-zpsiinr)/(2*self%n%npsi)
 
-  zdsrmin=(zsrmax-zsrmin)/(4*self%n%npsi)
+  zdsrmin=(zsrmax-zsrmin)/(4*self%n%npsi-0.1)
 
   ! loop over r to define 1-D splines as a function of r
   zsr=zsrmin
@@ -3336,6 +3339,7 @@ subroutine beq_rpsi(self)
   real(kr8) :: zpsi    !<  \f$ \psi_i \f$
   real(kr8), dimension(:), allocatable :: swap !< workspace for reversing
 
+! write(*,'(2G12.5)') (self%srmax(j),self%srmin(j),j=self%ntmin,self%ntmax)
   ! allocate generous amount of space for work (roughly half this should be needed, see  cpsi)
   iext=4*self%n%npsi
   allocate(wvextn(iext), stat=status)
@@ -3366,7 +3370,7 @@ subroutine beq_rpsi(self)
      zcos=cos(ztheta)
      zsin=sin(ztheta)
      ! srmin and srmax correspond to psimin and psimax, so possible that srmax <  srmin
-     zdsrmin=abs((self%srmax(j)-self%srmin(j))/(4*self%n%npsi))
+     zdsrmin=abs((self%srmax(j)-self%srmin(j))/(4*self%n%npsi-1.1))
      zsig=sign(1._kr8,self%srmax(j)-self%srmin(j))
      isig=1
      if (zsig<0) isig=0
@@ -3393,9 +3397,11 @@ subroutine beq_rpsi(self)
         if ( i>1 .AND. (zsr-self%srmax(j))*(zsr-self%srmin(j)) > 0 ) goto 2
         zdsr=abs(cpsi/zdpdsr)
         zsr=zsr+zsig*max(zdsr,zdsrmin)
+!        write(*,*) 'zsr=',zsr
         zdpdsrl=zdpdsr
-     end do
-     call log_error(m_name,s_name,20,error_fatal,'Too many nodes')
+     end do 
+!     write(*,*) 'i,j',i,j
+     call log_error(m_name,s_name,21,error_fatal,'Too many nodes')
 
 2        continue
 

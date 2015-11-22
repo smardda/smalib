@@ -12,6 +12,7 @@ module pcontrol_m
   use powcal_m
   use odes_h
   use odes_m
+!  use termplane_h
   use pcontrol_h
 
   implicit none
@@ -30,6 +31,7 @@ module pcontrol_m
   character(*), parameter :: m_name='pcontrol_m' !< module name
   integer(ki4)  :: status   !< error status
   integer(ki4)  :: nin      !< control file unit number
+  integer(ki4)  :: ilog      !< for namelist dump after error
   integer(ki4) :: i !< loop counter
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
@@ -147,6 +149,8 @@ subroutine pcontrol_read(file,numerics,onumerics,edgprof,plot)
   read(nin,nml=inputfiles,iostat=status)
   if(status/=0) then
      print '("Fatal error reading input filenames")'
+     call log_getunit(ilog)
+     write(ilog,nml=inputfiles)
      call log_error(m_name,s_name,1,error_fatal,'Error reading input filenames')
   end if
 
@@ -242,6 +246,7 @@ subroutine pcontrol_read(file,numerics,onumerics,edgprof,plot)
   read(nin,nml=miscparameters,iostat=status)
   if(status/=0) then
      print '("Fatal error reading misc parameters")'
+     write(ilog,nml=miscparameters)
      call log_error(m_name,s_name,10,error_fatal,'Error reading misc parameters')
   end if
 
@@ -273,6 +278,7 @@ subroutine pcontrol_read(file,numerics,onumerics,edgprof,plot)
   read(nin,nml=plotselections,iostat=status)
   if(status/=0) then
      print '("Fatal error reading plot selections")'
+     write(ilog,nml=plotselections)
      call log_error(m_name,s_name,20,error_fatal,'Error reading plot selections')
   end if
 
@@ -301,7 +307,7 @@ subroutine pcontrol_read(file,numerics,onumerics,edgprof,plot)
 
   call powcal_readcon(numerics,nin)
 
-  call edgprof_readcon(edgprof,nin)
+  call edgprof_readcon(edgprof,numerics,nin)
 
   call odes_readcon(onumerics,nin)
 

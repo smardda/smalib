@@ -4,6 +4,7 @@ module edgprof_m
   use log_m
   use const_numphys_h
   use const_kind_m
+  use pcontrol_h
 
   implicit none
   private
@@ -32,6 +33,7 @@ module edgprof_m
   integer(ki4), save  :: noutep=6      !< output file unit number
   character(len=80), save :: controlfile !< control file name
   character(len=80), save :: outputfile !< output file name
+  integer(ki4)  :: ilog      !< for namelist dump after error
   integer(ki4) :: i !< loop counter
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
@@ -74,10 +76,11 @@ subroutine edgprof_init(file,kin)
 end subroutine edgprof_init
 !---------------------------------------------------------------------
 !> read data from file
-subroutine edgprof_readcon(self,kin)
+subroutine edgprof_readcon(self,pnumerics,kin)
 
   !! arguments
   type(edgprof_t), intent(out) :: self !< type which data will be assigned to
+  type(pnumerics_t), intent(inout) :: pnumerics !< powcal general numerical paramete
   integer(ki4), intent(in),optional :: kin   !< input channel for object data structure
 
   !! local
@@ -140,11 +143,27 @@ subroutine edgprof_readcon(self,kin)
      ninep=kin
   end if
 
-  !!read edgprof parameters
-  read(ninep,nml=edgprofparameters,iostat=status)
-  if(status/=0) then
-     print '("Fatal error reading edgprofparameters")'
-     call log_error(m_name,s_name,1,error_fatal,'Error reading edgprofparameters')
+  if (pnumerics%ledgprof) then
+     !!read edgprof parameters
+     read(ninep,nml=edgprofparameters,iostat=status)
+     if(status/=0) then
+        print '("Fatal error reading edgprofparameters")'
+     call log_getunit(ilog)
+        write(ilog,nml=edgprofparameters)
+        call log_error(m_name,s_name,1,error_fatal,'Error reading edgprofparameters')
+     end if
+  else
+     !! set edgprof parameters using values from powcalparameters
+     power_split=pnumerics%f
+     decay_length=pnumerics%lmid
+     diffusion_length=pnumerics%sigma
+     power_loss=pnumerics%ploss
+     q_parallel0=pnumerics%qpara0
+     if (diffusion_length>1.e-6_kr8) then
+        profile_formula='eich'
+     else
+        profile_formula='unset'
+     end if
   end if
 
   call lowor(profile_formula,1,len_trim(profile_formula))

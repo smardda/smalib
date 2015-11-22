@@ -98,7 +98,7 @@ program hdsgen_p
 !--------------------------------------------------------------------------
 !! initialise btree
 
-  call clock_start(4,'btreelist_init time')
+  call clock_start(4,'btree_init time')
   call btree_init(btree,numerics)
   call clock_stop(4)
 
