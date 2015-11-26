@@ -246,6 +246,7 @@ subroutine pcontrol_read(file,numerics,onumerics,edgprof,plot)
   read(nin,nml=miscparameters,iostat=status)
   if(status/=0) then
      print '("Fatal error reading misc parameters")'
+     call log_getunit(ilog)
      write(ilog,nml=miscparameters)
      call log_error(m_name,s_name,10,error_fatal,'Error reading misc parameters')
   end if
@@ -278,6 +279,7 @@ subroutine pcontrol_read(file,numerics,onumerics,edgprof,plot)
   read(nin,nml=plotselections,iostat=status)
   if(status/=0) then
      print '("Fatal error reading plot selections")'
+     call log_getunit(ilog)
      write(ilog,nml=plotselections)
      call log_error(m_name,s_name,20,error_fatal,'Error reading plot selections')
   end if

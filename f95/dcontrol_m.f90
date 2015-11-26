@@ -183,6 +183,7 @@ subroutine dcontrol_read(file,numerics,plot)
   read(nin,nml=datvtkparameters,iostat=status)
   if(status/=0) then
      print '("Fatal error reading datvtk parameters")'
+     call log_getunit(ilog)
      write(ilog,nml=datvtkparameters)
      call log_error(m_name,s_name,10,error_fatal,'Error reading datvtk parameters')
   end if
@@ -222,6 +223,7 @@ subroutine dcontrol_read(file,numerics,plot)
      read(nin,nml=plotselections,iostat=status)
      if(status/=0) then
         print '("Fatal error reading plot selections")'
+        call log_getunit(ilog)
         write(ilog,nml=plotselections)
         call log_error(m_name,s_name,50,error_fatal,'Error reading plot selections')
      end if

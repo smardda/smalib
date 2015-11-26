@@ -139,20 +139,21 @@ subroutine powcal_init(self,numerics,plot,gnumerics)
   self%powres%flinm=plot%flinm
 
   calcn_type: select case (self%n%caltype)
-  case('msus','global')
+  case('afws','local','msus','global')
      ! set size of psista array
      allocate(self%powres%psista(self%powres%geobjl%ng), stat=status)
      call log_alloc_check(m_name,s_name,4,status)
      self%powres%psista=0
-  case('afws','local')
-     ! set size of psista array
-     allocate(self%powres%psista(self%powres%geobjl%ng), stat=status)
-     call log_alloc_check(m_name,s_name,5,status)
+  case default
+  end select calcn_type
+
+  field_type: select case (self%powres%beq%n%fldspec)
+  case(1)
      ! limits on psi-theta interpolation
      call spl2d_ptlimits(self%powres%beq%rjac,self%powres%psimin,self%powres%psimax,&
      self%powres%thetamin,self%powres%thetamax)
-  case default
-  end select calcn_type
+  case(2,3)
+  end select field_type
 
   if (self%n%shadow/=0) then
      if (self%n%shadow==-1) then
@@ -211,9 +212,9 @@ subroutine powcal_quant(self,gnumerics)
   call position_tfmlis(self%powres%geobjl%posl,self%powres%geobjl%tfmdata)
   call position_qtfmlis(self%powres%geobjl%posl,self%powres%geobjl%quantfm)
 
-  calcn_type: select case (self%n%caltype)
-  case('afws','local')
-     ! psi-theta-zeta case
+  field_type: select case (self%powres%beq%n%fldspec)
+  case (1)
+     ! mapped (psi-theta-zeta) case
      ! multiplies RHS of ode
      self%powres%qfac=self%powres%geobjl%quantfm%hmin(2)/self%powres%geobjl%quantfm%hmin(3)
 
@@ -280,17 +281,17 @@ subroutine powcal_quant(self,gnumerics)
      deallocate(zposl%pos)
 
   case default
-     ! R-Z-xi case
+     ! R-Z-xi or R-Z-zeta case
 
      ! limits on R-Z interpolation
      call spl2d_ptscale(self%powres%beq%psi,self%powres%geobjl%quantfm)
      call spl2d_ptscale(self%powres%beq%dpsidr,self%powres%geobjl%quantfm)
      call spl2d_ptscale(self%powres%beq%dpsidz,self%powres%geobjl%quantfm)
-     fldspec_type1: select case (self%powres%beq%n%fldspec)
+     field_typeinr: select case (self%powres%beq%n%fldspec)
      case (3)
         call spl2d_ptscale(self%powres%beq%rispldr,self%powres%geobjl%quantfm)
         call spl2d_ptscale(self%powres%beq%rispldz,self%powres%geobjl%quantfm)
-     end select fldspec_type1
+     end select field_typeinr
 
      ! domain control
      allocate(zposl%pos(5),stat=status)
@@ -325,7 +326,8 @@ subroutine powcal_quant(self,gnumerics)
      self%powres%geobjl%quantfm%nqtfm=inqtfm
      deallocate(zposl%pos)
 
-     if (self%n%ltermplane) then
+     ! assuming termplane only in non-mapped field type
+     if (self%n%ltermplane) then 
         ! scale termination planes
         allocate(zposl%pos(self%n%termp%ntermplane),stat=status)
         call log_alloc_check(m_name,s_name,31,status)
@@ -348,6 +350,7 @@ subroutine powcal_quant(self,gnumerics)
 
      if (self%powres%beq%n%vacfile=='null') then
         if (self%powres%beq%n%mrip/=0) then
+           !! special analytic model, has to be fldspec=2
            ! set ripple parameters (before scaling)
            zdum=beq_ripple_h1(1._kr8,0._kr8,0._kr8,-1,&
  &         self%powres%beq%n%mrip,self%powres%beq%ivac,self%powres%beq%n%arip)
@@ -366,15 +369,16 @@ subroutine powcal_quant(self,gnumerics)
  &         self%powres%beq%dpsidz,zdum,&
  &         zh1,zh2,idum,0)
         else
-           fldspec_type: select case (self%powres%beq%n%fldspec)
+           field_typeinr2: select case (self%powres%beq%n%fldspec)
            case (3)
               ! no 3-cpt so in fact value of qfaca(3) does not matter
-           case default
+           case default ! should be only fldspec=2
               ! working with f=I in 3-component, so need 1/h_1 factor for extra R
               self%powres%qfaca(3)=1._kr8/self%powres%geobjl%quantfm%hmin(1)
-           end select fldspec_type
+           end select field_typeinr2
         end if
      else
+        !! has to be fldspec=2 here
         ! ripple defined by spl3d vacuum field
         call spl3d_ptscale(self%powres%beq%vacfld,self%powres%geobjl%quantfm)
         ! here scale consistent with xi update
@@ -384,7 +388,7 @@ subroutine powcal_quant(self,gnumerics)
      ! normalise termination controls
      self%odes%n%termcon(2)=self%odes%n%termcon(2)*self%powres%beq%domlen(3)
 
-  end select calcn_type
+  end select field_type
 
 end subroutine powcal_quant
 !---------------------------------------------------------------------
@@ -438,7 +442,7 @@ subroutine powcal_readcon(selfn,kin)
   calculation_type='unset'
   number_of_tracks=0
   if (selfn%mtrack>maximum_number_of_tracks) then
-     call log_error(m_name,s_name,10,error_warning,'maximum_number_of_tracks parameter too small')
+     call log_error(m_name,s_name,1,error_warning,'maximum_number_of_tracks parameter too small')
   end if
   element_numbers=0
   termination_planes=.FALSE.
@@ -453,10 +457,21 @@ subroutine powcal_readcon(selfn,kin)
      print '("Fatal error reading powcal parameters")'
      call log_getunit(ilog)
      write(ilog,nml=powcalparameters)
-     call log_error(m_name,s_name,1,error_fatal,'Error reading powcal parameters')
+     call log_error(m_name,s_name,2,error_fatal,'Error reading powcal parameters')
   end if
 
   !! check for valid data
+  calcn_type: select case (calculation_type)
+  case('afws','local','msus','global','msum','middle')
+     ! valid options
+     call log_value('calculation type', calculation_type)
+  case('unset')
+  call log_error(m_name,s_name,5,error_warning,'calculation_type not set, default to local')
+  calculation_type='local'
+     call log_value('calculation type', calculation_type)
+  case default
+  call log_error(m_name,s_name,6,error_fatal,'calculation_type not recognised')
+  end select calcn_type
   if(power_split<0.OR.power_split>1) &
  &call log_error(m_name,s_name,11,error_fatal,'power_split must be >=0 and <=1')
   if(decay_length<=0) &
@@ -507,6 +522,9 @@ subroutine powcal_readcon(selfn,kin)
 
   if (selfn%ltermplane) then
      call termplane_readcon(selfn%termp,kin)
+  else
+     ! shut off more detailed tests
+     selfn%termp%ntermplane=0
   end if
 
 end subroutine powcal_readcon
@@ -523,10 +541,12 @@ subroutine powcal_move(self,gshadl,btree)
   character(*), parameter :: s_name='powcal_move' !< subroutine name
   type(powelt_t) :: zelt   !< power element
 
-  ! check for shadowing
+  ! check for axisymmetric
   if (self%powres%beq%n%vacfile=='null') then
      if (self%powres%beq%n%mrip/=0) then
-        ! analytic ripple model
+        ! not axisymmetric
+        ! analytic ripple model, has to be fldspec=2
+        ! no termplane criteria
         do i=1,self%powres%npowe
            zelt%ie=i
            do j=imlevel,inlevel
@@ -535,9 +555,17 @@ subroutine powcal_move(self,gshadl,btree)
            end do
         end do
      else
-        ! no ripple
+        ! axisymmetric (no ripple field)
         field_type: select case (self%powres%beq%n%fldspec)
-        case (3)
+        case (1) ! should only be for caltype='local', no termplane
+           do i=1,self%powres%npowe
+              zelt%ie=i
+              do j=imlevel,inlevel
+                 zelt%je=j
+                 call powelt_move(zelt,self,gshadl,btree)
+              end do
+           end do
+        case default ! should only be fldspec=3, all caltypes with termplane
            calcn_type: select case (self%n%caltype)
            case ('afws','local')
               do i=1,self%powres%npowe
@@ -547,7 +575,7 @@ subroutine powcal_move(self,gshadl,btree)
                     call powelt_move0(zelt,self,gshadl,btree)
                  end do
               end do
-           case ('msus','global')
+           case ('msus','global','msum','middle')
               do i=1,self%powres%npowe
                  zelt%ie=i
                  do j=imlevel,inlevel
@@ -556,19 +584,11 @@ subroutine powcal_move(self,gshadl,btree)
                  end do
               end do
            end select calcn_type
-        case default
-           do i=1,self%powres%npowe
-              zelt%ie=i
-              do j=imlevel,inlevel
-                 zelt%je=j
-                 call powelt_move(zelt,self,gshadl,btree)
-              end do
-           end do
         end select field_type
      end if
+  ! remaining cases non-axisymmetric, ripple defined by vacuum file
   else if (self%n%ltermplane) then
      ! more sophisticated termination criteria
-     ! ripple defined by vacuum file
      do i=1,self%powres%npowe
         zelt%ie=i
         do j=imlevel,inlevel
@@ -577,7 +597,7 @@ subroutine powcal_move(self,gshadl,btree)
         end do
      end do
   else
-     ! ripple defined by vacuum file
+     ! older midplane-based termination criteria
      do i=1,self%powres%npowe
         zelt%ie=i
         do j=imlevel,inlevel
@@ -923,13 +943,17 @@ subroutine powcal_delete(self)
   deallocate(self%powres%pows)
   deallocate(self%powres%pow)
   calcn_type: select case (self%n%caltype)
-  case('msus','global')
+  case('afws','local','msus','global')
      deallocate(self%powres%psista)
-  case('afws','local')
+  case default
+  end select calcn_type
+
+  field_type: select case (self%powres%beq%n%fldspec)
+  case(1)
      call beq_deletepart(self%powres%beq)
   case default
      call beq_deleteplus(self%powres%beq)
-  end select calcn_type
+  end select field_type
   call edgprof_delete(self%edgprof)
 
 end subroutine powcal_delete

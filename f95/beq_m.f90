@@ -519,16 +519,16 @@ subroutine beq_readequil(self,infile,kfldspec)
   end if
 
   call log_error(m_name,s_name,90,log_info,'Geometry parameters from EFIT')
-  call log_value('Domain size in R xdim=',xdim)
-  call log_value('Domain size in Z zdim=',zdim)
-  call log_value('Domain start in R rgrid=',rgrid)
-  call log_value('Domain centre in Z (originally ignored) zmid=',zmid)
+  call log_value('Domain size in R xdim',xdim)
+  call log_value('Domain size in Z zdim',zdim)
+  call log_value('Domain start in R rgrid',rgrid)
+  call log_value('Domain centre in Z (originally ignored) zmid',zmid)
   !call log_error(m_name,s_name,91,log_info,'Centre of domain in Z is assumed to be Z=0')
   call log_error(m_name,s_name,92,log_info,'Plasma parameters from EFIT')
-  call log_value('Flux at centre ssimag1=',ssimag1)
-  call log_value('Flux at boundary ssibry1=',ssibry1)
-  call log_value('Plasma centre in R rmaxis=',rmaxis)
-  call log_value('Plasma centre in Z zmaxis=',zmaxis)
+  call log_value('Flux at centre ssimag1',ssimag1)
+  call log_value('Flux at boundary ssibry1',ssibry1)
+  call log_value('Plasma centre in R rmaxis',rmaxis)
+  call log_value('Plasma centre in Z zmaxis',zmaxis)
   call log_error(m_name,s_name,93,log_info,'Check consistency with other plasma data')
   if (debug) write(*,*) 'Geometry parameters from EFIT'
   if (debug) write(*,*) 'Domain size xdim=',xdim ,'zdim=',zdim
@@ -711,7 +711,7 @@ subroutine beq_readequil(self,infile,kfldspec)
   beq_nobinq=(status/=0)
   if(beq_nobinq) then
      call log_error(m_name,s_name,60,error_warning,'Error reading ncoil')
-     call log_value("Giving up on EQDSK for B values, status = ",status)
+     call log_value("Giving up on EQDSK for B values, status",status)
      !        deallocate(workr1)
      !        deallocate(workz1)
      return
@@ -731,7 +731,7 @@ subroutine beq_readequil(self,infile,kfldspec)
   beq_nobinq=(status/=0)
   if(beq_nobinq) then
      call log_error(m_name,s_name,63,error_warning,'Error reading coils')
-     call log_value("Giving up on EQDSK for B values, status = ",status)
+     call log_value("Giving up on EQDSK for B values, status",status)
      deallocate(work1)
      return
   end if
@@ -749,7 +749,7 @@ subroutine beq_readequil(self,infile,kfldspec)
   beq_nobinq=(status/=0)
   if(beq_nobinq) then
      call log_error(m_name,s_name,71,error_warning,'Error reading Br')
-     call log_value("Giving up on EQDSK for B values, status = ",status)
+     call log_value("Giving up on EQDSK for B values, status",status)
      deallocate(workr2)
      return
   end if
@@ -767,7 +767,7 @@ subroutine beq_readequil(self,infile,kfldspec)
   beq_nobinq=(status/=0)
   if(beq_nobinq) then
      call log_error(m_name,s_name,73,error_warning,'Error reading Bz')
-     call log_value("Giving up on EQDSK for B values, status = ",status)
+     call log_value("Giving up on EQDSK for B values, status",status)
      deallocate(workr2)
      deallocate(workz2)
      return
@@ -2425,8 +2425,8 @@ subroutine beq_readcon(selfn,kin)
   beq_psimax=1.1
   beq_delpsi=0.1
   beq_npsi=32
-  beq_thetamin=3*const_pid/4
-  beq_thetamax=5*const_pid/4
+  beq_thetamin=const_pid/4
+  beq_thetamax=3*const_pid/4
   beq_deltheta=0.1
   beq_zetamin=0
   beq_zetamax=2*const_pid

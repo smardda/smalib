@@ -180,6 +180,7 @@ subroutine vcontrol_read(file,numerics)
   read(nin,nml=vtkfiles,iostat=status)
   if(status/=0) then
      print '("Fatal error reading input filenames")'
+     call log_getunit(ilog)
      write(ilog,nml=vtkfiles)
      call log_error(m_name,s_name,21,error_fatal,'Error reading input filenames')
   end if
@@ -253,6 +254,7 @@ subroutine vcontrol_read(file,numerics)
   read(nin,nml=panelarrayparameters,iostat=status)
   if(status/=0) then
      print '("Fatal error reading array parameters")'
+     call log_getunit(ilog)
      write(ilog,nml=panelarrayparameters)
      call log_error(m_name,s_name,32,error_fatal,'Error reading array parameters')
   end if
@@ -422,8 +424,8 @@ subroutine vcontrol_read(file,numerics)
      numerics%vptfm%ntfm(j)=ztfmdata%ntfm
      !ID     numerics%vptfm%id(j)=ztfmdata%id
   end do
-  call log_value('Return flag = ',iflag)
-  call log_value('Number of transforms present = ',intfm)
+  call log_value('Return flag',iflag)
+  call log_value('Number of transforms present',intfm)
 
   ! assign transform numbers
   do j=1,inpan

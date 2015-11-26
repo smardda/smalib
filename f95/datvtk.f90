@@ -42,6 +42,8 @@ program datvtk_p
   type(geobjlist_t)  :: geobj2      !< geometrical objects
   type(date_time_t) :: timestamp !< timestamp of run
   character(len=80) :: fileroot !< reference name for all files output by run
+  character(len=20) :: buf1 !< buffer input
+  character(len=20) :: buf2 !< buffer input
   character(len=3) :: optarg='nxx' !< optional argument
   character(len=256) :: vtkdesc !< descriptor line for vtk files
   character(len=80),save :: iched !< vtk field file descriptor
@@ -55,7 +57,8 @@ program datvtk_p
   integer(ki4):: j !< loop variable
   integer(ki4) :: islen   !< length of input field filename
   integer(ki4), dimension(2):: idum !< dummy array
-  logical :: iltest !< logical flag
+  integer(ki4) :: inarg   !< number of command line arguments
+  integer(ki4) :: inda   !< index of dash in command line argument
 !--------------------------------------------------------------------------
 !! initialise timing
 
@@ -75,11 +78,28 @@ program datvtk_p
 !! no file root specified
      print *, 'Fatal error: no file root name specified.'
      print *, 'To run datvtk type at the command line:'
-     print *, '   datvtk fileroot [opt]'
+     print *, '   datvtk [-opt] fileroot '
      stop
   else
 !!get fileroot
-     call get_command_argument(1,value=fileroot)
+     inarg=command_argument_count()
+     if (inarg==2)  then
+        call get_command_argument(1,value=buf1)
+! strip leading dash
+        inda=index(buf1,'-')
+        buf2=adjustl(buf1(inda+1:))
+        i=min(len_trim(buf2),3)
+        if (i>0) then
+           optarg(1:i)=buf2
+        else
+!! no option specified after "-"
+           print *, 'Fatal error: no option specified after "-".'
+           print *, 'To run datvtk type at the command line:'
+           print *, '   datvtk [-opt] fileroot '
+           stop
+        end if
+     end if
+     call get_command_argument(inarg,value=fileroot)
 !! strip any final '.dat' string
      islen=len_trim(fileroot)
      if (islen>4) then
@@ -87,20 +107,11 @@ program datvtk_p
            fileroot(islen-3:islen)='    '
         end if
      end if
-     iltest=(command_argument_count()==2)
-     if (iltest) then
-        call get_command_argument(2,value=optarg)
-! strip leading dash one day perhaps
-
-! pad with x's
-        i=len_trim(optarg)
-        if (i==2) optarg(3:3)='x'
-        if (i==1) optarg(2:3)='xx'
-     end if
   end if
 
 !! start log
   call log_init(fileroot,timestamp)
+  call log_value("option string for datvtk",optarg)
 !  write(*,*) 'this output helps gfortran sometimes', fileroot
 !--------------------------------------------------------------------------
 !! read control file in case of silhouette data

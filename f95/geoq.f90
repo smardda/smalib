@@ -161,7 +161,11 @@ program geoq_p
 !! data diagnostics
 
   select case (ifldspec)
-  case (2,3)
+  case (1)
+     mapfld='all'
+     call beq_dia(geoq%beq)
+  case default
+     mapfld='frzxi'
 ! these options are not valid so are suppressed
      plot%geoqmm=.FALSE.
      plot%gnuptz=.FALSE.
@@ -170,10 +174,6 @@ program geoq_p
      plot%geoqx=.FALSE.
 ! this one not implemented (or needed?)
      plot%frzv=.FALSE.
-     mapfld='frzxi'
-  case default
-     mapfld='all'
-     call beq_dia(geoq%beq)
   end select
 !! optionally read in ripple data
   if (geoq%beq%n%vacfile/='null') then

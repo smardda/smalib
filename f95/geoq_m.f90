@@ -139,7 +139,7 @@ subroutine geoq_read(self,infileo,infileb)
 
   !! local
   character(*), parameter :: s_name='geoq_read' !< subroutine name
-  integer(ki4), intent(in) :: ifldspec !< field specification
+  integer(ki4) :: ifldspec !< field specification
 
   call geobjlist_read(self%objl,infileo)
   ifldspec=self%beq%n%fldspec

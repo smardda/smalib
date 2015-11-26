@@ -65,6 +65,7 @@ module geobjlist_m
   character(*), parameter :: m_name='geobjlist_m' !< module name
   character(len=80) :: ibuf1 !< buffer for input/output
   character(len=80) :: ibuf2 !< buffer for input/output
+  character(len=132) :: bigbuf !<big buffer for input/output
   integer   :: status   !< error status
   integer(ki4), save :: nin   !< input channel for geobj data
   integer(ki4) :: i !< loop counter
@@ -230,9 +231,9 @@ subroutine geobjlist_read(self,infile,kched,kin)
   if (ir>20) then
      call log_error(m_name,s_name,71,error_fatal,'Error reading header data')
   end if
-  read(nin,fmt='(a)',iostat=status) ibuf1
+  read(nin,fmt='(a)',iostat=status) bigbuf
   call log_read_check(m_name,s_name,72,status)
-  call misc_countnos(ibuf1,ifmt)
+  call misc_countnos(bigbuf,ifmt)
   if (ifmt<0.OR.ifmt>4) then
      call log_error(m_name,s_name,73,error_fatal,'Error cannot count points on input line')
   end if
@@ -3248,16 +3249,16 @@ function indict(ndim,dict,word)
   end do
 end function indict
 
-subroutine misc_countnos(buf,kfmt)
-  character(len=80),intent(in) :: buf !< buffer for input
+subroutine misc_countnos(bigbuf,kfmt)
+  character(len=*),intent(in) :: bigbuf !< buffer for input
   integer(ki4), intent(out) :: kfmt !< format of buffer - number of 3-vectors
-  character(len=80) :: ibuf !< buffer for input/output
+  character(len=132) :: ibuf !< buffer for input/output
   integer(ki4) :: ilen !< length of string
   integer(ki4) :: iblan !< number of bank substrings
   integer(ki4) :: isw !< switch on if last character was not blank
   integer(ki4) :: ji !< loop variable
   iblan=0
-  ibuf=adjustl(buf)
+  ibuf=adjustl(bigbuf)
   ilen=len_trim(ibuf)
   isw=1
   do ji=1,ilen

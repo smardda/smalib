@@ -227,6 +227,7 @@ subroutine beqan_readcon(self,kin)
   read(ninba,nml=meshparameters,iostat=status)
   if(status/=0) then
      call log_error(m_name,s_name,5,error_warning,'Error reading mesh parameters')
+     call log_getunit(ilog)
      write(ilog,nml=meshparameters)
      print '("Error reading mesh parameters")'
   end if

@@ -291,14 +291,14 @@ subroutine position_readcon(ztfmdata,kin,flag)
   character(len=20) :: transform_id !< identifies transformation
   integer(ki4), parameter :: npdict = 10 !< size of dictionary
   !> dictionary of long name transformations
-  character(len=24), dimension(npdict), parameter :: dictlong = &  !< local variable
+  character(len=24), dimension(npdict), parameter :: dictlong = &  !< .
  &(/'cartesian_scale         ','scale+offset            ',&
  &'full_matrix_mult+offset ','offset+full_matrix_mult ',&
  &'five                    ','poloidal_tilt           ',&
  &'toroidal_tilt           ','toroidal_rotate         ',&
  &'poloidal_rotate         ','minor_radial            '/)
   !> dictionary of short name transformations
-  character(len=6), dimension(npdict), parameter :: dictshort = &  !< local variable
+  character(len=6), dimension(npdict), parameter :: dictshort = &  !< .
  &(/'scale ','offsca','matoff','offmat','five  ',&
  &'poltil','tortil','torrot','polrot',&
  &'radial' /)
@@ -308,7 +308,7 @@ subroutine position_readcon(ztfmdata,kin,flag)
   !! second denotes
   !! 1 - scale, 2 - scale+offset, 3 - full matrix mult+offset, 4 - offset+full matrix mult
   !! Only solid body transformations (and not five) are actually implemented
-  integer(ki4), dimension(npdict), parameter :: dictn = &  !< local variable
+  integer(ki4), dimension(npdict), parameter :: dictn = &  !< .
  &(/1,2,3,4,5, &
  &6,7,12,22, &
  &42/)

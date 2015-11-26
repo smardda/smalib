@@ -269,52 +269,66 @@ subroutine powelt_dep(self,powcal,gshadl)
         call powelt_normal(self,powcal,znormal)
         zbdotn=dot_product(zb,znormal)
      case('msum','middle')
-        ! use saved object number to get normal and position
-        ! only OK if rippled defined via F
-        iobj%geobj=powcal%powres%geobjl%obj(inpow)%weight+0.5
-        !        write(*,*) 'iog=',iobj%geobj
-        iobj%objtyp=gshadl%obj2(iobj%geobj)%typ
-        call geobj_normal(iobj,gshadl%posl,gshadl%nodl,znormal,zmag)
-        call geobj_centre(iobj,gshadl%posl,gshadl%nodl,zpos)
-        ! calculate F at position
-        zposang%pos=zpos
-        call beq_b(powcal%powres%beq,zposang,1)
-        ! F vector to cartesians
-        ! dequantise position
-        zpos1%posvec=zpos
-        zpos2=position_invqtfm(zpos1,powcal%powres%geobjl%quantfm)
-        ! convert xi to zeta
-        zzeta=(zpos2%posvec(3))/powcal%powres%beq%nzets
-        zpos2%posvec(3)=zzeta
-        zposang%pos=zpos2%posvec
-        zposang%opt=1 ; zposang%units=0
-        ! convert F to field vector
-        zr=zpos2%posvec(1)
-        zposang%vec(1)=zposang%vec(1)/zr ; zposang%vec(2)=zposang%vec(2)/zr
-        call posang_tfm(zposang,-3)
-        zb=zposang%vec
-        zbdotn=dot_product(zb,znormal)
+        field_type: select case (powcal%powres%beq%n%fldspec)
+        case(1)
+           call log_error(m_name,s_name,6,error_fatal,'No code for case')
+        case default
+           ! use saved object number to get normal and position
+           ! only OK if ripple defined via F
+           iobj%geobj=powcal%powres%geobjl%obj(inpow)%weight+0.5
+           !        write(*,*) 'iog=',iobj%geobj
+           iobj%objtyp=gshadl%obj2(iobj%geobj)%typ
+           call geobj_normal(iobj,gshadl%posl,gshadl%nodl,znormal,zmag)
+           call geobj_centre(iobj,gshadl%posl,gshadl%nodl,zpos)
+           ! calculate F at position
+           zposang%pos=zpos
+           call beq_b(powcal%powres%beq,zposang,1)
+           ! F vector to cartesians
+           ! dequantise position
+           zpos1%posvec=zpos
+           zpos2=position_invqtfm(zpos1,powcal%powres%geobjl%quantfm)
+           ! convert xi to zeta
+           zzeta=(zpos2%posvec(3))/powcal%powres%beq%nzets
+           zpos2%posvec(3)=zzeta
+           zposang%pos=zpos2%posvec
+           zposang%opt=1 ; zposang%units=0
+           ! convert F to field vector
+           zr=zpos2%posvec(1)
+           zposang%vec(1)=zposang%vec(1)/zr ; zposang%vec(2)=zposang%vec(2)/zr
+           call posang_tfm(zposang,-3)
+           zb=zposang%vec
+           zbdotn=dot_product(zb,znormal)
+        end select field_type
      end select calcn_type
 
 
      calcn_type2: select case (powcal%n%caltype)
-     case('afws','local')
-        ! psi is the position (unquantised)
-        zpos2=position_invqtfm(zpos1,powcal%powres%geobjl%quantfm)
-        zpsi=zpos2%posvec(1)
-     case('msum','middle')
-        ! evaluate psi using normalised coordinates
-        zr=zpos1%posvec(1)
-        zz=zpos1%posvec(2)
-        call spl2d_eval(powcal%powres%beq%psi,zr,zz,zpsi)
+     case('afws','local','msum','middle')
+        field_type2: select case (powcal%powres%beq%n%fldspec)
+        case(1)
+           ! psi is the position (unquantised)
+           zpos2=position_invqtfm(zpos1,powcal%powres%geobjl%quantfm)
+           zpsi=zpos2%posvec(1)
+        case default
+           zr=zpos1%posvec(1)
+           zz=zpos1%posvec(2)
+           call spl2d_eval(powcal%powres%beq%psi,zr,zz,zpsi)
+        end select field_type2
      case('msus','global')
         ! use saved psi if possible
         if (iflag==1) then
            zpsi=powcal%powres%geobjl%obj(inpow)%weight
         else
-           zr=zpos1%posvec(1)
-           zz=zpos1%posvec(2)
-           call spl2d_eval(powcal%powres%beq%psi,zr,zz,zpsi)
+           field_type3: select case (powcal%powres%beq%n%fldspec)
+           case(1)
+              ! psi is the position (unquantised)
+              zpos2=position_invqtfm(zpos1,powcal%powres%geobjl%quantfm)
+              zpsi=zpos2%posvec(1)
+           case default
+              zr=zpos1%posvec(1)
+              zz=zpos1%posvec(2)
+              call spl2d_eval(powcal%powres%beq%psi,zr,zz,zpsi)
+           end select field_type3
         end if
         powcal%powres%geobjl%obj(inpow)%weight=iflag
      end select calcn_type2
@@ -376,9 +390,9 @@ subroutine powelt_move(self,powcal,gshadl,btree)
 
   ! find element number
   inpow=powelt_addr(self,powcal%powres%npowe)
-!  write(*,*) "inpow=",inpow
-!  write(*,*) powcal%n%ntrack
-!  write(*,*) powcal%n%trackno
+  !  write(*,*) "inpow=",inpow
+  !  write(*,*) powcal%n%ntrack
+  !  write(*,*) powcal%n%trackno
   ! check whether looking at small number of tracks
   if (powcal%n%ntrack>0) then
      ! is this element track in the test set
@@ -727,13 +741,8 @@ subroutine powelt_move0(self,powcal,gshadl,btree)
   firstcall=1
   lenpath=0
   ierr=0
-  ! ignore midplane if termination planes present
-  if (powcal%n%ltermplane) then
-     ilpmidplane=.FALSE.
-     powcal%n%termp%termstore(1,:)=(/1.e30,1.e30,1.e30/)
-  else
-     ilpmidplane=lpmidplane
-  end if
+  ! assumes termination planes present
+  powcal%n%termp%termstore(1,:)=(/1.e30,1.e30,1.e30/)
   !     powcal%odes%near=0
   ! time step loop for path
   loop_path: do
@@ -1042,11 +1051,10 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
   type(posveclis_t) :: rposl   !< list of position data
   real(kr4) :: phylenpath !< physical length of path
   logical :: lcoll   !< collision on path
-  logical, parameter :: ilpmidplane=.FALSE.   !<  ignore midplane if termination planes present
   real(kr8) :: zpsim !< value of \f$ \psi \f$ at field line end (diagnostic)
   real(kr8), dimension(2) :: zk !< sector number
   integer(ki4), save :: firstcall  !< flag up first step of new trajectory
-  
+
   inpow=powelt_addr(self,powcal%powres%npowe)
   ! check whether looking at small number of tracks
   if (powcal%n%ntrack>0) then
@@ -1058,7 +1066,7 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
   end if
 1     continue
   domlen=powcal%powres%beq%domlen(3)
-  ! needed for new termination criteria
+  ! needed for new termination criteria (extra store for extrema)
   powcal%n%termp%termstore(1,:)=(/1.e30,1.e30,1.e30/)
   ! mark powelt as unknown (2) by default
   powcal%powres%pow(inpow)=2
@@ -1547,7 +1555,8 @@ subroutine powelt_move2(self,powcal,gshadl,btree)
            xm%node=0
            if (abs(lenpath)>powcal%odes%n%termcon(1)) then
               ! prevent termination due to very short trajectory
-              call pcle_move(xo,xm,xo%node,gshadl,btree,nobjhit)
+              call pcle_movet(xo,xm,xo%node,gshadl,btree, &
+&             powcal%n%termp,nobjhit)
               lcoll=(nobjhit/=0)
            end if
            if (lcoll) then
@@ -1570,7 +1579,8 @@ subroutine powelt_move2(self,powcal,gshadl,btree)
            xm%node=0
            if (abs(lenpath)>powcal%odes%n%termcon(1)) then
               ! prevent termination due to very short trajectory
-              call pcle_move(xo,xm,xo%node,gshadl,btree,nobjhit)
+              call pcle_movet(xo,xm,xo%node,gshadl,btree, &
+&             powcal%n%termp,nobjhit)
               lcoll=(nobjhit/=0)
            end if
            if (lcoll) then
@@ -1591,7 +1601,8 @@ subroutine powelt_move2(self,powcal,gshadl,btree)
         xn%node=0
         if (abs(lenpath)>powcal%odes%n%termcon(1)) then
            ! prevent termination due to very short trajectory
-           call pcle_move(xo,xn,xo%node,gshadl,btree,nobjhit)
+           call pcle_movet(xo,xn,xo%node,gshadl,btree, &
+&          powcal%n%termp,nobjhit)
            lcoll=(nobjhit/=0)
         end if
         if (lcoll) then
@@ -3061,6 +3072,8 @@ subroutine powelt_setpow(self,powcal,nobjhit,zm,inpow,gshadl)
   character(*), parameter :: s_name='powelt_setpow' !< subroutine name
   real(kr8) :: zr !< value of \f$ R \f$
   real(kr8) :: zz !< value of \f$ Z \f$
+  type(posvecl_t) :: zpos !< final position
+  type(posvecl_t) :: zpos1   !< one position data
   real(kr8) :: zpsi !< value of \f$ \psi \f$
   integer(ki4) :: ihit   !< corrected object hit
 
@@ -3092,9 +3105,17 @@ subroutine powelt_setpow(self,powcal,nobjhit,zm,inpow,gshadl)
         powcal%powres%pow(inpow)=0
      case('msus','global')
         !! power calculated from psi at exit
-        zr=zm%posvec(1)
-        zz=zm%posvec(2)
-        call spl2d_eval(powcal%powres%beq%psi,zr,zz,zpsi)
+        field_type: select case (powcal%powres%beq%n%fldspec)
+        case(1)
+           ! psi is the position (unquantised)
+           zpos1%posvec=zm%posvec
+           zpos=position_invqtfm(zpos1,powcal%powres%geobjl%quantfm)
+           zpsi=zpos%posvec(1)
+        case default
+           zr=zm%posvec(1)
+           zz=zm%posvec(2)
+           call spl2d_eval(powcal%powres%beq%psi,zr,zz,zpsi)
+        end select field_type
         powcal%powres%pow(inpow)=1
         powcal%powres%geobjl%obj(inpow)%weight=zpsi
      end select calcn_type2

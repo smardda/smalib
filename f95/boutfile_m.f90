@@ -81,7 +81,7 @@ subroutine boutfile_write(beq,timestamp)
   fld_specn: select case (beq%n%fldspec)
   case(1)
      call beq_writepart(beq,nout)
-  case(2,3)
+  case default
      call beq_writeplus(beq,nout)
   end select fld_specn
   ! next is for debugging
