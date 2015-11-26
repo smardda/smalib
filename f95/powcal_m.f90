@@ -371,7 +371,8 @@ subroutine powcal_quant(self,gnumerics)
         else
            field_typeinr2: select case (self%powres%beq%n%fldspec)
            case (3)
-              ! no 3-cpt so in fact value of qfaca(3) does not matter
+              ! no 3-cpt so value of qfaca(3) does not matter
+              self%powres%qfaca=self%powres%qfaca/self%powres%beq%nzets
            case default ! should be only fldspec=2
               ! working with f=I in 3-component, so need 1/h_1 factor for extra R
               self%powres%qfaca(3)=1._kr8/self%powres%geobjl%quantfm%hmin(1)
