@@ -620,29 +620,24 @@ subroutine beq_readequil(self,infile,kfldspec)
   self%rqcen=rmaxis
   self%zqcen=zmaxis
 
-  fld_specn: select case (kfldspec)
-  case(1,3)
-     if (BEQ_OVERRIDE_ITER) then
-        call log_error(m_name,s_name,49,log_info,'override for ITER')
-        ! special for ITER to align current and toroidal field
-        if (ssimag1>ssibry1) then
-           self%psiaxis=-ssimag1
-           self%psiqbdry=-ssibry1
-           self%psibdry=self%psiqbdry
-           work2=-work2
-        else
-           ! possibly also in case where psi increases from axis
-           self%f=-self%f
-        end if
-     end if
-  case(2)
-     if (BEQ_OVERRIDE_ITER) then
-        call log_error(m_name,s_name,48,log_info,'override for ITER')
-        ! special for ITER project to align current and toroidal field
+  if (BEQ_OVERRIDE_ITER) then
+     call log_error(m_name,s_name,49,log_info,'override for ITER')
+     ! special for ITER to align current and toroidal field
+     if (ssimag1>ssibry1) then
+        self%psiaxis=-ssimag1
+        self%psiqbdry=-ssibry1
+        self%psibdry=self%psiqbdry
+        work2=-work2
+     else
         ! possibly also in case where psi increases from axis
         self%f=-self%f
      end if
-  end select fld_specn
+  else if (BEQ_OVERRIDE_FTU) then
+     call log_error(m_name,s_name,48,log_info,'override for FTU')
+     ! special for FTU modelling to align current and toroidal field
+     ! possibly also in case where psi increases from axis
+     self%f=-self%f
+  end if
 
   !! now additional standard eqdsk stuff
   if (cfmtd=='*') then
@@ -951,8 +946,17 @@ subroutine beq_readequ(self,infile,kfldspec)
            ! possibly also in case where psi increases from axis
            self%f=-self%f
         end if
+     else if (BEQ_OVERRIDE_FTU) then
+        call log_error(m_name,s_name,50,log_info,'override for FTU')
+        ! special for FTU modelling to align current and toroidal field
+        ! possibly also in case where psi increases from axis
+        self%f=-self%f
      end if
   case(2)
+     ! Separating this case enables MAST test deck case to work,
+     ! without setting BEQ_OVERRIDE_ITER=.FALSE., which is what 
+     ! really should be done, and no special fldspec test 
+     ! This works because .equ files only ever used for MAST cases
   end select fld_specn
 
   close(iin)
@@ -1068,23 +1072,24 @@ subroutine beq_readana(self,beqan,kfldspec)
   self%psibdry=psib
   self%psiqbdry=self%psibdry
 
-  fld_specn: select case (kfldspec)
-  case(1,3)
-     if (BEQ_OVERRIDE_ITER) then
-        call log_error(m_name,s_name,49,log_info,'override for ITER')
-        ! special for ITER to align current and toroidal field
-        if (psic>psib) then
-           self%psiaxis=-psic
-           self%psibdry=-psib
-           self%psiqbdry=self%psibdry
-           work2=-work2
-        else
-           ! possibly also in case where psi increases from axis
-           self%f=-self%f
-        end if
+  if (BEQ_OVERRIDE_ITER) then
+     call log_error(m_name,s_name,49,log_info,'override for ITER')
+     ! special for ITER to align current and toroidal field
+     if (psic>psib) then
+        self%psiaxis=-psic
+        self%psibdry=-psib
+        self%psiqbdry=self%psibdry
+        work2=-work2
+     else
+        ! possibly also in case where psi increases from axis
+        self%f=-self%f
      end if
-  case(2)
-  end select fld_specn
+  else if (BEQ_OVERRIDE_FTU) then
+     call log_error(m_name,s_name,50,log_info,'override for FTU')
+     ! special for FTU modelling to align current and toroidal field
+     ! possibly also in case where psi increases from axis
+     self%f=-self%f
+  end if
 
 end subroutine beq_readana
 !---------------------------------------------------------------------
@@ -2468,7 +2473,7 @@ subroutine beq_readcon(selfn,kin)
   if(beq_psiopt==1.AND.beq_psimin<=0) &
  &call log_error(m_name,s_name,3,error_fatal,'beq_psimin must be > 0')
 
-  if((beq_bdryopt<=0.OR.beq_bdryopt>=10).OR.(beq_bdryopt==6.OR.beq_bdryopt==7)) &
+  if(beq_bdryopt<=0.OR.beq_bdryopt>=11) &
  &call log_error(m_name,s_name,6,error_fatal,'beq_bdryopt must be small positive integer')
   if(beq_nopt<=0.OR.beq_nopt>=4) &
  &call log_error(m_name,s_name,4,error_fatal,'beq_nopt must be small positive integer')
@@ -2958,9 +2963,9 @@ subroutine beq_bdryrb(self)
   real(kr8) :: zf    !<   \f$ f(\psi) = RB_T \f$
 
   pick_angle : select case (self%n%bdryopt)
-  case(4,5) ! inboard point selected
+  case(4,5,7) ! inboard point selected
      ztheta=const_pid
-  case(8,9) ! outboard point selected
+  case(8,9,10) ! outboard point selected
      ztheta=0.0_kr8
   case default ! do nothing
      return
