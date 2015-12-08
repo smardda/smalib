@@ -1343,6 +1343,15 @@ subroutine geobjlist_paneltfm(self,kbods,numerics)
            numerics%vpantfm%matrix(1,2,i)=-zspr
            numerics%vpantfm%matrix(2,2,i)=zcpr
            numerics%vpantfm%matrix(3,3,i)=1
+        else if (itfm==12) then
+           ! this offset is an angle, so scale
+           zphir=numerics%vpantfm%offset(3,i)*angfac
+           numerics%vpantfm%offset(3,i)=zphir
+        else if (itfm==22) then
+           ! displace in Z only
+           numerics%vpantfm%offset(1,i)=0
+           numerics%vpantfm%offset(2,i)=0
+           numerics%vpantfm%ntfm(i)=2
         else if (itfm==42) then
            ! move in minor radius
            ! recalculate transformation as Cartesian vector
@@ -1383,7 +1392,8 @@ subroutine geobjlist_paneltfm(self,kbods,numerics)
 
   self%obj%weight=-1.
   !! loop over objects to transform
-  ibod1=kbods(1)
+  ! generate output whenever body number changes
+  ibod1=-999 
   do j=1,self%ng
 
      ibod=kbods(j)
@@ -1406,24 +1416,22 @@ subroutine geobjlist_paneltfm(self,kbods,numerics)
         innd=self%obj2(j)%ptr
         ityp=self%obj2(j)%typ
         inumpts=geobj_entry_table(ityp)
-        ! these offsets are angles, so scale
-        if (itfm==2) then
-           ztfmdata%offset(2)=numerics%vpantfm%offset(2,ipan)*angfac
-           ztfmdata%offset(3)=numerics%vpantfm%offset(3,ipan)*angfac
-        else if (itfm==12) then
-           ztfmdata%offset(3)=numerics%vpantfm%offset(3,ipan)*angfac
-        end if
         if (ibod1/=ibod) then
            ibod1=ibod
-           !F11 write(*,*) 'ibod1',ibod1
-           !F11 write(*,*) 'ipantfm', ipantfm
-           !F11 write(*,*) 'ipan', ipan
-           !F11 write(*,*) 'itfm', itfm
-           !F11 write(*,*) 'ztfmdata%scale', ztfmdata%scale
-           !F11 write(*,*) 'ztfmdata%offset', ztfmdata%offset
-           !F11 write(*,*) 'ztfmdata%matrix', ztfmdata%matrix
-           !F11 write(*,*) 'innd', innd
-           !F11 write(*,*) 'ityp', ityp
+!F11            write(*,*) 'ibod1',ibod1 !F11
+!F11            write(*,*) 'ipantfm', ipantfm !F11
+!F11            write(*,*) 'ipan', ipan !F11
+!F11            write(*,*) 'itfm', itfm !F11
+!F11            write(*,*) 'ztfmdata%scale', ztfmdata%scale !F11
+!F11            write(*,*) 'ztfmdata%offset', ztfmdata%offset !F11
+!F11            write(*,*) 'ztfmdata%matrix', ztfmdata%matrix !F11
+!F11            write(*,*) 'innd', innd !F11
+!F11            write(*,*) 'ityp', ityp !F11
+            call log_value("body number",ibod1)
+            call log_value("transform number",itfm)
+            call log_value("----- offset-1",ztfmdata%offset(1))
+            call log_value("----- offset-2",ztfmdata%offset(2))
+            call log_value("----- offset-3",ztfmdata%offset(3))
         end if
         !! loop over points defining object
         do jj=1,inumpts
@@ -2193,7 +2201,7 @@ subroutine geobjlist_cumulate(self,selfin,start,copy,kopt)
   end if
 
   innod=self%nnod+selfin%nnod*icopy
-  !F11 write(*,*)'inn,innod', self%nnod,innod
+!F11   write(*,*)'inn,innod', self%nnod,innod !F11
   if (self%ngtype/=1) then
      !set up replacement nodl array and destroy old nodl
      allocate(iwork(innod), stat=status)

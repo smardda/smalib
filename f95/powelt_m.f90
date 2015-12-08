@@ -69,6 +69,7 @@ module powelt_m
 ! private variables
   character(*), parameter :: m_name='powelt_m' !< module name
   logical, parameter :: lpmidplane=.FALSE. !< test for midplane intersection
+  logical :: ilpmidplane   !< is 'midplane' test active
   logical, parameter :: loutdt=.FALSE. !< output for timestep analysis
   real(kr8), dimension(:), allocatable :: work1 !< 1D work array
   type(posveclis_t) :: wposl   !< list of position data
@@ -629,7 +630,6 @@ subroutine powelt_move0(self,powcal,gshadl,btree)
   type(posveclis_t) :: rposl   !< list of position data
   real(kr4) :: phylenpath !< physical length of path
   logical :: lcoll   !< collision on path
-  logical :: ilpmidplane   !< is 'midplane' test active
   logical :: lexit   !< have left domain covered by HDS
   real(kr8) :: zpsim !< value of \f$ \psi \f$ at field line end (diagnostic)
   real(kr8) :: zmin!< min and max
@@ -741,9 +741,6 @@ subroutine powelt_move0(self,powcal,gshadl,btree)
   firstcall=1
   lenpath=0
   ierr=0
-  ! assumes termination planes present
-  powcal%n%termp%termstore(1,:)=(/1.e30,1.e30,1.e30/)
-  !     powcal%odes%near=0
   ! time step loop for path
   loop_path: do
      lcoll=.FALSE.
@@ -1066,8 +1063,13 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
   end if
 1     continue
   domlen=powcal%powres%beq%domlen(3)
-  ! needed for new termination criteria (extra store for extrema)
-  powcal%n%termp%termstore(1,:)=(/1.e30,1.e30,1.e30/)
+  ! ignore midplane if termination planes present
+  if (powcal%n%ltermplane) then
+     ilpmidplane=.FALSE.
+     powcal%n%termp%termstore(1,:)=(/1.e30,1.e30,1.e30/)
+  else
+     ilpmidplane=lpmidplane
+  end if
   ! mark powelt as unknown (2) by default
   powcal%powres%pow(inpow)=2
   ! needed in shadowed case
@@ -1214,7 +1216,6 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
            xo%node=0
            powcal%odes%t=min(powcal%powres%beq%ximaxm, powcal%odes%t+domlen)
            powcal%odes%vecp%pos(powcal%odes%ndt)%posvec(3)=powcal%odes%t
-           xn%posvec(3)=powcal%odes%t
 
         else if (zxi>powcal%powres%beq%n%ximax) then
            ! interpolate for xm=x(2pi) and check versus objects
@@ -1240,7 +1241,6 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
            xo%node=0
            powcal%odes%t=max(powcal%powres%beq%ximinp, powcal%odes%t-domlen)
            powcal%odes%vecp%pos(powcal%odes%ndt)%posvec(3)=powcal%odes%t
-           xn%posvec(3)=powcal%odes%t
         end if
 
         ! find new node and position if hits boundary
@@ -2122,7 +2122,6 @@ subroutine powelt_move4(self,powcal,gshadl,btree)
   type(posveclis_t) :: rposl   !< list of position data
   real(kr4) :: phylenpath !< physical length of path
   logical :: lcoll   !< collision on path
-  logical :: ilpmidplane   !< is 'midplane' test active
   real(kr8) :: zpsim !< value of \f$ \psi \f$ at field line end (diagnostic)
   real(kr8), dimension(2) :: zk !< sector number
 
@@ -2529,7 +2528,6 @@ subroutine powelt_move5(self,powcal,gshadl,btree)
   type(posveclis_t) :: rposl   !< list of position data
   real(kr4) :: phylenpath !< physical length of path
   logical :: lcoll   !< collision on path
-  logical :: ilpmidplane   !< is 'midplane' test active
   real(kr8) :: zpsim !< value of \f$ \psi \f$ at field line end (diagnostic)
   real(kr8), dimension(2) :: zk !< sector number
   integer(ki4), save :: firstcall  !< flag up first step of new trajectory
