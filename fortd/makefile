@@ -17,5 +17,8 @@ lib$(DBG).a: $(obj)
 tar: $(src) README makefile
 	tar cvf fort.tar $(src) README makefile
 
-clean: $(obj)
+clean: 
 	rm -f $(obj)
+
+libclean: clean
+	rm -f lib$(DBG).a
