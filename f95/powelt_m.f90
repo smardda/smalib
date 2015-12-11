@@ -1216,6 +1216,7 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
            xo%node=0
            powcal%odes%t=min(powcal%powres%beq%ximaxm, powcal%odes%t+domlen)
            powcal%odes%vecp%pos(powcal%odes%ndt)%posvec(3)=powcal%odes%t
+           xn%posvec(3)=powcal%odes%t
 
         else if (zxi>powcal%powres%beq%n%ximax) then
            ! interpolate for xm=x(2pi) and check versus objects
@@ -1241,6 +1242,7 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
            xo%node=0
            powcal%odes%t=max(powcal%powres%beq%ximinp, powcal%odes%t-domlen)
            powcal%odes%vecp%pos(powcal%odes%ndt)%posvec(3)=powcal%odes%t
+           xn%posvec(3)=powcal%odes%t
         end if
 
         ! find new node and position if hits boundary

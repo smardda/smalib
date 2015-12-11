@@ -366,7 +366,7 @@ subroutine geoq_psisilh(self)
         zvd=self%objl%posl%pos(inode)%posvec-zv1
         zline=sqrt( max(0.,zvd(1)**2+zvd(2)**2+zvd(3)**2) )
         inline=zline/deltal
-        loop_segment: do l=1,inline
+        loop_segment: do l=1,max(inline,1)
            ! transform positions to R-Z-zeta space
            posang%pos=zv1+(l-1)*(zvd/inline)
            posang%opt=0 ; posang%units=-3
@@ -408,6 +408,7 @@ subroutine geoq_psisilh(self)
   self%beq%bpbdry=(1/zr)*sqrt( max(0.,(zdpdr**2+zdpdz**2)) )
 
   ! evaluate I aka f at psi
+  zpsi=self%beq%psiotr
   call spleval(self%beq%f,self%beq%mr,self%beq%psiaxis,self%beq%psiqbdry,zpsi,zf,1)
   self%beq%btotbdry=sqrt( max(0.,(self%beq%bpbdry**2+(zf/zr)**2)) )
 
