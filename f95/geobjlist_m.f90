@@ -1393,7 +1393,7 @@ subroutine geobjlist_paneltfm(self,kbods,numerics)
   self%obj%weight=-1.
   !! loop over objects to transform
   ! generate output whenever body number changes
-  ibod1=-1 
+  ibod1=-999 
   do j=1,self%ng
 
      ibod=kbods(j)

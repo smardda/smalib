@@ -189,9 +189,8 @@ subroutine vfile_rscalarread(self,kp,infile,kcname,kin,kopt)
   !! skip LOOKUP table default
   read(nin,fmt='(a)',iostat=status) ibuf1
   !! read coordinates
-  do j=1,kp
-     read(nin,fmt=cfmtbs,iostat=status) self(j)
-  end do
+  read(nin,*,iostat=status) (self(j),j=1,kp)
+  call log_read_check(m_name,s_name,7,status)
   print '("number of scalars read = ",i10)',kp
   call log_value("number of scalars read ",kp)
 
@@ -334,9 +333,8 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt)
      !! skip LOOKUP table default
      read(nin,fmt='(a)',iostat=status) ibuf1
      !! read coordinates
-     do j=1,kp
-        read(nin,*,iostat=status) kself(j)
-     end do
+     read(nin,*,iostat=status) (kself(j),j=1,kp)
+     call log_read_check(m_name,s_name,10,status)
      print '("number of scalars read = ",i10)',kp
      call log_value("number of scalars read ",kp)
   else if(vfile_made_up_data/=0) then

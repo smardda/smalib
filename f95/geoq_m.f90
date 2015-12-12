@@ -157,8 +157,8 @@ subroutine geoq_init(self)
   !! local
   character(*), parameter :: s_name='geoq_init' !< subroutine name
 
-  if(self%beq%n%bdryopt/=3) then
-     ! calculate limits based on geometry, unless is silhouette option (3)
+  if(self%beq%n%bdryopt/=3.AND.self%beq%n%bdryopt/=6) then
+     ! calculate limits based on geometry, unless are silhouette options (3,6)
      call geoq_psilimiter(self)
   end if
   ! psi boundary definition
@@ -176,29 +176,45 @@ subroutine geoq_init(self)
   else if(self%beq%n%bdryopt==3) then
      ! boundary based on geometry sampled at rate given by parameter deltal
      call geoq_psisilh(self)
+!B     if (beq_rsig()>0) then
+!B        self%beq%psibdry=min(self%beq%psiqbdry,self%beq%psiltr)
+!B     else
+!B        self%beq%psibdry=max(self%beq%psiqbdry,self%beq%psiltr)
+!B     end if
+!B     ! geoq_override for specific project
+!B     if (BEQ_OVERRIDE_ITER) then
+!B        call log_error(m_name,s_name,49,log_info,'override for ITER')
+        self%beq%psibdry=self%beq%psiltr
+!B     end if
+  else if(self%beq%n%bdryopt==6) then
+     ! boundary based on geometry sampled at rate given by parameter deltal
+     call geoq_psisilh(self)
      if (beq_rsig()>0) then
         self%beq%psibdry=min(self%beq%psiqbdry,self%beq%psiltr)
      else
         self%beq%psibdry=max(self%beq%psiqbdry,self%beq%psiltr)
      end if
-     ! geoq_override for specific project
-     if (BEQ_OVERRIDE_ITER) then
-        call log_error(m_name,s_name,49,log_info,'override for ITER')
-        self%beq%psibdry=self%beq%psiltr
-     end if
   else if(self%beq%n%bdryopt==4.OR.self%beq%n%bdryopt==8) then
+       ! boundary from X-point
+       call beq_psix(self%beq)
+!B     if (beq_rsig()>0) then
+!B        self%beq%psibdry=min(self%beq%psiqbdry,self%beq%psixpt)
+!B     else
+!B        self%beq%psibdry=max(self%beq%psiqbdry,self%beq%psixpt)
+!B     end if
+!B     ! geoq_override for specific project
+!B     if (BEQ_OVERRIDE_ITER) then
+!B     call log_error(m_name,s_name,50,log_info,'override for ITER')
+        self%beq%psibdry=self%beq%psixpt
+        self%beq%psiltr=self%beq%psixpt
+!B     end if
+  else if(self%beq%n%bdryopt==7.OR.self%beq%n%bdryopt==10) then
      ! boundary from X-point
      call beq_psix(self%beq)
      if (beq_rsig()>0) then
         self%beq%psibdry=min(self%beq%psiqbdry,self%beq%psixpt)
      else
         self%beq%psibdry=max(self%beq%psiqbdry,self%beq%psixpt)
-     end if
-     ! geoq_override for specific project
-     if (BEQ_OVERRIDE_ITER) then
-        call log_error(m_name,s_name,49,log_info,'override for ITER')
-        self%beq%psibdry=self%beq%psixpt
-        self%beq%psiltr=self%beq%psixpt
      end if
   end if
 
@@ -350,7 +366,7 @@ subroutine geoq_psisilh(self)
         zvd=self%objl%posl%pos(inode)%posvec-zv1
         zline=sqrt( max(0.,zvd(1)**2+zvd(2)**2+zvd(3)**2) )
         inline=zline/deltal
-        loop_segment: do l=1,inline
+        loop_segment: do l=1,max(inline,1)
            ! transform positions to R-Z-zeta space
            posang%pos=zv1+(l-1)*(zvd/inline)
            posang%opt=0 ; posang%units=-3
@@ -392,6 +408,7 @@ subroutine geoq_psisilh(self)
   self%beq%bpbdry=(1/zr)*sqrt( max(0.,(zdpdr**2+zdpdz**2)) )
 
   ! evaluate I aka f at psi
+  zpsi=self%beq%psiotr
   call spleval(self%beq%f,self%beq%mr,self%beq%psiaxis,self%beq%psiqbdry,zpsi,zf,1)
   self%beq%btotbdry=sqrt( max(0.,(self%beq%bpbdry**2+(zf/zr)**2)) )
 
