@@ -366,7 +366,7 @@ subroutine apb_convert(self,numerics,kinit,rpower,phchange)
   character(*), parameter :: s_name='apb_convert' !< subroutine name
   real(kr8), dimension(:), save, allocatable :: ywork !< work array
   complex(kr8), dimension(:), allocatable :: ctfm !< complex work array
-  real(kr8), dimension(:),  allocatable :: work !< work array
+  real(kr8), dimension(:),  allocatable :: rwork !< work array
   real(kr8), dimension(:,:), allocatable :: workv !< vector work array
   real(kr8), dimension(:,:), allocatable :: workv2 !< vector work array
   integer(ki4), save :: itfm   !< length of tfm
@@ -398,7 +398,7 @@ subroutine apb_convert(self,numerics,kinit,rpower,phchange)
      call log_alloc_check(m_name,s_name,1,status)
      call zffti(itfm,ywork)
      ! initialise copy arrays
-     allocate(work(0:itfm), stat=status)
+     allocate(rwork(0:itfm), stat=status)
      call log_alloc_check(m_name,s_name,2,status)
      allocate(workv(itfm,3), stat=status)
      call log_alloc_check(m_name,s_name,3,status)
@@ -411,7 +411,7 @@ subroutine apb_convert(self,numerics,kinit,rpower,phchange)
   else if (kinit==2) then
      ! destructor
      deallocate(ywork)
-     deallocate(work)
+     deallocate(rwork)
      deallocate(ctfm)
      return
 
@@ -495,22 +495,22 @@ subroutine apb_convert(self,numerics,kinit,rpower,phchange)
            !     write(*,*) 'after',ctfm
            !     put into work into a:b  order and normalise
            !   a  and b entries
-           work(0)=real(ctfm(1))
-           work(1)=aimag(ctfm(1))
+           rwork(0)=real(ctfm(1))
+           rwork(1)=aimag(ctfm(1))
            ij=1
            do j=2,itfmb2
               ij=ij+1
-              work(ij)=2*real(ctfm(j))
+              rwork(ij)=2*real(ctfm(j))
               ij=ij+1
-              work(ij)=-2*aimag(ctfm(j))
+              rwork(ij)=-2*aimag(ctfm(j))
            end do
            ij=ij+1
-           work(ij)=real(ctfm(itfmbp1))
-           !     write(*,*) 'work',work
+           rwork(ij)=real(ctfm(itfmbp1))
+           !     write(*,*) 'rwork',rwork
            ! normalise
-           work=znorm*work
-           ! work back to field array
-           self%field(1:,i,k,l)=work(0:)
+           rwork=znorm*rwork
+           ! rwork back to field array
+           self%field(1:,i,k,l)=rwork(0:)
         end do iloop2
 
         !d      if (k==ip1diag.AND.l==ip2diag) then
@@ -532,17 +532,17 @@ subroutine apb_convert(self,numerics,kinit,rpower,phchange)
      do l=1,self%n2
         do k=1,self%n1
            iloop3: do i=1,self%ncpt
-              work(0:)=self%field(1:,i,k,l)
+              rwork(0:)=self%field(1:,i,k,l)
               !   negate b entries
               ij=1
               do j=1,itfmb2
-                 work(ij)=-work(ij)
+                 rwork(ij)=-rwork(ij)
                  ij=ij+2
               end do
               !   negate zeta-component
-              if (i==self%ncpt) work=-work
-              ! work back to field array
-              self%field(1:,i,k,l)=work(0:)
+              if (i==self%ncpt) rwork=-rwork
+              ! rwork back to field array
+              self%field(1:,i,k,l)=rwork(0:)
            end do iloop3
         end do
      end do
