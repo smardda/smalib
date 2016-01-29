@@ -139,3 +139,6 @@
 !vtktfm.doc
 !vtktfm.f90
 !.gitignore
+!ccontrol_m.f90
+!ctlgen.f90
+!Makefile.ctlgen
