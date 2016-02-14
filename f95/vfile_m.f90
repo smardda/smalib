@@ -76,11 +76,15 @@ subroutine vfile_rscalarread(self,kp,infile,kcname,kin,kopt)
   character(*),intent(in) :: infile !< name of input file
   character(*),intent(in) :: kcname !< name of field required
   integer(ki4), intent(inout) :: kin   !< input channel for scalar list data
-  integer(ki4), intent(in), optional :: kopt   !< options
+  !> if positive on input, assume unit open and do not terminate execution if
+  !! data is missing, return positive code if trouble, else zero
+  !! if zero on input, missing data is a fatal error
+  integer(ki4), intent(inout) :: kopt   !< .
 
   !! local
   character(*), parameter :: s_name='vfile_rscalarread' !< subroutine name
   logical :: unitused !< flag to test unit is available
+  integer :: ierror   !<  whether error is to be fatal or not
   integer(ki4) :: insca   !< number of scalars
   character(80) :: sname !< name of scalar
   integer(ki4) :: islen   !< length of scalar field name
@@ -91,7 +95,8 @@ subroutine vfile_rscalarread(self,kp,infile,kcname,kin,kopt)
 
   ibuf1=adjustl(kcname)
   islen2=max(2,scan(ibuf1,' '))-1
-  if(present(kopt)) then
+  if(kopt>0) then
+     ierror=error_warning
      !! assume unit already open and reading infile
      if (kin==0) then
         inquire(file=infile,number=kin,iostat=status)
@@ -104,7 +109,7 @@ subroutine vfile_rscalarread(self,kp,infile,kcname,kin,kopt)
      end if
      nin=kin
   else
-
+     ierror=error_fatal
      !! get file unit
      do i=99,1,-1
         inquire(i,opened=unitused)
@@ -162,7 +167,9 @@ subroutine vfile_rscalarread(self,kp,infile,kcname,kin,kopt)
         exit
         !! error
      else if (status>0) then
-        call log_error(m_name,s_name,4,error_fatal,'Error reading header data')
+        call log_error(m_name,s_name,4,ierror,'Error reading header data')
+        kopt=4
+        return
      else
         ibuf2=adjustl(ibuf1)
         if(ibuf2(1:7)=='SCALARS') then
@@ -184,7 +191,9 @@ subroutine vfile_rscalarread(self,kp,infile,kcname,kin,kopt)
      allocate(self(kp),stat=status)
      call log_alloc_check(m_name,s_name,5,status)
   else
-     call log_error(m_name,s_name,6,error_fatal,'No scalar data')
+     call log_error(m_name,s_name,6,ierror,'No scalar data')
+     kopt=6
+     return
   end if
   !! skip LOOKUP table default
   read(nin,fmt='(a)',iostat=status) ibuf1
@@ -193,6 +202,7 @@ subroutine vfile_rscalarread(self,kp,infile,kcname,kin,kopt)
   call log_read_check(m_name,s_name,7,status)
   print '("number of scalars read = ",i10)',kp
   call log_value("number of scalars read ",kp)
+  kopt=0
 
 end subroutine vfile_rscalarread
 !---------------------------------------------------------------------
@@ -204,11 +214,15 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt)
   character(*),intent(in) :: infile !< name of input file
   character(*),intent(in) :: kcname !< name of field required
   integer(ki4), intent(inout) :: kin   !< input channel for scalar list data
-  integer(ki4), intent(in), optional :: kopt   !< options
+  !> if positive on input, assume unit open and do not terminate execution if
+  !! data is missing, return positive code if trouble, else zero
+  !! if zero on input, missing data is a fatal error
+  integer(ki4), intent(inout) :: kopt   !< .
 
   !! local
   character(*), parameter :: s_name='vfile_iscalarread' !< subroutine name
   logical :: unitused !< flag to test unit is available
+  integer :: ierror   !<  whether error is to be fatal or not
   integer(ki4) :: insca   !< number of scalars
   character(80) :: sname !< name of scalar
   integer(ki4) :: islen   !< length of scalar field name
@@ -220,7 +234,8 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt)
 
   ibuf1=adjustl(kcname)
   islen2=max(2,scan(ibuf1,' '))-1
-  if(present(kopt)) then
+  if(kopt>0) then
+     ierror=error_warning
      !! assume unit already open and reading infile
      if (kin==0) then
         inquire(file=infile,number=kin,iostat=status)
@@ -233,7 +248,7 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt)
      end if
      nin=kin
   else
-
+     ierror=error_fatal
      !! get file unit
      do i=99,1,-1
         inquire(i,opened=unitused)
@@ -292,7 +307,9 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt)
         exit
         !! error
      else if (status>0) then
-        call log_error(m_name,s_name,4,error_fatal,'Error reading header data')
+        call log_error(m_name,s_name,4,ierror,'Error reading header data')
+        kopt=4
+        return
      else
         ibuf2=adjustl(ibuf1)
         if(ibuf2(1:7)=='SCALARS') then
@@ -316,17 +333,23 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt)
         allocate(kself(kp),stat=status)
         call log_alloc_check(m_name,s_name,5,status)
      else
-        call log_error(m_name,s_name,6,error_fatal,'No scalar data')
+        call log_error(m_name,s_name,6,ierror,'No scalar data')
+        kopt=6
+        return
      end if
   else if(vfile_made_up_data/=0) then
      if(kp>0) then
         allocate(kself(kp),stat=status)
         call log_alloc_check(m_name,s_name,7,status)
      else
-        call log_error(m_name,s_name,8,error_fatal,'No scalar data')
+        call log_error(m_name,s_name,8,ierror,'No scalar data')
+        kopt=8
+        return
      end if
   else
-     call log_error(m_name,s_name,9,error_fatal,'No scalar data')
+     call log_error(m_name,s_name,9,ierror,'No scalar data')
+     kopt=9
+     return
   end if
   !! data
   if(ilfound) then
@@ -342,6 +365,7 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt)
      call log_error(m_name,s_name,10,error_warning,'Made up data')
      call log_value("number of scalars made up ",kp)
   end if
+  kopt=0
 
 end subroutine vfile_iscalarread
 !---------------------------------------------------------------------

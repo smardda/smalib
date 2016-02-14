@@ -36,7 +36,7 @@ module ccontrol_m
   integer(ki4) :: islen !< string length
   integer(ki4), dimension(:), allocatable :: iwork1 !< work array
   integer(ki4), dimension(:), allocatable :: iwork2 !< work array
-  character(len=80) :: buff !< workspace
+  character(len=132) :: buff !< workspace
   character(len=80) :: root !< file root
 
   contains
@@ -89,7 +89,7 @@ subroutine ccontrol_init(fileroot,code)
   !! open file
   outputfile=trim(fileroot)//".ctl"
   call log_value("Control data output file",trim(outputfile))
-  open(unit=nout,file=outputfile,iostat=status)
+  open(unit=nout,file=outputfile,iostat=status,recl=1610,delim='apostrophe')
   if(status/=0)then
      !! error opening file
      print '("Fatal error: Unable to open output file, ",a)',outputfile

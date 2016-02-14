@@ -52,7 +52,7 @@ program vtktfm_p
   integer(ki4):: nin !< unit for other data
   integer(ki4):: cpstart !< start number of copies
   integer(ki4):: nscal !< number of scalars (body identifiers)
-  integer(ki4):: iopt=0 !< option for bodies
+  integer(ki4):: iopt=1 !< option for bodies
   integer(ki4):: j !< loop variable
 !--------------------------------------------------------------------------
 !! initialise timing
@@ -98,7 +98,8 @@ program vtktfm_p
      call geobjlist_read(geobjl,file%vtkdata(1),iched)
 !     write(*,*) 'first',(geobjl%nodl(j),j=1,20)
      nin=0
-     call vfile_iscalarread(bods,nscal,file%vtkdata(1),'Body',nin,1)
+     call vfile_iscalarread(bods,nscal,file%vtkdata(1),'Body',nin,iopt) !W
+     if (iopt>0) call bods_init(bods,geobjl,1) !W
   else
      call geobjlist_read(geobjl,file%vtkdata(1),iched)
      call bods_init(bods,geobjl,101)
