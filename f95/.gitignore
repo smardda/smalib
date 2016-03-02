@@ -142,3 +142,5 @@
 !ccontrol_m.f90
 !ctlgen.f90
 !Makefile.ctlgen
+!Makefile.parse
+!parse.f90

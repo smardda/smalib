@@ -20,6 +20,13 @@ program ctlgen
      stop 1
   end if
   call date_time_init(timestamp)
+!--------------------------------------------------------------------------
+!! print header
+  print *, '----------------------------------------------------'
+  print *, 'ctlgen: generate ctl file for vtktfm'
+  print *, '----------------------------------------------------'
+  print '(a)', timestamp%long
+
 !!get type of file to produce
   call get_command_argument(1,value=arg1)
   typoutfile=arg1(2:2)
