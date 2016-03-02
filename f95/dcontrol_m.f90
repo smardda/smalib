@@ -106,6 +106,7 @@ subroutine dcontrol_read(file,numerics,plot)
 
   !! transformation parameters
   namelist /datvtkparameters/ &
+ &angle_units,&
  &transform_type,&
  &start_angle, finish_angle, &
  &start_position, finish_position, &

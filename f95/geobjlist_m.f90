@@ -1896,8 +1896,9 @@ subroutine geobjlist_dread(self,kread)
   iskip=0
   start_first_loop_over_file : do
      read(kread,fmt='(a80)',iostat=status) ibuf2
+     call log_read_check(m_name,s_name,1,status)
      ibuf1=adjustl(ibuf2)
-     !D      write(*,*) iskip, ibuf1(1:10)
+     !D   write(*,*) iskip, ibuf1(1:10) !D
      if (ibuf1(1:10)=='BEGIN BULK') goto 1
      iskip=iskip+1
   end do start_first_loop_over_file

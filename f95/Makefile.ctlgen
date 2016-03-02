@@ -1,0 +1,48 @@
+# basic Makefile
+
+# config file.
+include ../config/config.inc
+ 
+# Libraries
+LIBS = ./LIB/lib$(DBG).a
+
+SOURCES = \
+const_kind_m.f90 \
+date_time_m.f90 \
+log_m.f90 \
+ccontrol_m.f90 \
+ctlgen.f90
+ 
+PROG = ctlgen
+
+MODULES=$(SOURCES:.f90=.mod)
+
+OBJECTS=$(SOURCES:.f90=.o)
+
+
+$(PROG): $(OBJECTS) 
+	$(F90) $(F90FLAGS) -o $(PROG) $(OBJECTS)  $(LIBS)
+
+$(OBJECTS):$(MODULES)
+	@touch .TOUCHFILE
+
+$(MODULES): %.mod : %.f90
+	$(F90) $(F90FLAGS) -c $<
+
+clean:
+	rm -f $(OBJECTS) *$(MOD) $(EXTRA_CLEAN_FILES)
+
+distclean: clean
+	rm -f $(PROG) 
+
+
+.PHONY : clean distclean
+
+ctlgen.f90 : const_kind_m.mod
+ctlgen.f90 : date_time_m.mod
+ctlgen.f90 : log_m.mod
+ctlgen.f90 : ccontrol_m.mod
+log_m.f90 : const_kind_m.mod
+log_m.f90 : date_time_m.mod
+ccontrol_m.f90 : const_kind_m.mod
+ccontrol_m.f90 : log_m.mod

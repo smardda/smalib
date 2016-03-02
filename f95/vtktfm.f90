@@ -52,7 +52,7 @@ program vtktfm_p
   integer(ki4):: nin !< unit for other data
   integer(ki4):: cpstart !< start number of copies
   integer(ki4):: nscal !< number of scalars (body identifiers)
-  integer(ki4):: iopt=0 !< option for bodies
+  integer(ki4):: iopt=1 !< option for bodies
   integer(ki4):: j !< loop variable
 !--------------------------------------------------------------------------
 !! initialise timing
@@ -93,12 +93,19 @@ program vtktfm_p
 !! read  geobjl data
 
   call clock_start(4,'geobjlist_read time')
+! write(*,*) "fn,iopt=",file%nvtkdata, iopt
   if (file%nvtkdata==1) then
 ! just one file with Body data
      call geobjlist_read(geobjl,file%vtkdata(1),iched)
 !     write(*,*) 'first',(geobjl%nodl(j),j=1,20)
      nin=0
-     call vfile_iscalarread(bods,nscal,file%vtkdata(1),'Body',nin,1)
+     call vfile_iscalarread(bods,nscal,file%vtkdata(1),'Body',nin,iopt) !W
+!    write(*,*) "fn,iopt=",file%nvtkdata, iopt
+     if (iopt==0) then
+       call bods_init(bods,geobjl,1) !W
+     else
+       call log_error(m_name,m_name,iopt,error_fatal,'Corrupt vtk file')
+     end if
   else
      call geobjlist_read(geobjl,file%vtkdata(1),iched)
      call bods_init(bods,geobjl,101)
