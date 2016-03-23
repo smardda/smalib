@@ -316,21 +316,24 @@ subroutine powelt_dep(self,powcal,gshadl)
            call spl2d_eval(powcal%powres%beq%psi,zr,zz,zpsi)
         end select field_type2
      case('msus','global')
-        ! use saved psi if possible
+        ! make saved psi available
         if (iflag==1) then
            zpsi=powcal%powres%geobjl%obj(inpow)%weight
-        else
-           field_type3: select case (powcal%powres%beq%n%fldspec)
-           case(1)
+        end if
+        field_type3: select case (powcal%powres%beq%n%fldspec)
+        case(1,2)
+           if (iflag/=1) then
+              zpsi=powcal%powres%geobjl%obj(inpow)%weight
               ! psi is the position (unquantised)
               zpos2=position_invqtfm(zpos1,powcal%powres%geobjl%quantfm)
               zpsi=zpos2%posvec(1)
-           case default
-              zr=zpos1%posvec(1)
-              zz=zpos1%posvec(2)
-              call spl2d_eval(powcal%powres%beq%psi,zr,zz,zpsi)
-           end select field_type3
-        end if
+           end if
+        case default
+           ! use elemental psi
+           zr=zpos1%posvec(1)
+           zz=zpos1%posvec(2)
+           call spl2d_eval(powcal%powres%beq%psi,zr,zz,zpsi)
+        end select field_type3
         powcal%powres%geobjl%obj(inpow)%weight=iflag
      end select calcn_type2
 
