@@ -167,7 +167,7 @@ program geoq_p
   case default
      mapfld='frzxi'
 ! these options are not valid so are suppressed
-     plot%geoqmm=.FALSE.
+     plot%geoqvolm=.FALSE.
      plot%gnuptz=.FALSE.
      plot%gnum=.FALSE.
      plot%gnusilm=.FALSE.
@@ -178,7 +178,7 @@ program geoq_p
 !! optionally read in ripple data
   if (geoq%beq%n%vacfile/='null') then
      if(plot%geoqx.OR.plot%geoqvolx.OR. &
- &   plot%geoqm.OR.plot%geofldx.OR.plot%frzzeta.OR.plot%geoqmm) then
+ &   plot%geoqm.OR.plot%geofldx.OR.plot%frzzeta.OR.plot%geoqvolm) then
         call moutfile_read(geoq%beq%n%vacfile,zivac,nin)
         call spl3d_read(geoq%beq%vacfld,geoq%beq%n%vacfile,nin)
      end if
@@ -203,10 +203,10 @@ program geoq_p
      call clock_stop(11)
   end if
 
-!!plots for psi-theta space
-  if(plot%geoqmm) then
-     call clock_start(16,'vfile_geoqmm time')
-     call vfile_init(file%geoqmm,'fields in psi-theta space',nplot)
+!!plots for psi-theta-zeta space
+  if(plot%geoqvolm) then
+     call clock_start(16,'vfile_geoqvolm time')
+     call vfile_init(file%geoqvolm,'fields in psi-theta space',nplot)
      call beq_writev(geoq%beq,'psi-theta',nplot)
      call vfile_close
      call clock_stop(16)

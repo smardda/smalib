@@ -28,7 +28,8 @@ module bcontrol_m
      character(len=80)  :: allcartv   !< DUPLICATE  all \f$ \bf{B} \f$ in Cartesians
      character(len=80)  :: geoqvolx   !< all \f$ \bf{B} \f$ in Cartesians
      character(len=80)  :: fptv    !< DUPLICATE  vtk plot file of functions of \f$ (\psi,\theta) \f$
-     character(len=80)  :: geoqmm    !< vtk plot file of functions of \f$ (\psi,\theta) \f$
+     character(len=80)  :: geoqvolm   !< all \f$ \bf{B} \f$ in mapped coordinates and components
+     character(len=80)  :: geoqmm    !< DUPLICATE vtk plot file of functions of \f$ (\psi,\theta) \f$
      character(len=80)  :: allgeoq  !< DUPLICATE  plot file of all vtk info needed for SMITER-GEOQ
      character(len=80)  :: geoqm  !< plot file of all vtk info needed for SMITER-GEOQ
      character(len=80)  :: frzv    !< INERT vtk plot file of functions of \f$ (R,Z) \f$
@@ -50,7 +51,8 @@ module bcontrol_m
      logical  :: allcartv   !< DUPLICATE  all \f$ \bf{B} \f$ in Cartesians
      logical  :: geoqvolx   !< all \f$ \bf{B} \f$ in Cartesians
      logical  :: fptv    !< DUPLICATE  vtk plot file of functions of \f$ (\psi,\theta) \f$
-     logical  :: geoqmm    !< vtk plot file of functions of \f$ (\psi,\theta) \f$
+     logical  :: geoqmm    !< DUPLICATE vtk plot file of functions of \f$ (\psi,\theta) \f$
+     logical  :: geoqvolm    !< all \f$ \bf{B} \f$ in mapped coordinates and components
      logical  :: allgeoq    !< DUPLICATE  plot file of all vtk info needed for SMITER-GEOQ
      logical  :: geoqm    !< plot file of all vtk info needed for SMITER-GEOQ
      logical  :: frzv    !< INERT vtk plot file of functions of \f$ (R,Z) \f$
@@ -141,6 +143,7 @@ subroutine bcontrol_read(file,numerics,plot)
   logical :: plot_geoqvolx !< vtk plot selector
   logical :: plot_fptv !< DUPLICATE  vtk plot selector
   logical :: plot_geoqmm !< vtk plot selector
+  logical :: plot_geoqvolm !< vtk plot selector
   logical :: plot_allgeoq !< DUPLICATE  vtk plot selector
   logical :: plot_geoqm !< vtk plot selector
   logical :: plot_frzv !< INERT vtk plot selector
@@ -172,6 +175,7 @@ subroutine bcontrol_read(file,numerics,plot)
  &plot_geoqvolx, &
  &plot_fptv, &
  &plot_geoqmm, &
+ &plot_geoqvolm, &
  &plot_allgeoq, &
  &plot_geoqm, &
  &plot_frzv, &
@@ -266,6 +270,7 @@ subroutine bcontrol_read(file,numerics,plot)
   file%geoqvolx     =trim(root)//"_geoqvolx"
   file%fptv    =trim(root)//"_fptv"
   file%geoqmm    =trim(root)//"_geoqmm"
+  file%geoqvolm    =trim(root)//"_geoqvolm"
   file%allgeoq    =trim(root)//"_allgeoq"
   file%geoqm    =trim(root)//"_geoqm"
   file%frzv    =trim(root)//"_frzv"
@@ -304,6 +309,7 @@ subroutine bcontrol_read(file,numerics,plot)
   plot_geoqvolx = .false.
   plot_fptv = .false.
   plot_geoqmm = .false.
+  plot_geoqvolm = .false.
   plot_allgeoq = .false.
   plot_geoqm = .false.
   plot_frzv = .false.
@@ -332,8 +338,8 @@ subroutine bcontrol_read(file,numerics,plot)
   plot%geoqx   = plot_geoqx
   plot%geoqvolx = plot_allcartv
   plot%geoqvolx   = plot_geoqvolx
-  plot%geoqmm = plot_fptv
-  plot%geoqmm    = plot_geoqmm
+  plot%geoqmm    = plot_geoqmm.OR.plot_fptv
+  plot%geoqvolm    = plot_geoqvolm.OR.plot_geoqmm
   plot%geoqm    = plot_geoqm
   plot%frzv     = plot_frzv
   plot%frzzeta     = plot_frzzeta
@@ -348,15 +354,18 @@ subroutine bcontrol_read(file,numerics,plot)
   if (plot_frzxi) then
   plot%geoqm = plot_frzxi
   file%geoqm = file%frzxi
-  call log_error(m_name,s_name,20,error_warning,'Obsolete file handling feature activated')
+  call log_error(m_name,s_name,20,error_warning,'Obsolete file handling feature frzxi activated')
   else if (plot_allgeoq) then
   plot%geoqm = plot_allgeoq
   file%geoqm = file%allgeoq
-  call log_error(m_name,s_name,21,error_warning,'Obsolete file handling feature activated')
+  call log_error(m_name,s_name,21,error_warning,'Obsolete file handling feature allgeoq activated')
   end if
   if (plot_gnuptz) then
   plot%gnum = plot_gnuptz
-  call log_error(m_name,s_name,22,error_warning,'Obsolete file handling feature activated')
+  call log_error(m_name,s_name,22,error_warning,'Obsolete file handling feature gnuptz activated')
+  end if
+  if (plot_geoqmm) then
+  call log_error(m_name,s_name,23,error_warning,'Obsolete file handling switch geoqmm/fptv used')
   end if
 
   call beq_readcon(numerics,nin)

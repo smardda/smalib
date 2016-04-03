@@ -93,7 +93,9 @@ subroutine dcontrol_read(file,numerics,plot)
   real(kr8), dimension(3) :: finish_position !< finish position
   integer(ki4) :: number_of_divisions !< number of divisions
   character(len=20) :: angle_units  !< units, either radian(s) or degree(s)
+  character(len=20) :: length_units  !< units, either me(tres) or mm
   real(kr4) :: angfac=1. !< angles default is radians
+  real(kr4) :: lenfac=1. !< lengths default is mm
 
   logical :: plot_vtk !< vtk plot selector
   logical :: plot_gnu !< gnuplot plot selector
@@ -107,6 +109,7 @@ subroutine dcontrol_read(file,numerics,plot)
   !! transformation parameters
   namelist /datvtkparameters/ &
  &angle_units,&
+ &length_units,&
  &transform_type,&
  &start_angle, finish_angle, &
  &start_position, finish_position, &
@@ -173,6 +176,7 @@ subroutine dcontrol_read(file,numerics,plot)
   !---------------------------------------------------------------------
   !! set default datvtk parameters
   angle_units='degree'
+  length_units='mm'
   transform_type = 'rotate'
   start_angle = 0
   finish_angle = 90
@@ -202,6 +206,8 @@ subroutine dcontrol_read(file,numerics,plot)
   if(finish_angle*angfac<-2.000001_kr8*const_pid.OR.finish_angle*angfac>2.000001_kr8*const_pid) then
      call log_error(m_name,s_name,21,error_fatal,'finish angle not in range -360 to +360')
   end if
+  !! set up factor for lengths
+  if (length_units(1:2)=='me') lenfac=1000.
   ! positive integer parameter
   if(number_of_divisions<=0) then
      call log_error(m_name,s_name,30,error_fatal,'number of divisions must be positive')
@@ -210,8 +216,8 @@ subroutine dcontrol_read(file,numerics,plot)
   numerics%tfm=transform_type
   numerics%stang=start_angle*angfac
   numerics%finang=finish_angle*angfac
-  numerics%stpos=start_position
-  numerics%finpos=finish_position
+  numerics%stpos=start_position*lenfac
+  numerics%finpos=finish_position*lenfac
   numerics%div=2*((number_of_divisions+1)/2)
 
   !---------------------------------------------------------------------
@@ -302,6 +308,13 @@ subroutine dcontrol_read(file,numerics,plot)
         call log_read_check(m_name,s_name,53,status)
      end do
      call log_value("number of values read from rz input file",i)
+  end if
+  !! scale if required
+  if (length_units(1:2)=='me') then
+     do j=1,numerics%npos
+        numerics%r(j)=lenfac*numerics%r(j)
+        numerics%z(j)=lenfac*numerics%z(j)
+     end do
   end if
 
   call dcontrol_close

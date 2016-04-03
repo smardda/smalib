@@ -1720,7 +1720,7 @@ subroutine beq_writev(self,kchar,kplot)
            ztheta=self%n%thetamin+(j-1)*self%dtheta
            do i=1,self%n%npsi+1
               zpsi=self%n%psimin +(i-1)*self%dpsi
-              zc1=zpsi
+              zc1=0._kr8
               call spl2d_eval(self%rjac,zpsi,ztheta,zc2)
               ! evaluate I aka f at psi
               call spleval(self%f,self%mr,self%psiaxis,self%psiqbdry,zpsi,zc3,1)
@@ -2473,7 +2473,7 @@ subroutine beq_readcon(selfn,kin)
   if(beq_psiopt==1.AND.beq_psimin<=0) &
  &call log_error(m_name,s_name,3,error_fatal,'beq_psimin must be > 0')
 
-  if(beq_bdryopt<=0.OR.beq_bdryopt>=11) &
+  if(beq_bdryopt<=0.OR.beq_bdryopt>=13) &
  &call log_error(m_name,s_name,6,error_fatal,'beq_bdryopt must be small positive integer')
   if(beq_nopt<=0.OR.beq_nopt>=4) &
  &call log_error(m_name,s_name,4,error_fatal,'beq_nopt must be small positive integer')
@@ -2963,9 +2963,9 @@ subroutine beq_bdryrb(self)
   real(kr8) :: zf    !<   \f$ f(\psi) = RB_T \f$
 
   pick_angle : select case (self%n%bdryopt)
-  case(4,5,7) ! inboard point selected
+  case(4,5,7,11) ! inboard point selected
      ztheta=const_pid
-  case(8,9,10) ! outboard point selected
+  case(8,9,10,12) ! outboard point selected
      ztheta=0.0_kr8
   case default ! do nothing
      return
@@ -3131,6 +3131,7 @@ subroutine beq_bdryrb(self)
   call log_error(m_name,s_name,1,log_info,'Reference boundary values')
   call log_value("SMITER-GEOQ psibdry ",self%psibdry)
   call log_value("SMITER-GEOQ rbdry ",self%rbdry)
+  call log_value("SMITER-GEOQ zbdry ",ze)
   call log_value("SMITER-GEOQ bpbdry ",self%bpbdry)
   call log_value("SMITER-GEOQ btotbdry ",self%btotbdry)
 

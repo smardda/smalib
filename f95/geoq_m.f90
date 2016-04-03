@@ -216,6 +216,9 @@ subroutine geoq_init(self)
      else
         self%beq%psibdry=max(self%beq%psiqbdry,self%beq%psixpt)
      end if
+  else if(self%beq%n%bdryopt==11.OR.self%beq%n%bdryopt==12) then
+     ! boundary from EQDSK regardless
+     self%beq%psibdry=self%beq%psiqbdry
   end if
 
   if (beq_rsig()*(self%beq%psiqbdry-self%beq%psibdry)<0) then
@@ -312,6 +315,7 @@ subroutine geoq_psilimiter(self)
   call log_error(m_name,s_name,1,log_info,'Reference boundary values')
   call log_value("SMITER-GEOQ psiltr ",self%beq%psiltr)
   call log_value("SMITER-GEOQ rbdry ",self%beq%rbdry)
+  call log_value("SMITER-GEOQ zbdry ",zz)
   call log_value("SMITER-GEOQ bpbdry ",self%beq%bpbdry)
   call log_value("SMITER-GEOQ btotbdry ",self%beq%btotbdry)
 
@@ -415,6 +419,7 @@ subroutine geoq_psisilh(self)
   call log_error(m_name,s_name,1,log_info,'Reference boundary values')
   call log_value("SMITER-GEOQ psiltr ",self%beq%psiltr)
   call log_value("SMITER-GEOQ rbdry ",self%beq%rbdry)
+  call log_value("SMITER-GEOQ zbdry ",zz)
   call log_value("SMITER-GEOQ bpbdry ",self%beq%bpbdry)
   call log_value("SMITER-GEOQ btotbdry ",self%beq%btotbdry)
 

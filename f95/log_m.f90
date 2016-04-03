@@ -52,10 +52,11 @@ module log_m
 subroutine log_init(fileroot,timestamp)
 
   !! arguments
-  character(*), intent(in) :: fileroot !<root of log file name
+  character(*), intent(inout) :: fileroot !<root of log file name
   type(date_time_t), intent(in) :: timestamp !< timestamp
   !! local
   logical :: unitused !< flag to test unit is available
+  integer(ki4) :: ilen  !< length of string
 
   !! initialise counters
   errorno=0
@@ -63,7 +64,14 @@ subroutine log_init(fileroot,timestamp)
 
   !! create filename
   timedate=timestamp
-  logfile=trim(fileroot)//'.log'
+  ! strip ctl from end of name
+  ilen=len_trim(fileroot)
+  if (ilen>4) then
+    if (fileroot(ilen-3:ilen)=='.ctl') ilen=ilen-4
+  end if
+  logfile=fileroot(1:ilen)//'.log'
+  ! and reset file root
+  fileroot=logfile(1:ilen)
 
   !! get file unit
   do i=99,1,-1

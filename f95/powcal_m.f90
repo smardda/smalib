@@ -146,6 +146,10 @@ subroutine powcal_init(self,numerics,plot,gnumerics)
      self%powres%psista=0
   case default
   end select calcn_type
+  ! set size and zero of mask array
+  allocate(self%powres%pmask(self%powres%geobjl%ng), stat=status)
+  call log_alloc_check(m_name,s_name,5,status)
+  self%powres%pmask=0
 
   field_type: select case (self%powres%beq%n%fldspec)
   case(1)
@@ -755,7 +759,7 @@ subroutine powcal_writev(self,kchar,kplot)
      if (allocated(self%powres%psista)) then
         call vfile_rscalarwrite(self%powres%psista,self%powres%geobjl%ng,'psista','CELL',kplot,0)
      end if
-     call vfile_rscalarwrite(self%powres%pow,self%powres%geobjl%ng,'Qs','CELL',kplot,0)
+     call vfile_iscalarwrite(self%powres%pmask,self%powres%geobjl%ng,'Msign','CELL',kplot,0)
      if (infilelevel>self%n%nlevel) then
         ! restore nodl
         self%powres%geobjl%nodl(1:3*self%powres%geobjl%ng)=work
@@ -899,6 +903,11 @@ subroutine powcal_write(self,kout)
 
   call edgprof_write(self%edgprof,kout)
 
+  write(kout,*,iostat=status) 'pmask'
+  call log_write_check(m_name,s_name,12,status)
+  write(kout,*,iostat=status) self%powres%pmask
+  call log_write_check(m_name,s_name,13,status)
+
 end subroutine powcal_write
 !---------------------------------------------------------------------
 !> transfer power to shadow wall geometry
@@ -943,6 +952,7 @@ subroutine powcal_delete(self)
   call geobjlist_delete(self%powres%geobjl)
   deallocate(self%powres%pows)
   deallocate(self%powres%pow)
+  deallocate(self%powres%pmask)
   calcn_type: select case (self%n%caltype)
   case('afws','local','msus','global')
      deallocate(self%powres%psista)
