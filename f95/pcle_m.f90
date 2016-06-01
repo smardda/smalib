@@ -519,6 +519,8 @@ subroutine pcle_collinnode(poso,posn,geol,btree,pcle,kobj)
   integer(ki2), dimension(3) :: iext  !< local variable
   integer(ki2) :: ie !< integer element
   integer(ki2) :: iesum !< integer sum
+  real(kr4), dimension(3) :: zvdif !< local variable
+  integer(ki2) :: ib !< component with largest path difference
   logical :: lhit !< flag hit
   logical :: ilhit !< flag hit
 
@@ -561,18 +563,25 @@ subroutine pcle_collinnode(poso,posn,geol,btree,pcle,kobj)
      !          write(*,*) (btree%objectls%list(inadr+l,2),l=1,inls)! writediagn
 
      if (lhit) then
-        ! check nearest collision takes place in node
-        ! iesum test
-        icorn=btree%corner(:,inode)
-        ivecn=int(pcle%posvec)
-        iext=btree%exten(:,btree%desc(2,inode))
-        iesum=0
-        do j=1,3
-           ie=ishft( ieor(icorn(j),ivecn(j)), -iext(j) )
-           iesum=iesum+ie
-        end do
-        !     kobj=0 if iesum/=0
-        kobj=max(1-iesum,0)*kobj
+        ! check nearest collision takes place in range
+        zvdif=posn%posvec-poso%posvec
+        ib=maxloc( (/abs(zvdif(1)),abs(zvdif(2)),abs(zvdif(3))/) , dim=1)
+        if ((posn%posvec(ib)-pcle%posvec(ib))*(pcle%posvec(ib)-poso%posvec(ib))>0) then
+          ! check nearest collision takes place in node
+          ! iesum test
+          icorn=btree%corner(:,inode)
+          ivecn=int(pcle%posvec)
+          iext=btree%exten(:,btree%desc(2,inode))
+          iesum=0
+          do j=1,3
+             ie=ishft( ieor(icorn(j),ivecn(j)), -iext(j) )
+             iesum=iesum+ie
+          end do
+          !     kobj=0 if iesum/=0
+          kobj=max(1-iesum,0)*kobj
+        else
+          kobj=0
+        end if
      end if
   end if
 

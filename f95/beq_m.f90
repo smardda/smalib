@@ -2395,6 +2395,13 @@ subroutine beq_readcon(selfn,kin)
   real(kr8) :: beq_thetaref !< namelist \f$ \theta_X \f$
   integer(ki4) :: beq_ntheta !< namelist \f$ N_{\theta} \f$
   integer(ki4) :: beq_fldspec !< field specification
+  integer(ki4) :: beq_xsearch !< how to search for X-point (1 = within box)
+  real(kr8) :: beq_xrsta !< X-point box min R (m)
+  real(kr8) :: beq_xrend !< X-point box max R (m)
+  real(kr8) :: beq_xzsta !< X-point box min Z (m)
+  real(kr8) :: beq_xzend !< X-point box max Z (m)
+  real(kr8) :: z1 !< scratch
+  real(kr8) :: z2 !< scratch
   character(len=80) :: beq_vacuum_field_file !< local variable
 
   !! beq parameters
@@ -2412,6 +2419,7 @@ subroutine beq_readcon(selfn,kin)
  &beq_psiref,&
  &beq_zetamin, beq_zetamax, beq_nzetap,&
  &beq_thetaref, beq_ntheta, beq_fldspec,&
+ &beq_xsearch,beq_xrsta,beq_xrend,beq_xzsta,beq_xzend,&
  &beq_vacuum_field_file
 
   !! set default beq parameters
@@ -2446,6 +2454,11 @@ subroutine beq_readcon(selfn,kin)
   beq_thetaref=0
   beq_ntheta=32
   beq_fldspec=1
+  beq_xsearch=0
+  beq_xrsta=0
+  beq_xrend=0
+  beq_xzsta=0
+  beq_xzend=0
   beq_vacuum_field_file='null'
 
   !!read beq parameters
@@ -2515,6 +2528,22 @@ subroutine beq_readcon(selfn,kin)
   end if
   if(beq_fldspec<=0.OR.beq_fldspec>=4) &
  &call log_error(m_name,s_name,7,error_fatal,'beq_fldspec must be small positive integer')
+  if(beq_xsearch<0.OR.beq_xsearch>=2) &
+ &call log_error(m_name,s_name,8,error_fatal,'beq_xsearch must be small non-negative integer')
+  if(beq_xsearch==1) then
+    z1=min(beq_xrsta,beq_xrend)
+    z2=max(beq_xrsta,beq_xrend)
+    if (abs(z1-z2)<1.e-3) &
+ &  call log_error(m_name,s_name,9,error_fatal,'X-point search box too small in R')
+    beq_xrsta=z1
+    beq_xrend=z2
+    z1=min(beq_xzsta,beq_xzend)
+    z2=max(beq_xzsta,beq_xzend)
+    if (abs(z1-z2)<1.e-3) &
+ &  call log_error(m_name,s_name,10,error_fatal,'X-point search box too small in Z')
+    beq_xzsta=z1
+    beq_xzend=z2
+  end if
 
   !! store values
   selfn%cenopt=beq_cenopt
@@ -2589,6 +2618,11 @@ subroutine beq_readcon(selfn,kin)
      selfn%zetamax=3*const_pid/2
   end if
   selfn%fldspec=beq_fldspec
+  selfn%xsearch=beq_xsearch
+  selfn%xrsta=beq_xrsta
+  selfn%xrend=beq_xrend
+  selfn%xzsta=beq_xzsta
+  selfn%xzend=beq_xzend
   selfn%vacfile=beq_vacuum_field_file
 
 end subroutine beq_readcon
@@ -2744,7 +2778,7 @@ subroutine beq_psix(self)
   real(kr8), parameter :: zg1=1/(1+const_golden) !< factor for const_golden ratio search
   real(kr8), parameter :: zg2=1/const_golden !< factor for const_golden ratio search
   integer(ki4), parameter :: mcount=10000 !< limit on number of iterations in \f$ \theta \f$
-  integer(ki4), parameter :: mhemi=2 !< search below AND above midplane if two
+  integer(ki4) :: mhemi=2 !< search below AND above midplane if two (xsearch=0)
   real(kr8) :: zepsg    !< normalised value of \f$ \epsilon_g \f$ tolerance
   real(kr8) :: zepsr    !< normalised value of \f$ \epsilon_r \f$ tolerance
   real(kr8) :: zeps    !< dynamically determined search tolerance
@@ -2765,6 +2799,8 @@ subroutine beq_psix(self)
   real(kr8) :: zsrxpt    !< \f$ r \f$ for extremum
   real(kr8) :: re    !<   \f$ R_i \f$
   real(kr8) :: ze    !<  \f$ Z_i \f$
+  integer(ki4) :: i1 !< start index for mesh scan in \f$ R \f$
+  integer(ki4) :: i2 !< stop index for mesh scan in \f$ R \f$
   integer(ki4) :: j1 !< start index for mesh scan in \f$ Z \f$
   integer(ki4) :: j2 !< stop index for mesh scan in \f$ Z \f$
   integer(ki4) :: jhemi !< loop over one or more hemispheres
@@ -2792,11 +2828,22 @@ subroutine beq_psix(self)
   zszz=max( abs(self%zmax-self%n%zcen), abs(self%zmin-self%n%zcen) )
   zsrlt=(zsrr**2+zszz**2)/100
 
+  if (self%n%xsearch==1) mhemi=1
   do_hemi: do jhemi=0,mhemi-1
 
+     if (self%n%xsearch==1) then
+     zt2=-const_pid ; zt1=const_pid
+     i1=1+max(int((self%n%xrsta-self%rmin)/self%dr),0)
+     i2=2+min(int((self%n%xrend-self%rmin)/self%dr),self%mr-2)
+     j1=1+max(int((self%n%xzsta-self%zmin)/self%dz),0)
+     j2=2+min(int((self%n%xzend-self%zmin)/self%dz),self%mz-2)
+     else
      zt2=(jhemi-1)*const_pid ; zt1=jhemi*const_pid
      j1=2+(self%mz/2)*jhemi
      j2=(self%mz/2)*(jhemi+1)-1
+     i1=2
+     i2=self%mr-1
+     end if
      zsr1=zsrmin ; zsr2=-zsrmin
      isrmin=0 ; jsrmin=0
      zgpsimin=1.e+16
@@ -2806,7 +2853,7 @@ subroutine beq_psix(self)
      do_meshj: do j=j1,j2
         ! note, skip edges of computational rectangle and avoid centre
         ze=self%zmin+(j-1)*self%dz
-        do_meshi: do i=2,self%mr-1
+        do_meshi: do i=i1,i2
            re=self%rmin+(i-1)*self%dr
            zsrsq=(re-self%n%rcen)**2+(ze-self%n%zcen)**2
            if (zsrsq>zsrlt) then
@@ -2850,10 +2897,13 @@ subroutine beq_psix(self)
      zt3=zg1*zt1+zg2*zt2
      zeps=zepsr
      call beq_rextremum(self,zsr1,zsr2,zt1,zpsi1,zeps,ierr)
+!DEXT write(*,*) 'zsr1,zsr2,zt1,zpsi1,zeps,ierr',zsr1,zsr2,zt1,zpsi1,zeps,ierr !DEXT
      if (ierr/=0) call log_error(m_name,s_name,10+ierr,error_fatal,'no extremum found where expected')
      call beq_rextremum(self,zsr1,zsr2,zt2,zpsi2,zeps,ierr)
+!DEXT write(*,*) 'zsr1,zsr2,zt2,zpsi2,zeps,ierr',zsr1,zsr2,zt2,zpsi2,zeps,ierr !DEXT
      if (ierr/=0) call log_error(m_name,s_name,20+ierr,error_fatal,'no extremum found where expected')
      call beq_rextremum(self,zsr1,zsr2,zt3,zpsi3,zeps,ierr)
+!DEXT write(*,*) 'zsr1,zsr2,zt3,zpsi3,zeps,ierr',zsr1,zsr2,zt3,zpsi3,zeps,ierr !DEXT
      if (ierr/=0) call log_error(m_name,s_name,30+ierr,error_fatal,'no extremum found where expected')
      ! step three, converge to X-point in theta, searching for a MAXimum in theta if rsig<0
      do_converge: do jcount=1,mcount
@@ -2861,6 +2911,7 @@ subroutine beq_psix(self)
         zeps=max( zepsg , epsr*(abs(zpsi3-zpsi1)+abs(zpsi3-zpsi2)) )
         zt4=zg1*zt1+zg2*zt3
         call beq_rextremum(self,zsr1,zsr2,zt4,zpsi4,zeps,ierr)
+!DEXT write(*,*) 'zsr1,zsr2,zt4,zpsi4,zeps,ierr',zsr1,zsr2,zt4,zpsi4,zeps,ierr !DEXT
         if (ierr/=0) call log_error(m_name,s_name,40+ierr,error_fatal,'no extremum found where expected')
         if ((zpsi4-zpsi3)*rsig>0) then
            zpsi1=zpsi4
@@ -2875,6 +2926,7 @@ subroutine beq_psix(self)
 
         zt5=zg1*zt2+zg2*zt3
         call beq_rextremum(self,zsr1,zsr2,zt5,zpsi5,zeps,ierr)
+!DEXT write(*,*) 'zsr1,zsr2,zt5,zpsi5,zeps,ierr',zsr1,zsr2,zt5,zpsi5,zeps,ierr !DEXT
         if (ierr/=0) call log_error(m_name,s_name,50+ierr,error_fatal,'no extremum found where expected')
         if ((zpsi5-zpsi3)*rsig>0) then
            zpsi2=zpsi5
@@ -2889,6 +2941,7 @@ subroutine beq_psix(self)
         ! reevaluate psi3 with tighter tolerance
         if (is3chnged==0) then
            call beq_rextremum(self,zsr1,zsr2,zt3,zpsi3,zeps,ierr)
+!DEXT write(*,*) 'zsr1,zsr2,zt3,zpsi3,zeps,ierr',zsr1,zsr2,zt3,zpsi3,zeps,ierr !DEXT
            if (ierr/=0) call log_error(m_name,s_name,60+ierr,error_fatal,'no extremum found where expected')
         end if
         ! convergence test
@@ -3094,7 +3147,7 @@ subroutine beq_bdryrb(self)
      wvextd(i)=zdpdsr
      iknot=i
      zdsr=abs(cpsi/zdpdsr)
-     zsr=zsr+max(zdsr,zdsrmin)
+     zsr=zsr+max(min(zdsr,3*zdsrmin),zdsrmin)
      if ( i>1 .AND. (zsr-zsrmax)>0 ) goto 2
      zdpdsrl=zdpdsr
   end do
@@ -3102,6 +3155,11 @@ subroutine beq_bdryrb(self)
   call log_error(m_name,s_name,25,error_fatal,'Too many nodes')
 
 2     continue
+  !DWVS write(*,*) s_name, ' debugging arrays' !DWVS
+  !DWVS write(*,*) 'psi', self%psibdry !DWVS
+  !DWVS do i=1,iknot !DWVS
+  !DWVS write(*,*) i,wvextn(i),wvext(i),wvextd(i) !DWVS
+  !DWVS end do !DWVS
 
   ! estimate interval where psi approx psim
   do j=1,iknot-1

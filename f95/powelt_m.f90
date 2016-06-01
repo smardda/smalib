@@ -1053,6 +1053,9 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
   real(kr4) :: phylenpath !< physical length of path
   logical :: lcoll   !< collision on path
   real(kr8) :: zpsim !< value of \f$ \psi \f$ at field line end (diagnostic)
+  real(kr8) :: zpsi !<  \f$ \psi \f$ debugging diagnostic !DP
+  real(kr8) :: zr !<  \f$ \r \f$ debugging diagnostic !DP
+  real(kr8) :: zz !<  \f$ \z \f$ debugging diagnostic !DP
   real(kr8), dimension(2) :: zk !< sector number
   integer(ki4), save :: firstcall  !< flag up first step of new trajectory
 
@@ -1173,7 +1176,7 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
      lcoll=.FALSE.
      nobjhit=0
      zpsim=0
-     !     write(*,*) 'step=', powcal%odes%ndt
+     if (loutdt) write(*,*) 'step=', powcal%odes%ndt
 
      ztime=powcal%odes%t
 
@@ -1191,7 +1194,7 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
      !DVEC      work1(powcal%odes%ndt-1)=zdt  !DVEC
      !DVEC      write(*,*) 'tstep'  !DVEC
      lenpath=lenpath+abs(zdt)
-     if (loutdt) write(170,*) zdt
+     if (loutdt) write(170,*) 'tstep',zdt
 
      if (powcal%n%shadow>0) then
         ! check for collision or exit from computational domain
@@ -1270,14 +1273,14 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
         ! check for near-collision and repeat step (once) if necessary TO DO???
      end if
 
-     !DP !! psi diagnostic !DP
-     !DP      zr=xo%posvec(1) !DP
-     !DP      zz=xo%posvec(2) !DP
-     !DP      call spl2d_eval(powcal%powres%beq%psi,zr,zz,zpsi) !DP
+     !! psi diagnostic !DP
+     if (loutdt) zr=xo%posvec(1) !DP
+     if (loutdt) zz=xo%posvec(2) !DP
+     if (loutdt) call spl2d_eval(powcal%powres%beq%psi,zr,zz,zpsi) !DP
      !DP! dequantise xo !DP
-     !DP      zpos1%posvec=xo%posvec !DP
-     !DP      zpos2=position_invqtfm(zpos1,powcal%powres%geobjl%quantfm) !DP
-     !DP     write(*,*) lenpath,zpos2%posvec(1),zpos2%posvec(2),zpsi !DP
+     if (loutdt) zpos1%posvec=xo%posvec !DP
+     if (loutdt) zpos2=position_invqtfm(zpos1,powcal%powres%geobjl%quantfm) !DP
+     if (loutdt) write(*,*) lenpath,zpos2%posvec(1),zpos2%posvec(2),zpsi !DP
      ! check for termination due to overlong trajectory (number of steps)
      indt=powcal%odes%ndt
      if (indt>=powcal%odes%n%stepmax) exit

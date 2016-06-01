@@ -100,6 +100,11 @@ module beq_h
 !! 2. psi gradients
 !! 3. R/J x psi gradients (axisymmetric) -> move1
      integer(ki4) :: fldspec !< -
+     integer(ki4) :: xsearch !< how to search for X-point (1 = within box)
+     real(kr8) :: xrsta !< X-point box min R (m)
+     real(kr8) :: xrend !< X-point box max R (m)
+     real(kr8) :: xzsta !< X-point box min Z (m)
+     real(kr8) :: xzend !< X-point box max Z (m)
      !> type of equilibrium 
 !! - 'eqdsk' for EQDSK input
 !! - 'equ' for FIESTA input
