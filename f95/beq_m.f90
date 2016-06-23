@@ -336,12 +336,13 @@ subroutine beq_read(self,infile)
 end subroutine beq_read
 !---------------------------------------------------------------------
 !> read in non-strict EQDSK format
-subroutine beq_readequil(self,infile,kfldspec)
+subroutine beq_readequil(self,infile,kfldspec,kpsibig)
 
   !! arguments
   type(beq_t), intent(out) :: self   !< object data structure
   character(*),intent(in) :: infile !< name of input file
   integer(ki4),intent(in) :: kfldspec !< field as mapped or 3-cpt
+  integer(ki4),intent(in) :: kpsibig !< flux with extra 2pi if =unity
 
   !! local
   character(*), parameter :: s_name='beq_readequil' !< subroutine name
@@ -380,6 +381,8 @@ subroutine beq_readequil(self,infile,kfldspec)
   real(kr8) :: zmaxis !< EFIT plasma centre (magnetic axis) in metre
   real(kr8) :: zmid !< EFIT centre of computational box in metre originally ignored
   real(kr8) :: zpsic !< diagnostic variable
+  real(kr8) :: btcen !< diagnostic variable
+  real(kr8) :: psifac !< scales big psi to usual psi in SMARDDA context
   integer(ki4) :: nbbbs  !< EFIT number of points describing boundary
   integer(ki4) :: limitr  !< EFIT number of points describing limitr
   integer(ki4) :: ncoil  !< EFIT number of points describing one of five coils
@@ -529,6 +532,7 @@ subroutine beq_readequil(self,infile,kfldspec)
   call log_value('Flux at boundary ssibry1',ssibry1)
   call log_value('Plasma centre in R rmaxis',rmaxis)
   call log_value('Plasma centre in Z zmaxis',zmaxis)
+  call log_value('Plasma current ',cpasma)
   call log_error(m_name,s_name,93,log_info,'Check consistency with other plasma data')
   if (debug) write(*,*) 'Geometry parameters from EFIT'
   if (debug) write(*,*) 'Domain size xdim=',xdim ,'zdim=',zdim
@@ -558,6 +562,8 @@ subroutine beq_readequil(self,infile,kfldspec)
   end if
   print '("number of fpol values read = ",i10)',nw
   call log_value("number of fpol values read ",nw)
+  btcen=abs(self%f(1))/max(rmaxis,1.e-9)
+  call log_value("Estimated central B_T ",btcen)
 
   ! 1D work array
   !! allocate 1D work storage and read
@@ -610,8 +616,13 @@ subroutine beq_readequil(self,infile,kfldspec)
   !      zpsimin=minval(work2)
   !      write(*,*) 'zpsimin,zpsimax=',zpsimin,zpsimax
   !
-  self%psiaxis=ssimag1
-  self%psiqbdry=ssibry1
+  if (kpsibig>0) then
+    psifac=1/(2*const_pid)
+  else
+    psifac=1
+  end if
+  self%psiaxis=ssimag1*psifac
+  self%psiqbdry=ssibry1*psifac
   self%psibdry=self%psiqbdry
   self%rmin=rgrid
   self%rmax=rgrid+xdim
@@ -624,8 +635,8 @@ subroutine beq_readequil(self,infile,kfldspec)
      call log_error(m_name,s_name,49,log_info,'override for ITER')
      ! special for ITER to align current and toroidal field
      if (ssimag1>ssibry1) then
-        self%psiaxis=-ssimag1
-        self%psiqbdry=-ssibry1
+        self%psiaxis=-ssimag1*psifac
+        self%psiqbdry=-ssibry1*psifac
         self%psibdry=self%psiqbdry
         work2=-work2
      else
@@ -1149,6 +1160,13 @@ subroutine beq_init(self,numerics)
   ! initialise 2-D spline
   self%dr=(self%rmax-self%rmin)/self%mr
   self%dz=(self%zmax-self%zmin)/self%mz
+  if (self%n%psibig>0) then
+  ! scale psi 
+    work2=work2/(2*const_pid)
+    call log_error(m_name,s_name,1,log_info,'Scaling psi by 2pi')
+  ! and stop it happening again
+    self%n%psibig=-self%n%psibig
+  end if
   call spl2d_init(self%psi,work2,self%mr,self%mz,&
  &self%rmin,self%zmin,self%dr,self%dz,beq_spline_order)
   deallocate(work2)
@@ -2396,6 +2414,7 @@ subroutine beq_readcon(selfn,kin)
   integer(ki4) :: beq_ntheta !< namelist \f$ N_{\theta} \f$
   integer(ki4) :: beq_fldspec !< field specification
   integer(ki4) :: beq_xsearch !< how to search for X-point (1 = within box)
+  real(kr8) :: beq_psibig !< 1 implies \f$ 2 \pi \f$ too big
   real(kr8) :: beq_xrsta !< X-point box min R (m)
   real(kr8) :: beq_xrend !< X-point box max R (m)
   real(kr8) :: beq_xzsta !< X-point box min Z (m)
@@ -2419,6 +2438,7 @@ subroutine beq_readcon(selfn,kin)
  &beq_psiref,&
  &beq_zetamin, beq_zetamax, beq_nzetap,&
  &beq_thetaref, beq_ntheta, beq_fldspec,&
+ &beq_psibig,&
  &beq_xsearch,beq_xrsta,beq_xrend,beq_xzsta,beq_xzend,&
  &beq_vacuum_field_file
 
@@ -2454,6 +2474,7 @@ subroutine beq_readcon(selfn,kin)
   beq_thetaref=0
   beq_ntheta=32
   beq_fldspec=1
+  beq_psibig=0
   beq_xsearch=0
   beq_xrsta=0
   beq_xrend=0
@@ -2528,19 +2549,21 @@ subroutine beq_readcon(selfn,kin)
   end if
   if(beq_fldspec<=0.OR.beq_fldspec>=4) &
  &call log_error(m_name,s_name,7,error_fatal,'beq_fldspec must be small positive integer')
+  if(beq_psibig<0.OR.beq_psibig>=2) &
+ &call log_error(m_name,s_name,8,error_fatal,'beq_psibig must be small non-negative integer')
   if(beq_xsearch<0.OR.beq_xsearch>=2) &
- &call log_error(m_name,s_name,8,error_fatal,'beq_xsearch must be small non-negative integer')
+ &call log_error(m_name,s_name,9,error_fatal,'beq_xsearch must be small non-negative integer')
   if(beq_xsearch==1) then
     z1=min(beq_xrsta,beq_xrend)
     z2=max(beq_xrsta,beq_xrend)
     if (abs(z1-z2)<1.e-3) &
- &  call log_error(m_name,s_name,9,error_fatal,'X-point search box too small in R')
+ &  call log_error(m_name,s_name,10,error_fatal,'X-point search box too small in R')
     beq_xrsta=z1
     beq_xrend=z2
     z1=min(beq_xzsta,beq_xzend)
     z2=max(beq_xzsta,beq_xzend)
     if (abs(z1-z2)<1.e-3) &
- &  call log_error(m_name,s_name,10,error_fatal,'X-point search box too small in Z')
+ &  call log_error(m_name,s_name,11,error_fatal,'X-point search box too small in Z')
     beq_xzsta=z1
     beq_xzend=z2
   end if
@@ -2618,6 +2641,7 @@ subroutine beq_readcon(selfn,kin)
      selfn%zetamax=3*const_pid/2
   end if
   selfn%fldspec=beq_fldspec
+  selfn%psibig=beq_psibig
   selfn%xsearch=beq_xsearch
   selfn%xrsta=beq_xrsta
   selfn%xrend=beq_xrend
@@ -3014,6 +3038,7 @@ subroutine beq_bdryrb(self)
   real(kr8) :: cpsi    !< constant for estimating \f$ \Delta r_i \f$
   real(kr8) :: zpsi    !<  \f$ \psi \f$
   real(kr8) :: zf    !<   \f$ f(\psi) = RB_T \f$
+  real(kr8) :: cylj    !<  current estimated in cylindrical approx.
 
   pick_angle : select case (self%n%bdryopt)
   case(4,5,7,11) ! inboard point selected
@@ -3192,6 +3217,8 @@ subroutine beq_bdryrb(self)
   call log_value("SMITER-GEOQ zbdry ",ze)
   call log_value("SMITER-GEOQ bpbdry ",self%bpbdry)
   call log_value("SMITER-GEOQ btotbdry ",self%btotbdry)
+  cylj=abs(zsr*self%bpbdry/2.e-7)
+  call log_value("Estimated cylindrical current ",cylj)
 
   deallocate(wvextn)
   deallocate(wvext)

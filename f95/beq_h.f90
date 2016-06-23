@@ -95,11 +95,12 @@ module beq_h
      real(kr8) :: thetaref !< \f$ \theta_X \f$
      integer(ki4) :: ntheta !< \f$ N_{\theta} \f$
      integer(ki4) :: nzetp !< \f$ N_{\zeta P} \f$
-     !> specifies way equilibrium field described
+!> specifies way equilibrium field described
 !! 1. R/J implies mapped case (axisymmetric) -> move
 !! 2. psi gradients
 !! 3. R/J x psi gradients (axisymmetric) -> move1
      integer(ki4) :: fldspec !< -
+     integer(ki4) :: psibig !< normally 0, 1 if \f$ \psi=\Psi \f$ has \f$ 2\pi \f$ factor
      integer(ki4) :: xsearch !< how to search for X-point (1 = within box)
      real(kr8) :: xrsta !< X-point box min R (m)
      real(kr8) :: xrend !< X-point box max R (m)

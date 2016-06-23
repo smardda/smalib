@@ -58,7 +58,8 @@ program geoq_p
   integer(ki4):: nprint !< unit for gnuplot files
   integer(ki4):: nin=0 !< unit for other data
   integer(ki4):: nana=0 !< unit for analytic field data
-  integer(ki4):: ifldspec !< local variable
+  integer(ki4):: ifldspec !< field specification
+  integer(ki4):: ipsibig !< flag whether psi overlarge by 2pi
   real(kr8):: zivac !< value of I in field file
   character(len=80) :: ibuf !< character workspace
 !--------------------------------------------------------------------------
@@ -102,6 +103,7 @@ program geoq_p
   call clock_start(3,'beq_init time')
   fileq=file%equil
   ifldspec=numerics%fldspec
+  ipsibig=numerics%psibig
   select case (numerics%eqtype)
   case ('ana')
 ! need additional data to specify field analytically
@@ -115,7 +117,7 @@ program geoq_p
   case ('equ')
      call beq_readequ(geoq%beq,fileq,ifldspec)
   case default
-     call beq_readequil(geoq%beq,fileq,ifldspec)
+     call beq_readequil(geoq%beq,fileq,ifldspec,ipsibig)
   end select
   call beq_move(geoq%beq,numerics)
   call beq_init(geoq%beq,numerics)
