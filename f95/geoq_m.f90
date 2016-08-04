@@ -59,7 +59,7 @@ module geoq_m
   integer(ki4) :: inobj !< number of geobj records to be read
   integer(ki4) :: inls !< number of entries in list
   integer(ki4) :: idum !< dummy integer
-  real(kr8), parameter :: deltal=10 !< silhoutte sampling length (mm)
+  real(kr8), parameter :: deltal=1 !< silhoutte sampling length (mm)
   logical :: iltest !< logical flag
 
   contains
@@ -258,6 +258,8 @@ subroutine geoq_psilimiter(self)
   real(kr8) :: zthetamax    !<  largest value of \f$ \theta \f$ on geometry
   real(kr8) :: zdpdr    !<  \f$ \frac{\partial\psi}{\partial R} \f$
   real(kr8) :: zdpdz    !<  \f$ \frac{\partial\psi}{\partial Z} \f$
+  real(kr8) :: zsr    !< \f$  r_i \f$
+  real(kr8) :: cylj    !<  current estimated in cylindrical approx.
 
   zpsimin=1.E+8
   zpsimax=-1.E+8
@@ -321,6 +323,9 @@ subroutine geoq_psilimiter(self)
   call log_value("SMITER-GEOQ zbdry ",zz)
   call log_value("SMITER-GEOQ bpbdry ",self%beq%bpbdry)
   call log_value("SMITER-GEOQ btotbdry ",self%beq%btotbdry)
+  zsr=sqrt( max(0.,(zr-self%beq%n%rcen)**2+(zz-self%beq%n%zcen)**2) )
+  cylj=abs(zsr*self%beq%bpbdry/2.e-7)
+  call log_value("Estimated cylindrical current ",cylj)
 
   call log_error(m_name,s_name,2,log_info,'Object limits ')
   call log_value("OBJECT LIMIT psimax ",zpsimax)
@@ -358,6 +363,8 @@ subroutine geoq_psisilh(self)
   integer(ki4) :: inumpts   !< number of points in object
   real(kr8) :: zdpdr    !<  \f$ \frac{\partial\psi}{\partial R} \f$
   real(kr8) :: zdpdz    !<  \f$ \frac{\partial\psi}{\partial Z} \f$
+  real(kr8) :: zsr    !< \f$  r_i \f$
+  real(kr8) :: cylj    !<  current estimated in cylindrical approx.
 
   zpsimin=1.E+8
   zpsimax=-1.E+8
@@ -373,6 +380,7 @@ subroutine geoq_psisilh(self)
         zvd=self%objl%posl%pos(inode)%posvec-zv1
         zline=sqrt( max(0.,zvd(1)**2+zvd(2)**2+zvd(3)**2) )
         inline=zline/deltal
+        !dbg   if (j<=10) write(*,*) inode,zvd,inline   !dbg
         loop_segment: do l=1,max(inline,1)
            ! transform positions to R-Z-zeta space
            posang%pos=zv1+(l-1)*(zvd/inline)
@@ -382,7 +390,7 @@ subroutine geoq_psisilh(self)
            zz=posang%pos(2)
            ! evaluate psi
            call spl2d_eval(self%beq%psi,zr,zz,zpsi)
-           !dbg           write(*,*) zr,zz,zpsi
+           !dbg   if (j<=10) write(*,*) zr,zz,zpsi  !dbg
            !   zpsimin=min(zpsi,zpsimin)
            if (zpsi<zpsimin) then
               zpsimin=zpsi
@@ -397,6 +405,7 @@ subroutine geoq_psisilh(self)
      end do
   end do loop_object
 
+  !dbg   write(*,*) zrmin,zrmax,zpsimin,zpsimax !dbg
   if (beq_rsig()>0) then
      ! equiv. (self%psiaxis<self%psiqbdry)
      ! psi increasing outward
@@ -408,7 +417,7 @@ subroutine geoq_psisilh(self)
      zr=zrmax ; zz=zzmax
      self%beq%psiotr=zpsimin
   end if
-
+  write(*,*) 'psiltr,psiotr', self%beq%psiltr,self%beq%psiotr !dbg
   call spl2d_eval(self%beq%dpsidr,zr,zz,zdpdr)
   call spl2d_eval(self%beq%dpsidz,zr,zz,zdpdz)
   self%beq%rbdry=zr
@@ -418,14 +427,16 @@ subroutine geoq_psisilh(self)
   zpsi=self%beq%psiotr
   call spleval(self%beq%f,self%beq%mr,self%beq%psiaxis,self%beq%psiqbdry,zpsi,zf,1)
   self%beq%btotbdry=sqrt( max(0.,(self%beq%bpbdry**2+(zf/zr)**2)) )
-
+  !dbg   write(*,*) self%beq%psiltr,self%beq%psiotr !dbg
   call log_error(m_name,s_name,1,log_info,'Reference boundary values')
   call log_value("SMITER-GEOQ psiltr ",self%beq%psiltr)
   call log_value("SMITER-GEOQ rbdry ",self%beq%rbdry)
   call log_value("SMITER-GEOQ zbdry ",zz)
   call log_value("SMITER-GEOQ bpbdry ",self%beq%bpbdry)
   call log_value("SMITER-GEOQ btotbdry ",self%beq%btotbdry)
-
+  zsr=sqrt( max(0.,(zr-self%beq%n%rcen)**2+(zz-self%beq%n%zcen)**2) )
+  cylj=abs(zsr*self%beq%bpbdry/2.e-7)
+  call log_value("Estimated cylindrical current ",cylj)
 
 end subroutine geoq_psisilh
 !---------------------------------------------------------------------
