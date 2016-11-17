@@ -207,7 +207,11 @@ subroutine powcal_quant(self,gnumerics)
   real(kr8) :: zarnns  !< \f$ \zeta \f$ component scaling
   integer(ki4) :: itermp !< total number of termination planes
   integer(ki4) :: idir !< coordinate direction \f$ (R,Z,\xi) \f$ in order \f$ 1,2,3 \f$
+<<<<<<< HEAD
   integer(ki4) :: idirc !< coordinate direction \f$ (R,Z,\xi) \f$ in order \f$ 1,2,3 \f$
+=======
+  integer(ki4) :: idirc !< coordinate direction of auxilliary condition
+>>>>>>> 433de24df89f810f6eeab9fd4c621579e8af4a73
 
   zpar=0
   self%powres%beq%domlen=0

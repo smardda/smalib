@@ -44,13 +44,13 @@ subroutine termplane_readcon(self,kin)
 
   !! local
   character(*), parameter :: s_name='termplane_readcon' !< subroutine name
-  integer(ki4), dimension(maxinp):: termplane_direction  !< local variable
-  integer(ki4), dimension(maxinp):: termplane_intersection  !< local variable
-  integer(ki4), dimension(maxinp):: termplane_extremum  !< local variable
-  real(kr8), dimension(maxinp):: termplane_position  !< local variable
-  real(kr8), dimension(maxinp):: termplane_condition  !< local variable
-  integer(ki4), dimension(maxinp):: termplane_condition_dir  !< local variable
-  integer(ki4):: termplane_max  !< local variable
+  integer(ki4), dimension(maxinp):: termplane_direction  !< namelist variable
+  integer(ki4), dimension(maxinp):: termplane_intersection  !< namelist variable
+  integer(ki4), dimension(maxinp):: termplane_extremum  !< namelist variable
+  real(kr8), dimension(maxinp):: termplane_position  !< namelist variable
+  real(kr8), dimension(maxinp):: termplane_condition  !< namelist variable
+  integer(ki4), dimension(maxinp):: termplane_condition_dir  !< namelist variable
+  integer(ki4):: termplane_max  !< namelist variable
   integer(ki4):: nactive  !< local variable
 
   !! termplane position parameters
@@ -145,6 +145,10 @@ subroutine termplane_readcon(self,kin)
         self%termplanedir(nactive,4)=termplane_condition_dir(j)
         self%termplanedir(nactive,5)=sign(1,termplane_condition_dir(j))
         self%termplane(nactive,2)=termplane_condition(j)
+     else
+        ! ensure non-zero direction when scaling
+        self%termplanedir(nactive,4)=self%termplanedir(nactive,1)
+        self%termplanedir(nactive,5)=self%termplanedir(nactive,2)
      end if
   end do
 
