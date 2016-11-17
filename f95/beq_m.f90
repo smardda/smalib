@@ -2990,11 +2990,11 @@ subroutine beq_psix(self)
      call log_error(m_name,s_name,80,error_fatal,'no X-point found')
   else
      call log_error(m_name,s_name,90,log_info,'X-point value')
-     call log_value("SMITER-GEOQ psixpt ",self%psixpt)
-     call log_value("SMITER-GEOQ thetaxpt ",self%thetaxpt)
+     call log_value("SMITER-GEOQ psi-xpt ",self%psixpt)
+     call log_value("SMITER-GEOQ theta-xpt ",self%thetaxpt)
      call log_value("psixpt find code",ixf)
-     call log_value("SMITER-GEOQ rxpt ",self%n%rcen+zsrxpt*cos(self%thetaxpt))
-     call log_value("SMITER-GEOQ zxpt ",self%n%zcen-zsrxpt*sin(self%thetaxpt))
+     call log_value("SMITER-GEOQ R-xpt ",self%n%rcen+zsrxpt*cos(self%thetaxpt))
+     call log_value("SMITER-GEOQ Z-xpt ",self%n%zcen+zsrxpt*sin(self%thetaxpt))
   end if
 
 end subroutine beq_psix

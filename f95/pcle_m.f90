@@ -56,8 +56,10 @@ subroutine pcle_movet(selfo,selfn,kstep,geol,btree,termp,kobj)
   real(kr8) :: zf1 !< fraction of path length
   real(kr8) :: zfmin !< smallest fraction of path length
   integer(ki4) :: idir !< coordinate direction
+  integer(ki4) :: idirc !< coordinate direction to apply condition on coordinate
   integer(ki4) :: jt !< loop over termination planes
   integer(ki4) :: idirs !< sign of coordinate direction
+  integer(ki4) :: idircs !< sign of coordinate direction to apply condition on coordinate
   integer(ki4) :: iop !< code describing termination type
 
   call pcle_move(selfo,selfn,kstep,geol,btree,kobj)
@@ -70,11 +72,13 @@ subroutine pcle_movet(selfo,selfn,kstep,geol,btree,termp,kobj)
      idir=termp%termplanedir(jt,1)
      idirs=termp%termplanedir(jt,2)
      iop=termp%termplanedir(jt,3)
+     idirc=termp%termplanedir(jt,4)
+     idircs=termp%termplanedir(jt,5)
      terminate_type: select case (iop)
      case (0)
         ! terminate if goes past a plane
-        if ((selfn%posvec(idir)-termp%termplane(jt))*idirs>0) then
-           zf1=(termp%termplane(jt)-selfo%posvec(idir))&
+        if ((selfn%posvec(idir)-termp%termplane(jt,1))*idirs>0) then
+           zf1=(termp%termplane(jt,1)-selfo%posvec(idir))&
  &         /(selfn%posvec(idir)-selfo%posvec(idir))
            if (zf1<=zfmin) then
               zfmin=zf1
@@ -83,8 +87,8 @@ subroutine pcle_movet(selfo,selfn,kstep,geol,btree,termp,kobj)
         end if
      case (1)
         ! terminate if intersects a plane, idirs irrelevant
-        if ((selfn%posvec(idir)-termp%termplane(jt))*(selfo%posvec(idir)-termp%termplane(jt))<=0) then
-           zf1=(termp%termplane(jt)-selfo%posvec(idir))/(selfn%posvec(idir)-selfo%posvec(idir))
+        if ((selfn%posvec(idir)-termp%termplane(jt,1))*(selfo%posvec(idir)-termp%termplane(jt,1))<=0) then
+           zf1=(termp%termplane(jt,1)-selfo%posvec(idir))/(selfn%posvec(idir)-selfo%posvec(idir))
            if (zf1<=zfmin) then
               zfmin=zf1
               kobj=-2
@@ -106,6 +110,19 @@ subroutine pcle_movet(selfo,selfn,kstep,geol,btree,termp,kobj)
         else
            ! save first point
            termp%termstore(1,:)=selfo%posvec
+        end if
+     case (3)
+        idirc=termp%termplanedir(jt,4)
+        idircs=termp%termplanedir(jt,5)
+        ! terminate if intersects a plane, satisfying auxilliary condition
+        if ((selfn%posvec(idirc)-termp%termplane(jt,2))*idircs>0) then
+           if ((selfn%posvec(idir)-termp%termplane(jt,1))*(selfo%posvec(idir)-termp%termplane(jt,1))<=0) then
+              zf1=(termp%termplane(jt,1)-selfo%posvec(idir))/(selfn%posvec(idir)-selfo%posvec(idir))
+              if (zf1<=zfmin) then
+                 zfmin=zf1
+                 kobj=-2
+              end if
+           end if
         end if
      end select terminate_type
   end do

@@ -44,11 +44,13 @@ subroutine termplane_readcon(self,kin)
 
   !! local
   character(*), parameter :: s_name='termplane_readcon' !< subroutine name
-  integer(ki4), dimension(maxinp):: termplane_direction  !< local variable
-  integer(ki4), dimension(maxinp):: termplane_intersection  !< local variable
-  integer(ki4), dimension(maxinp):: termplane_extremum  !< local variable
-  real(kr8), dimension(maxinp):: termplane_position  !< local variable
-  integer(ki4):: termplane_max  !< local variable
+  integer(ki4), dimension(maxinp):: termplane_direction  !< namelist variable
+  integer(ki4), dimension(maxinp):: termplane_intersection  !< namelist variable
+  integer(ki4), dimension(maxinp):: termplane_extremum  !< namelist variable
+  real(kr8), dimension(maxinp):: termplane_position  !< namelist variable
+  real(kr8), dimension(maxinp):: termplane_condition  !< namelist variable
+  integer(ki4), dimension(maxinp):: termplane_condition_dir  !< namelist variable
+  integer(ki4):: termplane_max  !< namelist variable
   integer(ki4):: nactive  !< local variable
 
   !! termplane position parameters
@@ -57,10 +59,14 @@ subroutine termplane_readcon(self,kin)
  &termplane_intersection, &
  &termplane_extremum, &
  &termplane_position, &
+ &termplane_condition, &
+ &termplane_condition_dir, &
  &termplane_max
 
   !! set default termplane position parameters
   termplane_position=0
+  termplane_condition=0
+  termplane_condition_dir=0
   termplane_direction=0
   termplane_intersection=0
   termplane_extremum=0
@@ -94,13 +100,17 @@ subroutine termplane_readcon(self,kin)
      else if (termplane_extremum(j)/=0) then
         nactive=nactive+1
      end if
+     if(abs(termplane_condition_dir(j))>3) then
+        call log_error(m_name,s_name,4,error_warning,'termplane_condition_dir must be <= 3')
+     end if
   end do
 
-  allocate(self%termplanedir(nactive,3),self%termplane(nactive),&
+  allocate(self%termplanedir(nactive,5),self%termplane(nactive,2),&
  &self%termstore(nactive,3),stat=status)
   call log_alloc_check(m_name,s_name,2,status)
   self%ntermplane=nactive
   self%termstore=0
+  self%termplane=0
 
   nactive=0
   do j=1,maxinp
@@ -112,7 +122,7 @@ subroutine termplane_readcon(self,kin)
         self%termplanedir(nactive,1)=abs(termplane_direction(j))
         self%termplanedir(nactive,2)=sign(1,termplane_direction(j))
         self%termplanedir(nactive,3)=0
-        self%termplane(nactive)=termplane_position(j)
+        self%termplane(nactive,1)=termplane_position(j)
      end if
      if(abs(termplane_intersection(j))>3.OR.termplane_intersection(j)==0) then
      else
@@ -120,7 +130,7 @@ subroutine termplane_readcon(self,kin)
         self%termplanedir(nactive,1)=abs(termplane_intersection(j))
         self%termplanedir(nactive,2)=sign(1,termplane_intersection(j))
         self%termplanedir(nactive,3)=1
-        self%termplane(nactive)=termplane_position(j)
+        self%termplane(nactive,1)=termplane_position(j)
      end if
      if(abs(termplane_extremum(j))>3.OR.termplane_extremum(j)==0) then
      else
@@ -128,7 +138,17 @@ subroutine termplane_readcon(self,kin)
         self%termplanedir(nactive,1)=abs(termplane_extremum(j))
         self%termplanedir(nactive,2)=sign(1,termplane_extremum(j))
         self%termplanedir(nactive,3)=2
-        self%termplane(nactive)=termplane_position(j)
+        self%termplane(nactive,1)=termplane_position(j)
+     end if
+     if(abs(termplane_condition_dir(j))>0) then
+        self%termplanedir(nactive,3)=3
+        self%termplanedir(nactive,4)=termplane_condition_dir(j)
+        self%termplanedir(nactive,5)=sign(1,termplane_condition_dir(j))
+        self%termplane(nactive,2)=termplane_condition(j)
+     else
+        ! ensure non-zero direction when scaling
+        self%termplanedir(nactive,4)=self%termplanedir(nactive,1)
+        self%termplanedir(nactive,5)=self%termplanedir(nactive,2)
      end if
   end do
 

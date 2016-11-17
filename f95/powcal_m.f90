@@ -205,7 +205,9 @@ subroutine powcal_quant(self,gnumerics)
   real(kr8) :: zepsdif !<  \f$ \epsilon \f$ for \f$ \zeta \f$ boundary crossing
   real(kr8) :: zrnns !< \f$ \zeta \f$ scaling
   real(kr8) :: zarnns  !< \f$ \zeta \f$ component scaling
+  integer(ki4) :: itermp !< total number of termination planes
   integer(ki4) :: idir !< coordinate direction \f$ (R,Z,\xi) \f$ in order \f$ 1,2,3 \f$
+  integer(ki4) :: idirc !< coordinate direction of auxilliary condition
 
   zpar=0
   self%powres%beq%domlen=0
@@ -333,18 +335,24 @@ subroutine powcal_quant(self,gnumerics)
      ! assuming termplane only in non-mapped field type
      if (self%n%ltermplane) then 
         ! scale termination planes
-        allocate(zposl%pos(self%n%termp%ntermplane),stat=status)
+        itermp=self%n%termp%ntermplane
+        allocate(zposl%pos(2*itermp),stat=status)
         call log_alloc_check(m_name,s_name,31,status)
-        do j=1,self%n%termp%ntermplane
+        do j=1,itermp
            zposl%pos(j)%posvec=0
            idir=self%n%termp%termplanedir(j,1)
-           zposl%pos(j)%posvec(idir)=self%n%termp%termplane(j)
+           zposl%pos(j)%posvec(idir)=self%n%termp%termplane(j,1)
+           zposl%pos(itermp+j)%posvec=0
+           idirc=self%n%termp%termplanedir(j,4)
+           zposl%pos(itermp+j)%posvec(idirc)=self%n%termp%termplane(j,2)
         end do
-        zposl%np=self%n%termp%ntermplane
+        zposl%np=2*itermp
         call position_qtfmlis(zposl,self%powres%geobjl%quantfm)
-        do j=1,self%n%termp%ntermplane
+        do j=1,itermp
            idir=self%n%termp%termplanedir(j,1)
-           self%n%termp%termplane(j)=zposl%pos(j)%posvec(idir)
+           self%n%termp%termplane(j,1)=zposl%pos(j)%posvec(idir)
+           idirc=self%n%termp%termplanedir(j,4)
+           self%n%termp%termplane(j,2)=zposl%pos(itermp+j)%posvec(idirc)
         end do
         deallocate(zposl%pos)
      end if
