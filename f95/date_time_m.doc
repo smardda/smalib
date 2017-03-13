@@ -1,0 +1,14 @@
+!>
+!!
+!!
+!!
+!! \Bold{Type}
+!!
+!! Framework and infrastructure; Object-oriented module.
+!!
+!! \Bold{Purpose}
+!!
+!! Used by codes \Tt{datvtk}, \Tt{geoq}, \Tt{magtfm}, \Tt{powcal}, \Tt{vtktfm}.
+!!
+!! \Bold{Function}
+!!
