@@ -1,0 +1,18 @@
+!>
+!!
+!! Edge profile data object.
+!!
+!! \Bold{Type}
+!!
+!! Data structure; Data module.
+!!
+!! \Bold{Purpose}
+!!
+!! Used by codes \Tt{powcal}.
+!!
+!! \Bold{Function}
+!!
+!! Edge profile data object.
+!!
+!!
+!<

@@ -1,0 +1,6 @@
+These are intended to be FORTRAN 90 compliant, achieved in part
+by removing error handling.
+All checks have removed as it will be assumed that transferred
+data will be tested in calling routines.
+In the case of tb06a, the number of arguments has been changed.
+Compile with double precision option

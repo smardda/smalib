@@ -1,0 +1,48 @@
+C
+         SUBROUTINE BSPLVN ( XT, JHIGH, INDEX, X, ILEFT, VNIKX )
+C
+C B.20 SPLINES
+C
+C-----------------------------------------------------------------------
+C     THIS SUBROUTINE IS PART OF THE B-SPLINE PACKAGE FOR THE STABLE
+C     EVALUATION OF ANY B-SPLINE BASIS FUNCTION OR DERIVATIVE VALUE.
+C     SEE REFERENCE BELOW.
+C
+C     CALCULATES THE VALUE OF ALL POSSIBLY NONZERO B-SPLINES AT THE
+C     POINT X OF ORDER MAX(JHIGH,(J+1)(INDEX-1)) FOR THE BREAKPOINT SEQ-
+C     UENCE XT.  ASSUMING THAT XT(ILEFT) .LE. X .LE. XT(ILEFT+1), THE ROUT-
+C     INE RETURNS THE B-SPLINE VALUES IN THE ONE DIMENSIONAL ARRAY VNIKX.
+C
+C     NON-STANDARD: INDEX NOT USED, IMPLICITLY INDEX=1
+C
+C     REFERENCE
+C
+C     DEBOOR, C., PACKAGE FOR CALCULATING WITH B-SPLINES, SIAM J.
+C     NUMER. ANAL., VOL. 14, NO. 3, JUNE 1977, PP. 441-472.
+C
+C-----------------------------------------------------------------------
+       DIMENSION   XT(*),    VNIKX(*)
+       DIMENSION   DELTAM(20),         DELTAP(20)
+
+         DELTAM=0
+         DELTAP=0
+         J = 1
+         VNIKX(1) = 1
+
+         IF (J .GE. JHIGH) GO TO 4
+    2    IPJ = ILEFT+J
+         DELTAP(J) = XT(IPJ) - X
+         IMJP1 = ILEFT-J+1
+         DELTAM(J) = X - XT(IMJP1)
+         VMPREV = 0
+         JP1 = J+1
+         DO 3 L=1,J
+         JP1ML = JP1-L
+         VM = VNIKX(L)/(DELTAP(L) + DELTAM(JP1ML))
+         VNIKX(L) = VM*DELTAP(L) + VMPREV
+    3    VMPREV = VM*DELTAM(JP1ML)
+         VNIKX(JP1) = VMPREV
+         J = JP1
+         IF (J .LT. JHIGH) GO TO 2
+    4    RETURN
+         END
