@@ -165,7 +165,7 @@ program datvtk_p
   divide_type: select case(optarg(3:3))
   case('d','s')
 !! write out as separate files
-     call bods_write(bods,size(bods),geobjl,fileroot,'none',1)
+     call bods_write(bods,size(bods),geobjl,fileroot,'none','Body',1)
   case default
      call vfile_init(trim(fileroot)//'_out',iched,nplot)
      call geobjlist_writev(geobjl,'geometry',nplot)

@@ -77,13 +77,14 @@ subroutine bods_init(kself,geobjl,blockno)
 end subroutine bods_init
 !---------------------------------------------------------------------
 !> write out bodies in separate files
-subroutine bods_write(kself,knbod,geobjl,fileroot,kctyp,kheader)
+subroutine bods_write(kself,knbod,geobjl,fileroot,kctyp,kcname,kheader)
   !! arguments
   integer(ki4), dimension(knbod), intent(in) :: kself !< integer bodies list
   integer(ki4), intent(in) :: knbod   !< size of bodies list data
   type(geobjlist_t), intent(in) :: geobjl   !< geobj list data
   character(*),intent(in) :: fileroot !< file root
   character(*),intent(in) :: kctyp !< type of points compression (none)
+  character(*),intent(in) :: kcname !< name of cell attribute
   integer(ki4), intent(in) :: kheader   !< header options
 
   !! local
@@ -117,7 +118,7 @@ subroutine bods_write(kself,knbod,geobjl,fileroot,kctyp,kheader)
      !! make up icplot from fileroot, iched from fileroot
      write(ic5,'(I5.5)') i
      icplot=trim(fileroot)//'_'//ic5
-     iched='converted dat file '//fileroot//'.dat'
+     iched='original filename root '//fileroot
      call vfile_init(icplot,iched,iplot)
 
      !! construct small geobjl, first allocate storage
@@ -166,7 +167,7 @@ subroutine bods_write(kself,knbod,geobjl,fileroot,kctyp,kheader)
 
      call geobjlist_writev(glsmall,'geometry',iplot)
 
-     call vfile_iscalarwrite(kself(iostart:ioend),inobjsmall,'Body','CELL',iplot,kheader)
+     call vfile_iscalarwrite(kself(iostart:ioend),inobjsmall,kcname,'CELL',iplot,kheader)
 
      call vfile_close
 

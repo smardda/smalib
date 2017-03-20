@@ -1200,7 +1200,7 @@ end subroutine geobjlist_qtfm
 subroutine geobjlist_paneltfm(self,kbods,numerics)
   !! arguments
   type(geobjlist_t), intent(inout) :: self !< geobj list data
-  integer(ki4), dimension(*), intent(in) :: kbods !< integer scalar list data of bodies for each point
+  integer(ki4), dimension(:), intent(in) :: kbods !< integer scalar list data of bodies for each point
   type(vnumerics_t), intent(inout) :: numerics !< input numerical parameters
 
   !! local
@@ -1214,6 +1214,7 @@ subroutine geobjlist_paneltfm(self,kbods,numerics)
   integer(ki4) :: ipan   !< panel identifier
   integer(ki4) :: inbod   !< number of bodies
   integer(ki4) :: inpan   !< number of panels
+  integer(ki4):: nscal !< number of scalars (body identifiers)
   integer(ki4) :: ipantfm   !< transform or inverse
   integer(ki4) :: innd !< position of first entry for object in nodl
   integer(ki4) :: ityp !< type of object (5 for triangle)
@@ -1396,7 +1397,7 @@ subroutine geobjlist_paneltfm(self,kbods,numerics)
         else if (itfm==42) then
            ! move in minor radius
            ! recalculate transformation as Cartesian vector
-           ! offset(2) should be 6210mm for ITER, second =0
+           ! offset(2) should be 6210mm for ITER, offset(3)=Z=0
            zrmajor=numerics%vptfm%offset(2,ipantfm)
            zzmajor=numerics%vptfm%offset(3,ipantfm)
            ! 1. convert centroid to (R,Z,zeta)

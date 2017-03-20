@@ -137,6 +137,23 @@ program geoq_p
   call beq_move(geoq%beq,numerics)
   call beq_init(geoq%beq,numerics,fmesh)
   call clock_stop(3)
+
+!--------------------------------------------------------------------------
+!! gnu plot to check input
+  if(plot%gnu) then
+     call clock_start(18,'gfile_gnu time')
+     call gfile_init(trim(file%gnu),'psi sample in R-Z space',nprint)
+     call spl2d_writeg(geoq%beq%psi,'sampl',nprint)
+     call gfile_close
+     call gfile_init(trim(file%gnu)//'_dR','dpsi/dR sample in R-Z space',nprint)
+     call spl2d_writeg(geoq%beq%dpsidr,'sampl',nprint)
+     call gfile_close
+     call gfile_init(trim(file%gnu)//'_dZ','dpsi/dZ sample in R-Z space',nprint)
+     call spl2d_writeg(geoq%beq%dpsidz,'sampl',nprint)
+     call gfile_close
+     call clock_stop(18)
+  end if
+
 !--------------------------------------------------------------------------
 !! read  geobjl data
 
@@ -254,20 +271,6 @@ program geoq_p
      call clock_stop(17)
   end if
 
-!! gnu plots
-  if(plot%gnu) then
-     call clock_start(18,'gfile_gnu time')
-     call gfile_init(trim(file%gnu),'psi sample in R-Z space',nprint)
-     call spl2d_writeg(geoq%beq%psi,'sampl',nprint)
-     call gfile_close
-     call gfile_init(trim(file%gnu)//'_dR','dpsi/dR sample in R-Z space',nprint)
-     call spl2d_writeg(geoq%beq%dpsidr,'sampl',nprint)
-     call gfile_close
-     call gfile_init(trim(file%gnu)//'_dZ','dpsi/dZ sample in R-Z space',nprint)
-     call spl2d_writeg(geoq%beq%dpsidz,'sampl',nprint)
-     call gfile_close
-     call clock_stop(18)
-  end if
 
   if(plot%gnum) then
      call clock_start(19,'gfile_gnum time')
