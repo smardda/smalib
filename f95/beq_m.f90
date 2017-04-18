@@ -24,8 +24,10 @@ module beq_m
   beq_readequil, & !< read in non-strict EQDSK format
   beq_readequ, & !< read in EQU format
   beq_readana, & !< generate using ANA format
+  beq_fixorigin,   & !< fix radial origin of  beq data structure
   beq_move, & !< move  beq data structure (controls)
   beq_init,   & !< create  beq data structure
+  beq_sense,   & !< helical sense of field
   beq_delete,   & !< delete  beq data structure
   beq_readv, & !< read in visualisation format (TO DO)
   beq_readcheck, & !< check field as mapped or 3-cpt
@@ -85,6 +87,7 @@ module beq_m
   real(kr8), dimension(:), allocatable :: wvextn !< 1D work array extended size for nodes
   real(kr8), dimension(:), allocatable :: wvext !< 1D work array extended size for samples
   real(kr8), dimension(:), allocatable :: wvextd !< 1D work array extended size for derivative
+  real(kr8), dimension(:,:), allocatable :: zwork2 !< scratch 2D work array
   real(kr8), dimension(:,:), allocatable :: work2 !< 2D work array
   real(kr8), dimension(:,:), allocatable :: workr2 !< 2D work array
   real(kr8), dimension(:,:), allocatable :: workz2 !< 2D work array
@@ -1136,16 +1139,85 @@ subroutine beq_readana(self,beqan,kfldspec)
 
 end subroutine beq_readana
 !---------------------------------------------------------------------
+!> fix radial origin of  beq data structure
+subroutine beq_fixorigin(self,numerics)
+
+  !! arguments
+  type(beq_t), intent(inout) :: self   !< object data structure
+  type(bnumerics_t), intent(inout) :: numerics   !< object control data structure
+
+  !! local
+  character(*), parameter :: s_name='beq_fixorigin' !< subroutine name
+  real(kr8) :: zdr !< mesh radial displacement
+  integer(ki4) :: ipos !< new radial start
+  integer(ki4) :: iw !< new radial total of samples
+  integer(ki4) :: ih !< vertical dimension of array
+
+  ! check for a problem, none if rmin>0
+  if (self%rmin>epsg*(self%rmax-self%rmin)) return
+
+  ! problem, strip out rows with zero and negative R
+  call log_value("radial origin of beq too small, fixing up ",self%rmin)
+  zdr=(self%rmax-self%rmin)/self%mr
+  ipos=max(1.05_kr8,-self%rmin/zdr)
+  iw=self%mr+1-ipos
+  ih=self%mz+1
+
+  ! first fix flux function array
+  allocate(zwork2(iw,ih), stat=status)
+  call log_alloc_check(m_name,s_name,10,status)
+  do i=1,iw
+     zwork2(i,:)=work2(i+ipos,:)
+  end do
+  deallocate(work2)
+  allocate(work2(iw,ih))
+  call log_alloc_check(m_name,s_name,11,status)
+  work2=zwork2
+  deallocate(zwork2)
+
+  if (.NOT.beq_nobinq) then
+     ! repeat fix for B component arrays
+     allocate(zwork2(iw,ih), stat=status)
+     call log_alloc_check(m_name,s_name,20,status)
+     do i=1,iw
+        zwork2(i,:)=workr2(i+ipos,:)
+     end do
+     deallocate(workr2)
+     allocate(workr2(iw,ih))
+     call log_alloc_check(m_name,s_name,21,status)
+     workr2=zwork2
+     deallocate(zwork2)
+     !
+     allocate(zwork2(iw,ih), stat=status)
+     call log_alloc_check(m_name,s_name,22,status)
+     do i=1,iw
+        zwork2(i,:)=workz2(i+ipos,:)
+     end do
+     deallocate(workz2)
+     allocate(workz2(iw,ih))
+     call log_alloc_check(m_name,s_name,23,status)
+     workz2=zwork2
+     deallocate(zwork2)
+
+  end if
+
+  self%mr=iw-1
+  self%rmin=self%rmin+ipos*zdr
+  call log_value("radial origin now ",self%rmin)
+  call log_value("number of columns of data removed ",ipos)
+
+end subroutine beq_fixorigin
+!---------------------------------------------------------------------
 !> move  beq data structure (controls)
 subroutine beq_move(self,numerics)
 
   !! arguments
   type(beq_t), intent(inout) :: self   !< object data structure
   type(bnumerics_t), intent(in) :: numerics   !< object control data structure
-  real(kr8) :: zgfac    !< geometrical factor
 
   !! local
   character(*), parameter :: s_name='beq_move' !< subroutine name
+  real(kr8) :: zgfac    !< geometrical factor
 
   ! move (R,Z) values
   self%rmin=self%rmin+numerics%rmove
@@ -1232,6 +1304,35 @@ subroutine beq_init(self,numerics,fmesh)
   zdum=beq_ripple_h1(0._kr8,0._kr8,0._kr8,-1,self%n%mrip,self%ivac,self%n%arip)
 
 end subroutine beq_init
+!---------------------------------------------------------------------
+!> helical sense of field
+subroutine beq_sense(self)
+
+  !! arguments
+  type(beq_t), intent(inout) :: self   !< object data structure
+
+  !! local
+  character(*), parameter :: s_name='beq_sense' !< subroutine name
+  type(posang_t) :: posang !< position and vector involving angles
+  integer(ki4) :: isleft !< unity if left-handed helix
+
+  ! sense (R,Z) values
+  posang%pos(1)=self%rmin+0.7*(self%rmax-self%rmin)
+  posang%pos(2)=0
+  posang%pos(3)=self%zmin+0.5*(self%zmax-self%zmin)
+  posang%opt=0 ; posang%units=0
+  call beq_b(self,posang,0)
+  call log_value("Sensing B at X ",posang%pos(1))
+  call log_value("Sensed By, on Y=0, ",posang%vec(2))
+  call log_value("Sensed Bz, at nominal central Z ",posang%vec(3))
+  isleft=sign(1.05_kr8,posang%vec(3)/posang%vec(2))
+  if (isleft==1) then
+     call log_error(m_name,s_name,1,log_info,'Left-handed helical field UNlike ITER')
+  else 
+     call log_error(m_name,s_name,2,log_info,'Right-handed helical field like ITER')
+  end if
+
+end subroutine beq_sense
 !---------------------------------------------------------------------
 !> delete  beq data structure
 subroutine beq_delete(self)
@@ -1603,8 +1704,8 @@ subroutine beq_readplus(self,infile)
 
 
   if (iextra==1) then
-    self%n%duct=.TRUE.
-    call fmesh_read(self%fmesh,infile,nin)
+     self%n%duct=.TRUE.
+     call fmesh_read(self%fmesh,infile,nin)
   end if
 
   call log_error(m_name,s_name,90,log_info,'beq read in from data file')
@@ -1853,11 +1954,11 @@ subroutine beq_writev(self,kchar,kplot)
      write(kplot,'(''DATASET RECTILINEAR_GRID'')')
      write(kplot,'(''DIMENSIONS '',I8,I8,I8)') &
  &   self%fmesh%nxf, self%fmesh%nyf, self%fmesh%nzf
-! need to convert to mm 
+     ! need to convert to mm
      if (self%fmesh%punit(1:2)/='me') then
-     plotfac=1000.
+        plotfac=1000.
      else
-     plotfac=1.
+        plotfac=1.
      end if
      write(kplot,'(''X_COORDINATES '',I8,'' float'')') self%fmesh%nxf
      write(kplot,cfmtbs1) (plotfac*self%fmesh%xf(i), i=1,self%fmesh%nxf)
@@ -2375,7 +2476,7 @@ subroutine beq_writeplus(self,kout)
   call log_write_check(m_name,s_name,63,status)
 
   if (self%n%duct) then
-    call fmesh_write(self%fmesh,kout)
+     call fmesh_write(self%fmesh,kout)
   end if
 
 end subroutine beq_writeplus
@@ -2577,11 +2678,16 @@ subroutine beq_readcon(selfn,kin)
   integer(ki4) :: beq_ntheta !< namelist \f$ N_{\theta} \f$
   integer(ki4) :: beq_fldspec !< field specification
   integer(ki4) :: beq_xsearch !< how to search for X-point (1 = within box)
+  integer(ki4) :: limiter_search !< how to search for contact point (1 = within box)
   real(kr8) :: beq_psibig !< 1 implies \f$ 2 \pi \f$ too big
   real(kr8) :: beq_xrsta !< X-point box min R (m)
   real(kr8) :: beq_xrend !< X-point box max R (m)
   real(kr8) :: beq_xzsta !< X-point box min Z (m)
   real(kr8) :: beq_xzend !< X-point box max Z (m)
+  real(kr8) :: search_r_start !< search box min R (m)
+  real(kr8) :: search_r_end !< search box max R (m)
+  real(kr8) :: search_z_start !< search box min Z (m)
+  real(kr8) :: search_z_end !< search box max Z (m)
   real(kr8) :: z1 !< scratch
   real(kr8) :: z2 !< scratch
   character(len=80) :: beq_vacuum_field_file !< local variable
@@ -2604,6 +2710,7 @@ subroutine beq_readcon(selfn,kin)
  &beq_thetaref, beq_ntheta, beq_fldspec,&
  &beq_psibig,&
  &beq_xsearch,beq_xrsta,beq_xrend,beq_xzsta,beq_xzend,&
+ &limiter_search,search_r_start,search_r_end,search_z_start,search_z_end,&
  &beq_vacuum_field_file
 
   !! set default beq parameters
@@ -2645,6 +2752,11 @@ subroutine beq_readcon(selfn,kin)
   beq_xrend=0
   beq_xzsta=0
   beq_xzend=0
+  limiter_search=0
+  search_r_start=0
+  search_r_end=0
+  search_z_start=0
+  search_z_end=0
   beq_vacuum_field_file='null'
 
   !!read beq parameters
@@ -2672,7 +2784,7 @@ subroutine beq_readcon(selfn,kin)
   if(beq_psiopt==1.AND.beq_psimin<=0) &
  &call log_error(m_name,s_name,3,error_fatal,'beq_psimin must be > 0')
 
-  if(beq_bdryopt<=0.OR.beq_bdryopt>=13) &
+  if(beq_bdryopt<=0.OR.beq_bdryopt>=16) &
  &call log_error(m_name,s_name,6,error_fatal,'beq_bdryopt must be small positive integer')
   if(beq_nopt<=0.OR.beq_nopt>=4) &
  &call log_error(m_name,s_name,4,error_fatal,'beq_nopt must be small positive integer')
@@ -2718,6 +2830,8 @@ subroutine beq_readcon(selfn,kin)
  &call log_error(m_name,s_name,8,error_fatal,'beq_psibig must be small non-negative integer')
   if(beq_xsearch<0.OR.beq_xsearch>=2) &
  &call log_error(m_name,s_name,9,error_fatal,'beq_xsearch must be small non-negative integer')
+  if(limiter_search<0.OR.limiter_search>=2) &
+ &call log_error(m_name,s_name,9,error_fatal,'limiter_search must be small non-negative integer')
   if(beq_xsearch==1) then
      z1=min(beq_xrsta,beq_xrend)
      z2=max(beq_xrsta,beq_xrend)
@@ -2732,6 +2846,20 @@ subroutine beq_readcon(selfn,kin)
      beq_xzsta=z1
      beq_xzend=z2
   end if
+  if(limiter_search==1) then
+     z1=min(search_r_start,search_r_end)
+     z2=max(search_r_start,search_r_end)
+     if (abs(z1-z2)<1.e-3) &
+ &   call log_error(m_name,s_name,10,error_fatal,'search box too small in R')
+     search_r_start=z1
+     search_r_end=z2
+     z1=min(search_z_start,search_z_end)
+     z2=max(search_z_start,search_z_end)
+     if (abs(z1-z2)<1.e-3) &
+ &   call log_error(m_name,s_name,10,error_fatal,'search box too small in Z')
+     search_z_start=z1
+     search_z_end=z2
+   end if
 
   !! store values
   selfn%cenopt=beq_cenopt
@@ -2813,6 +2941,11 @@ subroutine beq_readcon(selfn,kin)
   selfn%xrend=beq_xrend
   selfn%xzsta=beq_xzsta
   selfn%xzend=beq_xzend
+  selfn%search=limiter_search
+  selfn%lkrsta=search_r_start
+  selfn%lkrend=search_r_end
+  selfn%lkzsta=search_z_start
+  selfn%lkzend=search_z_end
   selfn%vacfile=beq_vacuum_field_file
 
 end subroutine beq_readcon
@@ -3207,9 +3340,9 @@ subroutine beq_bdryrb(self)
   real(kr8) :: cylj    !<  current estimated in cylindrical approx.
 
   pick_angle : select case (self%n%bdryopt)
-  case(4,5,7,11) ! inboard point selected
+  case(4,5,7,11,14) ! inboard point selected
      ztheta=const_pid
-  case(8,9,10,12) ! outboard point selected
+  case(8,9,10,12,15) ! outboard point selected
      ztheta=0.0_kr8
   case default ! do nothing
      return

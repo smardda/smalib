@@ -23,6 +23,7 @@ program vtktfm_p
   use geobj_m
   use query_m
   use geobjlist_m
+  use indict_m
 
   use vcontrol_m
   use vfile_m

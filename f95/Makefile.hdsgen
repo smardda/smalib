@@ -27,6 +27,7 @@ pcle_h.f90 \
 pcle_m.f90 \
 geobjlist_h.f90 \
 geobjlist_m.f90 \
+indict_m.f90 \
 vfile_m.f90 \
 outfile_m.f90 \
 hdsfile_m.f90 \
@@ -87,6 +88,7 @@ hdsgen.f90 : pcle_h.mod
 hdsgen.f90 : pcle_m.mod
 hdsgen.f90 : geobjlist_h.mod
 hdsgen.f90 : geobjlist_m.mod
+hdsgen.f90 : indict_m.mod
 hdsgen.f90 : vfile_m.mod
 hdsgen.f90 : outfile_m.mod
 hdsgen.f90 : hdsfile_m.mod
@@ -178,6 +180,10 @@ geobjlist_m.f90 : posang_m.mod
 geobjlist_m.f90 : datline_h.mod
 geobjlist_m.f90 : datline_m.mod
 geobjlist_m.f90 : stack_m.mod
+geobjlist_m.f90 : indict_m.mod
+indict_m.f90 : const_kind_m.mod
+indict_m.f90 : const_numphys_h.mod
+indict_m.f90 : log_m.mod
 vfile_m.f90 : const_kind_m.mod
 vfile_m.f90 : log_m.mod
 outfile_m.f90 : const_kind_m.mod

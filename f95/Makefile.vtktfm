@@ -29,6 +29,7 @@ btree_m.f90 \
 geobj_m.f90 \
 query_m.f90 \
 geobjlist_m.f90 \
+indict_m.f90 \
 vcontrol_m.f90 \
 vfile_m.f90 \
 gfile_m.f90 \
@@ -85,6 +86,7 @@ vtktfm.f90 : btree_m.mod
 vtktfm.f90 : geobj_m.mod
 vtktfm.f90 : query_m.mod
 vtktfm.f90 : geobjlist_m.mod
+vtktfm.f90 : indict_m.mod
 vtktfm.f90 : vcontrol_m.mod
 vtktfm.f90 : vfile_m.mod
 vtktfm.f90 : gfile_m.mod
@@ -177,6 +179,10 @@ geobjlist_m.f90 : posang_m.mod
 geobjlist_m.f90 : datline_h.mod
 geobjlist_m.f90 : datline_m.mod
 geobjlist_m.f90 : stack_m.mod
+geobjlist_m.f90 : indict_m.mod
+indict_m.f90 : const_kind_m.mod
+indict_m.f90 : const_numphys_h.mod
+indict_m.f90 : log_m.mod
 vcontrol_m.f90 : const_kind_m.mod
 vcontrol_m.f90 : log_m.mod
 vcontrol_m.f90 : position_h.mod

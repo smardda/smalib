@@ -32,6 +32,7 @@ module const_numphys_h
 
   real(kr8) , parameter, public :: const_golden = (1+sqrt(5._kr8))/2 !<  golden ratio
 
+  real(kr8) , parameter, public :: const_infty = 1.e+30_kr8 !<  numerical infinity
   real(kr4) , parameter, public :: const_degrad = const_pi/180 !<  degrees to radians conversion factor
 
 end module const_numphys_h

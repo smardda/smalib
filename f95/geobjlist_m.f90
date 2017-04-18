@@ -18,6 +18,7 @@ module geobjlist_m
   use datline_h
   use datline_m
   use stack_m
+  use indict_m
 
   implicit none
   private
@@ -48,7 +49,9 @@ module geobjlist_m
   geobjlist_copy, &  !< copy geobjlist to another
   geobjlist_cumulate, &  !< append geobjlist to first
   geobjlist_create, & !< create some 2-D geobjlists
-  geobjlist_create3d !< create geobjlists by translation/rotation
+  geobjlist_create3d, & !< create geobjlists by translation/rotation
+  geobjlist_centroids, & !< calculate centroids of objects
+  geobjlist_area !< calculate area of objects
 
 ! public types
 
@@ -678,7 +681,7 @@ subroutine geobjlist_addcube(self)
      iobj2(ioffg+j)%typ=self%obj2(j)%typ
   end do
   do j=1,self%nnod
-  inodl(ioffn+j)=self%nodl(j)+8*self%nbdcub
+     inodl(ioffn+j)=self%nodl(j)+8*self%nbdcub
   end do
   ! replace self with new
   deallocate(self%posl%pos)
@@ -721,7 +724,6 @@ subroutine geobjlist_writev(self,kchar,kplot)
   type(geobjlist_t), intent(in) :: self !< geobj list data
   character(*), intent(in) :: kchar  !< case
   integer(ki4), intent(in) :: kplot   !< output channel for vis. data
-
 
   !! local
   character(*), parameter :: s_name='geobjlist_writev' !< subroutine name
@@ -1286,7 +1288,7 @@ subroutine geobjlist_paneltfm(self,kbods,numerics)
      !w write(*,*)'j=',j
      ibod=kbods(j)
      !BP      !w    ipan=ibodpan(ibod)
-     ipan=indict(inpan,numerics%panbod,ibod)
+     ipan=indict2(inpan,numerics%panbod,ibod)
      if (ipan==0) then
         print '("Fatal error in list of panel_bodies ")'
         print '("Check number of copies - and try again")'
@@ -1440,7 +1442,7 @@ subroutine geobjlist_paneltfm(self,kbods,numerics)
 
      ibod=kbods(j)
      !BP      !w    ipan=ibodpan(ibod)
-     ipan=indict(inpan,numerics%panbod,ibod)
+     ipan=indict2(inpan,numerics%panbod,ibod)
      if (ipan==0) then
         print '("Fatal error in list of panel_bodies ")'
         print '("Check number of copies - and try again")'
@@ -3278,27 +3280,108 @@ subroutine geobjlist_querynode(self,btree,knode,kchar,pres)
   end if
 
 end subroutine geobjlist_querynode
+!---------------------------------------------------------------------
+!> calculate centroids of objects
+subroutine geobjlist_centroids(self,key,dict,kndict,centroids)
+  !! arguments
+  type(geobjlist_t), intent(inout) :: self !< geobj list data
+  integer(ki4), dimension(*), intent(in) :: key !< key array (bods)
+  integer(ki4), dimension(*), intent(in) :: dict !< dictionary
+  integer(ki4), intent(in) :: kndict !< dictionary size (size fn seems to have issues in gfortran)
+  real(kr8), dimension(:,:), allocatable, intent(out) :: centroids   !< centroids position data
 
-function indict(ndim,dict,word)
-  integer(ki4) :: indict !< dictionary index
+  !! local
+  character(*), parameter :: s_name='geobjlist_centroids' !< subroutine name
+  integer(ki4), dimension(:), allocatable :: indxsum !< local variable
+  integer(ki4) :: ikey !< local variable
+  integer(ki4) :: indx !< local variable
+  integer(ki4) :: innd !< position of first entry for object in nodl
+  integer(ki4) :: inumpts !< length of object in nodl array
+  integer(ki4) :: ityp !< local variable
+  integer(ki4) :: ipt !< local variable
+
+  allocate(centroids(3,kndict), stat=status)
+  call log_alloc_check(m_name,s_name,1,status)
+  allocate(indxsum(kndict), stat=status)
+  call log_alloc_check(m_name,s_name,2,status)
+  allocate(self%obj(self%ng), stat=status)
+  call log_alloc_check(m_name,s_name,3,status)
+  centroids=0
+  indxsum=0
+  self%nwset=1
+  self%obj%weight=-1.
+  do j=1,self%ng
+     ikey=key(j)
+     indx=indict(dict,ikey,kndict)
+     innd=self%obj2(j)%ptr
+     ityp=self%obj2(j)%typ
+     inumpts=geobj_entry_table(ityp)
+     !! loop over points defining object
+     do jj=1,inumpts
+        ipt=self%nodl(innd-1+jj)
+        if (self%obj(ipt)%weight<0..OR.indxsum(indx)==0) then
+           ! add point to sum (once), making sure there is one point in sum
+           ! (applies when objects share points)
+           centroids(:,indx)=centroids(:,indx)+self%posl%pos(ipt)%posvec
+           indxsum(indx)=indxsum(indx)+1
+           ! mark point as summed
+           self%obj(ipt)%weight=1.
+        end if
+     end do
+  end do
+
+  do j=1,3
+     centroids(j,:)=centroids(j,:)/indxsum(:)
+  end do
+
+  deallocate(indxsum)
+
+end subroutine geobjlist_centroids
+!---------------------------------------------------------------------
+!> calculate area of objects
+subroutine geobjlist_area(self,area)
+  !! arguments
+  type(geobjlist_t), intent(inout) :: self !< geobj list data
+  real(kr8), dimension(:), allocatable, intent(out) :: area  !< area position data
+
+  !! local
+  character(*), parameter :: s_name='geobjlist_area' !< subroutine name
+  real(kr4) :: zarea !< local variable
+  type(geobj_t) :: igeobj   !< geobj definition
+
+  allocate(area(self%ng), stat=status)
+  call log_alloc_check(m_name,s_name,1,status)
+
+  do j=1,self%ng
+     igeobj%geobj=self%obj2(j)%ptr
+     igeobj%objtyp=self%obj2(j)%typ
+     call geobj_area(igeobj,self%posl,self%nodl,zarea)
+     area(j)=zarea
+  end do
+
+end subroutine geobjlist_area
+!---------------------------------------------------------------------
+
+function indict2(ndim,dict,word)
+  integer(ki4) :: indict2 !< dictionary index
   integer(ki4), intent(in) :: ndim !< dim of dict
   integer(ki4), dimension(2,ndim), intent(in) :: dict !< dictionary
   integer(ki4), intent(in) :: word !< dictionary
   integer(ki4) :: ji !< loop variable
   integer(ki4) :: ki !< loop variable
-  indict=0
+  indict2=0
   !write(*,*) 'ndim=',ndim
   !write(*,*) 'word=',word
   !write(*,*) 'dict=',dict
   do ji=1,ndim
      do ki=1,2
         if (word==dict(ki,ji)) then
-           indict=ji
+           indict2=ji
            return
         end if
      end do
   end do
-end function indict
+end function indict2
 
 subroutine misc_countnos(bigbuf,kfmt)
   character(len=*),intent(in) :: bigbuf !< buffer for input

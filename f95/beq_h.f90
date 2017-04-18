@@ -107,6 +107,12 @@ module beq_h
      real(kr8) :: xrend !< X-point box max R (m)
      real(kr8) :: xzsta !< X-point box min Z (m)
      real(kr8) :: xzend !< X-point box max Z (m)
+     integer(ki4) :: search !< how to search for contact-point (1 = within box)
+     real(kr8) :: lkrsta !< contact point box min R (m)
+     real(kr8) :: lkrend !< contact point box max R (m)
+     real(kr8) :: lkzsta !< contact point box min Z (m)
+     real(kr8) :: lkzend !< contact point box max Z (m)
+
    !> type of equilibrium
    !! - 'eqdsk' for EQDSK input
    !! - 'equ' for FIESTA input

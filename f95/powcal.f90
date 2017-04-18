@@ -31,6 +31,7 @@ program powcal_p
   use datline_h
   use datline_m
   use geobjlist_m
+  use indict_m
   use pcle_h
   use pcle_m
 

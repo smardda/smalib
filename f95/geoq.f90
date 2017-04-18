@@ -30,6 +30,7 @@ program geoq_p
   use query_m
   use datline_h
   use datline_m
+  use indict_m
   use geobjlist_m
   use geoq_m
 
@@ -135,7 +136,9 @@ program geoq_p
      call beq_readequil(geoq%beq,fileq,ifldspec,ipsibig,iffiesta)
   end select
   call beq_move(geoq%beq,numerics)
+  call beq_fixorigin(geoq%beq,numerics)
   call beq_init(geoq%beq,numerics,fmesh)
+  call beq_sense(geoq%beq)
   call clock_stop(3)
 
 !--------------------------------------------------------------------------

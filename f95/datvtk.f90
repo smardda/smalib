@@ -22,6 +22,7 @@ program datvtk_p
   use geobj_m
   use query_m
   use geobjlist_m
+  use indict_m
 
   use dcontrol_m
   use vfile_m

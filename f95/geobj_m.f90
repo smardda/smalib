@@ -544,12 +544,12 @@ subroutine geobj_area(self,posl,nodl,parea)
      z01=xnodes(:,2)-xnodes(:,1)
      z02=xnodes(:,3)-xnodes(:,1)
      call cross_product(z01,z02,zcx1)
-     zarea=dot_product(zcx1,zcx1)
+     zarea=sqrt(dot_product(zcx1,zcx1))
      if (inn==4) then
      z01=xnodes(:,2)-xnodes(:,4)
      z02=xnodes(:,3)-xnodes(:,4)
      call cross_product(z01,z02,zcx1)
-     zarea=zarea+dot_product(zcx1,zcx1)
+     zarea=zarea+sqrt(dot_product(zcx1,zcx1))
      end if
      zref=max( abs(maxval(z01)), abs(minval(z01) ), abs(maxval(z02)), abs(minval(z02)) )
      if (zarea<const_pusheps*zref) then
