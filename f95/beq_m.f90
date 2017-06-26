@@ -659,6 +659,7 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig,kffiesta)
   self%rqcen=rmaxis
   self%zqcen=zmaxis
 
+  if (.NOT.self%n%leqok) then
   if (BEQ_OVERRIDE_ITER) then
      call log_error(m_name,s_name,49,log_info,'override for ITER')
      ! special for ITER to align current and toroidal field
@@ -676,6 +677,7 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig,kffiesta)
      ! special for FTU modelling to align current and toroidal field
      ! possibly also in case where psi increases from axis
      self%f=-self%f
+  end if
   end if
 
   !! now additional standard eqdsk stuff
@@ -980,6 +982,7 @@ subroutine beq_readequ(self,infile,kfldspec)
 
   fld_specn: select case (kfldspec)
   case(1,3)
+  if (.NOT.self%n%leqok) then
      if (BEQ_OVERRIDE_ITER) then
         call log_error(m_name,s_name,49,log_info,'override for ITER')
         ! special for ITER to align current and toroidal field
@@ -997,6 +1000,7 @@ subroutine beq_readequ(self,infile,kfldspec)
         ! special for FTU modelling to align current and toroidal field
         ! possibly also in case where psi increases from axis
         self%f=-self%f
+     end if
      end if
   case(2)
      ! Separating this case enables MAST test deck case to work,
@@ -1306,16 +1310,20 @@ subroutine beq_init(self,numerics,fmesh)
 end subroutine beq_init
 !---------------------------------------------------------------------
 !> helical sense of field
-subroutine beq_sense(self)
+subroutine beq_sense(self,k3d)
 
   !! arguments
   type(beq_t), intent(inout) :: self   !< object data structure
+  integer(ki4), intent(in) :: k3d   !< selector
 
   !! local
   character(*), parameter :: s_name='beq_sense' !< subroutine name
   type(posang_t) :: posang !< position and vector involving angles
   integer(ki4) :: isleft !< unity if left-handed helix
 
+  !write(*,*) self%n%vacfile
+  if ( (k3d==0.AND.self%n%vacfile/='null') .OR. &
+ & (k3d==1.AND.self%n%vacfile=='null') ) return
   ! sense (R,Z) values
   posang%pos(1)=self%rmin+0.7*(self%rmax-self%rmin)
   posang%pos(2)=0
@@ -2679,7 +2687,8 @@ subroutine beq_readcon(selfn,kin)
   integer(ki4) :: beq_fldspec !< field specification
   integer(ki4) :: beq_xsearch !< how to search for X-point (1 = within box)
   integer(ki4) :: limiter_search !< how to search for contact point (1 = within box)
-  real(kr8) :: beq_psibig !< 1 implies \f$ 2 \pi \f$ too big
+  real(kr8) :: beq_psibig !< unity implies \f$ 2 \pi \f$ too big
+  logical :: equil_helicity_ok !<  equilibrium helicity is ok
   real(kr8) :: beq_xrsta !< X-point box min R (m)
   real(kr8) :: beq_xrend !< X-point box max R (m)
   real(kr8) :: beq_xzsta !< X-point box min Z (m)
@@ -2709,6 +2718,7 @@ subroutine beq_readcon(selfn,kin)
  &beq_zetamin, beq_zetamax, beq_nzetap,&
  &beq_thetaref, beq_ntheta, beq_fldspec,&
  &beq_psibig,&
+ &equil_helicity_ok,&
  &beq_xsearch,beq_xrsta,beq_xrend,beq_xzsta,beq_xzend,&
  &limiter_search,search_r_start,search_r_end,search_z_start,search_z_end,&
  &beq_vacuum_field_file
@@ -2747,6 +2757,7 @@ subroutine beq_readcon(selfn,kin)
   beq_ntheta=32
   beq_fldspec=1
   beq_psibig=0
+  equil_helicity_ok=.FALSE.
   beq_xsearch=0
   beq_xrsta=0
   beq_xrend=0
@@ -2828,6 +2839,8 @@ subroutine beq_readcon(selfn,kin)
  &call log_error(m_name,s_name,7,error_fatal,'beq_fldspec must be small positive integer')
   if(beq_psibig<0.OR.beq_psibig>=2) &
  &call log_error(m_name,s_name,8,error_fatal,'beq_psibig must be small non-negative integer')
+  if(.NOT.equil_helicity_ok) &
+ &call log_error(m_name,s_name,8,error_warning,'Sense of helicity of field input may be changed - check log file')
   if(beq_xsearch<0.OR.beq_xsearch>=2) &
  &call log_error(m_name,s_name,9,error_fatal,'beq_xsearch must be small non-negative integer')
   if(limiter_search<0.OR.limiter_search>=2) &
@@ -2936,6 +2949,7 @@ subroutine beq_readcon(selfn,kin)
   end if
   selfn%fldspec=beq_fldspec
   selfn%psibig=beq_psibig
+  selfn%leqok=equil_helicity_ok
   selfn%xsearch=beq_xsearch
   selfn%xrsta=beq_xrsta
   selfn%xrend=beq_xrend

@@ -860,7 +860,7 @@ subroutine geobjlist_nodlmv(self,infilelevel,knlevel,kpowe)
 
 end subroutine geobjlist_nodlmv
 !---------------------------------------------------------------------
-!>< control sorting of  coordinates into bins
+!> control sorting of  coordinates into bins
 subroutine geobjlist_step(self,btree)
   !! arguments
   type(geobjlist_t), intent(inout) :: self !< geobj list data
@@ -1745,17 +1745,21 @@ subroutine geobjlist_mbin(self,btree)
   integer(ki4) :: iadr00  !< local variable
   integer(ki4) :: iadr01  !< local variable
   integer(ki4) :: iadd  !< local variable
+!HH  integer(ki4) :: iadrmax  !< maximum address !HH
   integer(ki4), dimension(3) :: ibsiz !< actual size of box
   integer(ki2) :: ichildn  !< local variable
   integer(ki2) :: id1  !< local variable
+  integer(ki2) :: idummy=0  !< local variable
 
   first=1
   last=1
   ilsplit=.false.
   ittype=btree%nttype
+!HH  iadrmax=0 !HH
 
   !! loop over depth
   loop_99 : do j=1,btree%ndepth
+!HH     write(*,*) 'depth=',j !HH
      idepth=j
      id=1+mod(j-1,3)
      if (ittype==1 ) then
@@ -1774,7 +1778,7 @@ subroutine geobjlist_mbin(self,btree)
      iltest=.true.
      ! loop over volumes down to level j
      loop_9 : do k=1,last
-
+!HH     write(*,*) 'k,last=',k,last !HH
         !! test for empty node
         ileaf=btree%pter(3,k)
         if (ileaf==-2.OR. (k<first.AND.ileaf/=-1) ) then
@@ -1818,7 +1822,13 @@ subroutine geobjlist_mbin(self,btree)
                        inext=btree%objectls%list(inadr+l,2)
                        iobj%geobj=self%obj2(inext)%ptr
                        iobj%objtyp=self%obj2(inext)%typ
+!DBG                       if (l==196) then !DBG
+!DBG                         idummy=idummy+1 !DBG
+!DBG                       end if !DBG
                        if ( geobj_inbox( iobj,self%posl,self%nodl,box )  ) then
+!DBG                         if (l==196) then !DBG
+!DBG                         idummy=idummy+1 !DBG
+!DBG                         end if !DBG
                           ! add to 0-ls (iadr0)
                           call ls_add(btree%objectls,iadr0,0,inext)
                           iadr0=iadr0+1
@@ -1830,6 +1840,8 @@ subroutine geobjlist_mbin(self,btree)
                     end do loop_list
                     iadra(i)=iadr01
                     ina(i)=in0
+!HH                    iadrmax=max(iadrmax,iadr0) !HH
+!HH                    write(*,*) 'loop_child,adresses=',i,iadr01,iadr0 !HH
                     !  complete 0 list (with number of entries)
                     call ls_add(btree%objectls,iadr01,0,in0)
                  end do loop_child
@@ -1841,6 +1853,10 @@ subroutine geobjlist_mbin(self,btree)
                     if (in1>0) then
                        call log_error(m_name,s_name,1,error_warning,'object unassigned')
                        inl1=inl1+1
+!DBG                       in1=btree%objectls%list(inadr+l,2) !DBG
+!DBG                       iobj%geobj=self%obj2(in1)%ptr !DBG
+!DBG                       iobj%objtyp=self%obj2(in1)%typ !DBG
+!DBG                       write(*,*) 'inadr, loops j,k,l and object unass',inadr,j,k,l,in1,iobj !DBG
                     end if
                  end do
                  self%ngunassigned=self%ngunassigned+inl1
@@ -1880,6 +1896,7 @@ subroutine geobjlist_mbin(self,btree)
            ! ensure node gets no more processing
            btree%pter(2,k)=iadr00
            btree%pter(3,k)=ileaf
+!HH           iadrmax=max(iadrmax,iadr00) !HH
         end if
 
 
@@ -1901,6 +1918,7 @@ subroutine geobjlist_mbin(self,btree)
   end if
 
   btree%ndepth=idepth
+!HH  write(*,*) 'maximum address=',iadrmax !HH
 
 end subroutine geobjlist_mbin
 !---------------------------------------------------------------------

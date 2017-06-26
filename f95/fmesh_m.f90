@@ -299,9 +299,12 @@ subroutine fmesh_readcon(self,kin)
   if (mesh_transform) then
      !! read in transform
      call position_readcon(self%tfmdata,ninfm)
+  else
+     !! set to identity
+     call position_unitfm(self%tfmdata)
   end if
 
-  !! scale as required
+  !! scale offset as required
   call position_scaleunits(self%tfmdata,faclen)
 
 end  subroutine fmesh_readcon

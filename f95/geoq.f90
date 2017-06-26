@@ -138,7 +138,7 @@ program geoq_p
   call beq_move(geoq%beq,numerics)
   call beq_fixorigin(geoq%beq,numerics)
   call beq_init(geoq%beq,numerics,fmesh)
-  call beq_sense(geoq%beq)
+  call beq_sense(geoq%beq,0)
   call clock_stop(3)
 
 !--------------------------------------------------------------------------
@@ -225,6 +225,7 @@ program geoq_p
  &   plot%geoqm.OR.plot%geofldx.OR.plot%frzzeta.OR.plot%geoqvolm) then
         call moutfile_read(geoq%beq%n%vacfile,zivac,nin)
         call spl3d_read(geoq%beq%vacfld,geoq%beq%n%vacfile,nin)
+        call beq_sense(geoq%beq,1)
      end if
   end if
 !--------------------------------------------------------------------------
