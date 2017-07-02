@@ -20,6 +20,7 @@ module position_m
  &position_readv, & !< read in visualisation format
  &position_writev, & !< write in visualisation format
  &position_readcon, & !< read position control data
+ &position_unitfm, & !> set identity position transform
  &position_readtfm, & !< read position control data
  &position_tfmquery, & !< interrogate position control data
  &position_writetfm, & !< write position control data
@@ -157,6 +158,8 @@ end function position_asvecb
      do jj=1,3
         zvec(jj)=tfmdata%offset(jj)+dot_product(self%posvec-tfmdata%offset,tfmdata%matrix(jj,:))
      end do
+  case(5)
+     zvec=tfmdata%scale*(self%posvec+tfmdata%offset)
   end select transform_number
 
   position_tfm%posvec=zvec
@@ -193,6 +196,8 @@ end function position_tfm
      do jj=1,3
         zvec(jj)=tfmdata%offset(jj)+dot_product(self%posvec-tfmdata%offset,tfmdata%matrix(:,jj))
      end do
+  case(5)
+     zvec=self%posvec/tfmdata%scale-tfmdata%offset
   end select transform_number
 
   position_invtfm%posvec=zvec
@@ -343,6 +348,7 @@ subroutine position_readcon(ztfmdata,kin,flag)
  &(/1,2,3,4,5, &
  &6,7,12,22, &
  &42/)
+  logical :: ilmatch !< local variable
 
   !! position parameters
   namelist /positionparameters/ &
@@ -367,6 +373,7 @@ subroutine position_readcon(ztfmdata,kin,flag)
   position_scale=(/1.,  1.,  1. /)
   position_offset=(/0.,  0.,  0. /)
   transform_id='unit'
+  ilmatch=.FALSE.
 
   !!read position parameters
   read(kin,nml=positionparameters,iostat=status)
@@ -386,12 +393,17 @@ subroutine position_readcon(ztfmdata,kin,flag)
   if(position_transform<1) then
      !! try for a dictionary match
      do j=1,npdict
-        if (transform_desc==trim(dictshort(j))) then
+        ilmatch=(transform_desc==trim(dictshort(j))).OR.&
+ &      (transform_desc==trim(dictlong(j)))
+        if (ilmatch) then
            position_transform=dictn(j)
-        else if (transform_desc==trim(dictlong(j))) then
-           position_transform=dictn(j)
+           exit
         end if
      end do
+     if (.NOT.ilmatch) &
+ &   call log_error(m_name,s_name,3,error_fatal,'Position transform not recognised')
+  else if(position_transform>99) then
+     call log_error(m_name,s_name,4,error_fatal,'Position transform must be between 1 and 99')
   end if
 
   if (POSITION_OVERRIDE_IFMIF.AND.position_transform==3) then
@@ -445,6 +457,24 @@ subroutine position_readtfm(tfmdata,kin)
 
 end subroutine position_readtfm
 !---------------------------------------------------------------------
+!> set identity position transform
+subroutine position_unitfm(tfmdata)
+
+  !! arguments
+  type(tfmdata_t), intent(out) :: tfmdata   !< position transform numeric controls
+
+  !! local
+  character(*), parameter :: s_name='position_unitfm' !< subroutine name
+
+  tfmdata%scale=1
+  tfmdata%offset=0
+  tfmdata%matrix(1,:)=(/1,0,0/)
+  tfmdata%matrix(2,:)=(/0,1,0/)
+  tfmdata%matrix(3,:)=(/0,0,1/)
+  tfmdata%ntfm=1
+
+end subroutine position_unitfm
+!---------------------------------------------------------------------
 !> get position control data
 subroutine position_tfmquery(tfmdata,kchar,object)
 
@@ -458,9 +488,9 @@ subroutine position_tfmquery(tfmdata,kchar,object)
 
   select case (kchar)
   case ('scale')
-  object(1:3)=tfmdata%scale
+     object(1:3)=tfmdata%scale
   case ('offset')
-  object(1:3)=tfmdata%offset
+     object(1:3)=tfmdata%offset
   end select
 
 end subroutine position_tfmquery
@@ -585,7 +615,7 @@ subroutine position_readonlylis(self,kin,kfmt)
   logical :: isnumb !< local variable
   external isnumb
 
-  !! assume unit already open, reading infile at start of poistion vectors
+  !! assume unit already open, reading infile at start of position vectors
 
   if (kfmt<=1) then
      !! read coordinates one point/line
@@ -613,12 +643,13 @@ subroutine position_readonlylis(self,kin,kfmt)
 end subroutine position_readonlylis
 !---------------------------------------------------------------------
 !> read (vtk) list of vectors
-subroutine position_readveclis(self,infile,kcname,kin,kopt)
+subroutine position_readveclis(self,infile,kcname,kin,kfmt,kopt)
   !! arguments
   type(posveclis_t), intent(inout) :: self !< vector list data
   character(*),intent(in) :: infile !< name of input file
   character(*),intent(in) :: kcname !< name of field required
   integer(ki4), intent(inout) :: kin   !< input channel for vector list data
+  integer(ki4), intent(in) :: kfmt   !< numeric data format in file
   integer(ki4), intent(in), optional :: kopt   !< options
 
   !! local
@@ -723,8 +754,7 @@ subroutine position_readveclis(self,infile,kcname,kin,kopt)
 
   !! allocate vector storage
   if(self%np>0) then
-     allocate(self%pos(self%np), &
- &   stat=status)
+     allocate(self%pos(self%np),  stat=status)
      !! check successful allocation
      if(status/=0) then
         call log_error(m_name,s_name,5,error_fatal,'Unable to allocate memory')
@@ -734,9 +764,7 @@ subroutine position_readveclis(self,infile,kcname,kin,kopt)
   end if
 
   !! read coordinates
-  do j=1,self%np
-     call position_readv(self%pos(j),nin)
-  end do
+  call position_readonlylis(self,nin,kfmt)
   print '("number of vectors read = ",i10)',self%np
   call log_value("number of vectors read ",self%np)
 
@@ -750,7 +778,7 @@ subroutine position_deleteveclis(self)
   !! local
   character(*), parameter :: s_name='position_deleteveclis' !< subroutine name
 
-  deallocate(self%pos)
+  if (allocated(self%pos)) deallocate(self%pos)
 
 end subroutine position_deleteveclis
 !---------------------------------------------------------------------

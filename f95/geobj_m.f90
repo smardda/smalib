@@ -49,25 +49,25 @@ module geobj_m
 !     1 2 3 4 5 6 7 8 9 0 1 2 3 4 5  6  7 8 9 0 1 2 3 4  5  6  7
   integer(ki4), parameter, public :: geobj_max_entry_table = 20 !< local variable
 !> define most of cell types likely to be needed
-  integer(ki2),  parameter, public :: VTK_VERTEX=1 !< local variable
-  integer(ki2),  parameter, public :: VTK_POLY_VERTEX=2 !< local variable
-  integer(ki2),  parameter, public :: VTK_LINE=3 !< local variable
-  integer(ki2),  parameter, public :: VTK_POLY_LINE=4 !< local variable
-  integer(ki2),  parameter, public :: VTK_TRIANGLE=5 !< local variable
-  integer(ki2),  parameter, public :: VTK_TRIANGLE_STRIP=6 !< local variable
-  integer(ki2),  parameter, public :: VTK_POLYGON=7 !< local variable
-  integer(ki2),  parameter, public :: VTK_PIXEL=8 !< local variable
-  integer(ki2),  parameter, public :: VTK_QUAD=9 !< local variable
-  integer(ki2),  parameter, public :: VTK_TETRA=10 !< local variable
-  integer(ki2),  parameter, public :: VTK_VOXEL=11 !< local variable
-  integer(ki2),  parameter, public :: VTK_HEXAHEDRON=12 !< local variable
-  integer(ki2),  parameter, public :: VTK_WEDGE=13 !< local variable
-  integer(ki2),  parameter, public :: VTK_PYRAMID=14 !< local variable
-  integer(ki2),  parameter, public :: VTK_QUADRATIC_EDGE=21 !< local variable
-  integer(ki2),  parameter, public :: VTK_QUADRATIC_TRIANGLE=22 !< local variable
-  integer(ki2),  parameter, public :: VTK_QUADRATIC_QUAD=23 !< local variable
-  integer(ki2),  parameter, public :: VTK_QUADRATIC_TETRA=24 !< local variable
-  integer(ki2),  parameter, public :: VTK_QUADRATIC_HEXAHEDRON=25 !< local variable
+  integer(ki2par),  parameter, public :: VTK_VERTEX=1 !< local variable
+  integer(ki2par),  parameter, public :: VTK_POLY_VERTEX=2 !< local variable
+  integer(ki2par),  parameter, public :: VTK_LINE=3 !< local variable
+  integer(ki2par),  parameter, public :: VTK_POLY_LINE=4 !< local variable
+  integer(ki2par),  parameter, public :: VTK_TRIANGLE=5 !< local variable
+  integer(ki2par),  parameter, public :: VTK_TRIANGLE_STRIP=6 !< local variable
+  integer(ki2par),  parameter, public :: VTK_POLYGON=7 !< local variable
+  integer(ki2par),  parameter, public :: VTK_PIXEL=8 !< local variable
+  integer(ki2par),  parameter, public :: VTK_QUAD=9 !< local variable
+  integer(ki2par),  parameter, public :: VTK_TETRA=10 !< local variable
+  integer(ki2par),  parameter, public :: VTK_VOXEL=11 !< local variable
+  integer(ki2par),  parameter, public :: VTK_HEXAHEDRON=12 !< local variable
+  integer(ki2par),  parameter, public :: VTK_WEDGE=13 !< local variable
+  integer(ki2par),  parameter, public :: VTK_PYRAMID=14 !< local variable
+  integer(ki2par),  parameter, public :: VTK_QUADRATIC_EDGE=21 !< local variable
+  integer(ki2par),  parameter, public :: VTK_QUADRATIC_TRIANGLE=22 !< local variable
+  integer(ki2par),  parameter, public :: VTK_QUADRATIC_QUAD=23 !< local variable
+  integer(ki2par),  parameter, public :: VTK_QUADRATIC_TETRA=24 !< local variable
+  integer(ki2par),  parameter, public :: VTK_QUADRATIC_HEXAHEDRON=25 !< local variable
 ! private types
 
 ! private variables

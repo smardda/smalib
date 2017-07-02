@@ -171,6 +171,9 @@ subroutine btree_init(self,numerics)
   ! define dummy first record (0 objects) in list 0 and 2
   call ls_add(self%objectls,1,0,0)
   call ls_add(self%objectls,1,2,0)
+!INERT  call ls_add(self%objectls,2,0,0)
+!INERT  call ls_add(self%objectls,1,1,0)
+!INERT  call ls_add(self%objectls,2,1,1)
   ! define list of objects
   igeobj=numerics%ngeobj
   call ls_add(self%objectls,2,2,igeobj)
@@ -509,7 +512,7 @@ subroutine btree_writev(self,numerics,kchar,kout)
 
   case('hds quantised')
      inode=intr
-     write(kout,'(''POINTS  '',i8, '' unsigned_short'')') 8*inode
+     write(kout,'(''POINTS  '',i8, '' unsigned_int'')') 8*inode
 
      do j=1,intr
 
@@ -517,7 +520,7 @@ subroutine btree_writev(self,numerics,kchar,kout)
         icell=2**self%exten(:,self%desc(2,j))
         ! write corner positions
 
-        write(kout,'(i6,1x,i6,1x,i6)') iorig,iorig+(/icell(1),iz,iz/), &
+        write(kout,'(i8,1x,i8,1x,i8)') iorig,iorig+(/icell(1),iz,iz/), &
  &      iorig+(/iz,icell(2),iz/),iorig+(/icell(1),icell(2),iz/), &
  &      iorig+(/iz,iz,icell(3)/),iorig+(/icell(1),iz,icell(3)/), &
  &      iorig+(/iz,icell(2),icell(3)/),iorig+icell
@@ -1276,7 +1279,7 @@ subroutine btree_readnolab(self,numerics,kin)
 
 end subroutine btree_readnolab
 
-  pure type(posvecl_t) function btree_floatvec(kvec)
+pure type(posvecl_t) function btree_floatvec(kvec)
   integer(ki2), dimension(3), intent(in) :: kvec  !< local variable
   type(posvecl_t) :: zvec !< local variable
   zvec%posvec(1)=float(kvec(1))

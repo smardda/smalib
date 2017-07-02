@@ -101,6 +101,7 @@ module beq_h
    !! 2. psi gradients
    !! 3. R/J x psi gradients (axisymmetric) -> move1
      integer(ki4) :: fldspec !< -
+     integer(ki4):: fiesta !< flag equil file in modified FIESTA output format
      integer(ki4) :: psibig !< normally 0, 1 if \f$ \psi=\Psi \f$ has \f$ 2\pi \f$ factor
      integer(ki4) :: xsearch !< how to search for X-point (1 = within box)
      real(kr8) :: xrsta !< X-point box min R (m)
@@ -122,6 +123,7 @@ module beq_h
      integer(ki4) :: mrip !< \f$ N \f$ number of ripple coils
      real(kr8) :: irip !< unused parameter of ripple coils
      real(kr8) :: arip !< \f$ a \f$ for ripple coils
+     logical :: leqok !< equilibrium helicity is ok, no need for override
      logical :: duct !< flag whether work in duct coordinates
   end type bnumerics_t
 
@@ -179,7 +181,7 @@ module beq_h
 ! public variables
   integer(ki4), public, parameter :: beq_spline_order=4 !< set to four for cubic splines (use of tc01a assumes cubic splines)
   logical, public :: beq_nobinq !< flag whether \f$ B \f$ data in EQDSK file
-  logical, parameter :: BEQ_OVERRIDE_ITER=.TRUE. !< use values required by ITER project
-  logical, parameter :: BEQ_OVERRIDE_FTU=.FALSE. !< use values required by FTU project
+  logical, parameter :: BEQ_OVERRIDE_ITER=.TRUE. !< use values required by ITER project (unless equil_helicity_ok set)
+  logical, parameter :: BEQ_OVERRIDE_FTU=.FALSE. !< use values required by FTU project (unless equil_helicity_    ok set)
 
 end module beq_h

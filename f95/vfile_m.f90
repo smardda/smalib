@@ -8,14 +8,19 @@ module vfile_m
 
 ! public subroutines
   public :: &
- &vfile_init, & !< initialise vtk file
- &vfile_rscalarread, & !< read vtk real scalars
- &vfile_dscalarread, & !< read vtk real kr8scalars
- &vfile_iscalarread, & !< read vtk integer scalars
- &vfile_rscalarwrite, & !< write vtk real scalars
- &vfile_dscalarwrite, & !< write vtk real kr8 scalars
- &vfile_iscalarwrite, & !< write vtk integer scalars
- &vfile_close !< close vtk file
+  vfile_init, & !< initialise vtk file
+  vfile_rscalarread, & !< read vtk real scalars
+  vfile_rvectorread, & !< read vtk real vectors
+  vfile_dscalarread, & !< read vtk real kr8 scalars
+  vfile_iscalarread, & !< read vtk integer scalars
+  vfile_rfieldread, & !< read vtk real scalar from vtk file with field consisting only of scalar arrays
+  vfile_rscalarwrite, & !< write vtk real scalars
+  vfile_dscalarwrite, & !< write vtk real kr8 scalars
+  vfile_dvectorwrite, & !< write vtk real kr8 vectors
+  vfile_iscalarwrite, & !< write vtk integer scalars
+  vfile_close, & !< close vtk file
+  vfile_getfmt,&   !< find vtk file numerical format
+  vfile_skiptolabel !< find line label in vtk file
 
 ! public types
 
@@ -207,6 +212,153 @@ subroutine vfile_rscalarread(self,kp,infile,kcname,kin,kopt)
   kopt=0
 
 end subroutine vfile_rscalarread
+!---------------------------------------------------------------------
+!> read vtk real vectors
+subroutine vfile_rvectorread(self,kp,kadim,infile,kcname,kin,kopt)
+  !! arguments
+  real(kr4), dimension(:), allocatable, intent(inout) :: self !< real vector list data
+  integer(ki4), intent(inout) :: kp   !< size of vector list data
+  integer(ki4), dimension(3), intent(out) :: kadim   !< dimensions of vector list data
+  character(*),intent(in) :: infile !< name of input file
+  character(*),intent(in) :: kcname !< name of field required
+  integer(ki4), intent(inout) :: kin   !< input channel for vector list data
+  !> if positive on input, assume unit open and do not terminate execution if
+  !! data is missing, return positive code if trouble, else zero
+  !! if zero on input, missing data is a fatal error
+  integer(ki4), intent(inout) :: kopt   !< .
+
+  !! local
+  character(*), parameter :: s_name='vfile_rvectorread' !< subroutine name
+  logical :: unitused !< flag to test unit is available
+  integer :: ierror   !<  whether error is to be fatal or not
+  integer(ki4) :: insca   !< number of vectors
+  character(80) :: sname !< name of vector
+  integer(ki4) :: islen   !< length of vector field name
+  integer(ki4) :: islen2   !< length of required vector field name
+
+  logical :: isnumb !< local variable
+  external isnumb
+
+  kadim=0
+  ibuf1=adjustl(kcname)
+  islen2=max(2,scan(ibuf1,' '))-1
+  if(kopt>0) then
+     ierror=error_warning
+     !! assume unit already open and reading infile
+     if (kin==0) then
+        inquire(file=infile,number=kin,iostat=status)
+        if(status/=0.OR.kin==-1)then
+           !! error opening file
+           call log_error(m_name,s_name,1,error_fatal,'Error opening vector list data file')
+        else
+           call log_error(m_name,s_name,1,log_info,'Vector list data file opened')
+        end if
+     end if
+     nin=kin
+  else
+     ierror=error_fatal
+     !! get file unit
+     do i=99,1,-1
+        inquire(i,opened=unitused)
+        if(.not.unitused)then
+           kin=i
+           exit
+        end if
+     end do
+     nin=kin
+
+     !! open file
+     open(unit=nin,file=infile,status='OLD',form='FORMATTED',iostat=status)
+     if(status/=0)then
+        !! error opening file
+        call log_error(m_name,s_name,2,error_fatal,'Error opening vector list data file')
+     else
+        call log_error(m_name,s_name,2,log_info,'Vector list data file opened')
+     end if
+
+  end if
+
+  !! File unit now sorted, get to where point data begin
+  !! read local header information
+  do
+     read(nin,fmt='(a)',iostat=status) ibuf1
+     !!eof
+     if(status<0) then
+        exit
+        !! error
+     else if (status>0) then
+        call log_error(m_name,s_name,3,error_fatal,'Error reading header data')
+     else
+        ibuf2=adjustl(ibuf1)
+        if(ibuf2(1:10)=='DIMENSIONS') then
+           read(ibuf2(11:),*,iostat=status) kadim
+           call log_read_check(m_name,s_name,4,status)
+        else if(ibuf2(1:10)=='POINT_DATA') then
+           iltest=isnumb(ibuf2,insca,11)
+           kp=insca
+           exit
+        else if(ibuf2(1:8)=='POLYGONS') then
+           iltest=isnumb(ibuf2,insca,9)
+           kp=insca
+           exit
+        else if(ibuf2(1:9)=='CELL_DATA') then
+           iltest=isnumb(ibuf2,insca,10)
+           kp=insca
+           exit
+        end if
+     end if
+  end do
+
+  if (kadim(1)/=0) then
+     if (kp-kadim(1)*kadim(2)*kadim(3)/=0) then
+        call log_error(m_name,s_name,3,error_warning,'Mismatch in vector array dimensions')
+     end if
+  end if
+
+  !! find vector header
+  do
+     read(nin,fmt='(a)',iostat=status) ibuf1
+     !!eof
+     if(status<0) then
+        exit
+        !! error
+     else if (status>0) then
+        call log_error(m_name,s_name,4,ierror,'Error reading header data')
+        kopt=4
+        return
+     else
+        ibuf2=adjustl(ibuf1)
+        if(ibuf2(1:7)=='VECTORS') then
+           ibuf1=adjustl(ibuf2(8:))
+           islen=max(2,scan(ibuf1,' '))-1
+           sname=ibuf1(:islen)
+           if (sname(:islen)==kcname(:islen2)) then
+              call log_value("Vector field found ",sname)
+              exit
+           else
+              call log_value("Skipped vector field ",sname)
+           end if
+        end if
+     end if
+  end do
+
+  !! allocate vector storage
+  if(kp>0) then
+     allocate(self(3*kp),stat=status)
+     call log_alloc_check(m_name,s_name,5,status)
+  else
+     call log_error(m_name,s_name,6,ierror,'No vector data')
+     kopt=6
+     return
+  end if
+  !! read coordinates
+  read(nin,*,iostat=status) (self(j),j=1,3*kp)
+  call log_read_check(m_name,s_name,7,status)
+  print '("number of vectors read = ",i10)',kp
+  call log_value("number of vectors read ",kp)
+  kopt=0
+
+end subroutine vfile_rvectorread
 !---------------------------------------------------------------------
 !> read vtk real scalars
 subroutine vfile_dscalarread(self,kp,infile,kcname,kin,kopt)
@@ -509,6 +661,175 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt)
 
 end subroutine vfile_iscalarread
 !---------------------------------------------------------------------
+!> read vtk real scalar from vtk file with field consisting only of scalar arrays
+subroutine vfile_rfieldread(self,kp,infile,kcname,kin,kopt)
+  !! arguments
+  real(kr4), dimension(:), allocatable, intent(inout) :: self !< real scalar data
+  integer(ki4), intent(inout) :: kp   !< size of scalar data
+  character(*),intent(in) :: infile !< name of input file
+  character(*),intent(in) :: kcname !< name of scalar array required
+  integer(ki4), intent(inout) :: kin   !< input channel for field data
+  !> if unity on input, assume unit open and do not terminate execution if
+  !! data is missing, return positive code if trouble, else zero
+  !! kopt=2, assume at start point of field
+  !! if zero on input, missing data is a fatal error
+  integer(ki4), intent(inout) :: kopt   !< .
+
+  !! local
+  character(*), parameter :: s_name='vfile_rfieldread' !< subroutine name
+  logical :: unitused !< flag to test unit is available
+  integer :: ierror   !<  whether error is to be fatal or not
+  integer(ki4) :: insca   !< number of scalars in array
+  integer(ki4) :: infld   !< number of scalar arrays
+  character(80) :: sname !< name of scalar
+  integer(ki4) :: inlastbl   !< position of last blank in buffer
+  integer(ki4) :: islen   !< length of scalar array name
+  integer(ki4) :: islen2   !< length of required scalar array name
+  integer(ki4) :: ilen   !< length of line string
+
+  logical :: ilok !< flag whether named array found
+  logical :: isnumb !< local variable
+  external isnumb
+
+  ibuf1=adjustl(kcname)
+  islen2=max(2,scan(ibuf1,' '))-1
+  if(kopt>0) then
+     ierror=error_warning
+     !! assume unit already open and reading infile
+     if (kin==0) then
+        inquire(file=infile,number=kin,iostat=status)
+        if(status/=0.OR.kin==-1)then
+           !! error opening file
+           call log_error(m_name,s_name,1,error_fatal,'Error opening field data file')
+        else
+           call log_error(m_name,s_name,1,log_info,'Field data file opened')
+        end if
+     end if
+     nin=kin
+  else
+     ierror=error_fatal
+     !! get file unit
+     do i=99,1,-1
+        inquire(i,opened=unitused)
+        if(.not.unitused)then
+           kin=i
+           exit
+        end if
+     end do
+     nin=kin
+
+     !! open file
+     open(unit=nin,file=infile,status='OLD',form='FORMATTED',iostat=status)
+     if(status/=0)then
+        !! error opening file
+        call log_error(m_name,s_name,2,error_fatal,'Error opening field data file')
+     else
+        call log_error(m_name,s_name,2,log_info,'Field data file opened')
+     end if
+
+  end if
+
+  if (kopt<=1) then
+     !! File unit now sorted, get to where point data begin
+     !! read local header information
+     do
+        read(nin,fmt='(a)',iostat=status) ibuf1
+        !!eof
+        if(status<0) then
+           exit
+           !! error
+        else if (status>0) then
+           call log_error(m_name,s_name,3,error_fatal,'Error reading header data')
+        else
+           ibuf2=adjustl(ibuf1)
+           if(ibuf2(1:10)=='POINT_DATA') then
+              iltest=isnumb(ibuf2,insca,11)
+              kp=insca
+              exit
+           else if(ibuf2(1:8)=='POLYGONS') then
+              iltest=isnumb(ibuf2,insca,9)
+              kp=insca
+              exit
+           else if(ibuf2(1:9)=='CELL_DATA') then
+              iltest=isnumb(ibuf2,insca,10)
+              kp=insca
+              exit
+           end if
+        end if
+     end do
+  end if
+
+
+  !! find field header
+  do
+     read(nin,fmt='(a)',iostat=status) ibuf1
+     ! write(*,*) ibuf1
+     !!eof
+     if(status<0) then
+        exit
+        !! error
+     else if (status>0) then
+        call log_error(m_name,s_name,4,ierror,'Error reading header data')
+        kopt=4
+        return
+     else
+        ibuf2=adjustl(ibuf1)
+        if(ibuf2(1:5)=='FIELD') then
+           ilen=len_trim(ibuf2)
+           inlastbl=max( 1,scan(ibuf2(1:ilen),' ',.TRUE.) )
+           iltest=isnumb(ibuf1,infld,inlastbl)
+           if (infld>0) then
+              call log_value("Number of scalar arrays found ",infld)
+              exit
+           else
+              call log_value("No arrays found in file infld ",infld)
+              call log_error(m_name,s_name,5,ierror,'Error looking for scalar array')
+              kopt=5
+           end if
+        end if
+     end if
+  end do
+
+  !! allocate array storage
+  if(kp>0) then
+     allocate(self(kp),stat=status)
+     call log_alloc_check(m_name,s_name,5,status)
+  else
+     call log_error(m_name,s_name,6,ierror,'No array data')
+     kopt=6
+     return
+  end if
+  !! loop to find right array
+  !! (no LOOKUP table default)
+  ilok=.FALSE.
+  do l=1,infld
+     read(nin,fmt='(a)',iostat=status) ibuf1
+     read(nin,*,iostat=status) (self(j),j=1,kp)
+     call log_read_check(m_name,s_name,7,status)
+     islen=max(2,scan(ibuf1,' '))-1
+     sname=ibuf1(:islen)
+     if (sname(:islen)==kcname(:islen2)) then
+        call log_value("Scalar array found ",sname)
+        ilok=.TRUE.
+        exit
+     else
+        call log_value("Skipped scalar array ",sname)
+     end if
+  end do
+
+  if (ilok) then
+     !! log data read in
+     print '("number of scalars read = ",i10)',kp
+     call log_value("number of scalars read ",kp)
+     kopt=0
+  else
+     call log_value("Scalar array not found in field file, name ",kcname)
+     call log_error(m_name,s_name,8,ierror,'Error looking for scalar array')
+     kopt=8
+  end if
+
+end subroutine vfile_rfieldread
+!---------------------------------------------------------------------
 !> write vtk real scalars
 subroutine vfile_rscalarwrite(self,kp,kcname,kctyp,kplot,kheader)
   !! arguments
@@ -589,6 +910,46 @@ subroutine vfile_dscalarwrite(self,kp,kcname,kctyp,kplot,kheader)
 
 end subroutine vfile_dscalarwrite
 !---------------------------------------------------------------------
+!> write vtk double rk8 vectors
+subroutine vfile_dvectorwrite(self,kp,kcname,kctyp,kplot,kheader)
+  !! arguments
+  real(kr8), dimension(3,kp), intent(in) :: self !< real vector list data
+  integer(ki4), intent(in) :: kp   !< size of vector list data
+  character(*),intent(in) :: kcname !< name of field
+  character(*),intent(in) :: kctyp !< type of data
+  integer(ki4), intent(in) :: kplot   !< output channel for vector list data
+  integer(ki4), intent(in) :: kheader   !< header options
+
+  !! local
+  character(*), parameter :: s_name='vfile_dvectorwrite' !< subroutine name
+  integer(ki4) :: islen   !< length of vector field name
+  integer(ki4) :: islen2   !< length of required vector field name
+
+  ibuf1=adjustl(kctyp)
+  islen=len_trim(ibuf1)
+  ibuf1=adjustl(kcname)
+  islen2=len_trim(ibuf1)
+
+  !! output vector header if kheader is unity
+  if(kheader==1) then
+     write(kplot,'(A,''_DATA'',I8)',iostat=status) kctyp(1:islen),kp
+  end if
+  call log_write_check(m_name,s_name,1,status)
+  write(kplot,'(''VECTORS '',A,'' float'')',iostat=status), kcname(1:islen2)
+  call log_write_check(m_name,s_name,2,status)
+
+  !! write vectors
+  do j=1,kp
+     write(kplot,cfmtbv1,iostat=status) (self(k,j),k=1,3)
+     if(status/=0) then
+        call log_error(m_name,s_name,1,error_fatal,'Error writing double vector')
+     end if
+  end do
+
+  call log_value("number of vectors written ",kp)
+
+end subroutine vfile_dvectorwrite
+!---------------------------------------------------------------------
 !> write vtk real scalars
 subroutine vfile_iscalarwrite(self,kp,kcname,kctyp,kplot,kheader)
   !! arguments
@@ -629,11 +990,164 @@ subroutine vfile_iscalarwrite(self,kp,kcname,kctyp,kplot,kheader)
 
 end subroutine vfile_iscalarwrite
 !---------------------------------------------------------------------
-!> close vis plot file on unit nplot
+!> close vis vtk file on unit nplot
 subroutine vfile_close
 
   close(nplot)
 
 end subroutine vfile_close
+!---------------------------------------------------------------------
+!> find vtk file numerical format
+subroutine vfile_getfmt(infile,kfmta,kin)
+  !! arguments
+  character(*),intent(in) :: infile !< name of input file
+  integer(ki4), dimension(2), intent(out) :: kfmta   !< format as number of entries per line
+  integer(ki4), intent(inout), optional :: kin   !< input channel for object data structure
+
+  !! local
+  character(*), parameter :: s_name='vfile_getfmt' !< subroutine name
+  logical :: unitused !< flag to test unit is available
+  integer(ki4) :: ir   !< counter for file header read
+  integer(ki4) :: ifmt   !< formatting of position vectors
+  character(len=132) :: bigbuf !<big buffer for input/output
+  integer(ki4) :: inpt   !< number of points
+
+  logical :: isnumb !< local variable
+  external isnumb
+
+  if(present(kin).AND.kin>0) then
+     !! assume unit already open and reading infile
+     nin=kin
+     rewind(nin)
+  else
+     !! get file unit
+     do i=99,1,-1
+        inquire(i,opened=unitused)
+        if(.not.unitused)then
+           nin=i
+           exit
+        end if
+     end do
+     if (present(kin)) kin=nin
+
+     !! open file
+     open(unit=nin,file=infile,status='OLD',form='FORMATTED',iostat=status)
+     if(status/=0)then
+        !! error opening file
+        write(*,*) 'infile=',infile
+        call log_error(m_name,s_name,1,error_fatal,'Error opening vtk data file')
+     else
+        call log_error(m_name,s_name,2,log_info,'vtk data file opened')
+     end if
+  end if
+
+  !! first set of reads to determine format of position vectors
+  ir=0
+  do
+     ir=ir+1
+     read(nin,fmt='(a)',iostat=status) ibuf1
+     call log_read_check(m_name,s_name,10,status)
+     !! look for key at start of line
+     ibuf2=adjustl(ibuf1)
+     if(ibuf2(1:6)=='POINTS') exit
+  end do
+  if (ir>20) then
+     call log_error(m_name,s_name,11,error_fatal,'Error reading header data')
+  end if
+  iltest=isnumb(ibuf2,inpt,7)
+  read(nin,fmt='(a)',iostat=status) bigbuf
+  call log_read_check(m_name,s_name,12,status)
+  call misc_countnos(bigbuf,ifmt)
+  if (ifmt<0.OR.ifmt>4) then
+     call log_error(m_name,s_name,13,error_fatal,'Error cannot count points on input line')
+  end if
+  kfmta(1)=ifmt
+  kfmta(2)=inpt
+
+  rewind(nin)
+
+end subroutine vfile_getfmt
+!---------------------------------------------------------------------
+!> find line label in vtk file
+subroutine vfile_skiptolabel(infile,kclabel,kin)
+  !! arguments
+  character(*),intent(in) :: infile !< name of input file, ignored if kin set positive
+  character(*),intent(in) :: kclabel !< find this label in file
+  integer(ki4), intent(inout), optional :: kin   !< input channel for object data structure
+
+  !! local
+  character(*), parameter :: s_name='vfile_skiptolabel' !< subroutine name
+  logical :: unitused !< flag to test unit is available
+  integer(ki4) :: ir   !< counter for file header read
+  integer(ki4) :: ilen   !< length of string in file
+
+  if(present(kin).AND.kin>0) then
+     !! assume unit already open and reading infile
+     nin=kin
+     rewind(nin)
+  else
+     !! get file unit
+     do i=99,1,-1
+        inquire(i,opened=unitused)
+        if(.not.unitused)then
+           nin=i
+           exit
+        end if
+     end do
+     if (present(kin)) kin=nin
+
+     !! open file
+     open(unit=nin,file=infile,status='OLD',form='FORMATTED',iostat=status)
+     if(status/=0)then
+        !! error opening file
+        write(*,*) 'infile=',infile
+        call log_error(m_name,s_name,1,error_fatal,'Error opening vtk data file')
+     else
+        call log_error(m_name,s_name,2,log_info,'vtk data file opened')
+     end if
+  end if
+
+  !! reads to find label
+  ir=0
+  do
+     ir=ir+1
+     read(nin,fmt='(a)',iostat=status) ibuf1
+     call log_read_check(m_name,s_name,10,status)
+     !! look for key at start of line
+     ibuf2=adjustl(ibuf1)
+     ilen=scan(ibuf2,' ')
+     if(ibuf2(1:ilen-1)==kclabel) exit
+  end do
+  if (ir>20) then
+     call log_error(m_name,s_name,11,error_fatal,'Error reading header data')
+  end if
+  call log_value("Successfully found label ",kclabel)
+
+end subroutine vfile_skiptolabel
+
+subroutine misc_countnos(bigbuf,kfmt)
+  character(len=*),intent(in) :: bigbuf !< buffer for input
+  integer(ki4), intent(out) :: kfmt !< format of buffer - number of 3-vectors
+  character(len=132) :: ibuf !< buffer for input/output
+  integer(ki4) :: ilen !< length of string
+  integer(ki4) :: iblan !< number of bank substrings
+  integer(ki4) :: isw !< switch on if last character was not blank
+  integer(ki4) :: ji !< loop variable
+  iblan=0
+  ibuf=adjustl(bigbuf)
+  ilen=len_trim(ibuf)
+  isw=1
+  do ji=1,ilen
+     if (ibuf(ji:ji)==' ') then
+        if (isw/=0) then
+           iblan=iblan+1
+           isw=0
+        end if
+     else
+        isw=1
+     end if
+  end do
+  kfmt=(iblan+1)/3
+end subroutine misc_countnos
 
 end module vfile_m

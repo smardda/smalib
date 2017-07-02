@@ -4,9 +4,11 @@ module const_kind_m
   private
 
 !> 2 byte integer kind
-  integer, parameter, public :: ki2 = selected_int_kind(4) 
-!> number of bits in 2 byte integer kind
-  integer, parameter, public :: ki2bits = 16 
+  integer, parameter, public :: ki2par = selected_int_kind(4) 
+!> not 2 byte integer kind
+  integer, parameter, public :: ki2 = selected_int_kind(9) 
+!> number of bits in not 2 byte integer kind
+  integer, parameter, public :: ki2bits = 32 
 
 !> 4 byte integer kind
   integer, parameter, public :: ki4 = selected_int_kind(9) 

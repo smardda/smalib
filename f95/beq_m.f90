@@ -343,14 +343,12 @@ subroutine beq_read(self,infile)
 end subroutine beq_read
 !---------------------------------------------------------------------
 !> read in non-strict EQDSK format
-subroutine beq_readequil(self,infile,kfldspec,kpsibig,kffiesta)
+subroutine beq_readequil(self,infile,numerics)
 
   !! arguments
   type(beq_t), intent(out) :: self   !< object data structure
   character(*),intent(in) :: infile !< name of input file
-  integer(ki4),intent(in) :: kfldspec !< field as mapped or 3-cpt
-  integer(ki4),intent(in) :: kpsibig !< flux with extra 2pi if =unity
-  integer(ki4),intent(in) :: kffiesta !< mistakes in fiesta eqdsk format
+  type(bnumerics_t), intent(in) :: numerics   !< numerics data structure
 
   !! local
   character(*), parameter :: s_name='beq_readequil' !< subroutine name
@@ -374,6 +372,7 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig,kffiesta)
   integer(ki4), dimension(2) :: js=0 !< second index of number
   integer(ki4) :: isfixedh  !< flag fixed-format input for header
   integer(ki4) :: isfixed  !< flag fixed-format input
+  integer(ki4) :: iffiesta !< mistakes in fiesta eqdsk format
   real(kr8) :: bcentr !< EFIT vacuum toroidal field at r=rcentr ignored
   real(kr8) :: cpasma !< EFIT computed plasma current in A ignored
   real(kr8) :: rgrid !< EFIT Minimum R in metre of rectangular computational box
@@ -395,6 +394,7 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig,kffiesta)
   integer(ki4) :: limitr  !< EFIT number of points describing limitr
   integer(ki4) :: ncoil  !< EFIT number of points describing one of five coils
 
+  iffiesta=numerics%fiesta
   !! get file unit
   do i=99,1,-1
      inquire(i,opened=unitused)
@@ -494,7 +494,7 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig,kffiesta)
      if(istatus/=0) then
         call log_error(m_name,s_name,11,error_fatal,'Error reading rmaxis etc.')
      end if
-     if (kffiesta>0) then
+     if (iffiesta>0) then
         ! ssimag1,ssibry1 wrong way round
         zdum=ssimag1
         ssimag1=ssibry1
@@ -524,7 +524,7 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig,kffiesta)
         call log_error(m_name,s_name,51,error_fatal,'Error reading rmaxis etc.')
      end if
      if (debug) write(*,cfmt1)rmaxis,zmaxis,ssimag1,ssibry1,bcentr
-     if (kffiesta>0) then
+     if (iffiesta>0) then
         ! ssimag1,ssibry1 wrong way round
         zdum=ssimag1
         ssimag1=ssibry1
@@ -621,7 +621,7 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig,kffiesta)
   if (cfmtd=='*') then
      read(iin,*,iostat=status) ((work2(i,j),i=1,nw),j=1,nh)
   else
-     if (kffiesta>0) then
+     if (iffiesta>0) then
         do j=1,nh
            read(iin,cfmtd,iostat=status) (work2(i,j),i=1,nw)
         end do
@@ -644,7 +644,7 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig,kffiesta)
   !      zpsimin=minval(work2)
   !      write(*,*) 'zpsimin,zpsimax=',zpsimin,zpsimax
   !
-  if (kpsibig>0) then
+  if (numerics%psibig>0) then
      psifac=1/(2*const_pid)
   else
      psifac=1
@@ -659,6 +659,7 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig,kffiesta)
   self%rqcen=rmaxis
   self%zqcen=zmaxis
 
+  if (.NOT.numerics%leqok) then
   if (BEQ_OVERRIDE_ITER) then
      call log_error(m_name,s_name,49,log_info,'override for ITER')
      ! special for ITER to align current and toroidal field
@@ -676,6 +677,7 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig,kffiesta)
      ! special for FTU modelling to align current and toroidal field
      ! possibly also in case where psi increases from axis
      self%f=-self%f
+  end if
   end if
 
   !! now additional standard eqdsk stuff
@@ -825,12 +827,12 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig,kffiesta)
 end subroutine beq_readequil
 !---------------------------------------------------------------------
 !> read in EQU format
-subroutine beq_readequ(self,infile,kfldspec)
+subroutine beq_readequ(self,infile,numerics)
 
   !! arguments
   type(beq_t), intent(out) :: self   !< object data structure
   character(*),intent(in) :: infile !< name of input file
-  integer(ki4),intent(in) :: kfldspec !< field as mapped or 3-cpt
+  type(bnumerics_t), intent(in) :: numerics   !< object control data structure
 
   !! local
   character(*), parameter :: s_name='beq_readequ' !< subroutine name
@@ -978,8 +980,9 @@ subroutine beq_readequ(self,infile,kfldspec)
   self%f=rtf*btf
   self%ivac=rtf*btf
 
-  fld_specn: select case (kfldspec)
+  fld_specn: select case (numerics%fldspec)
   case(1,3)
+  if (.NOT.numerics%leqok) then
      if (BEQ_OVERRIDE_ITER) then
         call log_error(m_name,s_name,49,log_info,'override for ITER')
         ! special for ITER to align current and toroidal field
@@ -997,6 +1000,7 @@ subroutine beq_readequ(self,infile,kfldspec)
         ! special for FTU modelling to align current and toroidal field
         ! possibly also in case where psi increases from axis
         self%f=-self%f
+     end if
      end if
   case(2)
      ! Separating this case enables MAST test deck case to work,
@@ -1306,25 +1310,30 @@ subroutine beq_init(self,numerics,fmesh)
 end subroutine beq_init
 !---------------------------------------------------------------------
 !> helical sense of field
-subroutine beq_sense(self)
+subroutine beq_sense(self,k3d)
 
   !! arguments
   type(beq_t), intent(inout) :: self   !< object data structure
+  integer(ki4), intent(in) :: k3d   !< selector
 
   !! local
   character(*), parameter :: s_name='beq_sense' !< subroutine name
   type(posang_t) :: posang !< position and vector involving angles
   integer(ki4) :: isleft !< unity if left-handed helix
 
+  !write(*,*) self%n%vacfile
+  if ( (k3d==0.AND.self%n%vacfile/='null') .OR. &
+ & (k3d==1.AND.self%n%vacfile=='null') ) return
   ! sense (R,Z) values
   posang%pos(1)=self%rmin+0.7*(self%rmax-self%rmin)
   posang%pos(2)=0
   posang%pos(3)=self%zmin+0.5*(self%zmax-self%zmin)
   posang%opt=0 ; posang%units=0
-  call beq_b(self,posang,0)
   call log_value("Sensing B at X ",posang%pos(1))
+  call log_value("Sensing B at Z ",posang%pos(3))
+  call beq_b(self,posang,0)
   call log_value("Sensed By, on Y=0, ",posang%vec(2))
-  call log_value("Sensed Bz, at nominal central Z ",posang%vec(3))
+  call log_value("Sensed Bz, at nominal central Z, ",posang%vec(3))
   isleft=sign(1.05_kr8,posang%vec(3)/posang%vec(2))
   if (isleft==1) then
      call log_error(m_name,s_name,1,log_info,'Left-handed helical field UNlike ITER')
@@ -2679,7 +2688,8 @@ subroutine beq_readcon(selfn,kin)
   integer(ki4) :: beq_fldspec !< field specification
   integer(ki4) :: beq_xsearch !< how to search for X-point (1 = within box)
   integer(ki4) :: limiter_search !< how to search for contact point (1 = within box)
-  real(kr8) :: beq_psibig !< 1 implies \f$ 2 \pi \f$ too big
+  real(kr8) :: beq_psibig !< unity implies \f$ 2 \pi \f$ too big
+  logical :: equil_helicity_ok !<  equilibrium helicity is ok
   real(kr8) :: beq_xrsta !< X-point box min R (m)
   real(kr8) :: beq_xrend !< X-point box max R (m)
   real(kr8) :: beq_xzsta !< X-point box min Z (m)
@@ -2709,6 +2719,7 @@ subroutine beq_readcon(selfn,kin)
  &beq_zetamin, beq_zetamax, beq_nzetap,&
  &beq_thetaref, beq_ntheta, beq_fldspec,&
  &beq_psibig,&
+ &equil_helicity_ok,&
  &beq_xsearch,beq_xrsta,beq_xrend,beq_xzsta,beq_xzend,&
  &limiter_search,search_r_start,search_r_end,search_z_start,search_z_end,&
  &beq_vacuum_field_file
@@ -2747,6 +2758,7 @@ subroutine beq_readcon(selfn,kin)
   beq_ntheta=32
   beq_fldspec=1
   beq_psibig=0
+  equil_helicity_ok=.FALSE.
   beq_xsearch=0
   beq_xrsta=0
   beq_xrend=0
@@ -2828,6 +2840,8 @@ subroutine beq_readcon(selfn,kin)
  &call log_error(m_name,s_name,7,error_fatal,'beq_fldspec must be small positive integer')
   if(beq_psibig<0.OR.beq_psibig>=2) &
  &call log_error(m_name,s_name,8,error_fatal,'beq_psibig must be small non-negative integer')
+  if(.NOT.equil_helicity_ok) &
+ &call log_error(m_name,s_name,8,error_warning,'Sense of helicity of field input may be changed - check log file')
   if(beq_xsearch<0.OR.beq_xsearch>=2) &
  &call log_error(m_name,s_name,9,error_fatal,'beq_xsearch must be small non-negative integer')
   if(limiter_search<0.OR.limiter_search>=2) &
@@ -2936,6 +2950,7 @@ subroutine beq_readcon(selfn,kin)
   end if
   selfn%fldspec=beq_fldspec
   selfn%psibig=beq_psibig
+  selfn%leqok=equil_helicity_ok
   selfn%xsearch=beq_xsearch
   selfn%xrsta=beq_xrsta
   selfn%xrend=beq_xrend
