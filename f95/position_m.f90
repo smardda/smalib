@@ -25,6 +25,7 @@ module position_m
  &position_tfmquery, & !< interrogate position control data
  &position_writetfm, & !< write position control data
  &position_readlis, & !< read position list data
+ &position_copylis, & !< copy position list data
  &position_readonlylis, & !< read (general vtk format) only list of position coordinates
  &position_readveclis, & !< read position list data as vector
  &position_deleteveclis, & !< delete list of vectors
@@ -160,6 +161,8 @@ end function position_asvecb
      end do
   case(5)
      zvec=tfmdata%scale*(self%posvec+tfmdata%offset)
+  case(6)
+     zvec=self%posvec+tfmdata%scale*tfmdata%offset
   end select transform_number
 
   position_tfm%posvec=zvec
@@ -198,6 +201,8 @@ end function position_tfm
      end do
   case(5)
      zvec=self%posvec/tfmdata%scale-tfmdata%offset
+  case(6)
+     zvec=self%posvec-tfmdata%scale*tfmdata%offset
   end select transform_number
 
   position_invtfm%posvec=zvec
@@ -599,6 +604,25 @@ subroutine position_readlis(self,infile,kin,kopt)
   call log_value("number of position coordinates read ",self%np)
 
 end subroutine position_readlis
+!---------------------------------------------------------------------
+!> copy list of position coordinates
+subroutine position_copylis(selfin,selfout,kopt)
+  !! arguments
+  type(posveclis_t), intent(in) :: selfin !< position list data
+  type(posveclis_t), intent(inout) :: selfout !< position list data
+  integer(ki4), intent(in), optional :: kopt   !< options
+
+  !! local
+  character(*), parameter :: s_name='position_copylis' !< subroutine name
+
+  ! need to check allocation of selfout (TODO)
+  !! copy coordinates
+  selfout%np=selfin%np
+  do j=1,selfout%np
+     selfout%pos(j)%posvec=selfin%pos(j)%posvec
+  end do
+
+end subroutine position_copylis
 !---------------------------------------------------------------------
 !> read (general vtk format) only list of position coordinates
 subroutine position_readonlylis(self,kin,kfmt)
