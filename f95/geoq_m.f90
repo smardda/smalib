@@ -140,15 +140,12 @@ subroutine geoq_read(self,infileo,infileb)
 
   !! local
   character(*), parameter :: s_name='geoq_read' !< subroutine name
-  integer(ki4) :: ifldspec !< field specification
   integer(ki4):: ipsibig !< flag whether psi overlarge by 2pi
-  integer(ki4):: iffiesta=0 !< flag trouble with 2-D array
 
   call geobjlist_read(self%objl,infileo)
-  ifldspec=self%beq%n%fldspec
   ipsibig=abs(self%beq%n%psibig)
   call log_value("psi 2pi too big if unity ",ipsibig)
-  call beq_readequil(self%beq,infileb,ifldspec,ipsibig,iffiesta)
+  call beq_readequil(self%beq,infileb,self%beq%n)
   call log_error(m_name,s_name,70,log_info,'geoq input data files read')
 
 end subroutine geoq_read

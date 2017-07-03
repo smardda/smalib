@@ -101,8 +101,8 @@ module beq_h
    !! 2. psi gradients
    !! 3. R/J x psi gradients (axisymmetric) -> move1
      integer(ki4) :: fldspec !< -
+     integer(ki4):: fiesta !< flag equil file in modified FIESTA output format
      integer(ki4) :: psibig !< normally 0, 1 if \f$ \psi=\Psi \f$ has \f$ 2\pi \f$ factor
-     logical :: leqok !< equilibrium helicity is ok, no need for override below
      integer(ki4) :: xsearch !< how to search for X-point (1 = within box)
      real(kr8) :: xrsta !< X-point box min R (m)
      real(kr8) :: xrend !< X-point box max R (m)
@@ -123,6 +123,7 @@ module beq_h
      integer(ki4) :: mrip !< \f$ N \f$ number of ripple coils
      real(kr8) :: irip !< unused parameter of ripple coils
      real(kr8) :: arip !< \f$ a \f$ for ripple coils
+     logical :: leqok !< equilibrium helicity is ok, no need for override
      logical :: duct !< flag whether work in duct coordinates
   end type bnumerics_t
 

@@ -343,14 +343,12 @@ subroutine beq_read(self,infile)
 end subroutine beq_read
 !---------------------------------------------------------------------
 !> read in non-strict EQDSK format
-subroutine beq_readequil(self,infile,kfldspec,kpsibig,kffiesta)
+subroutine beq_readequil(self,infile,numerics)
 
   !! arguments
   type(beq_t), intent(out) :: self   !< object data structure
   character(*),intent(in) :: infile !< name of input file
-  integer(ki4),intent(in) :: kfldspec !< field as mapped or 3-cpt
-  integer(ki4),intent(in) :: kpsibig !< flux with extra 2pi if =unity
-  integer(ki4),intent(in) :: kffiesta !< mistakes in fiesta eqdsk format
+  type(bnumerics_t), intent(in) :: numerics   !< numerics data structure
 
   !! local
   character(*), parameter :: s_name='beq_readequil' !< subroutine name
@@ -374,6 +372,7 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig,kffiesta)
   integer(ki4), dimension(2) :: js=0 !< second index of number
   integer(ki4) :: isfixedh  !< flag fixed-format input for header
   integer(ki4) :: isfixed  !< flag fixed-format input
+  integer(ki4) :: iffiesta !< mistakes in fiesta eqdsk format
   real(kr8) :: bcentr !< EFIT vacuum toroidal field at r=rcentr ignored
   real(kr8) :: cpasma !< EFIT computed plasma current in A ignored
   real(kr8) :: rgrid !< EFIT Minimum R in metre of rectangular computational box
@@ -395,6 +394,7 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig,kffiesta)
   integer(ki4) :: limitr  !< EFIT number of points describing limitr
   integer(ki4) :: ncoil  !< EFIT number of points describing one of five coils
 
+  iffiesta=numerics%fiesta
   !! get file unit
   do i=99,1,-1
      inquire(i,opened=unitused)
@@ -494,7 +494,7 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig,kffiesta)
      if(istatus/=0) then
         call log_error(m_name,s_name,11,error_fatal,'Error reading rmaxis etc.')
      end if
-     if (kffiesta>0) then
+     if (iffiesta>0) then
         ! ssimag1,ssibry1 wrong way round
         zdum=ssimag1
         ssimag1=ssibry1
@@ -524,7 +524,7 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig,kffiesta)
         call log_error(m_name,s_name,51,error_fatal,'Error reading rmaxis etc.')
      end if
      if (debug) write(*,cfmt1)rmaxis,zmaxis,ssimag1,ssibry1,bcentr
-     if (kffiesta>0) then
+     if (iffiesta>0) then
         ! ssimag1,ssibry1 wrong way round
         zdum=ssimag1
         ssimag1=ssibry1
@@ -621,7 +621,7 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig,kffiesta)
   if (cfmtd=='*') then
      read(iin,*,iostat=status) ((work2(i,j),i=1,nw),j=1,nh)
   else
-     if (kffiesta>0) then
+     if (iffiesta>0) then
         do j=1,nh
            read(iin,cfmtd,iostat=status) (work2(i,j),i=1,nw)
         end do
@@ -644,7 +644,7 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig,kffiesta)
   !      zpsimin=minval(work2)
   !      write(*,*) 'zpsimin,zpsimax=',zpsimin,zpsimax
   !
-  if (kpsibig>0) then
+  if (numerics%psibig>0) then
      psifac=1/(2*const_pid)
   else
      psifac=1
@@ -659,7 +659,7 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig,kffiesta)
   self%rqcen=rmaxis
   self%zqcen=zmaxis
 
-  if (.NOT.self%n%leqok) then
+  if (.NOT.numerics%leqok) then
   if (BEQ_OVERRIDE_ITER) then
      call log_error(m_name,s_name,49,log_info,'override for ITER')
      ! special for ITER to align current and toroidal field
@@ -827,12 +827,12 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig,kffiesta)
 end subroutine beq_readequil
 !---------------------------------------------------------------------
 !> read in EQU format
-subroutine beq_readequ(self,infile,kfldspec)
+subroutine beq_readequ(self,infile,numerics)
 
   !! arguments
   type(beq_t), intent(out) :: self   !< object data structure
   character(*),intent(in) :: infile !< name of input file
-  integer(ki4),intent(in) :: kfldspec !< field as mapped or 3-cpt
+  type(bnumerics_t), intent(in) :: numerics   !< object control data structure
 
   !! local
   character(*), parameter :: s_name='beq_readequ' !< subroutine name
@@ -980,9 +980,9 @@ subroutine beq_readequ(self,infile,kfldspec)
   self%f=rtf*btf
   self%ivac=rtf*btf
 
-  fld_specn: select case (kfldspec)
+  fld_specn: select case (numerics%fldspec)
   case(1,3)
-  if (.NOT.self%n%leqok) then
+  if (.NOT.numerics%leqok) then
      if (BEQ_OVERRIDE_ITER) then
         call log_error(m_name,s_name,49,log_info,'override for ITER')
         ! special for ITER to align current and toroidal field
@@ -1329,10 +1329,11 @@ subroutine beq_sense(self,k3d)
   posang%pos(2)=0
   posang%pos(3)=self%zmin+0.5*(self%zmax-self%zmin)
   posang%opt=0 ; posang%units=0
-  call beq_b(self,posang,0)
   call log_value("Sensing B at X ",posang%pos(1))
+  call log_value("Sensing B at Z ",posang%pos(3))
+  call beq_b(self,posang,0)
   call log_value("Sensed By, on Y=0, ",posang%vec(2))
-  call log_value("Sensed Bz, at nominal central Z ",posang%vec(3))
+  call log_value("Sensed Bz, at nominal central Z, ",posang%vec(3))
   isleft=sign(1.05_kr8,posang%vec(3)/posang%vec(2))
   if (isleft==1) then
      call log_error(m_name,s_name,1,log_info,'Left-handed helical field UNlike ITER')

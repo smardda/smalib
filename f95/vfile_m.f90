@@ -11,11 +11,12 @@ module vfile_m
   vfile_init, & !< initialise vtk file
   vfile_rscalarread, & !< read vtk real scalars
   vfile_rvectorread, & !< read vtk real vectors
-  vfile_dscalarread, & !< read vtk real kr8scalars
+  vfile_dscalarread, & !< read vtk real kr8 scalars
   vfile_iscalarread, & !< read vtk integer scalars
   vfile_rfieldread, & !< read vtk real scalar from vtk file with field consisting only of scalar arrays
   vfile_rscalarwrite, & !< write vtk real scalars
   vfile_dscalarwrite, & !< write vtk real kr8 scalars
+  vfile_dvectorwrite, & !< write vtk real kr8 vectors
   vfile_iscalarwrite, & !< write vtk integer scalars
   vfile_close, & !< close vtk file
   vfile_getfmt,&   !< find vtk file numerical format
@@ -908,6 +909,46 @@ subroutine vfile_dscalarwrite(self,kp,kcname,kctyp,kplot,kheader)
   call log_value("number of scalars written ",kp)
 
 end subroutine vfile_dscalarwrite
+!---------------------------------------------------------------------
+!> write vtk double kr8 vectors
+subroutine vfile_dvectorwrite(self,kp,kcname,kctyp,kplot,kheader)
+  !! arguments
+  real(kr8), dimension(3,kp), intent(in) :: self !< real vector list data
+  integer(ki4), intent(in) :: kp   !< size of vector list data
+  character(*),intent(in) :: kcname !< name of field
+  character(*),intent(in) :: kctyp !< type of data
+  integer(ki4), intent(in) :: kplot   !< output channel for vector list data
+  integer(ki4), intent(in) :: kheader   !< header options
+
+  !! local
+  character(*), parameter :: s_name='vfile_dvectorwrite' !< subroutine name
+  integer(ki4) :: islen   !< length of vector field name
+  integer(ki4) :: islen2   !< length of required vector field name
+
+  ibuf1=adjustl(kctyp)
+  islen=len_trim(ibuf1)
+  ibuf1=adjustl(kcname)
+  islen2=len_trim(ibuf1)
+
+  !! output vector header if kheader is unity
+  if(kheader==1) then
+     write(kplot,'(A,''_DATA'',I8)',iostat=status) kctyp(1:islen),kp
+  end if
+  call log_write_check(m_name,s_name,1,status)
+  write(kplot,'(''VECTORS '',A,'' float'')',iostat=status), kcname(1:islen2)
+  call log_write_check(m_name,s_name,2,status)
+
+  !! write vectors
+  do j=1,kp
+     write(kplot,cfmtbv1,iostat=status) (self(k,j),k=1,3)
+     if(status/=0) then
+        call log_error(m_name,s_name,1,error_fatal,'Error writing double vector')
+     end if
+  end do
+
+  call log_value("number of vectors written ",kp)
+
+end subroutine vfile_dvectorwrite
 !---------------------------------------------------------------------
 !> write vtk real scalars
 subroutine vfile_iscalarwrite(self,kp,kcname,kctyp,kplot,kheader)

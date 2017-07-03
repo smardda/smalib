@@ -196,6 +196,8 @@ end function position_tfm
      do jj=1,3
         zvec(jj)=tfmdata%offset(jj)+dot_product(self%posvec-tfmdata%offset,tfmdata%matrix(:,jj))
      end do
+  case(5)
+     zvec=self%posvec/tfmdata%scale-tfmdata%offset
   end select transform_number
 
   position_invtfm%posvec=zvec
