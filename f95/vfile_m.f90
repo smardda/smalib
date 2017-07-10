@@ -910,7 +910,7 @@ subroutine vfile_dscalarwrite(self,kp,kcname,kctyp,kplot,kheader)
 
 end subroutine vfile_dscalarwrite
 !---------------------------------------------------------------------
-!> write vtk double rk8 vectors
+!> write vtk double kr8 vectors
 subroutine vfile_dvectorwrite(self,kp,kcname,kctyp,kplot,kheader)
   !! arguments
   real(kr8), dimension(3,kp), intent(in) :: self !< real vector list data
