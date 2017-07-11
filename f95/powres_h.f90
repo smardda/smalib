@@ -39,6 +39,9 @@ module powres_h
      real(kr4), dimension(:), allocatable :: pows !< power statistic
      real(kr4), dimension(:), allocatable :: powa !< power average statistic
      real(kr4), dimension(:), allocatable :: psista !< \f$ \psi \f$ at start of fieldline
+     !-----------------
+     real(kr4), dimension(:), allocatable :: angle
+     !-----------------
      type(prnumerics_t) :: n !< control  parameters
      real(kr8) :: psimin !< minimum value of \f$ \psi \f$ for interpolation
      real(kr8) :: psimax !< maximum value of \f$ \psi \f$ for interpolation
