@@ -31,6 +31,7 @@ program datvtk_p
   use datline_m
   use dfile_m
   use bods_m
+  use stlfile_m
   use stack_m
 
   implicit none
@@ -167,11 +168,23 @@ program datvtk_p
   case('d','s')
 !! write out as separate files
      call bods_write(bods,size(bods),geobjl,fileroot,'none','Body',1)
+     call vfile_close
+  case('t')
+     ! one set of triangles
+     call stlfile_init(trim(fileroot),iched,nplot)
+     call geobjlist_writestl(geobjl,'triangles',nplot)
+     call stlfile_close
+  case('b')
+     ! split by body number
+     call stlfile_init(trim(fileroot),iched,nplot)
+     call geobjlist_writestl(geobjl,'bodies',nplot)
+     call stlfile_close
   case default
      call vfile_init(trim(fileroot)//'_out',iched,nplot)
      call geobjlist_writev(geobjl,'geometry',nplot)
      if (optarg(3:3)=='m') bods=1 ! suppress body information
      call vfile_iscalarwrite(bods,size(bods),'Body','CELL',nplot,1)
+     call vfile_close
   end select divide_type
   call clock_stop(30)
 !--------------------------------------------------------------------------
@@ -181,7 +194,6 @@ program datvtk_p
   call clock_stop(1)
   call clock_summary
 
-  call vfile_close
   call log_close
   call clock_delete
 !--------------------------------------------------------------------------

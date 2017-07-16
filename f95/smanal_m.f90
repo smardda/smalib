@@ -400,8 +400,8 @@ subroutine smanal_writeg(self,select,channel)
 
      allocate(zstat(self%n%totstat), zextr(self%n%totstat),stat=status)
      call log_alloc_check(m_name,s_name,3,status)
-     zstat=-const_infty
-     zextr=0
+     zstat=0
+     zextr=-const_infty
      zcentr=0
      zareasum=0
      zareamax=-const_infty
@@ -413,14 +413,14 @@ subroutine smanal_writeg(self,select,channel)
         zareamax=max(zareamax,self%areab(i))
      end do
      zcentr(:)=zcentr(:)/imaxstat
-     write(channel,*,iostat=status) '# Totals / Centroid'
+     write(channel,'(A)',iostat=status) '# Totals / Centroid'
      write(channel,icrcfmt,iostat=status) '#',idummy, &
  &   (zstat(j), j=1,self%n%totstat),(zcentr(j),j=1,3), &
  &   zareasum
      if(status/=0) then
         call log_error(m_name,s_name,4,error_fatal,'Error writing data')
      end if
-     write(channel,*,iostat=status) '# Maxima / Centroid'
+     write(channel,'(A)',iostat=status) '# Maxima / Centroid'
      write(channel,icrcfmt,iostat=status) '#',idummy, &
  &   (zextr(j), j=1,self%n%totstat),(zcentr(j),j=1,3), &
  &   zareamax

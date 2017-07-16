@@ -32,6 +32,7 @@ module geobjlist_m
   geobjlist_addcube,   & !< add cube(s) to  geobjlist data structure
   geobjlist_writev,   & !< write (vtk)  geobjlist data structure
   geobjlist_nodlmv,   & !< rearrange (vtk)  geobjlist data structure
+  geobjlist_writestl,   & !< write (stl)  geobjlist data structure
   geobjlist_step, &   !< control processing of  geobjlist data structure
   geobjlist_stepquery, &   !< density processing of geobjlist data structure
   geobjlist_getbb,   & !< bb of  geobjlist data structure
@@ -859,6 +860,90 @@ subroutine geobjlist_nodlmv(self,infilelevel,knlevel,kpowe)
   end if
 
 end subroutine geobjlist_nodlmv
+!---------------------------------------------------------------------
+!> write (stl)  geobjlist data structure
+subroutine geobjlist_writestl(self,kchar,kplot)
+
+  !! arguments
+  type(geobjlist_t), intent(in) :: self !< geobj list data
+  character(*), intent(in) :: kchar  !< case
+  integer(ki4), intent(in) :: kplot   !< output channel for stl data
+
+  !! local
+  character(*), parameter :: s_name='geobjlist_writestl' !< subroutine name
+  integer(ki4) :: isum !< sum workspace
+  integer(ki2) :: inn !< number of nodes
+
+  plot_type: select case (kchar)
+  case('geometry')
+
+     write(kplot,'(''DATASET UNSTRUCTURED_GRID'')')
+     write(kplot,'(''POINTS '',I8, '' float'')') self%np
+     do j=1,self%np
+        call position_writev(self%posl%pos(j),kplot)
+     end do
+     write(kplot, '('' '')')
+
+     ! count entries in CELLS
+     isum=0
+     do j=1,self%ng
+        inn=geobj_entry_table(self%obj2(j)%typ)
+        isum=isum+inn
+     end do
+
+     ! output CELL data
+     write(kplot,'(''CELLS '',I8,I8)') self%ng,self%ng+isum
+     i=1
+     do j=1,self%ng
+        inn=geobj_entry_table(self%obj2(j)%typ)
+        write(kplot,'(8(1X,I8))') inn,(self%nodl(i+ij-1)-1,ij=1,inn)
+        i=i+inn
+     end do
+     write(kplot, '('' '')')
+
+     ! output CELL types
+     write(kplot,'(''CELL_TYPES '',I8)') self%ng
+     do j=1,self%ng
+        write(kplot,'(1X,I8)') self%obj2(j)%typ
+     end do
+
+     if (self%nwset==2) then
+        write(kplot, '('' '')')
+        !! weights
+        write(kplot,'(''CELL_DATA'',I8)') self%ng
+        write(kplot,'(''SCALARS weights float 1'')')
+        write(kplot,'(''LOOKUP_TABLE default'')')
+        write(kplot,cfmtbs1) (self%obj(i)%weight, i=1,self%ng)
+     end if
+
+  case default
+     !! plot list of all quantised positions
+     ! output points only
+     write(kplot,'(''DATASET UNSTRUCTURED_GRID'')')
+     write(kplot,'(''POINTS '',I8, '' float'')') self%np
+     do j=1,self%np
+        call position_writev(self%posl%pos(j),kplot)
+     end do
+     write(kplot, '('' '')')
+
+     write(kplot,'(''CELLS 1 '',I8)') self%np+1
+     write(kplot,'(I8)') self%np,  (i-1,i=1,self%np)
+     write(kplot,'(''CELL_TYPES 1'')')
+     write(kplot,'(''2'')')
+     write(kplot, '('' '')')
+
+     if (self%ngtype==1) then
+        !! weights
+        write(kplot,'(''POINT_DATA'',I8)') self%np
+        write(kplot,'(''SCALARS weights float 1'')')
+        write(kplot,'(''LOOKUP_TABLE default'')')
+        write(kplot,cfmtbs1) (self%obj(i)%weight, &
+ &      i=1,self%np)
+     end if
+
+  end select plot_type
+
+end subroutine geobjlist_writestl
 !---------------------------------------------------------------------
 !> control sorting of  coordinates into bins
 subroutine geobjlist_step(self,btree)
