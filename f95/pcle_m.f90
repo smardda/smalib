@@ -246,7 +246,6 @@ subroutine pcle_move(selfo,selfn,kstep,geol,btree,kobj)
   ! check
   if (inode<=0) then
      call log_error(m_name,s_name,2,error_warning,'Bad particle node ')
-     kobj=-9999
      return
   end if
 

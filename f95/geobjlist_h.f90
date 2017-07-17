@@ -27,6 +27,9 @@ module geobjlist_h
      real(kr4) :: tolerance !< max distance from face
      real(kr4) :: minmaxtolerance !< min max distance from face
      integer(ki4) :: nbdcub=0 !< number of extra bounding cubes
+     integer(ki4) :: cornflag !< flags (=1) if corner vectors to be used
+     real(kr4), dimension(3) :: lowcorner !< vector defining corner with lesser component values
+     real(kr4), dimension(3) :: upcorner !< vector defining corner with greater component values
      real(kr4) :: dilen   !< inner cube separation from geometry
      real(kr4) :: dolen   !< outer cube separation from inner
      integer(ki4)  :: nwset !< nonzero if obj%weight set

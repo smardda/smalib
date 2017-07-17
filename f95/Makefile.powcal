@@ -37,6 +37,7 @@ query_m.f90 \
 datline_h.f90 \
 datline_m.f90 \
 geobjlist_m.f90 \
+indict_m.f90 \
 pcle_h.f90 \
 pcle_m.f90 \
 spl2d_m.f90 \
@@ -115,6 +116,7 @@ powcal.f90 : query_m.mod
 powcal.f90 : datline_h.mod
 powcal.f90 : datline_m.mod
 powcal.f90 : geobjlist_m.mod
+powcal.f90 : indict_m.mod
 powcal.f90 : pcle_h.mod
 powcal.f90 : pcle_m.mod
 powcal.f90 : spl2d_m.mod
@@ -260,10 +262,10 @@ geobjlist_m.f90 : posang_m.mod
 geobjlist_m.f90 : datline_h.mod
 geobjlist_m.f90 : datline_m.mod
 geobjlist_m.f90 : stack_m.mod
-geobjlist_m.f90 : posang_m.mod
-geobjlist_m.f90 : datline_h.mod
-geobjlist_m.f90 : datline_m.mod
-geobjlist_m.f90 : stack_m.mod
+geobjlist_m.f90 : indict_m.mod
+indict_m.f90 : const_kind_m.mod
+indict_m.f90 : const_numphys_h.mod
+indict_m.f90 : log_m.mod
 pcle_h.f90 : const_kind_m.mod
 pcle_m.f90 : const_kind_m.mod
 pcle_m.f90 : log_m.mod

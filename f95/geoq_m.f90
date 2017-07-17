@@ -140,15 +140,12 @@ subroutine geoq_read(self,infileo,infileb)
 
   !! local
   character(*), parameter :: s_name='geoq_read' !< subroutine name
-  integer(ki4) :: ifldspec !< field specification
   integer(ki4):: ipsibig !< flag whether psi overlarge by 2pi
-  integer(ki4):: iffiesta=0 !< flag trouble with 2-D array
 
   call geobjlist_read(self%objl,infileo)
-  ifldspec=self%beq%n%fldspec
   ipsibig=abs(self%beq%n%psibig)
   call log_value("psi 2pi too big if unity ",ipsibig)
-  call beq_readequil(self%beq,infileb,ifldspec,ipsibig,iffiesta)
+  call beq_readequil(self%beq,infileb,self%beq%n)
   call log_error(m_name,s_name,70,log_info,'geoq input data files read')
 
 end subroutine geoq_read
@@ -167,18 +164,19 @@ subroutine geoq_init(self)
      call geoq_psilimiter(self)
   end if
   ! psi boundary definition
-  if(self%beq%n%bdryopt==1.OR.self%beq%n%bdryopt==5.OR.self%beq%n%bdryopt==9) then
+  boundary_type: select case (self%beq%n%bdryopt)
+  case (1,5,9)
      ! user defined
      self%beq%psibdry=self%beq%n%psiref
      self%beq%psiltr=self%beq%n%psiref
-  else if(self%beq%n%bdryopt==2) then
-     ! boundary based on nodes of geometry only
+  case (2)
+     ! boundary based on nodes of geometry only unless value in eqdsk over-rides
      if (beq_rsig()>0) then
         self%beq%psibdry=min(self%beq%psiqbdry,self%beq%psiltr)
      else
         self%beq%psibdry=max(self%beq%psiqbdry,self%beq%psiltr)
      end if
-  else if(self%beq%n%bdryopt==3) then
+  case (3)
      ! boundary based on geometry sampled at rate given by parameter deltal
      call geoq_psisilh(self)
      !B     if (beq_rsig()>0) then
@@ -191,7 +189,7 @@ subroutine geoq_init(self)
      !B        call log_error(m_name,s_name,49,log_info,'override for ITER')
      self%beq%psibdry=self%beq%psiltr
      !B     end if
-  else if(self%beq%n%bdryopt==6) then
+  case (6)
      ! boundary based on geometry sampled at rate given by parameter deltal
      call geoq_psisilh(self)
      if (beq_rsig()>0) then
@@ -199,7 +197,7 @@ subroutine geoq_init(self)
      else
         self%beq%psibdry=max(self%beq%psiqbdry,self%beq%psiltr)
      end if
-  else if(self%beq%n%bdryopt==4.OR.self%beq%n%bdryopt==8) then
+  case (4,8)
      ! boundary from X-point
      call beq_psix(self%beq)
      !B     if (beq_rsig()>0) then
@@ -213,7 +211,7 @@ subroutine geoq_init(self)
      self%beq%psibdry=self%beq%psixpt
      self%beq%psiltr=self%beq%psixpt
      !B     end if
-  else if(self%beq%n%bdryopt==7.OR.self%beq%n%bdryopt==10) then
+  case (7,10)
      ! boundary from X-point
      call beq_psix(self%beq)
      if (beq_rsig()>0) then
@@ -221,10 +219,13 @@ subroutine geoq_init(self)
      else
         self%beq%psibdry=max(self%beq%psiqbdry,self%beq%psixpt)
      end if
-  else if(self%beq%n%bdryopt==11.OR.self%beq%n%bdryopt==12) then
+  case (11,12)
      ! boundary from EQDSK regardless
      self%beq%psibdry=self%beq%psiqbdry
-  end if
+  case (13,14,15)
+     ! boundary based on nodes of geometry only
+     self%beq%psibdry=self%beq%psiltr
+  end select boundary_type
 
   if (beq_rsig()*(self%beq%psiqbdry-self%beq%psibdry)<0) then
      call log_error(m_name,s_name,1,error_warning,'boundary psi outside separatrix')
@@ -274,6 +275,11 @@ subroutine geoq_psilimiter(self)
      call posang_invtfm(posang,0)
      zr=posang%pos(1)
      zz=posang%pos(2)
+     if (self%beq%n%search==1) then
+        ! must lie within search box
+        if (zr<self%beq%n%lkrsta.OR.zr>self%beq%n%lkrend.OR. &
+        zz<self%beq%n%lkzsta.OR.zz>self%beq%n%lkzend) cycle
+     end if
      ! then to flux coordinates
      !! evaluate psi
      !      call spl2d_eval(self%beq%psi,zr,zz,zpsi)
@@ -390,6 +396,11 @@ subroutine geoq_psisilh(self)
            call posang_invtfm(posang,0)
            zr=posang%pos(1)
            zz=posang%pos(2)
+           if (self%beq%n%search==1) then
+              ! must lie within search box
+              if (zr<self%beq%n%lkrsta.OR.zr>self%beq%n%lkrend.OR. &
+              zz<self%beq%n%lkzsta.OR.zz>self%beq%n%lkzend) cycle
+           end if
            ! evaluate psi
            call spl2d_eval(self%beq%psi,zr,zz,zpsi)
            !dbg   if (j<=10) write(*,*) zr,zz,zpsi  !dbg
@@ -814,6 +825,22 @@ subroutine geoq_writev(self,kchar,kplot)
         posang%pos=zbary
         posang%opt=0 ; posang%units=-3
         call beq_b(self%beq,posang,0)
+        call posang_writev(posang,kplot,2)
+     end do
+     ! output cartesian B vectors as cell data
+     write(kplot,'(''VECTORS B-RZzeta float'')')
+     do j=1,self%objl%ng
+        ! calculate barycentre
+        iobj%geobj=self%objl%obj2(j)%ptr
+        iobj%objtyp=self%objl%obj2(j)%typ
+        call geobj_centre(iobj,self%objl%posl,self%objl%nodl,zbary)
+        ! evaluate field at barycentre
+        posang%pos=zbary
+        posang%opt=0 ; posang%units=-3
+        call beq_b(self%beq,posang,0)
+        ! convert to polar-toroidal
+        posang%opt=16
+        call posang_invtfm(posang,-3)
         call posang_writev(posang,kplot,2)
      end do
 

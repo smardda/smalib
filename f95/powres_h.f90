@@ -45,11 +45,11 @@ module powres_h
      real(kr8) :: psimax !< maximum value of \f$ \psi \f$ for interpolation
      real(kr8) :: thetamin !< minimum value of \f$ \theta \f$ for interpolation
      real(kr8) :: thetamax !< maximum value of \f$ \theta \f$ for interpolation
-     logical  :: flincart    !< plot file for field line following
-     logical  :: flinx    !< plot file for field line following
-     logical  :: flinends    !< gnuplot file for field line ends
-     logical  :: flinptz    !< plot file for field line following in \f$ (\psi,\theta,\zeta) \f$
-     logical  :: flinm    !< plot file for field line following in \f$ (\psi,\theta,\zeta) \f$
+     logical  :: flincart    !< plot switch for field line following
+     logical  :: flinx    !< plot switch for field line following
+     logical  :: flinends    !< gnuplot switch for field line ends
+     logical  :: flinptz    !< plot switch for field line following in \f$ (\psi,\theta,\zeta) \f$
+     logical  :: flinm    !< plot switch for field line following in \f$ (\psi,\theta,\zeta) \f$
      integer(ki4)  :: nflends !< gnuplot file unit for field line ends
   end type powres_t
 

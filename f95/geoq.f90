@@ -30,6 +30,7 @@ program geoq_p
   use query_m
   use datline_h
   use datline_m
+  use indict_m
   use geobjlist_m
   use geoq_m
 
@@ -39,6 +40,7 @@ program geoq_p
   use moutfile_m
   use vfile_m
   use gfile_m
+  use dfile_m
 
   implicit none
 
@@ -63,8 +65,6 @@ program geoq_p
   integer(ki4):: nana=0 !< unit for analytic field data
   integer(ki4):: ninfm=0 !< unit for field mesh data
   integer(ki4):: ifldspec !< field specification
-  integer(ki4):: ipsibig !< flag whether psi overlarge by 2pi
-  integer(ki4):: iffiesta=0 !< flag 'geqdsk' => faulty 2D array in eqdsk
   real(kr8):: zivac !< value of I in field file
   character(len=80) :: ibuf !< character workspace
 !--------------------------------------------------------------------------
@@ -114,7 +114,7 @@ program geoq_p
   call clock_start(3,'beq_init time')
   fileq=file%equil
   ifldspec=numerics%fldspec
-  ipsibig=numerics%psibig
+  numerics%fiesta=0
   select case (numerics%eqtype)
   case ('ana')
 ! need additional data to specify field analytically
@@ -126,20 +126,39 @@ program geoq_p
      call beqan_closewrite()
      call beqan_delete(beqan)
   case ('equ')
-     call beq_readequ(geoq%beq,fileq,ifldspec)
+     call beq_readequ(geoq%beq,fileq,numerics)
   case ('geqdsk')
-     iffiesta=1
-     call beq_readequil(geoq%beq,fileq,ifldspec,ipsibig,iffiesta)
+     numerics%fiesta=1
+     call beq_readequil(geoq%beq,fileq,numerics)
   case default
-     call beq_readequil(geoq%beq,fileq,ifldspec,ipsibig,iffiesta)
+     call beq_readequil(geoq%beq,fileq,numerics)
   end select
   call beq_move(geoq%beq,numerics)
+  call beq_fixorigin(geoq%beq,numerics)
   call beq_init(geoq%beq,numerics,fmesh)
+  call beq_sense(geoq%beq,0)
   call clock_stop(3)
+
+!--------------------------------------------------------------------------
+!! gnu plot to check input
+  if(plot%gnu) then
+     call clock_start(18,'gfile_gnu time')
+     call gfile_init(trim(file%gnu),'psi sample in R-Z space',nprint)
+     call spl2d_writeg(geoq%beq%psi,'sampl',nprint)
+     call gfile_close
+     call gfile_init(trim(file%gnu)//'_dR','dpsi/dR sample in R-Z space',nprint)
+     call spl2d_writeg(geoq%beq%dpsidr,'sampl',nprint)
+     call gfile_close
+     call gfile_init(trim(file%gnu)//'_dZ','dpsi/dZ sample in R-Z space',nprint)
+     call spl2d_writeg(geoq%beq%dpsidz,'sampl',nprint)
+     call gfile_close
+     call clock_stop(18)
+  end if
+
 !--------------------------------------------------------------------------
 !! read  geobjl data
 
-  call clock_start(4,'geobjlist_init time')
+  call clock_start(4,'geobjlist_read time')
   call geobjlist_read(geoq%objl,file%vtkdata)
   call clock_stop(4)
 !--------------------------------------------------------------------------
@@ -204,6 +223,7 @@ program geoq_p
  &   plot%geoqm.OR.plot%geofldx.OR.plot%frzzeta.OR.plot%geoqvolm) then
         call moutfile_read(geoq%beq%n%vacfile,zivac,nin)
         call spl3d_read(geoq%beq%vacfld,geoq%beq%n%vacfile,nin)
+        call beq_sense(geoq%beq,1)
      end if
   end if
 !--------------------------------------------------------------------------
@@ -253,20 +273,6 @@ program geoq_p
      call clock_stop(17)
   end if
 
-!! gnu plots
-  if(plot%gnu) then
-     call clock_start(18,'gfile_gnu time')
-     call gfile_init(trim(file%gnu),'psi sample in R-Z space',nprint)
-     call spl2d_writeg(geoq%beq%psi,'sampl',nprint)
-     call gfile_close
-     call gfile_init(trim(file%gnu)//'_dR','dpsi/dR sample in R-Z space',nprint)
-     call spl2d_writeg(geoq%beq%dpsidr,'sampl',nprint)
-     call gfile_close
-     call gfile_init(trim(file%gnu)//'_dZ','dpsi/dZ sample in R-Z space',nprint)
-     call spl2d_writeg(geoq%beq%dpsidz,'sampl',nprint)
-     call gfile_close
-     call clock_stop(18)
-  end if
 
   if(plot%gnum) then
      call clock_start(19,'gfile_gnum time')
@@ -346,7 +352,7 @@ program geoq_p
 !! field format for beams calculation
   if(plot%geoqfldxyz) then
      call clock_start(28,'vfile_geoqfldxyz time')
-     call vfile_init(file%geoqfldxyz,'allcartxyz',nplot)
+     call dfile_init(file%geoqfldxyz,nplot,1)
      ibuf=geoq%beq%n%vacfile
      call beq_writen(geoq%beq,'regular',nplot)
      geoq%beq%n%vacfile=ibuf

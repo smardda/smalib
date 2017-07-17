@@ -87,7 +87,9 @@ subroutine control_read(file,numerics,plot)
   integer(ki4) :: nbins_child  !< numerical parameter
   real(kr4) :: min_tolerance !< numerical parameter
   real(kr4) :: max_tolerance !< numerical parameter
-  integer(ki4) :: no_boundary_cubes !< number of extra bounding cubes
+  integer(ki4) :: boundary_cubes !< number of extra bounding cubes
+  real(kr4), dimension(3) :: lower_corner !< vector defining corner with lesser component values
+  real(kr4), dimension(3) :: upper_corner !< vector defining corner with greater component values
   real(kr4) :: delta_inner_length   !< inner cube separation from geometry
   real(kr4) :: delta_outer_length   !< outer cube separation from inner
   real(kr4) :: zrhmin !< reciprocal of estimated hmin
@@ -96,6 +98,7 @@ subroutine control_read(file,numerics,plot)
   integer(ki4)  :: i2        !< power of two
   integer(ki4) :: no_geobj_records !< local variable
   integer(ki4) :: margin_type !< local variable
+  integer(ki4) :: corner_flag !< local variable
   logical :: plot_hds !< DUPLICATE vtk plot selector
   logical :: plot_hdsm !< vtk plot selector
   logical :: plot_hdsbins !< DUPLICATE vtk plot selector
@@ -119,7 +122,9 @@ subroutine control_read(file,numerics,plot)
  &geometrical_type, &
  &min_tolerance, &
  &max_tolerance, &
- &no_boundary_cubes, &
+ &boundary_cubes, &
+ &lower_corner, &
+ &upper_corner, &
  &delta_inner_length, &
  &delta_outer_length, &
  &quantising_number, &
@@ -192,8 +197,10 @@ subroutine control_read(file,numerics,plot)
   geometrical_type = 1
   min_tolerance = 1.0e-3
   max_tolerance = 1.0e-1
-  no_boundary_cubes = 0
-  delta_inner_length = 0.
+  boundary_cubes = 0
+  lower_corner = 0
+  upper_corner = 0
+  delta_inner_length = -1.
   delta_outer_length = 0.
   quantising_number =1024
   no_geobj_records = 0
@@ -225,16 +232,20 @@ subroutine control_read(file,numerics,plot)
      call log_value("max_tolerance",max_tolerance)
      call log_error(m_name,s_name,9,error_fatal,'Invalid max_tolerance, need value > 0')
   end if
-  if(no_boundary_cubes<0 .OR. no_boundary_cubes>2 ) &
- &call log_error(m_name,s_name,17,error_fatal,'no_boundary_cubes must be >= 0 and <=2')
-  if(no_boundary_cubes/=0 ) then
+  corner_flag = 0
+  if(boundary_cubes<0 .OR. boundary_cubes>2 ) &
+ &call log_error(m_name,s_name,17,error_fatal,'boundary_cubes must be >= 0 and <=2')
+  if(boundary_cubes/=0 ) then
      if(delta_inner_length<0.0)then
-        call log_value("delta_inner_length",delta_inner_length)
-        call log_error(m_name,s_name,18,error_fatal,'Invalid delta_inner_length, need value >= 0')
+        boundary_cubes=1
+        corner_flag=1
+        call log_value("Assuming number of cuboids defined by corners is",boundary_cubes)
+        !call log_value("delta_inner_length",delta_inner_length)
+        !call log_error(m_name,s_name,18,error_warning,'Invalid delta_inner_length, need value >= 0')
      end if
      if(delta_outer_length<0.0)then
         call log_value("delta_outer_length",delta_outer_length)
-        call log_error(m_name,s_name,19,error_fatal,'Invalid delta_outer_length, need value >= 0')
+        call log_error(m_name,s_name,19,error_warning,'Invalid delta_outer_length, need value >= 0')
      end if
   end if
   if(quantising_number<2) &
@@ -252,7 +263,10 @@ subroutine control_read(file,numerics,plot)
   numerics%mtype  = margin_type
   numerics%mintolerance = min_tolerance
   numerics%maxtolerance = max_tolerance
-  numerics%nbdcub = no_boundary_cubes
+  numerics%nbdcub = boundary_cubes
+  numerics%cornflag = corner_flag
+  numerics%lowcorner = lower_corner
+  numerics%upcorner = upper_corner
   numerics%dilen = delta_inner_length
   numerics%dolen = delta_outer_length
   numerics%geobj_coord_tfm%nqtfm=type_geobj_coord_scaling

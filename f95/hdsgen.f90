@@ -20,6 +20,7 @@ program hdsgen_p
   use pcle_m
   use geobjlist_h
   use geobjlist_m
+  use indict_m
   use vfile_m
   use outfile_m
   use hdsfile_m

@@ -12,6 +12,7 @@ module datline_m
   datline_init,  & !< initialise unit for reading
   datline_read,  & !< read logical line of dat file
   datline_fieldtype,  & !< establish field type in logical line of dat file
+  datline_chkcomma, & !< check whether commas in line, effectively in the numeric data
   datline_split !< split logical line of dat file into chars
 
 ! public types
@@ -128,6 +129,29 @@ subroutine datline_fieldtype(self)
   !      end if
 
 end subroutine datline_fieldtype
+!---------------------------------------------------------------------
+!> check whether commas in line, effectively in the numeric data
+subroutine datline_chkcomma(self)
+
+  !! arguments
+  type(datline_t), intent(inout) :: self   !< datline data
+
+  !! local
+  character(len=*), parameter :: s_name='datline_chkcomma' !< subroutine name
+  character(len=320)  :: fieldin  !<  field
+  character(len=320)  :: field  !<  field
+  integer(ki4)  :: ilen !< length of character string
+  integer(ki4)  :: icomma !< is comma present
+
+  fieldin=self%line
+  field=adjustl(fieldin)
+  ilen=len_trim(field)
+  icomma=index(fieldin(9:ilen),',')
+  if (icomma>0) then
+     call log_error(m_name,s_name,1,error_warning,'Unexpected commas in input line')
+  end if
+
+end subroutine datline_chkcomma
 !---------------------------------------------------------------------
 !> split logical line of dat file
 subroutine datline_split(self)

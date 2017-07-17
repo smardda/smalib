@@ -146,7 +146,7 @@ subroutine bcontrol_read(file,numerics,plot)
   logical :: filefound !< true of file exists
   integer(ki4) :: dummy_number !< dummy
   integer(ki4) :: indot !< position of dot in filename
-  integer(ki4) :: ilent !< local variable
+  integer(ki4) :: ilent !< length of suffix string
   logical :: plot_cartv !< DUPLICATE  vtk plot selector
   logical :: plot_geoqx !< vtk plot selector
   logical :: plot_allcartv !< DUPLICATE  vtk plot selector
@@ -236,8 +236,8 @@ subroutine bcontrol_read(file,numerics,plot)
   inquire(file=equil_input_file,exist=filefound)
   if(.not.filefound) then
      !! error opening file
-     print '("Fatal error: Unable to find Beq field data file, ",a)',equil_input_file
-     call log_error(m_name,s_name,2,error_fatal,'Beq field data file not found')
+     print '("Error : Unable to find Beq field data file, ",a)',equil_input_file
+     call log_error(m_name,s_name,2,error_warning,'Beq field data file not found')
   end if
   !  call log_value("beq field data file, mesh_input_file",trim(file%fmesh))
   !  inquire(file=mesh_input_file,exist=filefound)
@@ -323,7 +323,7 @@ subroutine bcontrol_read(file,numerics,plot)
   file%gnusilm     =trim(root)//"_gnusilm"
   !! special field file format
   file%geoqfldxyz     =trim(root)//"_geoqfldxyz"
-  file%geoqfldxyz     =trim(root)//"_fieldi.dat"
+  file%geoqfldxyz     =trim(root)//"_fieldi"
 
   !! set default misc parameters
   dummy_number = 10
