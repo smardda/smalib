@@ -8,13 +8,14 @@ program vtktfm_p
   use dcontrol_h
   use log_m
   use clock_m
+  use position_h
+  use fmesh_h
   use beq_h
   use posang_h
   use posang_m
   use spl2d_m
   use spl3d_m
 
-  use position_h
   use geobjlist_h
   use position_m
   use ls_m

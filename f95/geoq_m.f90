@@ -3,7 +3,6 @@ module geoq_m
   use const_kind_m
   use log_m
   use const_numphys_h
-  use position_h
   use geobjlist_h
   use position_m
   use control_h
@@ -11,6 +10,8 @@ module geoq_m
   use btree_m
   use geobj_m
   use query_m
+  use position_h
+  use fmesh_h
   use beq_h
   use posang_h
   use posang_m
@@ -141,12 +142,13 @@ subroutine geoq_read(self,infileo,infileb)
   character(*), parameter :: s_name='geoq_read' !< subroutine name
   integer(ki4) :: ifldspec !< field specification
   integer(ki4):: ipsibig !< flag whether psi overlarge by 2pi
+  integer(ki4):: iffiesta=0 !< flag trouble with 2-D array
 
   call geobjlist_read(self%objl,infileo)
   ifldspec=self%beq%n%fldspec
   ipsibig=abs(self%beq%n%psibig)
   call log_value("psi 2pi too big if unity ",ipsibig)
-  call beq_readequil(self%beq,infileb,ifldspec,ipsibig)
+  call beq_readequil(self%beq,infileb,ifldspec,ipsibig,iffiesta)
   call log_error(m_name,s_name,70,log_info,'geoq input data files read')
 
 end subroutine geoq_read
@@ -179,16 +181,16 @@ subroutine geoq_init(self)
   else if(self%beq%n%bdryopt==3) then
      ! boundary based on geometry sampled at rate given by parameter deltal
      call geoq_psisilh(self)
-!B     if (beq_rsig()>0) then
-!B        self%beq%psibdry=min(self%beq%psiqbdry,self%beq%psiltr)
-!B     else
-!B        self%beq%psibdry=max(self%beq%psiqbdry,self%beq%psiltr)
-!B     end if
-!B     ! geoq_override for specific project
-!B     if (BEQ_OVERRIDE_ITER) then
-!B        call log_error(m_name,s_name,49,log_info,'override for ITER')
-        self%beq%psibdry=self%beq%psiltr
-!B     end if
+     !B     if (beq_rsig()>0) then
+     !B        self%beq%psibdry=min(self%beq%psiqbdry,self%beq%psiltr)
+     !B     else
+     !B        self%beq%psibdry=max(self%beq%psiqbdry,self%beq%psiltr)
+     !B     end if
+     !B     ! geoq_override for specific project
+     !B     if (BEQ_OVERRIDE_ITER) then
+     !B        call log_error(m_name,s_name,49,log_info,'override for ITER')
+     self%beq%psibdry=self%beq%psiltr
+     !B     end if
   else if(self%beq%n%bdryopt==6) then
      ! boundary based on geometry sampled at rate given by parameter deltal
      call geoq_psisilh(self)
@@ -198,19 +200,19 @@ subroutine geoq_init(self)
         self%beq%psibdry=max(self%beq%psiqbdry,self%beq%psiltr)
      end if
   else if(self%beq%n%bdryopt==4.OR.self%beq%n%bdryopt==8) then
-       ! boundary from X-point
-       call beq_psix(self%beq)
-!B     if (beq_rsig()>0) then
-!B        self%beq%psibdry=min(self%beq%psiqbdry,self%beq%psixpt)
-!B     else
-!B        self%beq%psibdry=max(self%beq%psiqbdry,self%beq%psixpt)
-!B     end if
-!B     ! geoq_override for specific project
-!B     if (BEQ_OVERRIDE_ITER) then
-!B     call log_error(m_name,s_name,50,log_info,'override for ITER')
-        self%beq%psibdry=self%beq%psixpt
-        self%beq%psiltr=self%beq%psixpt
-!B     end if
+     ! boundary from X-point
+     call beq_psix(self%beq)
+     !B     if (beq_rsig()>0) then
+     !B        self%beq%psibdry=min(self%beq%psiqbdry,self%beq%psixpt)
+     !B     else
+     !B        self%beq%psibdry=max(self%beq%psiqbdry,self%beq%psixpt)
+     !B     end if
+     !B     ! geoq_override for specific project
+     !B     if (BEQ_OVERRIDE_ITER) then
+     !B     call log_error(m_name,s_name,50,log_info,'override for ITER')
+     self%beq%psibdry=self%beq%psixpt
+     self%beq%psiltr=self%beq%psixpt
+     !B     end if
   else if(self%beq%n%bdryopt==7.OR.self%beq%n%bdryopt==10) then
      ! boundary from X-point
      call beq_psix(self%beq)
@@ -562,7 +564,7 @@ subroutine geoq_writev(self,kchar,kplot)
   integer(ki4) :: isum !< sum workspace
   integer(ki2) :: inn !< number of nodes defining geobj
   integer(ki4) :: iplall !< flag plot 'all' option
-  integer(ki4) :: irzzeta !< flag plot 'all' option
+  !  integer(ki4) :: irzzeta !< flag plot 'all' option
   real(kr4), dimension(3) :: znormal !< unit normal vector
   real(kr4), dimension(3) :: zbary !< vector of barycentre of geobj
   real(kr4) :: zmag !< magnitude of normal vector
@@ -573,27 +575,32 @@ subroutine geoq_writev(self,kchar,kplot)
   type(tfmdata_t) :: ztfmdata !< local variable
 
   ! preamble
-  irzzeta=0
+  ibuf1=kchar
+  !  irzzeta=0
   iplall=0
   plot_init_type: select case (kchar)
   case('geometry')
   case('all')
      iplall=1
   case('frzzeta')
-     irzzeta=1
+     !     irzzeta=1
      iplall=1
   case('frzxi')
-     irzzeta=2
+     !     irzzeta=2
+     iplall=1
+  case('fxyz')
+     !     irzzeta=3
      iplall=1
   case('allcart')
   end select plot_init_type
 
   plot_type: select case (kchar)
-  case('geometry','all','frzzeta','frzxi')
+  case('geometry','all','frzzeta','frzxi','fxyz')
      write(kplot,'(''DATASET UNSTRUCTURED_GRID'')')
      write(kplot,'(''POINTS '',I8, '' float'')') self%objl%np
      ! transform positions
-     if (irzzeta==0) then
+     geom_type: select case (ibuf1)
+     case('geometry','all')
         do j=1,self%objl%np
            ! transform positions to psi-theta-zeta space and write
            posang%pos=self%objl%posl%pos(j)%posvec
@@ -602,7 +609,7 @@ subroutine geoq_writev(self,kchar,kplot)
            call posang_psitfm(posang,self%beq)
            call posang_writev(posang,kplot)
         end do
-     else if (irzzeta==1) then
+     case('frzzeta')
         do j=1,self%objl%np
            ! transform positions to R-Z-zeta space and write
            posang%pos=self%objl%posl%pos(j)%posvec
@@ -610,7 +617,7 @@ subroutine geoq_writev(self,kchar,kplot)
            call posang_invtfm(posang,0)
            call posang_writev(posang,kplot)
         end do
-     else if (irzzeta==2) then
+     case('frzxi')
         ! default identity
         ztfmdata%ntfm=2
         ztfmdata%matrix(1,:)=(/1.,  0.,  0. /)
@@ -630,7 +637,17 @@ subroutine geoq_writev(self,kchar,kplot)
            posang%pos=zpostfm%posvec
            call posang_writev(posang,kplot)
         end do
-     end if
+     case('fxyz')
+        ztfmdata=self%beq%fmesh%tfmdata
+
+        do j=1,self%objl%np
+           ! transform positions from CAD (geometry in mm) coordinates to duct  (m)
+           posang%pos=self%objl%posl%pos(j)%posvec
+           posang%opt=0 ; posang%units=-3
+           call posang_invcartfm(posang,ztfmdata,0)
+           call posang_writev(posang,kplot)
+        end do
+     end select geom_type
      write(kplot, '('' '')')
 
      ! count entries in CELLS
@@ -659,7 +676,7 @@ subroutine geoq_writev(self,kchar,kplot)
 
      write(kplot,'(''POINT_DATA '',I8)') self%objl%np
 
-     ! output cartesian vectors (mm) usually
+     ! output cartesian vectors (mm) usually, no transform
 
      if (output_cartv) then
         write(kplot,'(''VECTORS Xcart float'')')
@@ -672,30 +689,47 @@ subroutine geoq_writev(self,kchar,kplot)
 
      if(iplall==1)then
 
-        write(kplot, '('' '')')
-        ! output cartesian B vectors
-        write(kplot,'(''VECTORS Bcart float'')')
-        do j=1,self%objl%np
-           ! position
-           posang%pos=self%objl%posl%pos(j)%posvec
-           posang%opt=0 ; posang%units=-3
-           !BB! first position to cyl polars to get psi derivs
-           !BB         call posang_invtfm(posang,0)
-           !BB         zr=posang%pos(1)
-           !BB         zz=posang%pos(2)
-           !BB         call spl2d_eval(self%beq%dpsidr,zr,zz,zdpdr)
-           !BB         call spl2d_eval(self%beq%dpsidz,zr,zz,zdpdz)
-           !BB         call spl2d_eval(self%beq%psi,zr,zz,zpsi)
-           !BB! evaluate I aka f at psi
-           !BB         call spleval(self%beq%f,self%beq%mr,self%beq%psiaxis,self%beq%psiqbdry,zpsi,zf,1)
-           !BB! B in toroidal-cyl polars
-           !BB         posang%vec(1)=-zdpdz/zr ; posang%vec(2)=zdpdr/zr ; posang%vec(3)=zf/zr
-           !BB         posang%opt=17
-           !BB! vec to cartesians and output
-           !BB         call posang_tfm(posang,-3)
-           call beq_b(self%beq,posang,0)
-           call posang_writev(posang,kplot,2)
-        end do
+        geom_type1:select case (ibuf1)
+        case('fxyz')
+           write(kplot, '('' '')')
+           ! output cartesian B vectors in duct coordinates
+           write(kplot,'(''VECTORS Bcart float'')')
+           ztfmdata=self%beq%fmesh%tfmdata
+           do j=1,self%objl%np
+              ! B evaluated at position in CAD coordinates
+              posang%pos=self%objl%posl%pos(j)%posvec
+              posang%opt=0 ; posang%units=-3
+              call beq_b(self%beq,posang,0)
+              ! now convert B to duct components (and coordinates)
+              call posang_invcartfm(posang,ztfmdata,0)
+              call posang_writev(posang,kplot,2)
+           end do
+        case default
+           write(kplot, '('' '')')
+           ! output cartesian B vectors
+           write(kplot,'(''VECTORS Bcart float'')')
+           do j=1,self%objl%np
+              ! position
+              posang%pos=self%objl%posl%pos(j)%posvec
+              posang%opt=0 ; posang%units=-3
+              !BB! first position to cyl polars to get psi derivs
+              !BB         call posang_invtfm(posang,0)
+              !BB         zr=posang%pos(1)
+              !BB         zz=posang%pos(2)
+              !BB         call spl2d_eval(self%beq%dpsidr,zr,zz,zdpdr)
+              !BB         call spl2d_eval(self%beq%dpsidz,zr,zz,zdpdz)
+              !BB         call spl2d_eval(self%beq%psi,zr,zz,zpsi)
+              !BB! evaluate I aka f at psi
+              !BB         call spleval(self%beq%f,self%beq%mr,self%beq%psiaxis,self%beq%psiqbdry,zpsi,zf,1)
+              !BB! B in toroidal-cyl polars
+              !BB         posang%vec(1)=-zdpdz/zr ; posang%vec(2)=zdpdr/zr ; posang%vec(3)=zf/zr
+              !BB         posang%opt=17
+              !BB! vec to cartesians and output
+              !BB         call posang_tfm(posang,-3)
+              call beq_b(self%beq,posang,0)
+              call posang_writev(posang,kplot,2)
+           end do
+        end select geom_type1
 
      end if
 
@@ -802,26 +836,26 @@ subroutine geoq_writeg(self,kchar,kout)
 
   plot_type: select case (kchar)
   case('gnusil')
-        ! positions in R-Z-zeta space
-        do j=1,self%objl%np
-           posang%pos=self%objl%posl%pos(j)%posvec
-           posang%opt=0 ; posang%units=-3
-           call posang_invtfm(posang,0)
-           write(kout,'(1x,i9,'//cfmt2v,iostat=status) &
-&          j,posang%pos(1),posang%pos(2),posang%pos(3)
-           call log_write_check(m_name,s_name,1,status)
-        end do
+     ! positions in R-Z-zeta space
+     do j=1,self%objl%np
+        posang%pos=self%objl%posl%pos(j)%posvec
+        posang%opt=0 ; posang%units=-3
+        call posang_invtfm(posang,0)
+        write(kout,'(1x,i9,'//cfmt2v,iostat=status) &
+ &      j,posang%pos(1),posang%pos(2),posang%pos(3)
+        call log_write_check(m_name,s_name,1,status)
+     end do
   case('gnusilm')
-        ! positions in psi-theta-zeta space
-        do j=1,self%objl%np
-           posang%pos=self%objl%posl%pos(j)%posvec
-           posang%opt=0 ; posang%units=-3
-           call posang_invtfm(posang,0)
-           call posang_psitfm(posang,self%beq)
-           write(kout,'(1x,i9,'//cfmt2v,iostat=status) &
-&          j,posang%pos(1),posang%pos(2),posang%pos(3)
-           call log_write_check(m_name,s_name,2,status)
-        end do
+     ! positions in psi-theta-zeta space
+     do j=1,self%objl%np
+        posang%pos=self%objl%posl%pos(j)%posvec
+        posang%opt=0 ; posang%units=-3
+        call posang_invtfm(posang,0)
+        call posang_psitfm(posang,self%beq)
+        write(kout,'(1x,i9,'//cfmt2v,iostat=status) &
+ &      j,posang%pos(1),posang%pos(2),posang%pos(3)
+        call log_write_check(m_name,s_name,2,status)
+     end do
   end select plot_type
 
 end subroutine geoq_writeg

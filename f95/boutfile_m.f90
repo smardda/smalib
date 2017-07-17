@@ -4,6 +4,8 @@ module boutfile_m
   use log_m
   use bcontrol_m
   use date_time_m
+  use position_h
+  use fmesh_h
   use beq_h
   use beq_m
   use spl2d_m

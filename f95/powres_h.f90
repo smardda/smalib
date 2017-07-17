@@ -1,9 +1,10 @@
 module powres_h
 
   use const_kind_m
-  use position_h
   use geobjlist_h
   use geobj_m
+  use position_h
+  use fmesh_h
   use beq_h
   use odes_h
 

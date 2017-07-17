@@ -16,9 +16,13 @@ module position_m
  &position_invtfm, & !< inverse transform position vector
  &position_qtfm, & !< quantise position vector
  &position_invqtfm, & !< inverse quantise position vector
+ &position_scaleunits, & !< change units of transform in position space
  &position_readv, & !< read in visualisation format
  &position_writev, & !< write in visualisation format
  &position_readcon, & !< read position control data
+ &position_readtfm, & !< read position control data
+ &position_tfmquery, & !< interrogate position control data
+ &position_writetfm, & !< write position control data
  &position_readlis, & !< read position list data
  &position_readonlylis, & !< read (general vtk format) only list of position coordinates
  &position_readveclis, & !< read position list data as vector
@@ -171,6 +175,7 @@ end function position_tfm
   character(*), parameter :: s_name='position_invtfm' !< subroutine name
   real(kr4), dimension(3) :: zvec   !< transformed position data
   integer(ki4) :: intfm   !< number of transform
+  integer(ki4) :: jj   !< loop
 
   intfm=tfmdata%ntfm
   transform_number :  select case (intfm)
@@ -179,7 +184,15 @@ end function position_tfm
   case(2)
      zvec=(self%posvec-tfmdata%offset)/tfmdata%scale
   case(3)
-!   call log_error(m_name,s_name,3,error_fatal,'inverse position transform not defined')
+! assume transform is orthogonal matrix, i.e. inverse=transpose
+     do jj=1,3
+        zvec(jj)=dot_product(self%posvec-tfmdata%offset,tfmdata%matrix(:,jj))
+     end do
+  case(4)
+! assume transform is orthogonal matrix, i.e. inverse=transpose
+     do jj=1,3
+        zvec(jj)=tfmdata%offset(jj)+dot_product(self%posvec-tfmdata%offset,tfmdata%matrix(:,jj))
+     end do
   end select transform_number
 
   position_invtfm%posvec=zvec
@@ -236,6 +249,23 @@ end function position_qtfm
 
 end function position_invqtfm
 !---------------------------------------------------------------------
+!> change units of transform in position space
+subroutine position_scaleunits(tfmdata,pfac)
+
+  !! arguments
+  type(tfmdata_t), intent(inout) :: tfmdata   !< data defining transform
+  real(kr4), intent(in) :: pfac  !< scales only positional data
+
+  !! local
+  character(*), parameter :: s_name='position_scaleunits' !< subroutine name
+  real(kr4), dimension(3) :: zoffset   !< change offset position data
+
+  zoffset=tfmdata%offset*pfac
+
+  tfmdata%offset=zoffset
+
+end subroutine position_scaleunits
+!---------------------------------------------------------------------
 !> read in position data
 subroutine position_readv(self,kin)
 
@@ -270,7 +300,6 @@ subroutine position_writev(self,kplot)
      call log_error(m_name,s_name,1,error_fatal,'Error writing Particle position')
   end if
 
-
 end subroutine position_writev
 !---------------------------------------------------------------------
 !> read position control data
@@ -284,6 +313,8 @@ subroutine position_readcon(ztfmdata,kin,flag)
   !! local
   character(*), parameter :: s_name='position_readcon' !< subroutine name
   real(kr4), dimension(3,3):: position_matrix  !< transformation matrix 3x3
+  real(kr4), dimension(9):: position_vector0  !< work transformation matrix 3x3 as vector
+  real(kr4), dimension(9):: position_vector  !< transformation matrix 3x3 as vector
   real(kr4), dimension(3):: position_scale  !< transformation scale 3-vector
   real(kr4), dimension(3):: position_offset  !< transformation offset 3-vector
   integer(ki4):: position_transform  !< transformation type
@@ -316,6 +347,7 @@ subroutine position_readcon(ztfmdata,kin,flag)
   !! position parameters
   namelist /positionparameters/ &
  &position_matrix , &
+ &position_vector , &
  &position_scale , &
  &position_offset , &
  &position_transform, &
@@ -327,7 +359,8 @@ subroutine position_readcon(ztfmdata,kin,flag)
   ! default identity
   position_transform=0
   transform_desc='cartesian_scale'
-  !DOC position_matrix=(/1.,0.,0.,0.,1.,0.,0.,0.,1./)
+  position_vector0=(/1.,0.,0.,0.,1.,0.,0.,0.,1./)
+  position_vector=position_vector0
   position_matrix(1,:)=(/1.,  0.,  0. /)
   position_matrix(2,:)=(/0.,  1.,  0. /)
   position_matrix(3,:)=(/0.,  0.,  1. /)
@@ -371,6 +404,15 @@ subroutine position_readcon(ztfmdata,kin,flag)
      !     position_offset=(/50.,  0.,  -390. /)
      position_offset=(/0.,  0.,  0. /)
   end if
+  position_vector0=position_vector-position_vector0
+  if (abs(maxval(position_vector0))+abs(minval(position_vector0))>1.e-6_kr8) then
+     ! position vector has changed, use to set matrix
+     do j=1,3
+        do i=1,3
+           position_matrix(i,j)=position_vector(i+(j-1)*3)
+        end do
+     end do
+  end if
   !! store values
   ztfmdata%matrix=position_matrix
   ztfmdata%scale=position_scale
@@ -379,6 +421,72 @@ subroutine position_readcon(ztfmdata,kin,flag)
   !ID  ztfmdata%id=transform_id
 
 end subroutine position_readcon
+!---------------------------------------------------------------------
+!> read position control data
+subroutine position_readtfm(tfmdata,kin)
+
+  !! arguments
+  type(tfmdata_t), intent(out) :: tfmdata   !< position transform numeric controls
+  integer(ki4), intent(in) :: kin   !< output channel for tfmdata
+
+  !! local
+  character(*), parameter :: s_name='position_readtfm' !< subroutine name
+
+  read(kin,*,iostat=status) ibuf1
+  call log_read_check(m_name,s_name,1,status)
+  read(kin,*,iostat=status) tfmdata%scale
+  call log_read_check(m_name,s_name,2,status)
+  read(kin,*,iostat=status)  tfmdata%offset
+  call log_read_check(m_name,s_name,3,status)
+  read(kin,*,iostat=status)  tfmdata%matrix
+  call log_read_check(m_name,s_name,4,status)
+  read(kin,*,iostat=status)  tfmdata%ntfm
+  call log_read_check(m_name,s_name,5,status)
+
+end subroutine position_readtfm
+!---------------------------------------------------------------------
+!> get position control data
+subroutine position_tfmquery(tfmdata,kchar,object)
+
+  !! arguments
+  type(tfmdata_t), intent(in) :: tfmdata   !< position transform numeric controls
+  character(*), intent(in) :: kchar  !< case, specifies object
+  real(kr4), intent(out), dimension(*) :: object  !< output of object
+
+  !! local
+  character(*), parameter :: s_name='position_tfmquery' !< subroutine name
+
+  select case (kchar)
+  case ('scale')
+  object(1:3)=tfmdata%scale
+  case ('offset')
+  object(1:3)=tfmdata%offset
+  end select
+
+end subroutine position_tfmquery
+!---------------------------------------------------------------------
+!> write position control data
+subroutine position_writetfm(tfmdata,kout)
+
+  !! arguments
+  type(tfmdata_t), intent(in) :: tfmdata   !< position transform numeric controls
+  integer(ki4), intent(in) :: kout   !< output channel for tfmdata
+
+  !! local
+  character(*), parameter :: s_name='position_writetfm' !< subroutine name
+
+  write(kout,'(a)',iostat=status) 'TFMDA'
+  call log_write_check(m_name,s_name,1,status)
+  write(kout,*,iostat=status) tfmdata%scale
+  call log_write_check(m_name,s_name,2,status)
+  write(kout,*,iostat=status)  tfmdata%offset
+  call log_write_check(m_name,s_name,3,status)
+  write(kout,*,iostat=status)  tfmdata%matrix
+  call log_write_check(m_name,s_name,4,status)
+  write(kout,*,iostat=status)  tfmdata%ntfm
+  call log_write_check(m_name,s_name,5,status)
+
+end subroutine position_writetfm
 !---------------------------------------------------------------------
 !> read (vtk) list of position coordinates
 subroutine position_readlis(self,infile,kin,kopt)
@@ -500,20 +608,20 @@ subroutine position_readonlylis(self,kin,kfmt)
      end do
 10       continue
   end if
-! write(*,'(9G12.5)') (self%pos(j)%posvec, j=1,self%np)
+  ! write(*,'(9G12.5)') (self%pos(j)%posvec, j=1,self%np)
 
 end subroutine position_readonlylis
 !---------------------------------------------------------------------
 !> read (vtk) list of vectors
 subroutine position_readveclis(self,infile,kcname,kin,kopt)
-     !! arguments
+  !! arguments
   type(posveclis_t), intent(inout) :: self !< vector list data
   character(*),intent(in) :: infile !< name of input file
   character(*),intent(in) :: kcname !< name of field required
   integer(ki4), intent(inout) :: kin   !< input channel for vector list data
   integer(ki4), intent(in), optional :: kopt   !< options
 
-     !! local
+  !! local
   character(*), parameter :: s_name='position_readveclis' !< subroutine name
   logical :: unitused !< flag to test unit is available
   integer(ki4) :: invec   !< number of vectors
@@ -522,70 +630,50 @@ subroutine position_readveclis(self,infile,kcname,kin,kopt)
   integer(ki4) :: islen2   !< length of required vector field name
 
   logical :: isnumb !< local variable
-     external isnumb
+  external isnumb
 
-     ibuf1=adjustl(kcname)
-     islen2=max(2,scan(ibuf1,' '))-1
-     if(present(kopt)) then
-        !! assume unit already open and reading infile
-        if (kin==0) then
-           inquire(file=infile,number=kin,iostat=status)
-           if(status/=0.OR.kin==-1)then
-              !! error opening file
-              call log_error(m_name,s_name,1,error_fatal,'Error opening vector list data file')
-           else
-              call log_error(m_name,s_name,1,log_info,'Vector list data file opened')
-              nin=kin
-           end if
+  ibuf1=adjustl(kcname)
+  islen2=max(2,scan(ibuf1,' '))-1
+  if(present(kopt)) then
+     !! assume unit already open and reading infile
+     if (kin==0) then
+        inquire(file=infile,number=kin,iostat=status)
+        if(status/=0.OR.kin==-1)then
+           !! error opening file
+           call log_error(m_name,s_name,1,error_fatal,'Error opening vector list data file')
         else
+           call log_error(m_name,s_name,1,log_info,'Vector list data file opened')
            nin=kin
         end if
      else
-
-        !! get file unit
-        do i=99,1,-1
-           inquire(i,opened=unitused)
-           if(.not.unitused)then
-              kin=i
-              exit
-           end if
-        end do
         nin=kin
+     end if
+  else
 
-        !! open file
-        open(unit=nin,file=infile,status='OLD',form='FORMATTED',iostat=status)
-        if(status/=0)then
-           !! error opening file
-           call log_error(m_name,s_name,2,error_fatal,'Error opening vector list data file')
-        else
-           call log_error(m_name,s_name,2,log_info,'Vector list data file opened')
+     !! get file unit
+     do i=99,1,-1
+        inquire(i,opened=unitused)
+        if(.not.unitused)then
+           kin=i
+           exit
         end if
+     end do
+     nin=kin
 
+     !! open file
+     open(unit=nin,file=infile,status='OLD',form='FORMATTED',iostat=status)
+     if(status/=0)then
+        !! error opening file
+        call log_error(m_name,s_name,2,error_fatal,'Error opening vector list data file')
+     else
+        call log_error(m_name,s_name,2,log_info,'Vector list data file opened')
      end if
 
-     !! File unit now sorted, get to where point data begin
-     if (self%np==0) then
-        !! read local header information to get number of vectors
-        do
-           read(nin,fmt='(a)',iostat=status) ibuf1
-           !!eof
-           if(status<0) then
-              exit
-              !! error
-           else if (status>0) then
-              call log_error(m_name,s_name,3,error_fatal,'Error reading header data')
-           else
-              ibuf2=adjustl(ibuf1)
-              if(ibuf2(1:10)=='POINT_DATA') then
-                 iltest=isnumb(ibuf2,invec,11)
-                 self%np=invec
-                 exit
-              end if
-           end if
-        end do
-     end if
+  end if
 
-     !! find vector header
+  !! File unit now sorted, get to where point data begin
+  if (self%np==0) then
+     !! read local header information to get number of vectors
      do
         read(nin,fmt='(a)',iostat=status) ibuf1
         !!eof
@@ -593,219 +681,239 @@ subroutine position_readveclis(self,infile,kcname,kin,kopt)
            exit
            !! error
         else if (status>0) then
-           call log_error(m_name,s_name,4,error_fatal,'Error reading header data')
+           call log_error(m_name,s_name,3,error_fatal,'Error reading header data')
         else
            ibuf2=adjustl(ibuf1)
-           if(ibuf2(1:7)=='VECTORS') then
-              ibuf1=adjustl(ibuf2(8:))
-              islen=max(2,scan(ibuf1,' '))-1
-              vname=ibuf1(:islen)
-              if (vname(:islen)==kcname(:islen2)) then
-                 call log_value("Vector field found ",vname)
-                 exit
-              else
-                 call log_value("Skipped vector field ",vname)
-              end if
-              !         else if(ibuf2(1:10)=='POINT_DATA') then
-              !            iltest=isnumb(ibuf2,invec,11)
-              !            self%np=invec
+           if(ibuf2(1:10)=='POINT_DATA') then
+              iltest=isnumb(ibuf2,invec,11)
+              self%np=invec
+              exit
            end if
         end if
      end do
+  end if
 
-     !! allocate vector storage
-     if(self%np>0) then
-        allocate(self%pos(self%np), &
- &      stat=status)
-        !! check successful allocation
-        if(status/=0) then
-           call log_error(m_name,s_name,5,error_fatal,'Unable to allocate memory')
-        end if
+  !! find vector header
+  do
+     read(nin,fmt='(a)',iostat=status) ibuf1
+     !!eof
+     if(status<0) then
+        exit
+        !! error
+     else if (status>0) then
+        call log_error(m_name,s_name,4,error_fatal,'Error reading header data')
      else
-        call log_error(m_name,s_name,6,error_fatal,'No vector data')
+        ibuf2=adjustl(ibuf1)
+        if(ibuf2(1:7)=='VECTORS') then
+           ibuf1=adjustl(ibuf2(8:))
+           islen=max(2,scan(ibuf1,' '))-1
+           vname=ibuf1(:islen)
+           if (vname(:islen)==kcname(:islen2)) then
+              call log_value("Vector field found ",vname)
+              exit
+           else
+              call log_value("Skipped vector field ",vname)
+           end if
+           !         else if(ibuf2(1:10)=='POINT_DATA') then
+           !            iltest=isnumb(ibuf2,invec,11)
+           !            self%np=invec
+        end if
      end if
+  end do
 
-     !! read coordinates
-     do j=1,self%np
-        call position_readv(self%pos(j),nin)
-     end do
-     print '("number of vectors read = ",i10)',self%np
-     call log_value("number of vectors read ",self%np)
+  !! allocate vector storage
+  if(self%np>0) then
+     allocate(self%pos(self%np), &
+ &   stat=status)
+     !! check successful allocation
+     if(status/=0) then
+        call log_error(m_name,s_name,5,error_fatal,'Unable to allocate memory')
+     end if
+  else
+     call log_error(m_name,s_name,6,error_fatal,'No vector data')
+  end if
+
+  !! read coordinates
+  do j=1,self%np
+     call position_readv(self%pos(j),nin)
+  end do
+  print '("number of vectors read = ",i10)',self%np
+  call log_value("number of vectors read ",self%np)
 
 end subroutine position_readveclis
 !---------------------------------------------------------------------
 !> delete list of vectors
 subroutine position_deleteveclis(self)
-     !! arguments
+  !! arguments
   type(posveclis_t), intent(inout) :: self !< vector list data
 
-     !! local
+  !! local
   character(*), parameter :: s_name='position_deleteveclis' !< subroutine name
 
-     deallocate(self%pos)
+  deallocate(self%pos)
 
 end subroutine position_deleteveclis
 !---------------------------------------------------------------------
 !> write (vtk)  list of position coordinates
 subroutine position_writelis(self,kchar,kplot)
 
-     !! arguments
+  !! arguments
   type(posveclis_t), intent(in) :: self !< position list data
   character(*), intent(in) :: kchar  !< case, specifies objects
   integer(ki4), intent(in) :: kplot   !< output channel for position list data
-     !     type(beq_t), intent(inout), optional :: pbeq   !> beq data structure
+  !     type(beq_t), intent(inout), optional :: pbeq   !> beq data structure
 
-     !! local
+  !! local
   character(*), parameter :: s_name='position_writelis' !< subroutine name
   integer(ki4) :: iseg   !< number of segments in track
 
-     !      if(present(pbeq)) then
-     !! convert positions to cartesians
-     !      end if
+  !      if(present(pbeq)) then
+  !! convert positions to cartesians
+  !      end if
 
-     !! plot list of all positions
-     write(kplot,'(''DATASET UNSTRUCTURED_GRID'')')
-     write(kplot,'(''POINTS '',I8, '' float'')') self%np
-     do j=1,self%np
-        call position_writev(self%pos(j),kplot)
+  !! plot list of all positions
+  write(kplot,'(''DATASET UNSTRUCTURED_GRID'')')
+  write(kplot,'(''POINTS '',I8, '' float'')') self%np
+  do j=1,self%np
+     call position_writev(self%pos(j),kplot)
+  end do
+
+  write(kplot, '('' '')')
+  !      if(present(pbeq)) then
+  !! convert positions back to psi-theta-zeta
+  !      end if
+
+  plot_type: select case (kchar)
+  case('track')
+     ! output positions as a track
+     iseg=self%np-1
+     write(kplot,'(''CELLS '',I8,1X,I8)') iseg, 3*iseg
+     do i=1,iseg
+        write(kplot,'(''2 '',I8,1X,I8)')  i-1,i
      end do
-
      write(kplot, '('' '')')
-     !      if(present(pbeq)) then
-     !! convert positions back to psi-theta-zeta
-     !      end if
+     write(kplot,'(''CELL_TYPES '',I8)') iseg
+     do i=1,iseg
+        write(kplot,'(''3'')')
+     end do
+     write(kplot, '('' '')')
 
-     plot_type: select case (kchar)
-     case('track')
-        ! output positions as a track
-        iseg=self%np-1
-        write(kplot,'(''CELLS '',I8,1X,I8)') iseg, 3*iseg
-        do i=1,iseg
-           write(kplot,'(''2 '',I8,1X,I8)')  i-1,i
-        end do
-        write(kplot, '('' '')')
-        write(kplot,'(''CELL_TYPES '',I8)') iseg
-        do i=1,iseg
-           write(kplot,'(''3'')')
-        end do
-        write(kplot, '('' '')')
+  case default
+     ! output positions as points
+     write(kplot,'(''CELLS 1 '',I8)') self%np+1
+     write(kplot,'(I8)') self%np,  (i-1,i=1,self%np)
+     write(kplot,'(''CELL_TYPES 1'')')
+     write(kplot,'(''2'')')
+     write(kplot, '('' '')')
 
-     case default
-        ! output positions as points
-        write(kplot,'(''CELLS 1 '',I8)') self%np+1
-        write(kplot,'(I8)') self%np,  (i-1,i=1,self%np)
-        write(kplot,'(''CELL_TYPES 1'')')
-        write(kplot,'(''2'')')
-        write(kplot, '('' '')')
-
-     end select plot_type
+  end select plot_type
 
 end subroutine position_writelis
 !---------------------------------------------------------------------
 !> physical length of list of position coordinates
 subroutine position_lenlis(self,length)
 
-     !! arguments
+  !! arguments
   type(posveclis_t), intent(in) :: self !< position list data
   real(kr4), intent(out) :: length   !< physical length
 
-     !! local
+  !! local
   character(*), parameter :: s_name='position_lenlis' !< subroutine name
   real(kr8) :: zlensum   !< sum of physical length (working)
   real(kr8) :: zlen   !< physical length (working)
   real(kr8), dimension(3)  :: zlenvec !< physical length vector (working)
 
 
-     !! sum
-     zlensum=0
-     do j=1,self%np-1
-        zlenvec=self%pos(j+1)%posvec-self%pos(j)%posvec
-        zlen=sqrt(max(0._kr8,zlenvec(1)**2+zlenvec(2)**2+zlenvec(3)**2))
-        zlensum=zlensum+zlen
-     end do
+  !! sum
+  zlensum=0
+  do j=1,self%np-1
+     zlenvec=self%pos(j+1)%posvec-self%pos(j)%posvec
+     zlen=sqrt(max(0._kr8,zlenvec(1)**2+zlenvec(2)**2+zlenvec(3)**2))
+     zlensum=zlensum+zlen
+  end do
 
-     length=zlensum
+  length=zlensum
 
 end subroutine position_lenlis
 !---------------------------------------------------------------------
 !> transform list of position coordinates
 subroutine position_tfmlis(self,tfmdata)
 
-     !! arguments
+  !! arguments
   type(posveclis_t), intent(inout) :: self !< position list data
   type(tfmdata_t), intent(in) :: tfmdata   !< data defining transform
 
-     !! local
+  !! local
   character(*), parameter :: s_name='position_tfmlis' !< subroutine name
   type(posvecl_t) :: zpos !< local variable
 
-     !! transform list of all positions
-     do j=1,self%np
-        zpos=position_tfm(self%pos(j),tfmdata)
-        self%pos(j)=zpos
-     end do
+  !! transform list of all positions
+  do j=1,self%np
+     zpos=position_tfm(self%pos(j),tfmdata)
+     self%pos(j)=zpos
+  end do
 
 end subroutine position_tfmlis
 !---------------------------------------------------------------------
 !> inverse transform list of position coordinates
 subroutine position_invtfmlis(self,tfmdata)
 
-     !! arguments
+  !! arguments
   type(posveclis_t), intent(inout) :: self !< position list data
   type(tfmdata_t), intent(in) :: tfmdata   !< data defining transform
 
-     !! local
+  !! local
   character(*), parameter :: s_name='position_invtfmlis' !< subroutine name
   type(posvecl_t) :: zpos !< local variable
 
 
-     !! transform list of all positions
-     do j=1,self%np
-        zpos=position_invtfm(self%pos(j),tfmdata)
-        self%pos(j)=zpos
-     end do
+  !! transform list of all positions
+  do j=1,self%np
+     zpos=position_invtfm(self%pos(j),tfmdata)
+     self%pos(j)=zpos
+  end do
 
 end subroutine position_invtfmlis
 !---------------------------------------------------------------------
 !> transform quantised list of position coordinates
 subroutine position_qtfmlis(self,qtfmdata)
 
-     !! arguments
+  !! arguments
   type(posveclis_t), intent(inout) :: self !< position list data
   type(quantfm_t), intent(in) :: qtfmdata   !< data defining transform
 
-     !! local
+  !! local
   character(*), parameter :: s_name='position_qtfmlis' !< subroutine name
-     !      type(posvecl_t) position_qtfm
+  !      type(posvecl_t) position_qtfm
   type(posvecl_t) :: zpos !< local variable
 
 
-     !! transform list of all positions
-     do j=1,self%np
-        zpos=position_qtfm(self%pos(j),qtfmdata)
-        self%pos(j)=zpos
-     end do
+  !! transform list of all positions
+  do j=1,self%np
+     zpos=position_qtfm(self%pos(j),qtfmdata)
+     self%pos(j)=zpos
+  end do
 
 end subroutine position_qtfmlis
 !---------------------------------------------------------------------
 !> inverse transform quantised list of position coordinates
 subroutine position_invqtfmlis(self,qtfmdata)
 
-     !! arguments
+  !! arguments
   type(posveclis_t), intent(inout) :: self !< position list data
   type(quantfm_t), intent(in) :: qtfmdata   !< data defining transform
 
-     !! local
+  !! local
   character(*), parameter :: s_name='position_invqtfmlis' !< subroutine name
-     !      type(posvecl_t) position_invqtfm
+  !      type(posvecl_t) position_invqtfm
   type(posvecl_t) :: zpos !< local variable
 
 
-     !! transform list of all positions
-     do j=1,self%np
-        zpos=position_invqtfm(self%pos(j),qtfmdata)
-        self%pos(j)=zpos
-     end do
+  !! transform list of all positions
+  do j=1,self%np
+     zpos=position_invqtfm(self%pos(j),qtfmdata)
+     self%pos(j)=zpos
+  end do
 
 end subroutine position_invqtfmlis
 
