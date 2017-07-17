@@ -12,6 +12,7 @@ module geobj_m
 ! public subroutines
   public :: geobj_readv, & !< read in visualisation format
   geobj_writev, & !< write in visualisation format
+  geobj_writestl, & !< write object in stl format
   geobj_inbox, & !< test whether within real box
   geobj_innbox, &  !< test whether within normalised box
   geobj_linehits, &  !< test whether line hits
@@ -133,6 +134,48 @@ subroutine geobj_writev(self,k,kout)
   end if
 
 end subroutine geobj_writev
+!---------------------------------------------------------------------
+!> output geobj vectors in stl format
+subroutine geobj_writestl(self,posl,nodl,k,kout)
+
+  !! arguments
+  type(geobj_t), intent(in) :: self   !< geobj data
+  type(posveclis_t), intent(in) :: posl   !< list of positions
+  integer(ki4), dimension(*), intent(in) :: nodl   !< list of nodes
+  integer(ki4), intent(in) :: k   !< part of geobj data (inert, but keep for consistency)
+  integer(ki4), intent(in) :: kout   !< output channel for geobj data
+
+  !! local
+  character(*), parameter :: s_name='geobj_writestl' !< subroutine name
+  integer(ki4) :: ii   !< geobj position
+  integer(ki4) :: jj   !< loop counter
+  real(kr4), dimension(3,8) :: xnodes !< x(compt,node) of obj
+  integer(ki4), dimension(8) :: inod !< nodes of obj
+  real(kr4), dimension(3) :: znormal !< unit normal vector
+  real(kr4) :: zmag !< magnitude of normal vector
+
+  if (self%objtyp==VTK_TRIANGLE) then
+     inn=geobj_entry_table(self%objtyp)
+     ii=self%geobj
+     do jj=1,inn
+        inod(jj)=nodl(ii+jj-1)
+        xnodes(:,jj)=posl%pos(inod(jj))%posvec
+     end do
+     call geobj_normal(self,posl,nodl,znormal,zmag)
+  write(kout,'(''facet normal '''//cfmte1v) (znormal(i),i=1,3)
+      write(kout,'(''    outer loop'')')
+          write(kout,'(''        vertex '''//cfmte1v) (xnodes(i,1),i=1,3)
+          write(kout,'(''        vertex '''//cfmte1v) (xnodes(i,2),i=1,3)
+          write(kout,'(''        vertex '''//cfmte1v) (xnodes(i,3),i=1,3)
+      write(kout,'(''    endloop'')')
+  write(kout,'(''endfacet'')')
+
+  else
+     ! not triangle type
+     call log_error(m_name,s_name,1,error_fatal,'Can only write triangle geobj')
+  end if
+
+end subroutine geobj_writestl
 !---------------------------------------------------------------------
 !> is geobj in real box
 function geobj_inbox(self,posl,nodl,box)

@@ -25,6 +25,7 @@ module const_kind_m
 !> real output format
   character(len=5), parameter, public :: cfmtr = 'G15.8'
 !character(len=5), parameter, public :: cfmtr = 'G12.5'
+  character(len=5), parameter, public :: cfmte = 'E15.8'
 
 !! derived parameters
   character(len=7), parameter, public :: cfmtbs = '('//cfmtr//')'
@@ -36,5 +37,6 @@ module const_kind_m
   character(len=12), parameter, public :: cfmt2v = '4(2X,'//cfmtr//'))'
   character(len=15), parameter, public :: cfmtbnv = '(999(1X,'//cfmtr//'))'
   character(len=14), parameter, public :: cfmtnv = '999(1X,'//cfmtr//'))'
+  character(len=14), parameter, public :: cfmte1v = '3(1X,1P'//cfmte//'))'
 
 end module const_kind_m

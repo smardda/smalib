@@ -32,6 +32,7 @@ module geobjlist_m
   geobjlist_addcube,   & !< add cube(s) to  geobjlist data structure
   geobjlist_writev,   & !< write (vtk)  geobjlist data structure
   geobjlist_nodlmv,   & !< rearrange (vtk)  geobjlist data structure
+  geobjlist_writestl,   & !< write (stl)  geobjlist data structure
   geobjlist_step, &   !< control processing of  geobjlist data structure
   geobjlist_stepquery, &   !< density processing of geobjlist data structure
   geobjlist_getbb,   & !< bb of  geobjlist data structure
@@ -859,6 +860,34 @@ subroutine geobjlist_nodlmv(self,infilelevel,knlevel,kpowe)
   end if
 
 end subroutine geobjlist_nodlmv
+!---------------------------------------------------------------------
+!> write (stl)  geobjlist data structure
+subroutine geobjlist_writestl(self,kchar,kplot)
+
+  !! arguments
+  type(geobjlist_t), intent(in) :: self !< geobj list data
+  character(*), intent(in) :: kchar  !< case
+  integer(ki4), intent(in) :: kplot   !< output channel for stl data
+
+  !! local
+  character(*), parameter :: s_name='geobjlist_writestl' !< subroutine name
+  type(geobj_t) :: igeobj   !< geobj
+
+  plot_type: select case (kchar)
+  case('bodies')
+     ! split into bodies
+
+  case default
+     ! output as triangles only
+     do j=1,self%ng
+        igeobj%geobj=self%obj2(j)%ptr
+        igeobj%objtyp=self%obj2(j)%typ
+        call geobj_writestl(igeobj,self%posl,self%nodl,3,kplot)
+     end do
+
+  end select plot_type
+
+end subroutine geobjlist_writestl
 !---------------------------------------------------------------------
 !> control sorting of  coordinates into bins
 subroutine geobjlist_step(self,btree)
@@ -1957,13 +1986,14 @@ subroutine geobjlist_dread(self,kread)
 
   iskip=0
   start_first_loop_over_file : do
-     read(kread,fmt='(a80)',iostat=status) ibuf2
+     read(kread,fmt='(a80)',iostat=status,end=3) ibuf2
      call log_read_check(m_name,s_name,1,status)
      ibuf1=adjustl(ibuf2)
-     !D   write(*,*) iskip, ibuf1(1:10) !D
+     !D write(*,*) iskip, ibuf1(1:10) !D
      if (ibuf1(1:10)=='BEGIN BULK') goto 1
      iskip=iskip+1
   end do start_first_loop_over_file
+3     continue
   !error exit
   call log_error(m_name,s_name,1,error_fatal,'BEGIN BULK not found')
 
@@ -2040,7 +2070,9 @@ subroutine geobjlist_dread(self,kread)
      if (ibuf1(1:7)=='ENDDATA') exit
 
      call datline_read(datl,ibuf2,kread)
+     !D write(*,*) datl%line  !D
      call datline_fieldtype(datl)
+     call datline_chkcomma(datl)
      call datline_split(datl)
 
      !     write(*,*) 'datl%flds8(1)', datl%flds8(1)

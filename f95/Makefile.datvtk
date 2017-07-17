@@ -30,12 +30,14 @@ query_m.f90 \
 geobjlist_m.f90 \
 indict_m.f90 \
 dcontrol_m.f90 \
+vcontrol_h.f90 \
 vfile_m.f90 \
 gfile_m.f90 \
 datline_h.f90 \
 datline_m.f90 \
 dfile_m.f90 \
 bods_m.f90 \
+stlfile_m.f90 \
 stack_m.f90 \
 datvtk.f90
  
@@ -87,12 +89,14 @@ datvtk.f90 : query_m.mod
 datvtk.f90 : geobjlist_m.mod
 datvtk.f90 : indict_m.mod
 datvtk.f90 : dcontrol_m.mod
+datvtk.f90 : vcontrol_h.mod
 datvtk.f90 : vfile_m.mod
 datvtk.f90 : gfile_m.mod
 datvtk.f90 : datline_h.mod
 datvtk.f90 : datline_m.mod
 datvtk.f90 : dfile_m.mod
 datvtk.f90 : bods_m.mod
+datvtk.f90 : stlfile_m.mod
 datvtk.f90 : stack_m.mod
 const_numphys_h.f90 : const_kind_m.mod
 control_h.f90 : const_kind_m.mod
@@ -185,6 +189,8 @@ dcontrol_m.f90 : const_kind_m.mod
 dcontrol_m.f90 : const_numphys_h.mod
 dcontrol_m.f90 : log_m.mod
 dcontrol_m.f90 : dcontrol_h.mod
+vcontrol_h.f90 : const_kind_m.mod
+vcontrol_h.f90 : position_h.mod
 vfile_m.f90 : const_kind_m.mod
 vfile_m.f90 : log_m.mod
 gfile_m.f90 : const_kind_m.mod
@@ -215,6 +221,8 @@ bods_m.f90 : datline_h.mod
 bods_m.f90 : datline_m.mod
 bods_m.f90 : vfile_m.mod
 bods_m.f90 : geobjlist_m.mod
+stlfile_m.f90 : const_kind_m.mod
+stlfile_m.f90 : log_m.mod
 stack_m.f90 : const_kind_m.mod
 stack_m.f90 : const_numphys_h.mod
 stack_m.f90 : log_m.mod
