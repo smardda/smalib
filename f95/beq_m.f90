@@ -3010,15 +3010,15 @@ subroutine beq_psilt(self)
   else if (self%n%psiopt==3) then
      zpsimin=min(self%n%psimin, self%n%psimax)
      zpsimax=max(self%n%psimin, self%n%psimax)
-     if (rsig>0) then
+!S     if (rsig>0) then
         !  psi increases outward
         self%n%psimin=zpsimin
         self%n%psimax=zpsimax
-     else
-        !  psi decreases outward
-        self%n%psimin=zpsimax
-        self%n%psimax=zpsimin
-     end if
+!S     else
+!S        !  psi decreases outward
+!S        self%n%psimin=zpsimax
+!S        self%n%psimax=zpsimin
+!S     end if
   end if
 
 end subroutine beq_psilt
@@ -3779,6 +3779,8 @@ subroutine beq_rpsi(self)
      zsig=sign(1._kr8,self%srmax(j)-self%srmin(j))
      isig=1
      if (zsig<0) isig=0
+     !rev isig=0 ! reverse!!
+     !rev if (zsig<0) isig=1 !!
 
      ! loop over r to define 1-D splines
      zsr=self%srmin(j)
