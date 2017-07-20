@@ -110,6 +110,10 @@ program vtktfm_p
         if (numerics%same) then
            call bods_init(bods,geobjl,numerics%nvalue) !W
         end if
+     else if (iopt==4) then
+! no body data in file, fix up
+        call log_value("Fixing up file for missing body/cell labels replacement ",numerics%nvalue)
+        call bods_init(bods,geobjl,numerics%nvalue) 
      else
         call log_error(m_name,m_name,iopt,error_fatal,'Corrupt vtk file')
      end if

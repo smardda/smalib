@@ -1505,6 +1505,9 @@ subroutine geobjlist_paneltfm(self,kbods,numerics)
            call log_value("----- offset-1",ztfmdata%offset(1))
            call log_value("----- offset-2",ztfmdata%offset(2))
            call log_value("----- offset-3",ztfmdata%offset(3))
+           call log_value("----- scale-1",ztfmdata%scale(1))
+           call log_value("----- scale-2",ztfmdata%scale(2))
+           call log_value("----- scale-3",ztfmdata%scale(3))
         end if
         !! loop over points defining object
         do jj=1,inumpts
