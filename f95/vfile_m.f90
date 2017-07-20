@@ -852,7 +852,7 @@ subroutine vfile_rscalarwrite(self,kp,kcname,kctyp,kplot,kheader)
 
   !! output scalar header if kheader is unity
   if(kheader==1) then
-     write(kplot,'(A,''_DATA'',I8)',iostat=status) kctyp(1:islen),kp
+     write(kplot,'(A,''_DATA'',1X,I9)',iostat=status) kctyp(1:islen),kp
   end if
   call log_write_check(m_name,s_name,1,status)
   write(kplot,'(''SCALARS '',A,'' float 1'')',iostat=status), kcname(1:islen2)

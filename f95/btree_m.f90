@@ -531,7 +531,7 @@ subroutine btree_writev(self,numerics,kchar,kout)
      call log_error(m_name,s_name,1,error_warning,'Plot type unrecognised')
   end select plot_type
 
-  write(kout,'(''CELLS  '',2i8)') inode, 9*inode
+  write(kout,'(''CELLS  '',i8,1x,i8)') inode, 9*inode
 
   ioff=0
   do j=1,inode
@@ -605,7 +605,7 @@ subroutine btree_add(self,kd,knode,kadra)
 
   if ( imatch==0 ) then
      ! add to exten array
-     if (iexten+1>size(self%exten)) then
+     if (iexten+1>size(self%exten,2)) then
         call log_error(m_name,s_name,2,error_fatal,'Binary tree exten size exceeded')
      end if
      iexten=iexten+1
@@ -819,7 +819,7 @@ subroutine btree_madd(self,kxyz,knode,kadra,kd,kextn,kcorna,kchildn,kbsiz)
 
   if ( imatch==0 ) then
      ! add to exten array
-     if (iexten+1>size(self%exten)) then
+     if (iexten+1>size(self%exten,2)) then
         call log_error(m_name,s_name,2,error_fatal,'Binary tree exten size exceeded')
      end if
      iexten=iexten+1

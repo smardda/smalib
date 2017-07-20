@@ -538,7 +538,7 @@ subroutine powelt_move(self,powcal,gshadl,btree)
   if (ibacktr==ipback.AND.powcal%powres%flinm) then
      ! open file to record mapped track
      write(ibuff,'(''elt= '',I6,'' sub= '',I2,'' trackm'')') self%ie,self%je
-     write(icfile,'(''trackm'',I6.6,I2.2)') self%ie,self%je
+     write(icfile,'(''trackm'',I7.7,I2.2)') self%ie,self%je
      call vfile_init(icfile,ibuff,nplot)
      ! write track in mapped coordinates
      ! de-quantise
@@ -553,7 +553,7 @@ subroutine powelt_move(self,powcal,gshadl,btree)
   if (ibacktr==ipback.AND.powcal%powres%flinx) then
      ! open file to record Cartesian track
      write(ibuff,'(''elt= '',I6,'' sub= '',I2,'' trackx'')') self%ie,self%je
-     write(icfile,'(''trackx'',I6.6,I2.2)') self%ie,self%je
+     write(icfile,'(''trackx'',I7.7,I2.2)') self%ie,self%je
      call vfile_init(icfile,ibuff,nplot)
      ! write track in Cartesian coordinates???
      allocate(wposl%pos(ip), stat=status)
@@ -894,7 +894,7 @@ subroutine powelt_move0(self,powcal,gshadl,btree)
      ! open file to record RZxi
      write(ibuff,'(''elt= '',I6,'' sub= '',I2,'' lenpath= '',1pg12.5,'' objhit= '',I8)') &
  &   self%ie,self%je,lenpath,nobjhit
-     write(icfile,'(''trackm'',I6.6,I2.2)') self%ie,self%je
+     write(icfile,'(''trackm'',I7.7,I2.2)') self%ie,self%je
      call vfile_init(icfile,ibuff,nplot)
      ! write track in RZxi coordinates
      ! de-quantise
@@ -946,7 +946,7 @@ subroutine powelt_move0(self,powcal,gshadl,btree)
      write(ibuff,'(''elt= '',I6,'' sub= '',I2,'' lenpath= '',1pg12.5,'' objhit= '',I8)') &
  &   self%ie,self%je,phylenpath,nobjhit
      !        write(ibuff,'(''elt= '',I6,'' sub= '',I2,'' trackx'')') self%ie,self%je
-     write(icfile,'(''trackx'',I6.6,I2.2)') self%ie,self%je
+     write(icfile,'(''trackx'',I7.7,I2.2)') self%ie,self%je
      call vfile_init(icfile,ibuff,nplot)
      call position_writelis(wposl,'track',nplot)
      !DIAG!   dump end point !DIAG
@@ -1297,7 +1297,7 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
      ! open file to record RZxi
      write(ibuff,'(''elt= '',I6,'' sub= '',I2,'' lenpath= '',1pg12.5,'' objhit= '',I8)') &
  &   self%ie,self%je,lenpath,nobjhit
-     write(icfile,'(''trackm'',I6.6,I2.2)') self%ie,self%je
+     write(icfile,'(''trackm'',I7.7,I2.2)') self%ie,self%je
      call vfile_init(icfile,ibuff,nplot)
      ! write track in RZxi coordinates
      ! de-quantise
@@ -1349,7 +1349,7 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
      write(ibuff,'(''elt= '',I6,'' sub= '',I2,'' lenpath= '',1pg12.5,'' objhit= '',I8)') &
  &   self%ie,self%je,phylenpath,nobjhit
      !        write(ibuff,'(''elt= '',I6,'' sub= '',I2,'' trackx'')') self%ie,self%je
-     write(icfile,'(''trackx'',I6.6,I2.2)') self%ie,self%je
+     write(icfile,'(''trackx'',I7.7,I2.2)') self%ie,self%je
      call vfile_init(icfile,ibuff,nplot)
      call position_writelis(wposl,'track',nplot)
      !DIAG!   dump end point !DIAG
@@ -1643,7 +1643,7 @@ subroutine powelt_move2(self,powcal,gshadl,btree)
   if (ibacktr==ipback.AND.powcal%powres%flinm) then
      ! open file to record RZxi
      write(ibuff,'(''elt= '',I6,'' sub= '',I2,'' trackm'')') self%ie,self%je
-     write(icfile,'(''trackm'',I6.6,I2.2)') self%ie,self%je
+     write(icfile,'(''trackm'',I7.7,I2.2)') self%ie,self%je
      call vfile_init(icfile,ibuff,nplot)
      ! write track in RZxi coordinates
      ! de-quantise
@@ -1658,7 +1658,7 @@ subroutine powelt_move2(self,powcal,gshadl,btree)
   if (ibacktr==ipback.AND.powcal%powres%flinx) then
      ! open file to record Cartesian track
      write(ibuff,'(''elt= '',I6,'' sub= '',I2,'' trackx'')') self%ie,self%je
-     write(icfile,'(''trackx'',I6.6,I2.2)') self%ie,self%je
+     write(icfile,'(''trackx'',I7.7,I2.2)') self%ie,self%je
      call vfile_init(icfile,ibuff,nplot)
      ! write track in Cartesian coordinates
      allocate(wposl%pos(ip), stat=status)
@@ -1974,7 +1974,7 @@ subroutine powelt_move3(self,powcal,gshadl,btree)
      ! open file to record RZxi
      write(ibuff,'(''elt= '',I6,'' sub= '',I2,'' lenpath= '',1pg12.5,'' objhit= '',I8)') &
  &   self%ie,self%je,lenpath,nobjhit
-     write(icfile,'(''trackm'',I6.6,I2.2)') self%ie,self%je
+     write(icfile,'(''trackm'',I7.7,I2.2)') self%ie,self%je
      call vfile_init(icfile,ibuff,nplot)
      ! write track in RZxi coordinates
      ! de-quantise
@@ -2026,7 +2026,7 @@ subroutine powelt_move3(self,powcal,gshadl,btree)
      write(ibuff,'(''elt= '',I6,'' sub= '',I2,'' lenpath= '',1pg12.5,'' objhit= '',I8)') &
  &   self%ie,self%je,phylenpath,nobjhit
      !        write(ibuff,'(''elt= '',I6,'' sub= '',I2,'' trackx'')') self%ie,self%je
-     write(icfile,'(''trackx'',I6.6,I2.2)') self%ie,self%je
+     write(icfile,'(''trackx'',I7.7,I2.2)') self%ie,self%je
      call vfile_init(icfile,ibuff,nplot)
      call position_writelis(wposl,'track',nplot)
      !DIAG!   dump end point !DIAG
@@ -2378,7 +2378,7 @@ subroutine powelt_move4(self,powcal,gshadl,btree)
      ! open file to record RZxi
      write(ibuff,'(''elt= '',I6,'' sub= '',I2,'' lenpath= '',1pg12.5,'' objhit= '',I8)') &
  &   self%ie,self%je,lenpath,nobjhit
-     write(icfile,'(''trackm'',I6.6,I2.2)') self%ie,self%je
+     write(icfile,'(''trackm'',I7.7,I2.2)') self%ie,self%je
      call vfile_init(icfile,ibuff,nplot)
      ! write track in RZxi coordinates
      ! de-quantise
@@ -2430,7 +2430,7 @@ subroutine powelt_move4(self,powcal,gshadl,btree)
      write(ibuff,'(''elt= '',I6,'' sub= '',I2,'' lenpath= '',1pg12.5,'' objhit= '',I8)') &
  &   self%ie,self%je,phylenpath,nobjhit
      !        write(ibuff,'(''elt= '',I6,'' sub= '',I2,'' trackx'')') self%ie,self%je
-     write(icfile,'(''trackx'',I6.6,I2.2)') self%ie,self%je
+     write(icfile,'(''trackx'',I7.7,I2.2)') self%ie,self%je
      call vfile_init(icfile,ibuff,nplot)
      call position_writelis(wposl,'track',nplot)
      !DIAG!   dump end point !DIAG
@@ -2794,7 +2794,7 @@ subroutine powelt_move5(self,powcal,gshadl,btree)
      ! open file to record RZxi
      write(ibuff,'(''elt= '',I6,'' sub= '',I2,'' lenpath= '',1pg12.5,'' objhit= '',I8)') &
  &   self%ie,self%je,lenpath,nobjhit
-     write(icfile,'(''trackm'',I6.6,I2.2)') self%ie,self%je
+     write(icfile,'(''trackm'',I7.7,I2.2)') self%ie,self%je
      call vfile_init(icfile,ibuff,nplot)
      ! write track in RZxi coordinates
      ! de-quantise
@@ -2846,7 +2846,7 @@ subroutine powelt_move5(self,powcal,gshadl,btree)
      write(ibuff,'(''elt= '',I6,'' sub= '',I2,'' lenpath= '',1pg12.5,'' objhit= '',I8)') &
  &   self%ie,self%je,phylenpath,nobjhit
      !        write(ibuff,'(''elt= '',I6,'' sub= '',I2,'' trackx'')') self%ie,self%je
-     write(icfile,'(''trackx'',I6.6,I2.2)') self%ie,self%je
+     write(icfile,'(''trackx'',I7.7,I2.2)') self%ie,self%je
      call vfile_init(icfile,ibuff,nplot)
      call position_writelis(wposl,'track',nplot)
      !DIAG!   dump end point !DIAG

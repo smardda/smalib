@@ -144,7 +144,7 @@ subroutine mtest_writev(self,numerics,kchar,kout)
   end do
   write(kout, '('' '')')
   ! cells as polylines
-  write(kout,'(''CELLS '',I8,I8)') iph,ipph+iph
+  write(kout,'(''CELLS '',I8,1X,I8)') iph,ipph+iph
   do j=0,iph-1
      write(kout,'(''3'',3(1X,I8))') 2*j,ip+j,(2*j+1)
   end do

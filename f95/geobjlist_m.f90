@@ -749,7 +749,7 @@ subroutine geobjlist_writev(self,kchar,kplot)
      end do
 
      ! output CELL data
-     write(kplot,'(''CELLS '',I8,I8)') self%ng,self%ng+isum
+     write(kplot,'(''CELLS '',I8,1X,I8)') self%ng,self%ng+isum
      i=1
      do j=1,self%ng
         inn=geobj_entry_table(self%obj2(j)%typ)
