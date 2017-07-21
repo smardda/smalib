@@ -312,6 +312,8 @@ subroutine odes_1ststepcon(self,kerr,pdfaca,firstcall,psi,rispldr,rispldz)
   ik=self%posk(self%ndt)
   ! save direction of advance
   zdir=sign(1._kr8,self%dt)
+  !DIA  write(*,*) 'Entering 1ststepcon' !DIA
+  !DIA  write(*,*) 't,self%dt,g,g2,g3,gdia,pdfaca',t,self%dt,g,g2,g3,gdia,pdfaca(1) !DIA
 201   continue
   call odes_rkf23a(odes_1stfunct,t,self%dt,g,g2,g3,gdia,pdfaca,rispldr,rispldz)
   if (ifixdt==1) then
@@ -335,10 +337,10 @@ subroutine odes_1ststepcon(self,kerr,pdfaca,firstcall,psi,rispldr,rispldz)
   end if
   self%g3do(1:2)=g3d
   g23d=abs(g)+abs(g3)+self%epsar
-  !DES     rs=self%reps*maxval(g3d/g23d)
+  !DES rs=self%reps*maxval(g3d/g23d)
   rs=self%reps*maxval(g3d)
-   !DOD     write(*,*) 'g3d=',g3d,'g23d=',g23d !DOD
-   !DOD     write(*,*) 'rs=',rs !DOD
+  !DOD        write(*,*) 'g3d=',g3d,'g23d=',g23d !DOD
+  !DOD        write(*,*) 'rs=',rs !DOD
 
   if (rs<=1) then
      !     step succeeded, but if possible increase t-step for next step
@@ -353,7 +355,7 @@ subroutine odes_1ststepcon(self,kerr,pdfaca,firstcall,psi,rispldr,rispldz)
      end if
      zgincr=maxval(abs(g3-g))
      if (kerr==-1.OR.zgincr>self%n%termcon(2)) zhf=1
-   !DOD           write(*,*) 'zhf=',zhf !DOD
+     !DOD              write(*,*) 'zhf=',zhf !DOD
      ! set new timestep, allow negative timestep
      zdt=zdir*max(zhf*abs(self%dt),self%dtmin)
      !        t=t+zdt
@@ -363,8 +365,8 @@ subroutine odes_1ststepcon(self,kerr,pdfaca,firstcall,psi,rispldr,rispldz)
      !     save position
      self%vecp%pos(self%ndt)%posvec(1:2)=g3
      self%vecp%pos(self%ndt)%posvec(3)=self%t
-   !DOD           write(*,*) 'pass,t,dt,g3=',t,self%dt,g3 !DOD
-     !D       write(20,*)i,t,self%dt,g,g2,g3 !D
+     !DOD              write(*,*) 'pass,t,dt,g3=',t,self%dt,g3 !DOD
+     !D            write(20,*)i,t,self%dt,g,g2,g3 !D
 
      !        self%posa(1)=min(g2,g3,gdia(1),gdia(2),gdia(3))
      !        self%posb(1)=max(g2,g3,gdia(1),gdia(2),gdia(3))
@@ -389,8 +391,8 @@ subroutine odes_1ststepcon(self,kerr,pdfaca,firstcall,psi,rispldr,rispldz)
   end if
   zdt=zhf*self%dt
   self%dt=zdt
-   !DOD     write(*,*) 'fail,t,dt,g3=',t,self%dt,g3 !DOD
-   !DOD     write(*,*) 'failextra g,g2=',g,g2 !DOD
+  !DOD        write(*,*) 'fail,t,dt,g3=',t,self%dt,g3 !DOD
+  !DOD        write(*,*) 'failextra g,g2=',g,g2 !DOD
   !     try again unless t-step too small
   if (abs(self%dt)>=self%dtmin) goto 201
 
@@ -979,6 +981,8 @@ subroutine odes_1ststep1(self,kerr,pdfaca,psi,rispldr,rispldz,kflag)
      else
         self%dt=self%n%dt0
      end if
+     !DIA     write(*,*) 'g,gn,gdotn,self%n%dt0',g,gn,gdotn,self%n%dt0 !DIA
+     !DIA     write(*,*) 'ipdtfac,self%dt,self%dtmin',ipdtfac,self%dt,self%dtmin !DIA
      self%dt=ipdtfac*max(self%dt,self%dtmin)
      zdt=self%dt
      ! first step of trajectory with positive dt

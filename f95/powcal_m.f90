@@ -756,9 +756,7 @@ subroutine powcal_writev(self,kchar,kplot)
      self%powres%geobjl%posl%pos=self%powres%vecx%pos
      ! reset number of objects to be output according to refine_level input
      self%powres%geobjl%ng=ing*powelt_table(self%n%nlevel,2)/powelt_table(infilelevel,2)
-     write(*,*) 'here 10'
      if (infilelevel>self%n%nlevel) then
-     write(*,*) 'here 11'
         allocate(work(3*self%powres%geobjl%ng), stat=status)
         call log_alloc_check(m_name,s_name,41,status)
         work=self%powres%geobjl%nodl(1:3*self%powres%geobjl%ng)
@@ -766,7 +764,6 @@ subroutine powcal_writev(self,kchar,kplot)
      end if
      call geobjlist_writev(self%powres%geobjl,'geometry',kplot)
      allocate(rwork(self%powres%geobjl%ng), stat=status)
-     write(*,*) 'here 12'
      call log_alloc_check(m_name,s_name,42,status)
      rwork=abs(self%powres%pow(:self%powres%geobjl%ng))
      call vfile_rscalarwrite(rwork,self%powres%geobjl%ng,'Q','CELL',kplot,ifirst)
