@@ -52,6 +52,7 @@ module geobjlist_m
   geobjlist_create, & !< create some 2-D geobjlists
   geobjlist_create3d, & !< create geobjlists by translation/rotation
   geobjlist_centroids, & !< calculate centroids of objects
+  geobjlist_extract, & !< extract triangles according to criterion
   geobjlist_area !< calculate area of objects
 
 ! public types
@@ -3390,6 +3391,80 @@ subroutine geobjlist_centroids(self,key,dict,kndict,centroids)
   deallocate(indxsum)
 
 end subroutine geobjlist_centroids
+!---------------------------------------------------------------------
+!> extract triangles according to criterion
+subroutine geobjlist_extract(self,kbods,numerics)
+  !! arguments
+  type(geobjlist_t), intent(inout) :: self !< geobj list data
+  integer(ki4), dimension(:), intent(inout) :: kbods !< integer scalar list data of bodies for each point
+  type(vnumerics_t), intent(in) :: numerics !< input numerical parameters
+
+
+  !! local
+  character(*), parameter :: s_name='geobjlist_extract' !< subroutine name
+  integer(ki4), dimension(:), allocatable :: imark !< mark points as included
+  real(kr8) :: zrcen    !<   \f$ R_C \f$
+  real(kr8) :: zr    !<   \f$ R \f$
+  real(kr8) :: zx    !<   \f$ X \f$
+  real(kr8) :: zy    !<   \f$ Y \f$
+  real(kr8) :: zz    !<   \f$ Z-Z_C \f$
+  real(kr8) :: zang !< angle
+  integer(ki4) :: innd !< position of first entry for object in nodl
+  integer(ki4) :: inumpts !< length of object in nodl array
+  integer(ki4) :: ityp !< local variable
+  integer(ki4) :: ipt !< local variable
+
+  !! set up marker (weight) array for each point, so only processed once
+  allocate(imark(self%np), stat=status)
+  call log_alloc_check(m_name,s_name,1,status)
+  imark=0
+
+  extract_key: select case (numerics%key)
+
+  case('null','angle','poloidal')
+     ! loop over points, marking as appropriate
+     ! extract based on poloidal angle
+     do j=1,self%np
+        zx=self%posl%pos(j)%posvec(1)
+        zy=self%posl%pos(j)%posvec(2)
+        zz=self%posl%pos(j)%posvec(3)
+        zr=sqrt(zx**2+zy**2)
+        zang=atan2(zr-numerics%centre(1),zz)
+        if (numerics%angmin<zang.AND.zang<numerics%angmax) then
+           imark(j)=1
+        end if
+     end do
+
+  case('toroidal')
+     ! loop over points, marking as appropriate
+     ! extract based on toroidal angle
+     do j=1,self%np
+        zx=self%posl%pos(j)%posvec(1)
+        zy=self%posl%pos(j)%posvec(2)
+        zang=atan2(zy,zx)
+        if (numerics%angmin<zang.AND.zang<numerics%angmax) then
+           imark(j)=1
+        end if
+     end do
+  end select extract_key
+
+  kbods(1:self%ng)=0
+  ! extract objects containing marked points
+  do j=1,self%ng
+     innd=self%obj2(j)%ptr
+     ityp=self%obj2(j)%typ
+     inumpts=geobj_entry_table(ityp)
+     !! loop over points defining object
+     do k=1,inumpts
+        ipt=self%nodl(innd-1+k)
+        if (imark(ipt)/=0) then
+           kbods(j)=imark(ipt)
+           exit
+        end if
+     end do
+  end do
+
+end subroutine geobjlist_extract
 !---------------------------------------------------------------------
 !> calculate area of objects
 subroutine geobjlist_area(self,area)

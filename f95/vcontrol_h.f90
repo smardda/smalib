@@ -16,16 +16,22 @@ module vcontrol_h
 
   type, public :: vnumerics_t
    !! numerical run parameters
-  logical :: split !<  split file by attribute if set
-  logical ::  same !< make attribute take same value
-  integer(ki4) :: nvalue !<  value for attribute to take
-  character(len=80) :: name !<  name of attribute to be split / homogenised
+     logical :: split !<  split file by attribute if set
+     logical :: same !< make attribute take same value
+     integer(ki4) :: nvalue !<  value for attribute to take
+     character(len=80) :: name !<  name of attribute to be split / homogenised
      integer(ki4) :: npans !< number of panels for which transform defined
      integer(ki4), dimension(:), allocatable :: pantfm !< number of transform to apply to body
      integer(ki4), dimension(:,:), allocatable :: panbod !< second index is no. of panel corresponding to body
      character(len=6) :: angles  !< units, either radian or degree
      type(vtfmdata_t) :: vptfm !< array of position \f$ x \f$ to \f$ x \f$ scaling
      type(vtfmdata_t) :: vpantfm !< for each panel, array of position \f$ x \f$ to \f$ x \f$ scaling
+     logical :: paneltfm !< apply transform if .TRUE.
+     logical :: extract !< extract objects according to criterion
+     character(len=80) :: key !< key for extraction
+     real(kr8), dimension(2) :: centre !< centre of discharge in \f$ (R,Z) \f$
+     real(kr8) :: angmin !< minimum angle
+     real(kr8) :: angmax !< maximum angle
   end type vnumerics_t
 
 

@@ -34,6 +34,7 @@ program vtktfm_p
   use stack_m
 
   use bods_m
+  use scontrol_m
 
   implicit none
 
@@ -113,7 +114,7 @@ program vtktfm_p
      else if (iopt==4) then
 ! no body data in file, fix up
         call log_value("Fixing up file for missing body/cell labels replacement ",numerics%nvalue)
-        call bods_init(bods,geobjl,numerics%nvalue) 
+        call bods_init(bods,geobjl,numerics%nvalue)
      else
         call log_error(m_name,m_name,iopt,error_fatal,'Corrupt vtk file')
      end if
@@ -142,7 +143,12 @@ program vtktfm_p
 !     line below needed for debugging version to run
 !  write(*,*) 'this output helps gfortran sometimes',(geobjl%nodl(j),j=1,2)
 !     write(*,*) 'second',((numerics%panbod(i,j),i=1,2),j=1,9)
-  call geobjlist_paneltfm(geobjl,bods,numerics)
+  if (numerics%paneltfm) then
+     call geobjlist_paneltfm(geobjl,bods,numerics)
+  end if
+  if (numerics%extract) then
+     call geobjlist_extract(geobjl,bods,numerics)
+  end if
   call clock_stop(6)
 !--------------------------------------------------------------------------
 !! output file(s)

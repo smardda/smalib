@@ -14,6 +14,11 @@ module scontrol_m
  &scontrol_read, & !< read data for this run
  &scontrol_readcon !< read data for this object
 
+! public variables
+  integer(ki4), parameter, public :: RECOGNISED_KEYS=4 !< number of rekeys recognised by code
+  character(len=6),  dimension(RECOGNISED_KEYS), parameter, public :: reckey = & !< input variable must match
+ &(/'null  ','angle ','poloid','toroid'/)
+
 ! private variables
   character(*), parameter :: m_name='scontrol_m' !< module name
   integer(ki4)  :: status   !< error status
@@ -26,9 +31,6 @@ module scontrol_m
   integer(ki4), parameter :: RECOGNISED_STATISTICS=6 !< number of statistics recognised by code
   character(len=6), dimension(RECOGNISED_STATISTICS), parameter, public :: statistic = & !< input variable must match
  &(/'intg  ','intgsq','max   ','min   ','maxabs','minabs'/)
-  integer(ki4), parameter :: RECOGNISED_KEYS=2 !< number of rekeys recognised by code
-  character(len=6), dimension(RECOGNISED_KEYS), parameter, public :: reckey = & !< input variable must match
- &(/'null  ','angle '/)
 
   contains
 !---------------------------------------------------------------------
