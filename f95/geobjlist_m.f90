@@ -2901,6 +2901,7 @@ subroutine geobjlist_orientri(self)
 
 9     continue
   call stack_delete(iki4)
+  deallocate(imark)
 
 end subroutine geobjlist_orientri
 !---------------------------------------------------------------------
@@ -3141,6 +3142,7 @@ subroutine geobjlist_shelltets(self,geobjtri)
 
 9     continue
   call stack_delete(iki4)
+  deallocate(imark)
 
   ! create new geobjl
   ityp=VTK_TRIANGLE
@@ -3463,6 +3465,7 @@ subroutine geobjlist_extract(self,kbods,numerics)
         end if
      end do
   end do
+  deallocate(imark)
 
 end subroutine geobjlist_extract
 !---------------------------------------------------------------------
