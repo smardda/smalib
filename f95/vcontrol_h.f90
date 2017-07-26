@@ -16,6 +16,10 @@ module vcontrol_h
 
   type, public :: vnumerics_t
    !! numerical run parameters
+  logical :: split !<  split file by attribute if set
+  logical ::  same !< make attribute take same value
+  integer(ki4) :: nvalue !<  value for attribute to take
+  character(len=80) :: name !<  name of attribute to be split / homogenised
      integer(ki4) :: npans !< number of panels for which transform defined
      integer(ki4), dimension(:), allocatable :: pantfm !< number of transform to apply to body
      integer(ki4), dimension(:,:), allocatable :: panbod !< second index is no. of panel corresponding to body

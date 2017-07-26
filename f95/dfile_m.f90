@@ -31,11 +31,12 @@ module dfile_m
   contains
 !---------------------------------------------------------------------
 !> initialise dat file
-subroutine dfile_init(fileroot,kread)
+subroutine dfile_init(fileroot,kunit,kwrite)
 
   !! arguments
   character(len=*), intent(in) :: fileroot !< file name root
-  integer(ki4), intent(inout) :: kread   !< unit number
+  integer(ki4), intent(inout) :: kunit   !< unit number
+  integer(ki4), intent(in), optional :: kwrite   !< if unity, open for writing
 
   !! local
   character(*), parameter :: s_name='dfile_init' !< subroutine name
@@ -46,13 +47,18 @@ subroutine dfile_init(fileroot,kread)
   do i=99,1,-1
      inquire(i,opened=unitused)
      if(.not.unitused)then
-        kread=i
+        kunit=i
         exit
      end if
   end do
 
   !! open file
-  open(unit=kread,file=trim(fileroot)//'.dat',status='OLD',form='FORMATTED',iostat=status)
+  if(present(kwrite).AND.kwrite/=0) then
+  open(unit=kunit,file=trim(fileroot)//'.dat',status='NEW',iostat=status)
+  else
+  open(unit=kunit,file=trim(fileroot)//'.dat',status='OLD',form='FORMATTED',iostat=status)
+  end if
+
   if(status/=0)then
      !! error opening file
      call log_error(m_name,s_name,2,error_fatal,'Error opening dat file')
@@ -60,7 +66,7 @@ subroutine dfile_init(fileroot,kread)
      call log_error(m_name,s_name,2,log_info,'dat file opened')
   end if
 
-  nread=kread
+  nread=kunit
 
 end subroutine dfile_init
 !---------------------------------------------------------------------

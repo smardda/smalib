@@ -2,6 +2,8 @@ module bcontrol_m
 
   use const_kind_m
   use log_m
+  use position_h
+  use fmesh_h
   use beq_h
   use beq_m
 
@@ -27,6 +29,8 @@ module bcontrol_m
      character(len=80)  :: geoqx   !< \f$ \bf{B} \f$ in Cartesians
      character(len=80)  :: allcartv   !< DUPLICATE  all \f$ \bf{B} \f$ in Cartesians
      character(len=80)  :: geoqvolx   !< all \f$ \bf{B} \f$ in Cartesians
+     character(len=80)  :: geofldxyz   !< INERT geometry in transformed Cartesians, field in geometry coordinates
+     character(len=80)  :: geoqvolxyz   !< geometry and field in transformed Cartesians on Cartesian grid
      character(len=80)  :: fptv    !< DUPLICATE  vtk plot file of functions of \f$ (\psi,\theta) \f$
      character(len=80)  :: geoqvolm   !< all \f$ \bf{B} \f$ in mapped coordinates and components
      character(len=80)  :: geoqmm    !< DUPLICATE vtk plot file of functions of \f$ (\psi,\theta) \f$
@@ -41,6 +45,8 @@ module bcontrol_m
      character(len=80)  :: gnu !< gnuplot file of \f$ \psi(R,Z) \f$
      character(len=80)  :: gnusil !< gnuplot file of silhouette as function of \f$ (R,Z) \f$
      character(len=80)  :: gnusilm !< gnuplot file of silhouette as function of \f$ (\psi,\theta) \f$
+     character(len=80)  :: geoqfldxyz   !< \f$ \bf{B} \f$ in Cartesians on Cartesian grid
+     character(len=80)  :: fmesh   !< define special mesh on input file name
   end type bfiles_t
 
 
@@ -50,6 +56,7 @@ module bcontrol_m
      logical  :: geoqx   !< \f$ \bf{B} \f$ in Cartesians
      logical  :: allcartv   !< DUPLICATE  all \f$ \bf{B} \f$ in Cartesians
      logical  :: geoqvolx   !< all \f$ \bf{B} \f$ in Cartesians
+     logical  :: geoqfldxyz   !< \f$ \bf{B} \f$ in Cartesians on Cartesian grid
      logical  :: fptv    !< DUPLICATE  vtk plot file of functions of \f$ (\psi,\theta) \f$
      logical  :: geoqmm    !< DUPLICATE vtk plot file of functions of \f$ (\psi,\theta) \f$
      logical  :: geoqvolm    !< all \f$ \bf{B} \f$ in mapped coordinates and components
@@ -64,8 +71,10 @@ module bcontrol_m
      logical  :: gnu !< gnuplot file of \f$ \psi(R,Z) \f$
      logical  :: gnusil !< gnuplot file of silhouette as function of \f$ (R,Z) \f$
      logical  :: gnusilm !< gnuplot file of silhouette as function of \f$ (\psi,\theta) \f$
-     logical  :: gnuptz
+     logical  :: gnuptz !< local variable
      logical  :: gnum !< gnuplot file of \f$ fns(\psi,\theta) \f$
+     logical  :: geofldxyz   !< geometry and field in Cartesians
+     logical  :: geoqvolxyz   !< geometry and field in Cartesians on Cartesian grid
   end type bplots_t
 
 
@@ -130,17 +139,20 @@ subroutine bcontrol_read(file,numerics,plot)
   character(*), parameter :: s_name='bcontrol_read' !< subroutine name
   character(len=80) :: eqdsk_input_file  !< EQDSK G format data input file
   character(len=80) :: equil_input_file  !< generic equilibrium input file
+  character(len=80) :: mesh_input_file  !< generic field mesh input file
   character(len=80) :: vtk_input_file  !< vtk format geometry data input file
   character(len=80) :: lau_input_file  !< launch data input file
   character(len=80) :: icsuf  !< eqdsk file suffix
   logical :: filefound !< true of file exists
   integer(ki4) :: dummy_number !< dummy
   integer(ki4) :: indot !< position of dot in filename
-  integer(ki4) :: ilent !< local variable
+  integer(ki4) :: ilent !< length of suffix string
   logical :: plot_cartv !< DUPLICATE  vtk plot selector
   logical :: plot_geoqx !< vtk plot selector
   logical :: plot_allcartv !< DUPLICATE  vtk plot selector
   logical :: plot_geoqvolx !< vtk plot selector
+  logical :: plot_geofldxyz !< vtk plot selector
+  logical :: plot_geoqvolxyz !< vtk plot selector
   logical :: plot_fptv !< DUPLICATE  vtk plot selector
   logical :: plot_geoqmm !< vtk plot selector
   logical :: plot_geoqvolm !< vtk plot selector
@@ -153,15 +165,17 @@ subroutine bcontrol_read(file,numerics,plot)
   logical :: plot_geofldx !< vtk plot selector
   logical :: plot_geofld_quantised !< vtk plot selector
   logical :: plot_gnu !< gnu plot selector
-  logical :: plot_gnuptz
+  logical :: plot_gnuptz !< local variable
   logical :: plot_gnum !< gnum plot selector
   logical :: plot_gnusil !< gnusil plot selector
   logical :: plot_gnusilm !< gnusilm plot selector
+  logical :: plot_geoqfldxyz !< save field in special format
 
   !! file names
   namelist /inputfiles/ &
  &eqdsk_input_file,vtk_input_file,lau_input_file, &
- &equil_input_file
+ &equil_input_file, &
+ &mesh_input_file
 
   !! misc parameters
   namelist /miscparameters/ &
@@ -173,6 +187,8 @@ subroutine bcontrol_read(file,numerics,plot)
  &plot_geoqx, &
  &plot_allcartv, &
  &plot_geoqvolx, &
+ &plot_geofldxyz, &
+ &plot_geoqvolxyz, &
  &plot_fptv, &
  &plot_geoqmm, &
  &plot_geoqvolm, &
@@ -188,12 +204,14 @@ subroutine bcontrol_read(file,numerics,plot)
  &plot_gnuptz, &
  &plot_gnum, &
  &plot_gnusil, &
- &plot_gnusilm
+ &plot_gnusilm, &
+ &plot_geoqfldxyz
 
   !! read input file names
   vtk_input_file='null'
   lau_input_file='null'
   equil_input_file='null'
+  mesh_input_file='null'
   eqdsk_input_file='null'
   read(nin,nml=inputfiles,iostat=status)
   if(status/=0) then
@@ -208,6 +226,7 @@ subroutine bcontrol_read(file,numerics,plot)
   end if
   file%eqdsk   = equil_input_file
   file%equil   = equil_input_file
+  file%fmesh   = mesh_input_file
   file%vtkdata   = vtk_input_file
   file%laudata   = lau_input_file
 
@@ -217,9 +236,16 @@ subroutine bcontrol_read(file,numerics,plot)
   inquire(file=equil_input_file,exist=filefound)
   if(.not.filefound) then
      !! error opening file
-     print '("Fatal error: Unable to find Beq field data file, ",a)',equil_input_file
-     call log_error(m_name,s_name,2,error_fatal,'Beq field data file not found')
+     print '("Error : Unable to find Beq field data file, ",a)',equil_input_file
+     call log_error(m_name,s_name,2,error_warning,'Beq field data file not found')
   end if
+  !  call log_value("beq field data file, mesh_input_file",trim(file%fmesh))
+  !  inquire(file=mesh_input_file,exist=filefound)
+  !  if(.not.filefound) then
+  !     !! error opening file
+  !     print '("Fatal error: Unable to find Mesh field data file, ",a)',mesh_input_file
+  !     call log_error(m_name,s_name,2,error_fatal,'Mesh field data file not found')
+  !  end if
 
   ! set equilibrium type depending on suffix
   indot=index(equil_input_file,'.',.TRUE.)
@@ -250,6 +276,16 @@ subroutine bcontrol_read(file,numerics,plot)
      end if
   end if
 
+  if ( mesh_input_file/='null') then
+     call log_error(m_name,s_name,22,error_warning,'Mesh input filename is not null')
+     inquire(file=mesh_input_file,exist=filefound)
+  if(.not.filefound) then
+     !! error opening file
+     print '("Fatal error: Unable to find field mesh data file, ",a)',mesh_input_file
+     call log_error(m_name,s_name,22,error_fatal,'Mesh field data file not found')
+  end if
+  end if
+
   !! create output file names from root
 
   !! output file
@@ -268,6 +304,8 @@ subroutine bcontrol_read(file,numerics,plot)
   file%geoqx     =trim(root)//"_geoqx"
   file%allcartv     =trim(root)//"_allcartv"
   file%geoqvolx     =trim(root)//"_geoqvolx"
+  file%geofldxyz     =trim(root)//"_geofldxyz"
+  file%geoqvolxyz     =trim(root)//"_geoqvolxyz"
   file%fptv    =trim(root)//"_fptv"
   file%geoqmm    =trim(root)//"_geoqmm"
   file%geoqvolm    =trim(root)//"_geoqvolm"
@@ -283,6 +321,9 @@ subroutine bcontrol_read(file,numerics,plot)
   file%gnu     =trim(root)//"_gnu"
   file%gnusil     =trim(root)//"_gnusil"
   file%gnusilm     =trim(root)//"_gnusilm"
+  !! special field file format
+  file%geoqfldxyz     =trim(root)//"_geoqfldxyz"
+  file%geoqfldxyz     =trim(root)//"_fieldi"
 
   !! set default misc parameters
   dummy_number = 10
@@ -307,6 +348,8 @@ subroutine bcontrol_read(file,numerics,plot)
   plot_geoqx = .false.
   plot_allcartv = .false.
   plot_geoqvolx = .false.
+  plot_geofldxyz = .false.
+  plot_geoqvolxyz = .false.
   plot_fptv = .false.
   plot_geoqmm = .false.
   plot_geoqvolm = .false.
@@ -323,6 +366,7 @@ subroutine bcontrol_read(file,numerics,plot)
   plot_gnum = .false.
   plot_gnusil = .false.
   plot_gnusilm = .false.
+  plot_geoqfldxyz = .false.
 
   !!read plot selections
   read(nin,nml=plotselections,iostat=status)
@@ -338,6 +382,9 @@ subroutine bcontrol_read(file,numerics,plot)
   plot%geoqx   = plot_geoqx
   plot%geoqvolx = plot_allcartv
   plot%geoqvolx   = plot_geoqvolx
+  plot%geofldxyz   = plot_geofldxyz
+  plot%geoqvolxyz   = plot_geoqvolxyz
+  plot%geoqfldxyz   = plot_geoqfldxyz
   plot%geoqmm    = plot_geoqmm.OR.plot_fptv
   plot%geoqvolm    = plot_geoqvolm.OR.plot_geoqmm
   plot%geoqm    = plot_geoqm
@@ -352,20 +399,20 @@ subroutine bcontrol_read(file,numerics,plot)
   plot%gnusil     = plot_gnusil
   plot%gnusilm     = plot_gnusilm
   if (plot_frzxi) then
-  plot%geoqm = plot_frzxi
-  file%geoqm = file%frzxi
-  call log_error(m_name,s_name,20,error_warning,'Obsolete file handling feature frzxi activated')
+     plot%geoqm = plot_frzxi
+     file%geoqm = file%frzxi
+     call log_error(m_name,s_name,20,error_warning,'Obsolete file handling feature frzxi activated')
   else if (plot_allgeoq) then
-  plot%geoqm = plot_allgeoq
-  file%geoqm = file%allgeoq
-  call log_error(m_name,s_name,21,error_warning,'Obsolete file handling feature allgeoq activated')
+     plot%geoqm = plot_allgeoq
+     file%geoqm = file%allgeoq
+     call log_error(m_name,s_name,21,error_warning,'Obsolete file handling feature allgeoq activated')
   end if
   if (plot_gnuptz) then
-  plot%gnum = plot_gnuptz
-  call log_error(m_name,s_name,22,error_warning,'Obsolete file handling feature gnuptz activated')
+     plot%gnum = plot_gnuptz
+     call log_error(m_name,s_name,22,error_warning,'Obsolete file handling feature gnuptz activated')
   end if
   if (plot_geoqmm) then
-  call log_error(m_name,s_name,23,error_warning,'Obsolete file handling switch geoqmm/fptv used')
+     call log_error(m_name,s_name,23,error_warning,'Obsolete file handling switch geoqmm/fptv used')
   end if
 
   call beq_readcon(numerics,nin)

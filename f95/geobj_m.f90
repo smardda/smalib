@@ -12,11 +12,13 @@ module geobj_m
 ! public subroutines
   public :: geobj_readv, & !< read in visualisation format
   geobj_writev, & !< write in visualisation format
+  geobj_writestl, & !< write object in stl format
   geobj_inbox, & !< test whether within real box
   geobj_innbox, &  !< test whether within normalised box
   geobj_linehits, &  !< test whether line hits
   geobj_trihitsbox, &  !< test whether triangle intersects real box
   geobj_normal, &  !< calculate normal to geobj
+  geobj_area, &  !< calculate area of geobj
   geobj_nodes, &  !< return geobj nodal values
   geobj_centre  !< calculate barycentre of geobj
 
@@ -48,25 +50,25 @@ module geobj_m
 !     1 2 3 4 5 6 7 8 9 0 1 2 3 4 5  6  7 8 9 0 1 2 3 4  5  6  7
   integer(ki4), parameter, public :: geobj_max_entry_table = 20 !< local variable
 !> define most of cell types likely to be needed
-  integer(ki2),  parameter, public :: VTK_VERTEX=1 !< local variable
-  integer(ki2),  parameter, public :: VTK_POLY_VERTEX=2 !< local variable
-  integer(ki2),  parameter, public :: VTK_LINE=3 !< local variable
-  integer(ki2),  parameter, public :: VTK_POLY_LINE=4 !< local variable
-  integer(ki2),  parameter, public :: VTK_TRIANGLE=5 !< local variable
-  integer(ki2),  parameter, public :: VTK_TRIANGLE_STRIP=6 !< local variable
-  integer(ki2),  parameter, public :: VTK_POLYGON=7 !< local variable
-  integer(ki2),  parameter, public :: VTK_PIXEL=8 !< local variable
-  integer(ki2),  parameter, public :: VTK_QUAD=9 !< local variable
-  integer(ki2),  parameter, public :: VTK_TETRA=10 !< local variable
-  integer(ki2),  parameter, public :: VTK_VOXEL=11 !< local variable
-  integer(ki2),  parameter, public :: VTK_HEXAHEDRON=12 !< local variable
-  integer(ki2),  parameter, public :: VTK_WEDGE=13 !< local variable
-  integer(ki2),  parameter, public :: VTK_PYRAMID=14 !< local variable
-  integer(ki2),  parameter, public :: VTK_QUADRATIC_EDGE=21 !< local variable
-  integer(ki2),  parameter, public :: VTK_QUADRATIC_TRIANGLE=22 !< local variable
-  integer(ki2),  parameter, public :: VTK_QUADRATIC_QUAD=23 !< local variable
-  integer(ki2),  parameter, public :: VTK_QUADRATIC_TETRA=24 !< local variable
-  integer(ki2),  parameter, public :: VTK_QUADRATIC_HEXAHEDRON=25 !< local variable
+  integer(ki2par),  parameter, public :: VTK_VERTEX=1 !< local variable
+  integer(ki2par),  parameter, public :: VTK_POLY_VERTEX=2 !< local variable
+  integer(ki2par),  parameter, public :: VTK_LINE=3 !< local variable
+  integer(ki2par),  parameter, public :: VTK_POLY_LINE=4 !< local variable
+  integer(ki2par),  parameter, public :: VTK_TRIANGLE=5 !< local variable
+  integer(ki2par),  parameter, public :: VTK_TRIANGLE_STRIP=6 !< local variable
+  integer(ki2par),  parameter, public :: VTK_POLYGON=7 !< local variable
+  integer(ki2par),  parameter, public :: VTK_PIXEL=8 !< local variable
+  integer(ki2par),  parameter, public :: VTK_QUAD=9 !< local variable
+  integer(ki2par),  parameter, public :: VTK_TETRA=10 !< local variable
+  integer(ki2par),  parameter, public :: VTK_VOXEL=11 !< local variable
+  integer(ki2par),  parameter, public :: VTK_HEXAHEDRON=12 !< local variable
+  integer(ki2par),  parameter, public :: VTK_WEDGE=13 !< local variable
+  integer(ki2par),  parameter, public :: VTK_PYRAMID=14 !< local variable
+  integer(ki2par),  parameter, public :: VTK_QUADRATIC_EDGE=21 !< local variable
+  integer(ki2par),  parameter, public :: VTK_QUADRATIC_TRIANGLE=22 !< local variable
+  integer(ki2par),  parameter, public :: VTK_QUADRATIC_QUAD=23 !< local variable
+  integer(ki2par),  parameter, public :: VTK_QUADRATIC_TETRA=24 !< local variable
+  integer(ki2par),  parameter, public :: VTK_QUADRATIC_HEXAHEDRON=25 !< local variable
 ! private types
 
 ! private variables
@@ -132,6 +134,48 @@ subroutine geobj_writev(self,k,kout)
   end if
 
 end subroutine geobj_writev
+!---------------------------------------------------------------------
+!> output geobj vectors in stl format
+subroutine geobj_writestl(self,posl,nodl,k,kout)
+
+  !! arguments
+  type(geobj_t), intent(in) :: self   !< geobj data
+  type(posveclis_t), intent(in) :: posl   !< list of positions
+  integer(ki4), dimension(*), intent(in) :: nodl   !< list of nodes
+  integer(ki4), intent(in) :: k   !< part of geobj data (inert, but keep for consistency)
+  integer(ki4), intent(in) :: kout   !< output channel for geobj data
+
+  !! local
+  character(*), parameter :: s_name='geobj_writestl' !< subroutine name
+  integer(ki4) :: ii   !< geobj position
+  integer(ki4) :: jj   !< loop counter
+  real(kr4), dimension(3,8) :: xnodes !< x(compt,node) of obj
+  integer(ki4), dimension(8) :: inod !< nodes of obj
+  real(kr4), dimension(3) :: znormal !< unit normal vector
+  real(kr4) :: zmag !< magnitude of normal vector
+
+  if (self%objtyp==VTK_TRIANGLE) then
+     inn=geobj_entry_table(self%objtyp)
+     ii=self%geobj
+     do jj=1,inn
+        inod(jj)=nodl(ii+jj-1)
+        xnodes(:,jj)=posl%pos(inod(jj))%posvec
+     end do
+     call geobj_normal(self,posl,nodl,znormal,zmag)
+  write(kout,'(''facet normal '''//cfmte1v) (znormal(i),i=1,3)
+      write(kout,'(''    outer loop'')')
+          write(kout,'(''        vertex '''//cfmte1v) (xnodes(i,1),i=1,3)
+          write(kout,'(''        vertex '''//cfmte1v) (xnodes(i,2),i=1,3)
+          write(kout,'(''        vertex '''//cfmte1v) (xnodes(i,3),i=1,3)
+      write(kout,'(''    endloop'')')
+  write(kout,'(''endfacet'')')
+
+  else
+     ! not triangle type
+     call log_error(m_name,s_name,1,error_fatal,'Can only write triangle geobj')
+  end if
+
+end subroutine geobj_writestl
 !---------------------------------------------------------------------
 !> is geobj in real box
 function geobj_inbox(self,posl,nodl,box)
@@ -508,6 +552,62 @@ subroutine geobj_normal(self,posl,nodl,pnormal,pmag)
 
 end subroutine geobj_normal
 !---------------------------------------------------------------------
+!> calculate area of geobj
+subroutine geobj_area(self,posl,nodl,parea)
+
+  !! arguments
+  type(geobj_t), intent(in) :: self   !< geobj definition
+  type(posveclis_t), intent(in) :: posl   !< list of positions
+  integer(ki4), dimension(*), intent(in) :: nodl   !< list of nodes
+  real(kr4), intent(out) :: parea !< area 
+
+  !! local
+  character(*), parameter :: s_name='geobj_area' !< subroutine name
+  integer(ki4) :: ii   !< geobj position
+  integer(ki4) :: jj   !< loop counter
+  integer(ki2) :: inn !< number of nodes defining geobj
+  integer(ki4), dimension(8) :: inod !< nodes of obj
+  real(kr4), dimension(3,8) :: xnodes !< x(compt,node) of obj
+  real(kr4), dimension(3) :: z01 !< side of triangle
+  real(kr4), dimension(3) :: z02 !< side of triangle
+  real(kr4), dimension(3) :: zcx1 !< cross-product
+  real(kr4), dimension(3) :: zcx2 !< cross-product
+  real(kr4) :: zarea !< cumulative area
+  real(kr4) :: zd !< dot product
+  real(kr4) :: zref !< reference length based on maximum component length
+
+  if (self%objtyp==VTK_TRIANGLE.OR.self%objtyp==VTK_QUAD) then
+     ! triangle or quad type
+     inn=geobj_entry_table(self%objtyp)
+     ii=self%geobj
+     do jj=1,inn
+        inod(jj)=nodl(ii+jj-1)
+        xnodes(:,jj)=posl%pos(inod(jj))%posvec
+     end do
+     z01=xnodes(:,2)-xnodes(:,1)
+     z02=xnodes(:,3)-xnodes(:,1)
+     call cross_product(z01,z02,zcx1)
+     zarea=sqrt(dot_product(zcx1,zcx1))
+     if (inn==4) then
+     z01=xnodes(:,2)-xnodes(:,4)
+     z02=xnodes(:,3)-xnodes(:,4)
+     call cross_product(z01,z02,zcx1)
+     zarea=zarea+sqrt(dot_product(zcx1,zcx1))
+     end if
+     zref=max( abs(maxval(z01)), abs(minval(z01) ), abs(maxval(z02)), abs(minval(z02)) )
+     if (zarea<const_pusheps*zref) then
+        call log_error(m_name,s_name,1,error_warning,'object is degenerate')
+        zarea=const_pusheps*zref
+     end if
+  else
+     call log_error(m_name,s_name,10,error_warning,'object is not a triangle or quadrilateral')
+     zarea=0
+  end if
+
+  parea=zarea/2
+
+end subroutine geobj_area
+!---------------------------------------------------------------------
 !> calculate nodes to geobj
 subroutine geobj_nodes(self,posl,nodl,pnodes)
 
@@ -569,5 +669,19 @@ subroutine geobj_centre(self,posl,nodl,pcentr)
   end if
 
 end subroutine geobj_centre
+!---------------------------------------------------------------------
+!> vector cross product (kr4) of the input vectors a and b
+subroutine cross_product(a,b,crossout)
+
+  !! arguments
+  real(kr4), dimension(3), intent(in) :: a !< input vector 1
+  real(kr4), dimension(3), intent(in) :: b !< input vector 2
+  real(kr4), dimension(3), intent(out) :: crossout !< output vector
+
+  crossout(1) = a(2)*b(3)-a(3)*b(2)
+  crossout(2) = a(3)*b(1)-a(1)*b(3)
+  crossout(3) = a(1)*b(2)-a(2)*b(1)
+
+end subroutine cross_product
 
 end module geobj_m

@@ -7,6 +7,8 @@ program geoq_p
   use dcontrol_h
   use log_m
   use clock_m
+  use position_h
+  use fmesh_h
   use beq_h
   use beqan_h
   use posang_h
@@ -18,9 +20,9 @@ program geoq_p
   use beqan_m
   use posang_m
 
-  use position_h
   use geobjlist_h
   use position_m
+  use fmesh_m
   use ls_m
   use btree_m
   use geobj_m
@@ -28,6 +30,7 @@ program geoq_p
   use query_m
   use datline_h
   use datline_m
+  use indict_m
   use geobjlist_m
   use geoq_m
 
@@ -37,6 +40,7 @@ program geoq_p
   use moutfile_m
   use vfile_m
   use gfile_m
+  use dfile_m
 
   implicit none
 
@@ -47,6 +51,7 @@ program geoq_p
   type(bnumerics_t)  :: numerics  !< numerical control parameters
   type(bplots_t)     :: plot      !< diagnostic plot selectors
   type(geoq_t)  :: geoq      !< equilibrium B + geometrical objects
+  type(fmesh_t)  :: fmesh      !< mesh (for duct problem)
   type(beqan_t)  :: beqan      !< analytic equilibrium B
   type(date_time_t) :: timestamp !< timestamp of run
   character(len=80) :: fileroot !< reference name for all files output by run
@@ -58,8 +63,8 @@ program geoq_p
   integer(ki4):: nprint !< unit for gnuplot files
   integer(ki4):: nin=0 !< unit for other data
   integer(ki4):: nana=0 !< unit for analytic field data
+  integer(ki4):: ninfm=0 !< unit for field mesh data
   integer(ki4):: ifldspec !< field specification
-  integer(ki4):: ipsibig !< flag whether psi overlarge by 2pi
   real(kr8):: zivac !< value of I in field file
   character(len=80) :: ibuf !< character workspace
 !--------------------------------------------------------------------------
@@ -96,6 +101,12 @@ program geoq_p
   call clock_start(2,'bcontrol_init time')
   call bcontrol_init(fileroot)
   call bcontrol_read(file,numerics,plot)
+  if (numerics%duct) then
+     call fmesh_init(file%fmesh,ninfm)
+     call fmesh_readcon(fmesh)
+     call fmesh_close()
+     call fmesh_uniform(fmesh)
+  end if
   call clock_stop(2)
 !--------------------------------------------------------------------------
 !! beq data
@@ -103,7 +114,7 @@ program geoq_p
   call clock_start(3,'beq_init time')
   fileq=file%equil
   ifldspec=numerics%fldspec
-  ipsibig=numerics%psibig
+  numerics%fiesta=0
   select case (numerics%eqtype)
   case ('ana')
 ! need additional data to specify field analytically
@@ -115,17 +126,39 @@ program geoq_p
      call beqan_closewrite()
      call beqan_delete(beqan)
   case ('equ')
-     call beq_readequ(geoq%beq,fileq,ifldspec)
+     call beq_readequ(geoq%beq,fileq,numerics)
+  case ('geqdsk')
+     numerics%fiesta=1
+     call beq_readequil(geoq%beq,fileq,numerics)
   case default
-     call beq_readequil(geoq%beq,fileq,ifldspec,ipsibig)
+     call beq_readequil(geoq%beq,fileq,numerics)
   end select
   call beq_move(geoq%beq,numerics)
-  call beq_init(geoq%beq,numerics)
+  call beq_fixorigin(geoq%beq,numerics)
+  call beq_init(geoq%beq,numerics,fmesh)
+  call beq_sense(geoq%beq,0)
   call clock_stop(3)
+
+!--------------------------------------------------------------------------
+!! gnu plot to check input
+  if(plot%gnu) then
+     call clock_start(18,'gfile_gnu time')
+     call gfile_init(trim(file%gnu),'psi sample in R-Z space',nprint)
+     call spl2d_writeg(geoq%beq%psi,'sampl',nprint)
+     call gfile_close
+     call gfile_init(trim(file%gnu)//'_dR','dpsi/dR sample in R-Z space',nprint)
+     call spl2d_writeg(geoq%beq%dpsidr,'sampl',nprint)
+     call gfile_close
+     call gfile_init(trim(file%gnu)//'_dZ','dpsi/dZ sample in R-Z space',nprint)
+     call spl2d_writeg(geoq%beq%dpsidz,'sampl',nprint)
+     call gfile_close
+     call clock_stop(18)
+  end if
+
 !--------------------------------------------------------------------------
 !! read  geobjl data
 
-  call clock_start(4,'geobjlist_init time')
+  call clock_start(4,'geobjlist_read time')
   call geobjlist_read(geoq%objl,file%vtkdata)
   call clock_stop(4)
 !--------------------------------------------------------------------------
@@ -177,12 +210,20 @@ program geoq_p
 ! this one not implemented (or needed?)
      plot%frzv=.FALSE.
   end select
+  if (numerics%duct) then
+     mapfld='fxyz'
+  else
+     plot%geofldxyz=.FALSE.
+     plot%geoqfldxyz=.FALSE.
+     plot%geoqvolxyz=.FALSE.
+  end if
 !! optionally read in ripple data
   if (geoq%beq%n%vacfile/='null') then
-     if(plot%geoqx.OR.plot%geoqvolx.OR. &
+     if(numerics%duct.OR.plot%geoqx.OR.plot%geoqvolx.OR. &
  &   plot%geoqm.OR.plot%geofldx.OR.plot%frzzeta.OR.plot%geoqvolm) then
         call moutfile_read(geoq%beq%n%vacfile,zivac,nin)
         call spl3d_read(geoq%beq%vacfld,geoq%beq%n%vacfile,nin)
+        call beq_sense(geoq%beq,1)
      end if
   end if
 !--------------------------------------------------------------------------
@@ -199,10 +240,19 @@ program geoq_p
 !!plot cartesian all B
   if(plot%geoqvolx) then
      call clock_start(11,'vfile_geoqvolx time')
-     call vfile_init(file%geoqvolx,'B in all cartesian space',nplot)
+     call vfile_init(file%geoqvolx,'cartesian B in cylinder volume',nplot)
      call beq_writev(geoq%beq,'allcartesian',nplot)
      call vfile_close
      call clock_stop(11)
+  end if
+
+!!plot cartesian all B
+  if(plot%geoqvolxyz) then
+     call clock_start(12,'vfile_geoqvolxyz time')
+     call vfile_init(file%geoqvolxyz,'cartesian B in cuboid volume',nplot)
+     call beq_writev(geoq%beq,'cubeallcartesian',nplot)
+     call vfile_close
+     call clock_stop(12)
   end if
 
 !!plots for psi-theta-zeta space
@@ -223,20 +273,6 @@ program geoq_p
      call clock_stop(17)
   end if
 
-!! gnu plots
-  if(plot%gnu) then
-     call clock_start(18,'gfile_gnu time')
-     call gfile_init(trim(file%gnu),'psi sample in R-Z space',nprint)
-     call spl2d_writeg(geoq%beq%psi,'sampl',nprint)
-     call gfile_close
-     call gfile_init(trim(file%gnu)//'_dR','dpsi/dR sample in R-Z space',nprint)
-     call spl2d_writeg(geoq%beq%dpsidr,'sampl',nprint)
-     call gfile_close
-     call gfile_init(trim(file%gnu)//'_dZ','dpsi/dZ sample in R-Z space',nprint)
-     call spl2d_writeg(geoq%beq%dpsidz,'sampl',nprint)
-     call gfile_close
-     call clock_stop(18)
-  end if
 
   if(plot%gnum) then
      call clock_start(19,'gfile_gnum time')
@@ -273,10 +309,19 @@ program geoq_p
 !BB! in Cartesians, omit ripple contribution
 !BB         geoq%beq%n%vacfile='null'
      call geoq_writev(geoq,'allcart',nplot)
-     geoq%beq%n%vacfile=ibuf
+!    geoq%beq%n%vacfile=ibuf
      call vfile_close
      call clock_stop(22)
   end if
+
+!  if(plot%geofldxyz) then
+! plot field in geometry coordinates on geometry in duct coordinates
+!     call clock_start(27,'vfile_geofldxyz time')
+!     call vfile_init(file%geofldxyz,'fxyz',nplot)
+!     call geoq_writev(geoq,'fldxyz',nplot)
+!     call vfile_close
+!     call clock_stop(27)
+!  end if
 
   if(plot%frzzeta) then
      call clock_start(23,'vfile_frzzeta time')
@@ -286,7 +331,7 @@ program geoq_p
      call clock_stop(23)
   end if
 
-  !! silhouette of geometry in (R,Z)
+!! silhouette of geometry in (R,Z)
   if(plot%gnusil) then
      call clock_start(25,'vfile_gnusil time')
      call gfile_init(file%gnusil,'gnusil',nprint)
@@ -295,7 +340,7 @@ program geoq_p
      call clock_stop(25)
   end if
 
-  !! silhouette of geometry in (psi,theta)
+!! silhouette of geometry in (psi,theta)
   if(plot%gnusilm) then
      call clock_start(26,'vfile_gnusilm time')
      call gfile_init(file%gnusilm,'gnusilm',nprint)
@@ -303,6 +348,18 @@ program geoq_p
      call gfile_close
      call clock_stop(26)
   end if
+
+!! field format for beams calculation
+  if(plot%geoqfldxyz) then
+     call clock_start(28,'vfile_geoqfldxyz time')
+     call dfile_init(file%geoqfldxyz,nplot,1)
+     ibuf=geoq%beq%n%vacfile
+     call beq_writen(geoq%beq,'regular',nplot)
+     geoq%beq%n%vacfile=ibuf
+     call vfile_close
+     call clock_stop(28)
+  end if
+
 !--------------------------------------------------------------------------
 !! output file
 

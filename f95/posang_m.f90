@@ -2,8 +2,11 @@ module posang_m
 
   use const_kind_m
   use const_numphys_h
+  use position_m
   use posang_h
   use log_m
+  use position_h
+  use fmesh_h
   use beq_h
   use spl2d_m
 
@@ -15,6 +18,8 @@ module posang_m
   posang_invtfm,& !< convert cartesian back to polar-toroidal coordinates
   posang_psitfm,&   !< convert polar to flux coordinates
   posang_invpsitfm,& !< convert flux back to polar coordinates
+  posang_cartfm,&   !< rotate and translate to geometry cartesian coordinates
+  posang_invcartfm,& !< rotate and translate from geometry cartesian coordinates
   posang_writev !< output posang vector
 
 ! private variables
@@ -40,6 +45,7 @@ module posang_m
   real(kr8) :: zx3    !<  3-component of position vector
   integer   :: status   !< error status
   real(kr8) :: zufac !< units conversion factor, power of ten
+  real(kr8) :: ztfmfac !< units conversion to metres (i.e. factor 10**0)
   integer(ki4) :: i !< loop counter
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
@@ -204,13 +210,107 @@ subroutine posang_invpsitfm(self,pbeq)
 
 end subroutine posang_invpsitfm
 !---------------------------------------------------------------------
+!> rotate and translate to geometry cartesian coordinates
+subroutine posang_cartfm(self,tfmdata,kunits)
+
+  !! arguments
+  type(posang_t), intent(inout) :: self   !< object data structure
+  type(tfmdata_t), intent(in) :: tfmdata   !< data defining transform
+  integer(ki4), intent(in) :: kunits !< units of result (-3 for millimetres)
+
+  !! local
+  character(*), parameter :: s_name='posang_cartfm' !< subroutine name
+  type(posvecl_t) :: zpos !< vector
+  type(posvecl_t) :: zpost !< transformed vector
+  type(tfmdata_t) :: ztfmdata   !< scratch transform
+
+  iopt=self%opt
+
+  zufac=10.**(self%units-kunits)
+  ! convert to metres (units=0) before applying transform
+  ztfmfac=10.**self%units
+  zufac=zufac/ztfmfac
+  position_format: select case (iopt)
+  case(0,16) ! position
+     zpos%posvec=ztfmfac*self%pos
+     zpost=position_tfm(zpos,tfmdata)
+     self%pos(1)=zufac*zpost%posvec(1)
+     self%pos(2)=zufac*zpost%posvec(2)
+     self%pos(3)=zufac*zpost%posvec(3)
+     self%opt=0 ; self%units=kunits
+
+     vector_format: select case (iopt)
+     case(16) ! position and vector
+        zpos%posvec=self%vec
+        ztfmdata=tfmdata
+        ztfmdata%offset=0.
+        zpost=position_tfm(zpos,ztfmdata)
+        self%vec(1)=zpost%posvec(1)
+        self%vec(2)=zpost%posvec(2)
+        self%vec(3)=zpost%posvec(3)
+        self%opt=16
+     end select vector_format
+
+  case default
+     call log_error(m_name,s_name,1,error_fatal,'Vector in wrong format')
+  end select position_format
+
+end subroutine posang_cartfm
+!---------------------------------------------------------------------
+!> rotate and translate from geometry cartesian coordinates
+subroutine posang_invcartfm(self,tfmdata,kunits)
+
+  !! arguments
+  type(posang_t), intent(inout) :: self   !< object data structure
+  type(tfmdata_t), intent(in) :: tfmdata   !< data defining transform
+  integer(ki4), intent(in) :: kunits !< units of result (-3 for millimetres)
+
+  !! local
+  character(*), parameter :: s_name='posang_invcartfm' !< subroutine name
+  type(posvecl_t) :: zpos !< vector
+  type(posvecl_t) :: zpost !< transformed vector
+  type(tfmdata_t) :: ztfmdata   !< scratch transform
+
+  iopt=self%opt
+
+  zufac=10.**(self%units-kunits)
+  ! convert to metres (units=0) before applying transform
+  ztfmfac=10.**self%units
+  zufac=zufac/ztfmfac
+  position_format: select case (iopt)
+  case(0,16) ! position
+     zpos%posvec=ztfmfac*self%pos
+     zpost=position_invtfm(zpos,tfmdata)
+     self%pos(1)=zufac*zpost%posvec(1)
+     self%pos(2)=zufac*zpost%posvec(2)
+     self%pos(3)=zufac*zpost%posvec(3)
+     self%opt=0 ; self%units=kunits
+
+     vector_format: select case (iopt)
+     case(16) ! position and vector
+        zpos%posvec=self%vec
+        ztfmdata=tfmdata
+        ztfmdata%offset=0.
+        zpost=position_invtfm(zpos,ztfmdata)
+        self%vec(1)=zpost%posvec(1)
+        self%vec(2)=zpost%posvec(2)
+        self%vec(3)=zpost%posvec(3)
+        self%opt=16
+     end select vector_format
+
+  case default
+     call log_error(m_name,s_name,1,error_fatal,'Vector in wrong format')
+  end select position_format
+
+end subroutine posang_invcartfm
+!---------------------------------------------------------------------
 !> output posang vector
 subroutine posang_writev(self,kplot,kopt)
 
   !! arguments
   type(posang_t), intent(in) :: self   !< posang data
   integer(ki4), intent(in) :: kplot   !< output channel for posang data
-  integer(ki4), intent(in), optional :: kopt   !< select pos or vector
+  integer(ki4), intent(in), optional :: kopt   !< select vector if=2
 
 
   !! local

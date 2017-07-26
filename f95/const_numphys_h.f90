@@ -12,7 +12,7 @@ module const_numphys_h
 
 !> neutron mass etc
 !! MCNP values
-  real(kr8) , parameter, public :: & !< 
+  real(kr8) , parameter, public :: &  !< local variable
  &const_aneut  = 1.008664967_kr8,            & !< Neutron mass in a.m.u..
  &const_avogad = 6.022043446928244e+23_kr8,     & !< Avogadro's number.
  &const_mneut  = .001_kr8*const_aneut/const_avogad,       & !< Neutron mass in kg
@@ -21,7 +21,11 @@ module const_numphys_h
  &const_fscon  = 137.0393_kr8,               & !< Inverse fine-structure const ant.
  &const_planck = 4.135732e-13_kr8,              & !< Planck constant.
  &const_rmass = 939.56563_kr8,              & !< rest mass of neutron in MeV
- &const_slite  = 299.7925_kr8                  !< Speed of light divided by 1e6
+ &const_charge = 1.602176487e-19_kr8,     & !< absolute electron charge in C.
+ &const_massu = 1.673774424e-27_kr8,        & !<  Hydrogen atom mass in kg.
+ &const_massp = 1.6726219e-27_kr8,     & !< proton mass in kg.
+ &const_masse = 9.10938e-31_kr8,           & !< mass of electron in kg.
+ &const_slite  = 299.7925_kr8                  !< Speed of light in Mm/s (NB factor of 1e6)
 
   real(kr4) , parameter, public :: const_pushinf = 1.e+8_kr4 !<  infinity for particle push
 
@@ -30,6 +34,7 @@ module const_numphys_h
 
   real(kr8) , parameter, public :: const_golden = (1+sqrt(5._kr8))/2 !<  golden ratio
 
+  real(kr8) , parameter, public :: const_infty = 1.e+30_kr8 !<  numerical infinity
   real(kr4) , parameter, public :: const_degrad = const_pi/180 !<  degrees to radians conversion factor
 
 end module const_numphys_h

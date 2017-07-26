@@ -25,6 +25,9 @@ module control_h
      real(kr4) :: maxtolerance !< max max distance of geobj from its side
      real(kr4) :: mintolerance !< min max distance of geobj from its side
      integer(ki4) :: nbdcub !< number of extra bounding cubes
+     integer(ki4) :: cornflag !< flags (=1) if corner vectors to be used
+     real(kr4), dimension(3) :: lowcorner !< vector defining corner with lesser component values
+     real(kr4), dimension(3) :: upcorner !< vector defining corner with greater component values
      real(kr4) :: dilen   !< inner cube separation from geometry
      real(kr4) :: dolen   !< outer cube separation from inner
      type(quantfm_t) :: geobj_coord_tfm !< geobj \f$ x \f$ to mesh units scaling
