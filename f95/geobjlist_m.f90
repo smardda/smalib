@@ -1852,6 +1852,8 @@ subroutine geobjlist_mbin(self,btree)
 
                     loop_list: do l=1,inls
 
+!AB                        iobj%geobj=inext!points
+!AB                        iobj%objtyp=self%ngtype!points
                        inext=btree%objectls%list(inadr+l,2)
                        iobj%geobj=self%obj2(inext)%ptr
                        iobj%objtyp=self%obj2(inext)%typ

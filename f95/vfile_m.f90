@@ -647,7 +647,7 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt)
   if(ilfound) then
      !! skip LOOKUP table default
      read(nin,fmt='(a)',iostat=status) ibuf1
-     !! read coordinates
+     !! read data
      read(nin,*,iostat=status) (kself(j),j=1,kp)
      call log_read_check(m_name,s_name,10,status)
      print '("number of scalars read = ",i10)',kp
