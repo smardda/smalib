@@ -104,14 +104,14 @@ program vtktfm_p
 !     write(*,*) 'first',(geobjl%nodl(j),j=1,20)
      nin=0
      call vfile_iscalarread(bods,nscal,file%vtkdata(1),numerics%name,nin,iopt) !W
-!    write(*,*) "fn,iopt=",file%nvtkdata, iopt
+     !write(*,*) "fn,iopt=",file%nvtkdata, iopt
      if (iopt==0) then
         numerics%npans=maxval(bods)
 ! read data OK, but may still suppress
         if (numerics%same) then
            call bods_init(bods,geobjl,numerics%nvalue) !W
         end if
-     else if (iopt==4) then
+     else if (4<=iopt.AND.iopt<=9) then
 ! no body data in file, fix up
         call log_value("Fixing up file for missing body/cell labels replacement ",numerics%nvalue)
         call bods_init(bods,geobjl,numerics%nvalue)

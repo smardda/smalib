@@ -400,7 +400,7 @@ subroutine btree_writev(self,numerics,kchar,kout)
   integer(ki2), dimension(3) :: ipos  !< local variable
   integer(ki2) :: iz  !< local variable
   integer(ki4) :: ioff  !< local variable
-  integer(ki4) :: inode !< local variable
+  integer(ki4) :: inode !< number of boxes in total
   integer(ki4) :: iptr2  !< local variable
   type(posvecl_t) :: zorig !< local variable
   type(posvecl_t) :: zorigt !< local variable
@@ -549,6 +549,21 @@ subroutine btree_writev(self,numerics,kchar,kout)
   do j=1,inode
      write(kout,'("11")')
   end do
+
+!AB   !!format statements for vtk file
+!AB   write(kout,'(''CELL_DATA '', i8)') inode!number of leaves (from 'case(hds lowest)')
+!AB   write(kout,'(''SCALARS '', '' Number '',''int'')')
+!AB   write(kout,'(''LOOKUP_TABLE'','' default'')')
+!AB   
+!AB   do j=1,self%nt !!loop over all tree entries 
+!AB   
+!AB     !!if entry is a leaf then print number of points in leaf
+!AB     !otherwise 'cycle' 
+!AB     if (self%pter(3,j)>0) cycle
+!AB     write(kout,'(i4)') self%objectls%list(self%pter(2,j),2)
+!AB     
+!AB   end do
+!AB   
 
   close(kout)
 
