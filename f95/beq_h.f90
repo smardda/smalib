@@ -171,8 +171,8 @@ module beq_h
      integer(ki4) :: ntmin !< minimum valid value of \f$ N_\theta \f$
      integer(ki4) :: ntmax !< maximum valid value of \f$ N_\theta \f$
      real(kr8) :: dtheta !< \f$ (\theta_{\max}-\theta_{\min})/N_\theta \f$
-     real(kr8), dimension(:), allocatable :: srmin !< \f$ r_{\min}(\theta) \f$, set of \f$ r \f$  corresponding to \f$ \psi_{\min} \
-     real(kr8), dimension(:), allocatable :: srmax !< &  \f$ r_{\max}(\theta) \f$, set of \f$ r \f$  corresponding to \f$ \psi_{\max
+     real(kr8), dimension(:), allocatable :: srmin !< \f$ r_{\min}(\theta) \f$, set of \f$ r \f$  corresponding to \f$ \psi_{\min} \f$
+     real(kr8), dimension(:), allocatable :: srmax !< &  \f$ r_{\max}(\theta) \f$, set of \f$ r \f$  corresponding to \f$ \psi_{\max} \f$
      real(kr8) :: ivac !< \f$ I \f$ for vacuum field
      type(spl3d_t)  :: vacfld  !< vacuum field structure
      type(fmesh_t)  :: fmesh  !< field mesh for calculation in duct coordinates
