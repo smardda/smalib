@@ -1,48 +1,49 @@
-module boutfile_m
+module soutfile_m
 
   use const_kind_m
+  use const_numphys_h
   use log_m
-  use bcontrol_m
+  use scontrol_h
   use date_time_m
-  use position_h
-  use fmesh_h
-  use beq_h
-  use beq_m
-  use spl2d_m
+  use geobj_m
+  use geobjlist_h
+  use geobjlist_m
+  use smanal_h
+  use smanal_m
 
   implicit none
   private
 
 ! public subroutines
   public :: &
- &boutfile_init, &
- &boutfile_write, &
- &boutfile_close
+ &soutfile_init, &
+ &soutfile_write, &
+ &soutfile_close
 ! public types
   integer(ki4) :: nout !< output file unit
 
 ! private variables
-  character(*), parameter :: m_name='boutfile_m' !< module name
+  character(*), parameter :: m_name='soutfile_m' !< module name
   integer(ki4) :: i !< loop counter
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
   integer(ki4) :: l !< loop counter
   integer(ki4) :: ij !< loop counter
-  integer(ki4) :: idum !< dummy integer
   integer   :: status   !< error status
+  integer(ki4) :: idum !< dummy integer
 
   contains
 !---------------------------------------------------------------------
 !> open output file
-subroutine boutfile_init(file,timestamp)
+subroutine soutfile_init(file,timestamp)
 
   !! argument
-  type(bfiles_t), intent(in) :: file !< file names
+  type(sfiles_t), intent(in) :: file !< file names
   type(date_time_t), intent(in) :: timestamp !< timestamp of run
 
 
   !! local
-  character(*), parameter :: s_name='boutfile_init' !< subroutine name
+  character(*), parameter :: s_name='soutfile_init' !< subroutine name
   logical :: unitused !< flag to test unit is available
 
   do i=99,1,-1
@@ -53,7 +54,7 @@ subroutine boutfile_init(file,timestamp)
      end if
   end do
 
-  open(unit=nout,file=trim(file%geoqout),status='new',form='FORMATTED',iostat=status)
+  open(unit=nout,file=trim(file%smanalout),status='new',form='FORMATTED',iostat=status)
   if(status/=0)then
      !! error opening file
      call log_error(m_name,s_name,1,error_fatal,'Error opening data structure file')
@@ -62,40 +63,31 @@ subroutine boutfile_init(file,timestamp)
   end if
 
   !! header information
-  write(nout,'(a)') trim(file%geoqout)
+  write(nout,'(a)') trim(file%smanalout)
   write(nout,'(a)') trim(timestamp%long)
-  write(nout,'(" vtk_input_file = ",a,/)') trim(file%vtkdata)
-  write(nout,'(" eqdsk_input_file = ",a,/)') trim(file%eqdsk)
-  write(nout,'(" equil_input_file = ",a,/)') trim(file%equil)
+  write(nout,'(" vtk_input_file = ",a,/)') trim(file%vtkdata(1))
+  write(nout,'(" vtk_powx_file = ",a,/)') trim(file%vtk)
 
-end  subroutine boutfile_init
+end  subroutine soutfile_init
 !---------------------------------------------------------------------
-!> write output from beq
-subroutine boutfile_write(beq,timestamp)
+!> write output from smanal
+subroutine soutfile_write(smanal)
 
   !! arguments
-  type(beq_t), intent(in) :: beq !< beq object data structure
-  type(date_time_t), intent(in) :: timestamp !< timestamp of run
+  type(smanal_t), intent(in) :: smanal !< smanal object data structure
 
   ! local variables
 
   !!write
-  fld_specn: select case (beq%n%fldspec)
-  case(1)
-     call beq_writepart(beq,nout)
-  case default
-     call beq_writeplus(beq,nout)
-  end select fld_specn
-  ! next is for debugging
-  !dbg     call beq_write(beq,nout)
+  call smanal_write(smanal,nout)
 
-end  subroutine boutfile_write
+end  subroutine soutfile_write
 !---------------------------------------------------------------------
 !> close output files
-subroutine boutfile_close
+subroutine soutfile_close
 
   close(unit=nout)
 
-end  subroutine boutfile_close
+end  subroutine soutfile_close
 
-end module boutfile_m
+end module soutfile_m

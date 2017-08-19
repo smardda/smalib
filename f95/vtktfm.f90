@@ -8,13 +8,14 @@ program vtktfm_p
   use dcontrol_h
   use log_m
   use clock_m
+  use position_h
+  use fmesh_h
   use beq_h
   use posang_h
   use posang_m
   use spl2d_m
   use spl3d_m
 
-  use position_h
   use geobjlist_h
   use position_m
   use ls_m
@@ -22,6 +23,7 @@ program vtktfm_p
   use geobj_m
   use query_m
   use geobjlist_m
+  use indict_m
 
   use vcontrol_m
   use vfile_m
@@ -93,18 +95,23 @@ program vtktfm_p
 !! read  geobjl data
 
   call clock_start(4,'geobjlist_read time')
+  geobjl%ngtype=2
 ! write(*,*) "fn,iopt=",file%nvtkdata, iopt
   if (file%nvtkdata==1) then
 ! just one file with Body data
      call geobjlist_read(geobjl,file%vtkdata(1),iched)
 !     write(*,*) 'first',(geobjl%nodl(j),j=1,20)
      nin=0
-     call vfile_iscalarread(bods,nscal,file%vtkdata(1),'Body',nin,iopt) !W
+     call vfile_iscalarread(bods,nscal,file%vtkdata(1),numerics%name,nin,iopt) !W
 !    write(*,*) "fn,iopt=",file%nvtkdata, iopt
      if (iopt==0) then
-       call bods_init(bods,geobjl,1) !W
+        numerics%npans=maxval(bods)
+! read data OK, but may still suppress
+        if (numerics%same) then
+           call bods_init(bods,geobjl,numerics%nvalue) !W
+        end if
      else
-       call log_error(m_name,m_name,iopt,error_fatal,'Corrupt vtk file')
+        call log_error(m_name,m_name,iopt,error_fatal,'Corrupt vtk file')
      end if
   else
      call geobjlist_read(geobjl,file%vtkdata(1),iched)
@@ -112,6 +119,7 @@ program vtktfm_p
      call geobjlist_close()
      cpstart=2
      do j=1,file%nvtkdata
+        igeobjl%ngtype=2
         call geobjlist_read(igeobjl,file%vtkdata(j),iched)
 !     write(*,*) 'first',(geobjl%nodl(j),j=1,20)
         call geobjlist_cumulate(geobjl,igeobjl,cpstart,file%vtkcopies(j),iopt)
@@ -133,14 +141,20 @@ program vtktfm_p
   call geobjlist_paneltfm(geobjl,bods,numerics)
   call clock_stop(6)
 !--------------------------------------------------------------------------
-!! output file
+!! output file(s)
 
   call clock_start(30,'outfile_init time')
-  call vfile_init(file%vtkout,iched,nplot)
+  if (numerics%split) then
+! write out as separate files
+     call bods_write(bods,size(bods),geobjl,fileroot,'none',numerics%name,1)
+  else
+     call vfile_init(file%vtkout,iched,nplot)
 !     write(*,*) 'iched=',iched
-  call geobjlist_writev(geobjl,'geometry',nplot)
-  nscal=ubound(bods,1)
-  call vfile_iscalarwrite(bods,nscal,'Body','CELL',nplot,1)
+     call geobjlist_writev(geobjl,'geometry',nplot)
+     nscal=ubound(bods,1)
+     call vfile_iscalarwrite(bods,nscal,numerics%name,'CELL',nplot,1)
+     call vfile_close
+  end if
   call clock_stop(30)
 !--------------------------------------------------------------------------
 !! cleanup and closedown

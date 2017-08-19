@@ -17,7 +17,9 @@ module fmesh_m
   fmesh_userdefined,  & !< userdefined analytic field mesh
   fmesh_generic,  & !< generic analytic call
   fmesh_initwrite, & !< open new output file
+  fmesh_copy, &  !< copy object
   fmesh_write, &  !< write out object
+  fmesh_read, &  !< read in object
   fmesh_delete, & !< delete object
   fmesh_close, & !< close file
   fmesh_closewrite !< close write file
@@ -35,6 +37,7 @@ module fmesh_m
   integer(ki4) :: k !< loop counter
   integer(ki4) :: l !< loop counter
   integer(ki4) :: ij !< loop counter
+  character(len=80) :: ibuff !< buffer for input/output
 
   contains
 !---------------------------------------------------------------------
@@ -106,7 +109,7 @@ subroutine fmesh_readcon(self,kin)
   real(kr8) :: xend !< far point of mesh in first direction
   real(kr8) :: yend !< far point of mesh in second direction
   real(kr8) :: zend !< far point of mesh in third direction
-  real(kr4) :: faclen=1. !< lengths default is metres
+  real(kr4) :: faclen=1. !< lengths default is metre
 
   integer(ki4), parameter :: MAX_NUMBER_OF_PARAMETERS=10 !< maximum number of parameters allowed
   real(kr8), dimension(MAX_NUMBER_OF_PARAMETERS) :: general_real_parameters !< general real parameters
@@ -128,12 +131,12 @@ subroutine fmesh_readcon(self,kin)
   ! &xvalues , yvalues , zvalues , &
 
   !! set default mesh parameters
-  mesh_formula='uniform'
+  mesh_formula='regular'
   mesh_transform=.TRUE.
   dimensionality=3
   nstaggered=0
-  length_units='metres'
-  plot_units='millimetres'
+  length_units='metre'
+  plot_units='millimetre'
   length_x=1.
   length_y=1.
   length_z=1.
@@ -174,7 +177,7 @@ subroutine fmesh_readcon(self,kin)
 
   !! check inputs
   call lowor(mesh_formula,1,len_trim(mesh_formula))
-  if (mesh_formula=='uniform') then
+  if (mesh_formula=='regular') then
 
      if (dimensionality<=0.OR.dimensionality>3) then
         call log_error(m_name,s_name,2,error_fatal,'Mesh should be 1-D, 2-D or 3-D')
@@ -249,12 +252,15 @@ subroutine fmesh_readcon(self,kin)
   end select mesh_form
 
   !! scale if required
-  if (length_units(1:2)/='me') then
+  if (length_units(1:2)=='me') then
+     faclen=1.
+  else
      faclen=0.001
      xstart=faclen*xstart; ystart=faclen*ystart; zstart=faclen*zstart
      xend=faclen*xend; yend=faclen*yend; zend=faclen*zend
      dx=faclen*dx; dy=faclen*dy; dz=faclen*dz
      length_x=faclen*length_x; length_y=faclen*length_y; length_z=faclen*length_z
+     length_units='millimetre'
   end if
 
   self%xlengthf=length_x
@@ -293,9 +299,12 @@ subroutine fmesh_readcon(self,kin)
   if (mesh_transform) then
      !! read in transform
      call position_readcon(self%tfmdata,ninfm)
+  else
+     !! set to identity
+     call position_unitfm(self%tfmdata)
   end if
 
-  !! scale as required
+  !! scale offset as required
   call position_scaleunits(self%tfmdata,faclen)
 
 end  subroutine fmesh_readcon
@@ -404,6 +413,20 @@ subroutine fmesh_initwrite(fileroot,kout)
 
 end subroutine fmesh_initwrite
 !---------------------------------------------------------------------
+!> copy fmesh data
+subroutine fmesh_copy(selfi,selfo)
+
+     !! arguments
+  type(fmesh_t), intent(in) :: selfi   !< input fmesh data structure
+  type(fmesh_t), intent(out) :: selfo   !< output fmesh data structure
+
+     !! local
+  character(*), parameter :: s_name='fmesh_copy' !< subroutine name
+
+     selfo=selfi
+
+end subroutine fmesh_copy
+!---------------------------------------------------------------------
 !> write fmesh data
 subroutine fmesh_write(self,kout)
 
@@ -426,67 +449,250 @@ subroutine fmesh_write(self,kout)
      call log_write_check(m_name,s_name,1,status)
      write(iout,*,iostat=status) self%formula
      call log_write_check(m_name,s_name,2,status)
-     write(iout,*,iostat=status) 'nxf'
+     write(iout,*,iostat=status) 'ndimf'
      call log_write_check(m_name,s_name,3,status)
-     write(iout,*,iostat=status) self%nxf
+     write(iout,*,iostat=status) self%ndimf
      call log_write_check(m_name,s_name,4,status)
-     write(iout,*,iostat=status) 'nyf'
+     write(iout,*,iostat=status) 'nstagf'
      call log_write_check(m_name,s_name,5,status)
-     write(iout,*,iostat=status) self%nyf
-     call log_write_check(m_name,s_name,6,status)
-     write(iout,*,iostat=status) 'nzf'
-     call log_write_check(m_name,s_name,7,status)
-     write(iout,*,iostat=status) self%nzf
-     call log_write_check(m_name,s_name,8,status)
-     write(iout,*,iostat=status) 'x0f'
+     write(iout,*,iostat=status) self%nstagf
+     call log_write_check(m_name,s_name,12,status)
+     write(iout,*,iostat=status) 'nxf'
      call log_write_check(m_name,s_name,13,status)
-     write(iout,*,iostat=status) self%x0f
+     write(iout,*,iostat=status) self%nxf
      call log_write_check(m_name,s_name,14,status)
-     write(iout,*,iostat=status) 'y0f'
+     write(iout,*,iostat=status) 'nyf'
      call log_write_check(m_name,s_name,15,status)
-     write(iout,*,iostat=status) self%y0f
+     write(iout,*,iostat=status) self%nyf
      call log_write_check(m_name,s_name,16,status)
-     write(iout,*,iostat=status) 'z0f'
+     write(iout,*,iostat=status) 'nzf'
      call log_write_check(m_name,s_name,17,status)
-     write(iout,*,iostat=status) self%z0f
+     write(iout,*,iostat=status) self%nzf
      call log_write_check(m_name,s_name,18,status)
-     write(iout,*,iostat=status) 'xlengthf'
-     call log_write_check(m_name,s_name,19,status)
-     write(iout,*,iostat=status) self%xlengthf
-     call log_write_check(m_name,s_name,20,status)
-     write(iout,*,iostat=status) 'ylengthf'
+     write(iout,*,iostat=status) 'x0f'
+     call log_write_check(m_name,s_name,23,status)
+     write(iout,*,iostat=status) self%x0f
+     call log_write_check(m_name,s_name,24,status)
+     write(iout,*,iostat=status) 'y0f'
+     call log_write_check(m_name,s_name,25,status)
+     write(iout,*,iostat=status) self%y0f
+     call log_write_check(m_name,s_name,26,status)
+     write(iout,*,iostat=status) 'z0f'
+     call log_write_check(m_name,s_name,27,status)
+     write(iout,*,iostat=status) self%z0f
      call log_write_check(m_name,s_name,28,status)
-     write(iout,*,iostat=status) self%ylengthf
+     write(iout,*,iostat=status) 'xlengthf'
      call log_write_check(m_name,s_name,29,status)
-     write(iout,*,iostat=status) 'zlengthf'
+     write(iout,*,iostat=status) self%xlengthf
      call log_write_check(m_name,s_name,30,status)
-     write(iout,*,iostat=status) self%zlengthf
+     write(iout,*,iostat=status) 'ylengthf'
      call log_write_check(m_name,s_name,31,status)
+     write(iout,*,iostat=status) self%ylengthf
+     call log_write_check(m_name,s_name,32,status)
+     write(iout,*,iostat=status) 'zlengthf'
+     call log_write_check(m_name,s_name,33,status)
+     write(iout,*,iostat=status) self%zlengthf
+     call log_write_check(m_name,s_name,34,status)
+     write(iout,*,iostat=status) 'lunit'
+     call log_write_check(m_name,s_name,35,status)
+     write(iout,*,iostat=status) self%lunit
+     call log_write_check(m_name,s_name,36,status)
+     write(iout,*,iostat=status) 'dxf'
+     call log_write_check(m_name,s_name,37,status)
+     write(iout,*,iostat=status) self%dxf
+     call log_write_check(m_name,s_name,38,status)
+     write(iout,*,iostat=status) 'dyf'
+     call log_write_check(m_name,s_name,39,status)
+     write(iout,*,iostat=status) self%dyf
+     call log_write_check(m_name,s_name,40,status)
+     write(iout,*,iostat=status) 'dzf'
+     call log_write_check(m_name,s_name,41,status)
+     write(iout,*,iostat=status) self%dzf
+     call log_write_check(m_name,s_name,42,status)
+     write(iout,*,iostat=status) 'x1f'
+     call log_write_check(m_name,s_name,43,status)
+     write(iout,*,iostat=status) self%x1f
+     call log_write_check(m_name,s_name,44,status)
+     write(iout,*,iostat=status) 'y1f'
+     call log_write_check(m_name,s_name,45,status)
+     write(iout,*,iostat=status) self%y1f
+     call log_write_check(m_name,s_name,46,status)
+     write(iout,*,iostat=status) 'z1f'
+     call log_write_check(m_name,s_name,47,status)
+     write(iout,*,iostat=status) self%z1f
+     call log_write_check(m_name,s_name,48,status)
 
+     call position_writetfm(self%tfmdata,iout)
+
+     if (self%formula=='uniform') return
 
      write(iout,*,iostat=status) 'nrpams'
-     call log_write_check(m_name,s_name,46,status)
+     call log_write_check(m_name,s_name,56,status)
      write(iout,*,iostat=status) self%nrpams
-     call log_write_check(m_name,s_name,47,status)
+     call log_write_check(m_name,s_name,57,status)
      if (self%nrpams>0) then
         write(iout,*,iostat=status) 'real_parameters'
-        call log_write_check(m_name,s_name,48,status)
+        call log_write_check(m_name,s_name,58,status)
         write(iout,*,iostat=status) self%rpar
-        call log_write_check(m_name,s_name,49,status)
+        call log_write_check(m_name,s_name,59,status)
      end if
 
      write(iout,*,iostat=status) 'nipams'
-     call log_write_check(m_name,s_name,50,status)
+     call log_write_check(m_name,s_name,60,status)
      write(iout,*,iostat=status) self%nipams
-     call log_write_check(m_name,s_name,51,status)
+     call log_write_check(m_name,s_name,61,status)
      if (self%nipams>0) then
         write(iout,*,iostat=status) 'integer_parameters'
-        call log_write_check(m_name,s_name,52,status)
+        call log_write_check(m_name,s_name,62,status)
         write(iout,*,iostat=status) self%npar
-        call log_write_check(m_name,s_name,53,status)
+        call log_write_check(m_name,s_name,63,status)
      end if
 
 end subroutine fmesh_write
+!---------------------------------------------------------------------
+!> read fmesh data
+subroutine fmesh_read(self,infile,kin)
+
+     !! arguments
+  type(fmesh_t), intent(out) :: self   !< fmesh data structure
+  character(len=80),intent(in) :: infile !< name of input file
+  integer(ki4), intent(in),optional :: kin   !< input channel for object data structure
+
+     !! local
+  character(*), parameter :: s_name='fmesh_read' !< subroutine name
+  logical :: unitused !< flag to test unit is available
+
+  if(present(kin).AND.kin/=0) then
+     !! assume unit already open and reading infile
+     ninfm=kin
+  else if(present(kin).AND.kin==0) then
+     !! assume unit already open and know unit
+     continue
+  else
+     !! get file unit
+     do i=99,1,-1
+        inquire(i,opened=unitused)
+        if(.not.unitused)then
+           ninfm=i
+           exit
+        end if
+     end do
+
+     !! open file
+     open(unit=ninfm,file=infile,status='OLD',form='FORMATTED',iostat=status)
+     if(status/=0)then
+        !! error opening file
+        call log_error(m_name,s_name,1,error_fatal,'Error opening data structure file')
+     else
+        call log_error(m_name,s_name,2,log_info,'data structure file opened')
+     end if
+  end if
+
+     read(ninfm,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,1,status)
+     read(ninfm,*,iostat=status) self%formula
+     call log_read_check(m_name,s_name,2,status)
+     read(ninfm,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,3,status)
+     read(ninfm,*,iostat=status) self%ndimf
+     call log_read_check(m_name,s_name,4,status)
+     read(ninfm,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,5,status)
+     read(ninfm,*,iostat=status) self%nstagf
+     call log_read_check(m_name,s_name,12,status)
+     read(ninfm,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,13,status)
+     read(ninfm,*,iostat=status) self%nxf
+     call log_read_check(m_name,s_name,14,status)
+     read(ninfm,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,15,status)
+     read(ninfm,*,iostat=status) self%nyf
+     call log_read_check(m_name,s_name,16,status)
+     read(ninfm,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,17,status)
+     read(ninfm,*,iostat=status) self%nzf
+     call log_read_check(m_name,s_name,18,status)
+     read(ninfm,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,23,status)
+     read(ninfm,*,iostat=status) self%x0f
+     call log_read_check(m_name,s_name,24,status)
+     read(ninfm,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,25,status)
+     read(ninfm,*,iostat=status) self%y0f
+     call log_read_check(m_name,s_name,26,status)
+     read(ninfm,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,27,status)
+     read(ninfm,*,iostat=status) self%z0f
+     call log_read_check(m_name,s_name,28,status)
+     read(ninfm,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,29,status)
+     read(ninfm,*,iostat=status) self%xlengthf
+     call log_read_check(m_name,s_name,30,status)
+     read(ninfm,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,31,status)
+     read(ninfm,*,iostat=status) self%ylengthf
+     call log_read_check(m_name,s_name,32,status)
+     read(ninfm,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,33,status)
+     read(ninfm,*,iostat=status) self%zlengthf
+     call log_read_check(m_name,s_name,34,status)
+     read(ninfm,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,35,status)
+     read(ninfm,*,iostat=status) self%lunit
+     call log_read_check(m_name,s_name,36,status)
+     read(ninfm,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,37,status)
+     read(ninfm,*,iostat=status) self%dxf
+     call log_read_check(m_name,s_name,38,status)
+     read(ninfm,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,39,status)
+     read(ninfm,*,iostat=status) self%dyf
+     call log_read_check(m_name,s_name,40,status)
+     read(ninfm,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,41,status)
+     read(ninfm,*,iostat=status) self%dzf
+     call log_read_check(m_name,s_name,42,status)
+     read(ninfm,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,43,status)
+     read(ninfm,*,iostat=status) self%x1f
+     call log_read_check(m_name,s_name,44,status)
+     read(ninfm,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,45,status)
+     read(ninfm,*,iostat=status) self%y1f
+     call log_read_check(m_name,s_name,46,status)
+     read(ninfm,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,47,status)
+     read(ninfm,*,iostat=status) self%z1f
+     call log_read_check(m_name,s_name,48,status)
+
+!    write(*,*) 'self%dxf',self%dxf
+     call position_readtfm(self%tfmdata,ninfm)
+
+     if (self%formula=='uniform') return
+
+     read(ninfm,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,56,status)
+     read(ninfm,*,iostat=status) self%nrpams
+     call log_read_check(m_name,s_name,57,status)
+     if (self%nrpams>0) then
+        read(ninfm,*,iostat=status) ibuff
+        call log_read_check(m_name,s_name,58,status)
+        read(ninfm,*,iostat=status) self%rpar
+        call log_read_check(m_name,s_name,59,status)
+     end if
+
+     read(ninfm,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,60,status)
+     read(ninfm,*,iostat=status) self%nipams
+     call log_read_check(m_name,s_name,61,status)
+     if (self%nipams>0) then
+        read(ninfm,*,iostat=status) ibuff
+        call log_read_check(m_name,s_name,62,status)
+        read(ninfm,*,iostat=status) self%npar
+        call log_read_check(m_name,s_name,63,status)
+     end if
+
+end subroutine fmesh_read
 !---------------------------------------------------------------------
 !> delete object
 subroutine fmesh_delete(self)

@@ -9,7 +9,6 @@ program hdsgen_p
   use control_m
   use log_m
   use clock_m
-  use position_h
   use position_m
   use geobj_m
   use posang_h
@@ -21,10 +20,13 @@ program hdsgen_p
   use pcle_m
   use geobjlist_h
   use geobjlist_m
+  use indict_m
   use vfile_m
   use outfile_m
   use hdsfile_m
   use query_m
+  use position_h
+  use fmesh_h
   use beq_h
   use posang_m
   use datline_h

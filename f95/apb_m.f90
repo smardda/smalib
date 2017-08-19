@@ -97,7 +97,7 @@ subroutine apb_readmlab(self,infile)
      call log_error(m_name,s_name,13,error_fatal,'No 1D data')
   end if
 
-  read(iin,cfmt0,iostat=status)(self%pos3(i),i=1,self%n3)
+  read(iin,*,iostat=status)(self%pos3(i),i=1,self%n3)
   call log_alloc_check(m_name,s_name,14,status)
   print '("number of zeta values read = ",i10)',self%n3
   call log_value("number of zeta values read ",self%n3)
@@ -115,7 +115,7 @@ subroutine apb_readmlab(self,infile)
      call log_error(m_name,s_name,23,error_fatal,'No 1D data')
   end if
 
-  read(iin,cfmt0,iostat=status)(self%pos1(i),i=1,self%n1)
+  read(iin,*,iostat=status)(self%pos1(i),i=1,self%n1)
   call log_alloc_check(m_name,s_name,24,status)
   print '("number of R values read = ",i10)',self%n1
   call log_value("number of R values read ",self%n1)
@@ -133,7 +133,7 @@ subroutine apb_readmlab(self,infile)
      call log_error(m_name,s_name,33,error_fatal,'No 1D data')
   end if
 
-  read(iin,cfmt0,iostat=status)(self%pos2(i),i=1,self%n2)
+  read(iin,*,iostat=status)(self%pos2(i),i=1,self%n2)
   call log_alloc_check(m_name,s_name,34,status)
   print '("number of Z values read = ",i10)',self%n2
   call log_value("number of Z values read ",self%n2)

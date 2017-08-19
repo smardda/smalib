@@ -18,10 +18,7 @@ module geobjlist_m
   use datline_h
   use datline_m
   use stack_m
-  use posang_m
-  use datline_h
-  use datline_m
-  use stack_m
+  use indict_m
 
   implicit none
   private
@@ -35,6 +32,7 @@ module geobjlist_m
   geobjlist_addcube,   & !< add cube(s) to  geobjlist data structure
   geobjlist_writev,   & !< write (vtk)  geobjlist data structure
   geobjlist_nodlmv,   & !< rearrange (vtk)  geobjlist data structure
+  geobjlist_writestl,   & !< write (stl)  geobjlist data structure
   geobjlist_step, &   !< control processing of  geobjlist data structure
   geobjlist_stepquery, &   !< density processing of geobjlist data structure
   geobjlist_getbb,   & !< bb of  geobjlist data structure
@@ -52,7 +50,9 @@ module geobjlist_m
   geobjlist_copy, &  !< copy geobjlist to another
   geobjlist_cumulate, &  !< append geobjlist to first
   geobjlist_create, & !< create some 2-D geobjlists
-  geobjlist_create3d !< create geobjlists by translation/rotation
+  geobjlist_create3d, & !< create geobjlists by translation/rotation
+  geobjlist_centroids, & !< calculate centroids of objects
+  geobjlist_area !< calculate area of objects
 
 ! public types
 
@@ -103,12 +103,16 @@ subroutine geobjlist_init(self,vtkfile,numerics)
   self%ngtype=numerics%geomtype
   self%tolerance=max(numerics%maxtolerance,0.0)
   self%nbdcub=numerics%nbdcub
+  self%cornflag=numerics%cornflag
+  self%lowcorner=numerics%lowcorner
+  self%upcorner=numerics%upcorner
   self%dilen=numerics%dilen
   self%dolen=numerics%dolen
   self%minmaxtolerance=max(numerics%mintolerance,0.0)
   self%minobj=numerics%mingeobjinbin
   self%nquant=numerics%nquante
   self%tfmdata=numerics%position_coord_tfm
+  self%quantfm=numerics%geobj_coord_tfm
   self%ngunassigned=0
   self%nwset=0
 
@@ -583,8 +587,11 @@ subroutine geobjlist_addcube(self)
   !! local
   character(*), parameter :: s_name='geobjlist_addcube' !< subroutine name
   type(posveclis_t) :: zposl !< augmented list of positions
+  type(geobj2_t), dimension(:), allocatable :: iobj2 !< augmented list of object variables
   integer(ki4) :: inp !< number of entries in augmented list of positions
+  integer(ki4) :: ing !< number of entries in augmented list of objects
   integer(ki4) :: ioffp !< offset for addition to zposl
+  integer(ki4) :: ioffg !< offset for addition to iobj2
   integer(ki4), dimension(:), allocatable :: inodl !< augmented list of nodes
   integer(ki4) :: innod !< number of entries in augmented list of nodes
   integer(ki4) :: ioffn !< offset for addition to inodl
@@ -602,15 +609,20 @@ subroutine geobjlist_addcube(self)
 7     ,        2,        7,        4,        6,        6,        4, &
 5     /)
   !     check external cubes present
+  !write(*,*) 'self%nbdcub',self%nbdcub
   if (self%nbdcub==0) return
   ! allocate new geobjlist position storage
   inp=self%np+8*self%nbdcub
-  allocate(zposl%pos(inp), stat=status)
+  allocate(zposl%pos(inp),  stat=status)
   call log_alloc_check(m_name,s_name,1,status)
   ! allocate new geobjlist object description storage
   innod=self%nnod+12*3*self%nbdcub
   allocate(inodl(innod), stat=status)
   call log_alloc_check(m_name,s_name,2,status)
+  ! allocate new geobjlist object type storage
+  ing=self%ng+12*self%nbdcub
+  allocate( iobj2(ing), stat=status)
+  call log_alloc_check(m_name,s_name,3,status)
   ! find bounds on model
   xlbb=self%posl%pos(1)%posvec
   xubb=xlbb
@@ -623,12 +635,19 @@ subroutine geobjlist_addcube(self)
   ! generate and add positions to new
   ioffp=0
   do j=1,self%nbdcub
-     if (j==1) zdelta=self%dilen
-     if (j==2) zdelta=self%dilen+self%dolen
-     do i=1,3
-        zlow(i)=xlbb(i)-zdelta
-        zup(i)=xubb(i)+zdelta
-     end do
+     if (self%cornflag==1) then
+        do i=1,3
+           zlow(i)=min(xlbb(i),self%lowcorner(i))
+           zup(i)=max(xubb(i),self%upcorner(i))
+        end do
+     else
+        if (j==1) zdelta=self%dilen
+        if (j==2) zdelta=self%dilen+self%dolen
+        do i=1,3
+           zlow(i)=xlbb(i)-zdelta
+           zup(i)=xubb(i)+zdelta
+        end do
+     end if
      zposl%pos(ioffp+1)%posvec=zlow
      zposl%pos(ioffp+2)%posvec=(/zup(1),zlow(2),zlow(3)/)
      zposl%pos(ioffp+3)%posvec=(/zlow(1),zup(2),zlow(3)/)
@@ -641,35 +660,61 @@ subroutine geobjlist_addcube(self)
   end do
   ! add objects to new
   ioffn=0
+  ioffg=0
   do j=1,self%nbdcub
      idelta=(j-1)*8
      do i=1,36
         inodl(ioffn+i)=icube(i)+idelta+1
      end do
-     ioffn=ioffn+36
+     do i=1,12
+        iobj2(ioffg+i)%ptr=ioffn+1
+        iobj2(ioffg+i)%typ=VTK_TRIANGLE
+        ioffn=ioffn+3
+     end do
+     ioffg=ioffg+12
   end do
   ! add rest to new
   do j=1,self%np
      zposl%pos(ioffp+j)%posvec=self%posl%pos(j)%posvec
   end do
-  inodl(ioffn+1:innod)=self%nodl
+  do j=1,self%ng
+     iobj2(ioffg+j)%ptr=self%obj2(j)%ptr+ioffn
+     iobj2(ioffg+j)%typ=self%obj2(j)%typ
+  end do
+  do j=1,self%nnod
+     inodl(ioffn+j)=self%nodl(j)+8*self%nbdcub
+  end do
   ! replace self with new
   deallocate(self%posl%pos)
   deallocate(self%nodl)
+  deallocate(self%obj2)
   ! reallocate geobjlist position storage
   allocate(self%posl%pos(inp), stat=status)
   call log_alloc_check(m_name,s_name,11,status)
   ! reallocate geobjlist object description storage
   allocate(self%nodl(innod), stat=status)
   call log_alloc_check(m_name,s_name,12,status)
-  ! copy new
+  ! reallocate geobjlist object type storage
+  allocate(self%obj2(ing), stat=status)
+  call log_alloc_check(m_name,s_name,13,status)
+  ! copy new arrays and indices
   do j=1,inp
      self%posl%pos(j)%posvec=zposl%pos(j)%posvec
   end do
+  do j=1,ing
+     self%obj2(j)%ptr=iobj2(j)%ptr
+     self%obj2(j)%typ=iobj2(j)%typ
+  end do
   self%nodl=inodl
+
+  self%nnod=innod
+  self%np=inp
+  self%posl%np=inp
+  self%ng=ing
   ! tidy up
   deallocate(zposl%pos)
   deallocate(inodl)
+  deallocate(iobj2)
 
 end subroutine geobjlist_addcube
 !---------------------------------------------------------------------
@@ -680,7 +725,6 @@ subroutine geobjlist_writev(self,kchar,kplot)
   type(geobjlist_t), intent(in) :: self !< geobj list data
   character(*), intent(in) :: kchar  !< case
   integer(ki4), intent(in) :: kplot   !< output channel for vis. data
-
 
   !! local
   character(*), parameter :: s_name='geobjlist_writev' !< subroutine name
@@ -817,7 +861,35 @@ subroutine geobjlist_nodlmv(self,infilelevel,knlevel,kpowe)
 
 end subroutine geobjlist_nodlmv
 !---------------------------------------------------------------------
-!>< control sorting of  coordinates into bins
+!> write (stl)  geobjlist data structure
+subroutine geobjlist_writestl(self,kchar,kplot)
+
+  !! arguments
+  type(geobjlist_t), intent(in) :: self !< geobj list data
+  character(*), intent(in) :: kchar  !< case
+  integer(ki4), intent(in) :: kplot   !< output channel for stl data
+
+  !! local
+  character(*), parameter :: s_name='geobjlist_writestl' !< subroutine name
+  type(geobj_t) :: igeobj   !< geobj
+
+  plot_type: select case (kchar)
+  case('bodies')
+     ! split into bodies
+
+  case default
+     ! output as triangles only
+     do j=1,self%ng
+        igeobj%geobj=self%obj2(j)%ptr
+        igeobj%objtyp=self%obj2(j)%typ
+        call geobj_writestl(igeobj,self%posl,self%nodl,3,kplot)
+     end do
+
+  end select plot_type
+
+end subroutine geobjlist_writestl
+!---------------------------------------------------------------------
+!> control sorting of  coordinates into bins
 subroutine geobjlist_step(self,btree)
   !! arguments
   type(geobjlist_t), intent(inout) :: self !< geobj list data
@@ -1159,7 +1231,7 @@ end subroutine geobjlist_qtfm
 subroutine geobjlist_paneltfm(self,kbods,numerics)
   !! arguments
   type(geobjlist_t), intent(inout) :: self !< geobj list data
-  integer(ki4), dimension(*), intent(in) :: kbods !< integer scalar list data of bodies for each point
+  integer(ki4), dimension(:), intent(in) :: kbods !< integer scalar list data of bodies for each point
   type(vnumerics_t), intent(inout) :: numerics !< input numerical parameters
 
   !! local
@@ -1173,6 +1245,7 @@ subroutine geobjlist_paneltfm(self,kbods,numerics)
   integer(ki4) :: ipan   !< panel identifier
   integer(ki4) :: inbod   !< number of bodies
   integer(ki4) :: inpan   !< number of panels
+  integer(ki4):: nscal !< number of scalars (body identifiers)
   integer(ki4) :: ipantfm   !< transform or inverse
   integer(ki4) :: innd !< position of first entry for object in nodl
   integer(ki4) :: ityp !< type of object (5 for triangle)
@@ -1244,7 +1317,7 @@ subroutine geobjlist_paneltfm(self,kbods,numerics)
      !w write(*,*)'j=',j
      ibod=kbods(j)
      !BP      !w    ipan=ibodpan(ibod)
-     ipan=indict(inpan,numerics%panbod,ibod)
+     ipan=indict2(inpan,numerics%panbod,ibod)
      if (ipan==0) then
         print '("Fatal error in list of panel_bodies ")'
         print '("Check number of copies - and try again")'
@@ -1355,7 +1428,7 @@ subroutine geobjlist_paneltfm(self,kbods,numerics)
         else if (itfm==42) then
            ! move in minor radius
            ! recalculate transformation as Cartesian vector
-           ! offset(2) should be 6210mm for ITER, second =0
+           ! offset(2) should be 6210mm for ITER, offset(3)=Z=0
            zrmajor=numerics%vptfm%offset(2,ipantfm)
            zzmajor=numerics%vptfm%offset(3,ipantfm)
            ! 1. convert centroid to (R,Z,zeta)
@@ -1393,12 +1466,12 @@ subroutine geobjlist_paneltfm(self,kbods,numerics)
   self%obj%weight=-1.
   !! loop over objects to transform
   ! generate output whenever body number changes
-  ibod1=-999 
+  ibod1=-999
   do j=1,self%ng
 
      ibod=kbods(j)
      !BP      !w    ipan=ibodpan(ibod)
-     ipan=indict(inpan,numerics%panbod,ibod)
+     ipan=indict2(inpan,numerics%panbod,ibod)
      if (ipan==0) then
         print '("Fatal error in list of panel_bodies ")'
         print '("Check number of copies - and try again")'
@@ -1418,20 +1491,20 @@ subroutine geobjlist_paneltfm(self,kbods,numerics)
         inumpts=geobj_entry_table(ityp)
         if (ibod1/=ibod) then
            ibod1=ibod
-!F11            write(*,*) 'ibod1',ibod1 !F11
-!F11            write(*,*) 'ipantfm', ipantfm !F11
-!F11            write(*,*) 'ipan', ipan !F11
-!F11            write(*,*) 'itfm', itfm !F11
-!F11            write(*,*) 'ztfmdata%scale', ztfmdata%scale !F11
-!F11            write(*,*) 'ztfmdata%offset', ztfmdata%offset !F11
-!F11            write(*,*) 'ztfmdata%matrix', ztfmdata%matrix !F11
-!F11            write(*,*) 'innd', innd !F11
-!F11            write(*,*) 'ityp', ityp !F11
-            call log_value("body number",ibod1)
-            call log_value("transform number",itfm)
-            call log_value("----- offset-1",ztfmdata%offset(1))
-            call log_value("----- offset-2",ztfmdata%offset(2))
-            call log_value("----- offset-3",ztfmdata%offset(3))
+           !F11            write(*,*) 'ibod1',ibod1 !F11
+           !F11            write(*,*) 'ipantfm', ipantfm !F11
+           !F11            write(*,*) 'ipan', ipan !F11
+           !F11            write(*,*) 'itfm', itfm !F11
+           !F11            write(*,*) 'ztfmdata%scale', ztfmdata%scale !F11
+           !F11            write(*,*) 'ztfmdata%offset', ztfmdata%offset !F11
+           !F11            write(*,*) 'ztfmdata%matrix', ztfmdata%matrix !F11
+           !F11            write(*,*) 'innd', innd !F11
+           !F11            write(*,*) 'ityp', ityp !F11
+           call log_value("body number",ibod1)
+           call log_value("transform number",itfm)
+           call log_value("----- offset-1",ztfmdata%offset(1))
+           call log_value("----- offset-2",ztfmdata%offset(2))
+           call log_value("----- offset-3",ztfmdata%offset(3))
         end if
         !! loop over points defining object
         do jj=1,inumpts
@@ -1701,17 +1774,21 @@ subroutine geobjlist_mbin(self,btree)
   integer(ki4) :: iadr00  !< local variable
   integer(ki4) :: iadr01  !< local variable
   integer(ki4) :: iadd  !< local variable
+!HH  integer(ki4) :: iadrmax  !< maximum address !HH
   integer(ki4), dimension(3) :: ibsiz !< actual size of box
   integer(ki2) :: ichildn  !< local variable
   integer(ki2) :: id1  !< local variable
+  integer(ki2) :: idummy=0  !< local variable
 
   first=1
   last=1
   ilsplit=.false.
   ittype=btree%nttype
+!HH  iadrmax=0 !HH
 
   !! loop over depth
   loop_99 : do j=1,btree%ndepth
+!HH     write(*,*) 'depth=',j !HH
      idepth=j
      id=1+mod(j-1,3)
      if (ittype==1 ) then
@@ -1730,7 +1807,7 @@ subroutine geobjlist_mbin(self,btree)
      iltest=.true.
      ! loop over volumes down to level j
      loop_9 : do k=1,last
-
+!HH     write(*,*) 'k,last=',k,last !HH
         !! test for empty node
         ileaf=btree%pter(3,k)
         if (ileaf==-2.OR. (k<first.AND.ileaf/=-1) ) then
@@ -1774,7 +1851,13 @@ subroutine geobjlist_mbin(self,btree)
                        inext=btree%objectls%list(inadr+l,2)
                        iobj%geobj=self%obj2(inext)%ptr
                        iobj%objtyp=self%obj2(inext)%typ
+!DBG                       if (l==196) then !DBG
+!DBG                         idummy=idummy+1 !DBG
+!DBG                       end if !DBG
                        if ( geobj_inbox( iobj,self%posl,self%nodl,box )  ) then
+!DBG                         if (l==196) then !DBG
+!DBG                         idummy=idummy+1 !DBG
+!DBG                         end if !DBG
                           ! add to 0-ls (iadr0)
                           call ls_add(btree%objectls,iadr0,0,inext)
                           iadr0=iadr0+1
@@ -1786,6 +1869,8 @@ subroutine geobjlist_mbin(self,btree)
                     end do loop_list
                     iadra(i)=iadr01
                     ina(i)=in0
+!HH                    iadrmax=max(iadrmax,iadr0) !HH
+!HH                    write(*,*) 'loop_child,adresses=',i,iadr01,iadr0 !HH
                     !  complete 0 list (with number of entries)
                     call ls_add(btree%objectls,iadr01,0,in0)
                  end do loop_child
@@ -1797,6 +1882,10 @@ subroutine geobjlist_mbin(self,btree)
                     if (in1>0) then
                        call log_error(m_name,s_name,1,error_warning,'object unassigned')
                        inl1=inl1+1
+!DBG                       in1=btree%objectls%list(inadr+l,2) !DBG
+!DBG                       iobj%geobj=self%obj2(in1)%ptr !DBG
+!DBG                       iobj%objtyp=self%obj2(in1)%typ !DBG
+!DBG                       write(*,*) 'inadr, loops j,k,l and object unass',inadr,j,k,l,in1,iobj !DBG
                     end if
                  end do
                  self%ngunassigned=self%ngunassigned+inl1
@@ -1836,6 +1925,7 @@ subroutine geobjlist_mbin(self,btree)
            ! ensure node gets no more processing
            btree%pter(2,k)=iadr00
            btree%pter(3,k)=ileaf
+!HH           iadrmax=max(iadrmax,iadr00) !HH
         end if
 
 
@@ -1857,6 +1947,7 @@ subroutine geobjlist_mbin(self,btree)
   end if
 
   btree%ndepth=idepth
+!HH  write(*,*) 'maximum address=',iadrmax !HH
 
 end subroutine geobjlist_mbin
 !---------------------------------------------------------------------
@@ -1895,13 +1986,14 @@ subroutine geobjlist_dread(self,kread)
 
   iskip=0
   start_first_loop_over_file : do
-     read(kread,fmt='(a80)',iostat=status) ibuf2
+     read(kread,fmt='(a80)',iostat=status,end=3) ibuf2
      call log_read_check(m_name,s_name,1,status)
      ibuf1=adjustl(ibuf2)
-     !D   write(*,*) iskip, ibuf1(1:10) !D
+     !D write(*,*) iskip, ibuf1(1:10) !D
      if (ibuf1(1:10)=='BEGIN BULK') goto 1
      iskip=iskip+1
   end do start_first_loop_over_file
+3     continue
   !error exit
   call log_error(m_name,s_name,1,error_fatal,'BEGIN BULK not found')
 
@@ -1978,7 +2070,9 @@ subroutine geobjlist_dread(self,kread)
      if (ibuf1(1:7)=='ENDDATA') exit
 
      call datline_read(datl,ibuf2,kread)
+     !D write(*,*) datl%line  !D
      call datline_fieldtype(datl)
+     call datline_chkcomma(datl)
      call datline_split(datl)
 
      !     write(*,*) 'datl%flds8(1)', datl%flds8(1)
@@ -2202,7 +2296,7 @@ subroutine geobjlist_cumulate(self,selfin,start,copy,kopt)
   end if
 
   innod=self%nnod+selfin%nnod*icopy
-!F11   write(*,*)'inn,innod', self%nnod,innod !F11
+  !F11   write(*,*)'inn,innod', self%nnod,innod !F11
   if (self%ngtype/=1) then
      !set up replacement nodl array and destroy old nodl
      allocate(iwork(innod), stat=status)
@@ -3236,27 +3330,108 @@ subroutine geobjlist_querynode(self,btree,knode,kchar,pres)
   end if
 
 end subroutine geobjlist_querynode
+!---------------------------------------------------------------------
+!> calculate centroids of objects
+subroutine geobjlist_centroids(self,key,dict,kndict,centroids)
+  !! arguments
+  type(geobjlist_t), intent(inout) :: self !< geobj list data
+  integer(ki4), dimension(*), intent(in) :: key !< key array (bods)
+  integer(ki4), dimension(*), intent(in) :: dict !< dictionary
+  integer(ki4), intent(in) :: kndict !< dictionary size (size fn seems to have issues in gfortran)
+  real(kr8), dimension(:,:), allocatable, intent(out) :: centroids   !< centroids position data
 
-function indict(ndim,dict,word)
-  integer(ki4) :: indict !< dictionary index
+  !! local
+  character(*), parameter :: s_name='geobjlist_centroids' !< subroutine name
+  integer(ki4), dimension(:), allocatable :: indxsum !< local variable
+  integer(ki4) :: ikey !< local variable
+  integer(ki4) :: indx !< local variable
+  integer(ki4) :: innd !< position of first entry for object in nodl
+  integer(ki4) :: inumpts !< length of object in nodl array
+  integer(ki4) :: ityp !< local variable
+  integer(ki4) :: ipt !< local variable
+
+  allocate(centroids(3,kndict), stat=status)
+  call log_alloc_check(m_name,s_name,1,status)
+  allocate(indxsum(kndict), stat=status)
+  call log_alloc_check(m_name,s_name,2,status)
+  allocate(self%obj(self%ng), stat=status)
+  call log_alloc_check(m_name,s_name,3,status)
+  centroids=0
+  indxsum=0
+  self%nwset=1
+  self%obj%weight=-1.
+  do j=1,self%ng
+     ikey=key(j)
+     indx=indict(dict,ikey,kndict)
+     innd=self%obj2(j)%ptr
+     ityp=self%obj2(j)%typ
+     inumpts=geobj_entry_table(ityp)
+     !! loop over points defining object
+     do jj=1,inumpts
+        ipt=self%nodl(innd-1+jj)
+        if (self%obj(ipt)%weight<0..OR.indxsum(indx)==0) then
+           ! add point to sum (once), making sure there is one point in sum
+           ! (applies when objects share points)
+           centroids(:,indx)=centroids(:,indx)+self%posl%pos(ipt)%posvec
+           indxsum(indx)=indxsum(indx)+1
+           ! mark point as summed
+           self%obj(ipt)%weight=1.
+        end if
+     end do
+  end do
+
+  do j=1,3
+     centroids(j,:)=centroids(j,:)/indxsum(:)
+  end do
+
+  deallocate(indxsum)
+
+end subroutine geobjlist_centroids
+!---------------------------------------------------------------------
+!> calculate area of objects
+subroutine geobjlist_area(self,area)
+  !! arguments
+  type(geobjlist_t), intent(inout) :: self !< geobj list data
+  real(kr8), dimension(:), allocatable, intent(out) :: area  !< area position data
+
+  !! local
+  character(*), parameter :: s_name='geobjlist_area' !< subroutine name
+  real(kr4) :: zarea !< local variable
+  type(geobj_t) :: igeobj   !< geobj definition
+
+  allocate(area(self%ng), stat=status)
+  call log_alloc_check(m_name,s_name,1,status)
+
+  do j=1,self%ng
+     igeobj%geobj=self%obj2(j)%ptr
+     igeobj%objtyp=self%obj2(j)%typ
+     call geobj_area(igeobj,self%posl,self%nodl,zarea)
+     area(j)=zarea
+  end do
+
+end subroutine geobjlist_area
+!---------------------------------------------------------------------
+
+function indict2(ndim,dict,word)
+  integer(ki4) :: indict2 !< dictionary index
   integer(ki4), intent(in) :: ndim !< dim of dict
   integer(ki4), dimension(2,ndim), intent(in) :: dict !< dictionary
   integer(ki4), intent(in) :: word !< dictionary
   integer(ki4) :: ji !< loop variable
   integer(ki4) :: ki !< loop variable
-  indict=0
+  indict2=0
   !write(*,*) 'ndim=',ndim
   !write(*,*) 'word=',word
   !write(*,*) 'dict=',dict
   do ji=1,ndim
      do ki=1,2
         if (word==dict(ki,ji)) then
-           indict=ji
+           indict2=ji
            return
         end if
      end do
   end do
-end function indict
+end function indict2
 
 subroutine misc_countnos(bigbuf,kfmt)
   character(len=*),intent(in) :: bigbuf !< buffer for input

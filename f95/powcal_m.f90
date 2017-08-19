@@ -4,13 +4,14 @@ module powcal_m
   use const_numphys_h
   use control_h
   use log_m
-  use position_h
   use spl2d_m
   use spl3d_m
   use powcal_h
   use powres_h
 !     use powres_m
   use geobjlist_h
+  use position_h
+  use fmesh_h
   use beq_h
   use vfile_m
   use position_m
@@ -78,13 +79,15 @@ subroutine powcal_readv(self,vtkfile)
 
   !! local
   character(*), parameter :: s_name='powcal_readv' !< subroutine name
+  integer(ki4) :: ifmt !< numeric data format default
 
   call geobjlist_read(self%powres%geobjl,vtkfile)
   idum=0
-  call position_readveclis(self%powres%vecx,vtkfile,'Xcart',idum,1)
+  ifmt=1
+  call position_readveclis(self%powres%vecx,vtkfile,'Xcart',idum,ifmt,1)
   self%powres%vecb%np=self%powres%vecx%np
   idum=0
-  call position_readveclis(self%powres%vecb,vtkfile,'Bcart',idum,1)
+  call position_readveclis(self%powres%vecb,vtkfile,'Bcart',idum,ifmt,1)
 
 end subroutine powcal_readv
 !---------------------------------------------------------------------

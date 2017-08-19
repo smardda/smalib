@@ -146,3 +146,12 @@
 !parse.f90
 !fmesh_h.f90
 !fmesh_m.f90
+!Makefile.smanal
+!smanal.f90
+!scontrol_h.f90
+!scontrol_m.f90
+!smanal_h.f90
+!smanal_m.f90
+!indict_m.f90
+!soutfile_m.f90
+!stlfile_m.f90

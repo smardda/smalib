@@ -2,13 +2,16 @@ module beq_m
 
   use const_kind_m
   use const_numphys_h
+  use position_h
+  use fmesh_h
   use beq_h
   use beqan_h
   use posang_h
-  use position_h
+  use position_m
   use log_m
   use spl2d_m
   use spl3d_m
+  use fmesh_m
   use posang_m
   use beqan_m
 
@@ -21,14 +24,17 @@ module beq_m
   beq_readequil, & !< read in non-strict EQDSK format
   beq_readequ, & !< read in EQU format
   beq_readana, & !< generate using ANA format
+  beq_fixorigin,   & !< fix radial origin of  beq data structure
   beq_move, & !< move  beq data structure (controls)
   beq_init,   & !< create  beq data structure
+  beq_sense,   & !< helical sense of field
   beq_delete,   & !< delete  beq data structure
   beq_readv, & !< read in visualisation format (TO DO)
   beq_readcheck, & !< check field as mapped or 3-cpt
   beq_readpart, & !< read field data needed by ITER
   beq_readplus, & !< read field data needed by 'msus','global'
   beq_writeg, & !< write in gnuplot format
+  beq_writen, & !< write in nucode format
   beq_writev, & !< write in visualisation format
   beq_write, & !< write in data structure format
   beq_writepart, & !< write field data needed by ITER
@@ -81,6 +87,7 @@ module beq_m
   real(kr8), dimension(:), allocatable :: wvextn !< 1D work array extended size for nodes
   real(kr8), dimension(:), allocatable :: wvext !< 1D work array extended size for samples
   real(kr8), dimension(:), allocatable :: wvextd !< 1D work array extended size for derivative
+  real(kr8), dimension(:,:), allocatable :: zwork2 !< scratch 2D work array
   real(kr8), dimension(:,:), allocatable :: work2 !< 2D work array
   real(kr8), dimension(:,:), allocatable :: workr2 !< 2D work array
   real(kr8), dimension(:,:), allocatable :: workz2 !< 2D work array
@@ -336,13 +343,12 @@ subroutine beq_read(self,infile)
 end subroutine beq_read
 !---------------------------------------------------------------------
 !> read in non-strict EQDSK format
-subroutine beq_readequil(self,infile,kfldspec,kpsibig)
+subroutine beq_readequil(self,infile,numerics)
 
   !! arguments
   type(beq_t), intent(out) :: self   !< object data structure
   character(*),intent(in) :: infile !< name of input file
-  integer(ki4),intent(in) :: kfldspec !< field as mapped or 3-cpt
-  integer(ki4),intent(in) :: kpsibig !< flux with extra 2pi if =unity
+  type(bnumerics_t), intent(in) :: numerics   !< numerics data structure
 
   !! local
   character(*), parameter :: s_name='beq_readequil' !< subroutine name
@@ -366,6 +372,7 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig)
   integer(ki4), dimension(2) :: js=0 !< second index of number
   integer(ki4) :: isfixedh  !< flag fixed-format input for header
   integer(ki4) :: isfixed  !< flag fixed-format input
+  integer(ki4) :: iffiesta !< mistakes in fiesta eqdsk format
   real(kr8) :: bcentr !< EFIT vacuum toroidal field at r=rcentr ignored
   real(kr8) :: cpasma !< EFIT computed plasma current in A ignored
   real(kr8) :: rgrid !< EFIT Minimum R in metre of rectangular computational box
@@ -387,6 +394,7 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig)
   integer(ki4) :: limitr  !< EFIT number of points describing limitr
   integer(ki4) :: ncoil  !< EFIT number of points describing one of five coils
 
+  iffiesta=numerics%fiesta
   !! get file unit
   do i=99,1,-1
      inquire(i,opened=unitused)
@@ -486,6 +494,13 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig)
      if(istatus/=0) then
         call log_error(m_name,s_name,11,error_fatal,'Error reading rmaxis etc.')
      end if
+     if (iffiesta>0) then
+        ! ssimag1,ssibry1 wrong way round
+        zdum=ssimag1
+        ssimag1=ssibry1
+        ssibry1=zdum
+        call log_error(m_name,s_name,15,error_warning,'ssimag1,ssibry1 swapped')
+     end if
      ! note use of multiple xdum's means some information is lost
      read(iin,*,iostat=istatus)cpasma,ssimag2,xdum,rmaxis,xdum
      if(istatus/=0) then
@@ -509,6 +524,13 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig)
         call log_error(m_name,s_name,51,error_fatal,'Error reading rmaxis etc.')
      end if
      if (debug) write(*,cfmt1)rmaxis,zmaxis,ssimag1,ssibry1,bcentr
+     if (iffiesta>0) then
+        ! ssimag1,ssibry1 wrong way round
+        zdum=ssimag1
+        ssimag1=ssibry1
+        ssibry1=zdum
+        call log_error(m_name,s_name,15,error_warning,'ssimag1,ssibry1 swapped')
+     end if
      read(iin,cfmtdh,iostat=istatus)cpasma,ssimag2,xdum,rmaxis,xdum
      if(istatus/=0) then
         call log_error(m_name,s_name,52,error_fatal,'Error reading cpasma etc.')
@@ -599,7 +621,13 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig)
   if (cfmtd=='*') then
      read(iin,*,iostat=status) ((work2(i,j),i=1,nw),j=1,nh)
   else
-     read(iin,cfmtd,iostat=status) ((work2(i,j),i=1,nw),j=1,nh)
+     if (iffiesta>0) then
+        do j=1,nh
+           read(iin,cfmtd,iostat=status) (work2(i,j),i=1,nw)
+        end do
+     else
+        read(iin,cfmtd,iostat=status) ((work2(i,j),i=1,nw),j=1,nh)
+     end if
   end if
   if(status/=0) then
      call log_error(m_name,s_name,42,error_fatal,'Error reading psi')
@@ -616,10 +644,10 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig)
   !      zpsimin=minval(work2)
   !      write(*,*) 'zpsimin,zpsimax=',zpsimin,zpsimax
   !
-  if (kpsibig>0) then
-    psifac=1/(2*const_pid)
+  if (numerics%psibig>0) then
+     psifac=1/(2*const_pid)
   else
-    psifac=1
+     psifac=1
   end if
   self%psiaxis=ssimag1*psifac
   self%psiqbdry=ssibry1*psifac
@@ -631,6 +659,7 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig)
   self%rqcen=rmaxis
   self%zqcen=zmaxis
 
+  if (.NOT.numerics%leqok) then
   if (BEQ_OVERRIDE_ITER) then
      call log_error(m_name,s_name,49,log_info,'override for ITER')
      ! special for ITER to align current and toroidal field
@@ -649,6 +678,7 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig)
      ! possibly also in case where psi increases from axis
      self%f=-self%f
   end if
+  end if
 
   !! now additional standard eqdsk stuff
   if (cfmtd=='*') then
@@ -662,7 +692,7 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig)
   !DPR      write(*,*) 'qpsi', (i,work1(i),i=1,nw) !DPR
   !DPR      write(*,*) 'fpol', (i,self%f(i),i=1,nw) !DPR
   deallocate(work1)
-  read(iin,*,iostat=istatus) nbbbs,limitr
+  read(iin,*,iostat=istatus,end=1) nbbbs,limitr
   if(istatus/=0) then
      call log_error(m_name,s_name,51,error_fatal,'Error reading nbbbs,limitr')
   end if
@@ -768,7 +798,7 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig)
   if (cfmtd=='*') then
      read(iin,*,iostat=status) ((workz2(i,j),i=1,nw),j=1,nh)
   else
-     read(iin,cfmtd,iostat=status) ((workz2(i,j),i=1,nw),j=1,nh)
+     read(iin,cfmtd,iostat=status,end=1) ((workz2(i,j),i=1,nw),j=1,nh)
   end if
   beq_nobinq=(status/=0)
   if(beq_nobinq) then
@@ -787,15 +817,22 @@ subroutine beq_readequil(self,infile,kfldspec,kpsibig)
   end if
   close(iin)
 
+  return
+
+1     continue
+  print '("Eqdsk file ended status ",i10," but may have got enough data.")',status
+  call log_error(m_name,s_name,80,error_warning,'Unexpected end of eqdsk file')
+  call log_value("May have got enough data. Termination status ",status)
+
 end subroutine beq_readequil
 !---------------------------------------------------------------------
 !> read in EQU format
-subroutine beq_readequ(self,infile,kfldspec)
+subroutine beq_readequ(self,infile,numerics)
 
   !! arguments
   type(beq_t), intent(out) :: self   !< object data structure
   character(*),intent(in) :: infile !< name of input file
-  integer(ki4),intent(in) :: kfldspec !< field as mapped or 3-cpt
+  type(bnumerics_t), intent(in) :: numerics   !< object control data structure
 
   !! local
   character(*), parameter :: s_name='beq_readequ' !< subroutine name
@@ -943,8 +980,9 @@ subroutine beq_readequ(self,infile,kfldspec)
   self%f=rtf*btf
   self%ivac=rtf*btf
 
-  fld_specn: select case (kfldspec)
+  fld_specn: select case (numerics%fldspec)
   case(1,3)
+  if (.NOT.numerics%leqok) then
      if (BEQ_OVERRIDE_ITER) then
         call log_error(m_name,s_name,49,log_info,'override for ITER')
         ! special for ITER to align current and toroidal field
@@ -963,10 +1001,11 @@ subroutine beq_readequ(self,infile,kfldspec)
         ! possibly also in case where psi increases from axis
         self%f=-self%f
      end if
+     end if
   case(2)
      ! Separating this case enables MAST test deck case to work,
-     ! without setting BEQ_OVERRIDE_ITER=.FALSE., which is what 
-     ! really should be done, and no special fldspec test 
+     ! without setting BEQ_OVERRIDE_ITER=.FALSE., which is what
+     ! really should be done, and no special fldspec test
      ! This works because .equ files only ever used for MAST cases
   end select fld_specn
 
@@ -1104,16 +1143,85 @@ subroutine beq_readana(self,beqan,kfldspec)
 
 end subroutine beq_readana
 !---------------------------------------------------------------------
+!> fix radial origin of  beq data structure
+subroutine beq_fixorigin(self,numerics)
+
+  !! arguments
+  type(beq_t), intent(inout) :: self   !< object data structure
+  type(bnumerics_t), intent(inout) :: numerics   !< object control data structure
+
+  !! local
+  character(*), parameter :: s_name='beq_fixorigin' !< subroutine name
+  real(kr8) :: zdr !< mesh radial displacement
+  integer(ki4) :: ipos !< new radial start
+  integer(ki4) :: iw !< new radial total of samples
+  integer(ki4) :: ih !< vertical dimension of array
+
+  ! check for a problem, none if rmin>0
+  if (self%rmin>epsg*(self%rmax-self%rmin)) return
+
+  ! problem, strip out rows with zero and negative R
+  call log_value("radial origin of beq too small, fixing up ",self%rmin)
+  zdr=(self%rmax-self%rmin)/self%mr
+  ipos=max(1.05_kr8,-self%rmin/zdr)
+  iw=self%mr+1-ipos
+  ih=self%mz+1
+
+  ! first fix flux function array
+  allocate(zwork2(iw,ih), stat=status)
+  call log_alloc_check(m_name,s_name,10,status)
+  do i=1,iw
+     zwork2(i,:)=work2(i+ipos,:)
+  end do
+  deallocate(work2)
+  allocate(work2(iw,ih))
+  call log_alloc_check(m_name,s_name,11,status)
+  work2=zwork2
+  deallocate(zwork2)
+
+  if (.NOT.beq_nobinq) then
+     ! repeat fix for B component arrays
+     allocate(zwork2(iw,ih), stat=status)
+     call log_alloc_check(m_name,s_name,20,status)
+     do i=1,iw
+        zwork2(i,:)=workr2(i+ipos,:)
+     end do
+     deallocate(workr2)
+     allocate(workr2(iw,ih))
+     call log_alloc_check(m_name,s_name,21,status)
+     workr2=zwork2
+     deallocate(zwork2)
+     !
+     allocate(zwork2(iw,ih), stat=status)
+     call log_alloc_check(m_name,s_name,22,status)
+     do i=1,iw
+        zwork2(i,:)=workz2(i+ipos,:)
+     end do
+     deallocate(workz2)
+     allocate(workz2(iw,ih))
+     call log_alloc_check(m_name,s_name,23,status)
+     workz2=zwork2
+     deallocate(zwork2)
+
+  end if
+
+  self%mr=iw-1
+  self%rmin=self%rmin+ipos*zdr
+  call log_value("radial origin now ",self%rmin)
+  call log_value("number of columns of data removed ",ipos)
+
+end subroutine beq_fixorigin
+!---------------------------------------------------------------------
 !> move  beq data structure (controls)
 subroutine beq_move(self,numerics)
 
   !! arguments
   type(beq_t), intent(inout) :: self   !< object data structure
   type(bnumerics_t), intent(in) :: numerics   !< object control data structure
-  real(kr8) :: zgfac    !< geometrical factor
 
   !! local
   character(*), parameter :: s_name='beq_move' !< subroutine name
+  real(kr8) :: zgfac    !< geometrical factor
 
   ! move (R,Z) values
   self%rmin=self%rmin+numerics%rmove
@@ -1132,11 +1240,12 @@ subroutine beq_move(self,numerics)
 end subroutine beq_move
 !---------------------------------------------------------------------
 !> create  beq data structure
-subroutine beq_init(self,numerics)
+subroutine beq_init(self,numerics,fmesh)
 
   !! arguments
   type(beq_t), intent(inout) :: self   !< object data structure
   type(bnumerics_t), intent(in) :: numerics   !< object control data structure
+  type(fmesh_t), intent(in) :: fmesh   !< field mesh data structure
 
 
   !! local
@@ -1144,6 +1253,7 @@ subroutine beq_init(self,numerics)
 
   ! initialise control structure
   self%n=numerics
+  self%fmesh=fmesh
 
   ! set flag for whether psi increases or decreases with minor radius
   !     rsig=sign(1._kr8,self%psiqbdry-self%psiaxis)
@@ -1161,11 +1271,11 @@ subroutine beq_init(self,numerics)
   self%dr=(self%rmax-self%rmin)/self%mr
   self%dz=(self%zmax-self%zmin)/self%mz
   if (self%n%psibig>0) then
-  ! scale psi 
-    work2=work2/(2*const_pid)
-    call log_error(m_name,s_name,1,log_info,'Scaling psi by 2pi')
-  ! and stop it happening again
-    self%n%psibig=-self%n%psibig
+     ! scale psi
+     work2=work2/(2*const_pid)
+     call log_error(m_name,s_name,1,log_info,'Scaling psi by 2pi')
+     ! and stop it happening again
+     self%n%psibig=-self%n%psibig
   end if
   call spl2d_init(self%psi,work2,self%mr,self%mz,&
  &self%rmin,self%zmin,self%dr,self%dz,beq_spline_order)
@@ -1198,6 +1308,40 @@ subroutine beq_init(self,numerics)
   zdum=beq_ripple_h1(0._kr8,0._kr8,0._kr8,-1,self%n%mrip,self%ivac,self%n%arip)
 
 end subroutine beq_init
+!---------------------------------------------------------------------
+!> helical sense of field
+subroutine beq_sense(self,k3d)
+
+  !! arguments
+  type(beq_t), intent(inout) :: self   !< object data structure
+  integer(ki4), intent(in) :: k3d   !< selector
+
+  !! local
+  character(*), parameter :: s_name='beq_sense' !< subroutine name
+  type(posang_t) :: posang !< position and vector involving angles
+  integer(ki4) :: isleft !< unity if left-handed helix
+
+  !write(*,*) self%n%vacfile
+  if ( (k3d==0.AND.self%n%vacfile/='null') .OR. &
+ & (k3d==1.AND.self%n%vacfile=='null') ) return
+  ! sense (R,Z) values
+  posang%pos(1)=self%rmin+0.7*(self%rmax-self%rmin)
+  posang%pos(2)=0
+  posang%pos(3)=self%zmin+0.5*(self%zmax-self%zmin)
+  posang%opt=0 ; posang%units=0
+  call log_value("Sensing B at X ",posang%pos(1))
+  call log_value("Sensing B at Z ",posang%pos(3))
+  call beq_b(self,posang,0)
+  call log_value("Sensed By, on Y=0, ",posang%vec(2))
+  call log_value("Sensed Bz, at nominal central Z, ",posang%vec(3))
+  isleft=sign(1.05_kr8,posang%vec(3)/posang%vec(2))
+  if (isleft==1) then
+     call log_error(m_name,s_name,1,log_info,'Left-handed helical field UNlike ITER')
+  else 
+     call log_error(m_name,s_name,2,log_info,'Right-handed helical field like ITER')
+  end if
+
+end subroutine beq_sense
 !---------------------------------------------------------------------
 !> delete  beq data structure
 subroutine beq_delete(self)
@@ -1429,6 +1573,8 @@ subroutine beq_readplus(self,infile)
   !! local
   character(*), parameter :: s_name='beq_readplus' !< subroutine name
   logical :: unitused !< flag to test unit is available
+  integer(ki4) :: ifldspec !< field as mapped or 3-cpt + extra info
+  integer(ki4) :: iextra !< extra info extracted
 
   !! get file unit
   do i=99,1,-1
@@ -1462,6 +1608,9 @@ subroutine beq_readplus(self,infile)
 
   read(nin,*,iostat=status) self%n%fldspec
   call log_read_check(m_name,s_name,4,status)
+  ifldspec=self%n%fldspec
+  iextra=ifldspec/10
+  self%n%fldspec=ifldspec-10*iextra
   read(nin,*,iostat=status) ibuff
   read(nin,*,iostat=status) self%mr
   call log_read_check(m_name,s_name,5,status)
@@ -1562,6 +1711,12 @@ subroutine beq_readplus(self,infile)
   read(nin,*,iostat=status) self%n%vacfile
   call log_read_check(m_name,s_name,63,status)
 
+
+  if (iextra==1) then
+     self%n%duct=.TRUE.
+     call fmesh_read(self%fmesh,infile,nin)
+  end if
+
   call log_error(m_name,s_name,90,log_info,'beq read in from data file')
 
 end subroutine beq_readplus
@@ -1597,6 +1752,84 @@ subroutine beq_writeg(self,kchar,kout)
 
 end subroutine beq_writeg
 !---------------------------------------------------------------------
+!> write in nucode format
+subroutine beq_writen(self,kchar,kfield)
+
+  !! arguments
+  type(beq_t), intent(inout) :: self   !< object data structure
+  character(*), intent(in) :: kchar  !< case
+  integer(ki4) :: kfield   !< output channel for nucode data
+
+  !! local
+  character(*), parameter :: s_name='beq_writen' !< subroutine name
+  real(kr8) :: zx    !<  \f$ \x_i \f$
+  real(kr8) :: zy    !<  \f$ \y_j \f$
+  real(kr8) :: zz    !<  \f$ \z_k \f$
+  type(posang_t) :: posang !< position and vector involving angles
+  type(posvecl_t) :: zpos !< local variable
+  type(posvecl_t) :: zpostfm !< local variable
+  type(tfmdata_t) :: ztfmdata !< local variable
+
+  !use duct not geometry (CAD)  coordinates
+  ztfmdata=self%fmesh%tfmdata
+
+  plot_type: select case (kchar)
+  case('regular')
+     ! regular for duct, which is actually irregular in that x and y loops transposed
+     call log_error(m_name,s_name,1,log_info,'Output on Cartesian grid')
+     call log_value("Number of sample points",self%fmesh%nxf*self%fmesh%nyf*self%fmesh%nzf)
+
+     rewind(kfield)
+
+     write(kfield,'(I8)') self%fmesh%nxf
+     write(kfield,'(I8)') self%fmesh%nyf
+     write(kfield,'(I8)') self%fmesh%nzf
+
+     do k=1,self%fmesh%nzf
+        zz=self%fmesh%zf(k)
+        do j=1,self%fmesh%nxf
+           zx=self%fmesh%xf(j)
+           do i=1,self%fmesh%nyf
+              zy=self%fmesh%yf(i)
+              posang%pos(1)=zx ; posang%pos(2)=zy ; posang%pos(3)=zz
+              posang%opt=0 ; posang%units=0
+              ! transform point from duct to geometry (CAD) coordinates
+              call posang_cartfm(posang,ztfmdata,0)
+              ! calculate B in geometry (CAD)  coordinates/components
+              call beq_b(self,posang,0)
+              ! transform B to duct coordinates
+              call posang_invcartfm(posang,ztfmdata,0)
+              call posang_writev(posang,kfield,2)
+           end do
+        end do
+     end do
+
+  case default
+
+     do k=1,self%fmesh%nzf
+        zz=self%fmesh%zf(k)
+        do j=1,self%fmesh%nyf
+           zy=self%fmesh%yf(j)
+           do i=1,self%fmesh%nxf
+              zx=self%fmesh%xf(i)
+              posang%pos(1)=zx ; posang%pos(2)=zy ; posang%pos(3)=zz
+              posang%opt=0 ; posang%units=0
+              ! transform point from duct to geometry (CAD) coordinates
+              call posang_cartfm(posang,ztfmdata,0)
+              ! calculate B in geometry (CAD)  coordinates/components
+              call beq_b(self,posang,0)
+              ! transform B to duct coordinates
+              call posang_invcartfm(posang,ztfmdata,0)
+              call posang_writev(posang,kfield,2)
+           end do
+        end do
+     end do
+
+  end select plot_type
+
+
+end subroutine beq_writen
+!---------------------------------------------------------------------
 !> write in visualisation format
 subroutine beq_writev(self,kchar,kplot)
 
@@ -1622,13 +1855,13 @@ subroutine beq_writev(self,kchar,kplot)
   real(kr8) :: zc2    !<  2-component of output vector
   real(kr8) :: zc3    !<  3-component of output vector
   real(kr8) :: zf    !<   \f$ f(\psi) = RB_T \f$
+  real(kr8) :: plotfac    !<   scale to mm
   type(posang_t) :: posang !< position and vector involving angles
-
-  call log_error(m_name,s_name,1,log_info,'Plot parameter')
-  call log_value("Number of toroidal points",BEQ_MZETA)
 
   plot_type: select case (kchar)
   case('cartesian')
+     call log_error(m_name,s_name,1,log_info,'Plot parameter')
+     call log_value("Number of toroidal points",BEQ_MZETA)
      intheta=self%ntmax-self%ntmin+1
      write(kplot,'(''DATASET STRUCTURED_GRID'')')
      write(kplot,'(''DIMENSIONS '',I8,I8,I8)') self%n%npsi+1,intheta,BEQ_MZETA
@@ -1680,6 +1913,9 @@ subroutine beq_writev(self,kchar,kplot)
      end do
 
   case('allcartesian')
+     call log_error(m_name,s_name,1,log_info,'Plot parameter')
+     call log_value("Number of toroidal points",BEQ_MZETA)
+
      write(kplot,'(''DATASET STRUCTURED_GRID'')')
      write(kplot,'(''DIMENSIONS '',I8,I8,I8)') self%mr+1,self%mz+1,BEQ_MZETA
      write(kplot,'(''POINTS '',I8,'' float'')') (self%mr+1)*(self%mz+1)*BEQ_MZETA
@@ -1721,7 +1957,35 @@ subroutine beq_writev(self,kchar,kplot)
         end do
      end do
 
+  case('cubeallcartesian')
+     call log_error(m_name,s_name,1,log_info,'Visualisation output in duct coordinates')
+
+     write(kplot,'(''DATASET RECTILINEAR_GRID'')')
+     write(kplot,'(''DIMENSIONS '',I8,I8,I8)') &
+ &   self%fmesh%nxf, self%fmesh%nyf, self%fmesh%nzf
+     ! need to convert to mm
+     if (self%fmesh%punit(1:2)/='me') then
+        plotfac=1000.
+     else
+        plotfac=1.
+     end if
+     write(kplot,'(''X_COORDINATES '',I8,'' float'')') self%fmesh%nxf
+     write(kplot,cfmtbs1) (plotfac*self%fmesh%xf(i), i=1,self%fmesh%nxf)
+     write(kplot,'(''Y_COORDINATES '',I8,'' float'')') self%fmesh%nyf
+     write(kplot,cfmtbs1) (plotfac*self%fmesh%yf(i), i=1,self%fmesh%nyf)
+     write(kplot,'(''Z_COORDINATES '',I8,'' float'')') self%fmesh%nzf
+     write(kplot,cfmtbs1) (plotfac*self%fmesh%zf(i), i=1,self%fmesh%nzf)
+
+     write(kplot,'(''POINT_DATA '',I8)') &
+ &   self%fmesh%nxf*self%fmesh%nyf*self%fmesh%nzf
+     write(kplot,'(''VECTORS Bcart float'')')
+
+     call beq_writen(self,'onlyvalues',kplot)
+
   case('psi-theta')
+     call log_error(m_name,s_name,1,log_info,'Plot parameter')
+     call log_value("Number of toroidal points",BEQ_MZETA)
+
      intheta=self%ntmax-self%ntmin+1
      ztmin=self%n%thetamin+(self%ntmin-1)*self%dtheta
      write(kplot,'(''DATASET STRUCTURED_POINTS'')')
@@ -2123,13 +2387,17 @@ subroutine beq_writeplus(self,kout)
   !! arguments
   type(beq_t), intent(in) :: self   !< object data structure
   integer(ki4), intent(in) :: kout   !< output channel for object data structure
+  integer(ki4) :: ifldspec !< field as mapped or 3-cpt + extra info
+  integer(ki4) :: iextra !< extra info extracted
 
 
   !! local
   character(*), parameter :: s_name='beq_writeplus' !< subroutine name
 
+  ifldspec=self%n%fldspec
+  if (self%n%duct) ifldspec=ifldspec+10
   write(kout,*,iostat=status) 'fldspec'
-  write(kout,*,iostat=status) self%n%fldspec
+  write(kout,*,iostat=status) ifldspec
   call log_write_check(m_name,s_name,4,status)
 
   write(kout,*,iostat=status) 'mr'
@@ -2215,6 +2483,10 @@ subroutine beq_writeplus(self,kout)
   write(kout,*,iostat=status) 'vacfile'
   write(kout,*,iostat=status) self%n%vacfile
   call log_write_check(m_name,s_name,63,status)
+
+  if (self%n%duct) then
+     call fmesh_write(self%fmesh,kout)
+  end if
 
 end subroutine beq_writeplus
 !---------------------------------------------------------------------
@@ -2408,17 +2680,24 @@ subroutine beq_readcon(selfn,kin)
   real(kr8) :: beq_fscale !< namelist \f$ f \f$ equilibrium scaled
   integer(ki4) :: beq_mrip !< \f$ N \f$ number of ripple coils
   real(kr8) :: beq_irip !< unused parameter for ripple coils
+  logical :: beq_duct !< flag whether working in duct coordinates
   real(kr8) :: beq_arip !< \f$ a \f$ for ripple coils
   real(kr8) :: beq_psiref !< namelist \f$ \psi_X \f$
   real(kr8) :: beq_thetaref !< namelist \f$ \theta_X \f$
   integer(ki4) :: beq_ntheta !< namelist \f$ N_{\theta} \f$
   integer(ki4) :: beq_fldspec !< field specification
   integer(ki4) :: beq_xsearch !< how to search for X-point (1 = within box)
-  real(kr8) :: beq_psibig !< 1 implies \f$ 2 \pi \f$ too big
+  integer(ki4) :: limiter_search !< how to search for contact point (1 = within box)
+  real(kr8) :: beq_psibig !< unity implies \f$ 2 \pi \f$ too big
+  logical :: equil_helicity_ok !<  equilibrium helicity is ok
   real(kr8) :: beq_xrsta !< X-point box min R (m)
   real(kr8) :: beq_xrend !< X-point box max R (m)
   real(kr8) :: beq_xzsta !< X-point box min Z (m)
   real(kr8) :: beq_xzend !< X-point box max Z (m)
+  real(kr8) :: search_r_start !< search box min R (m)
+  real(kr8) :: search_r_end !< search box max R (m)
+  real(kr8) :: search_z_start !< search box min Z (m)
+  real(kr8) :: search_z_end !< search box max Z (m)
   real(kr8) :: z1 !< scratch
   real(kr8) :: z2 !< scratch
   character(len=80) :: beq_vacuum_field_file !< local variable
@@ -2435,11 +2714,14 @@ subroutine beq_readcon(selfn,kin)
  &beq_rmove, beq_zmove,&
  &beq_fscale,&
  &beq_mrip, beq_irip, beq_arip,&
+ &beq_duct,&
  &beq_psiref,&
  &beq_zetamin, beq_zetamax, beq_nzetap,&
  &beq_thetaref, beq_ntheta, beq_fldspec,&
  &beq_psibig,&
+ &equil_helicity_ok,&
  &beq_xsearch,beq_xrsta,beq_xrend,beq_xzsta,beq_xzend,&
+ &limiter_search,search_r_start,search_r_end,search_z_start,search_z_end,&
  &beq_vacuum_field_file
 
   !! set default beq parameters
@@ -2469,17 +2751,24 @@ subroutine beq_readcon(selfn,kin)
   beq_fscale=1
   beq_mrip=0
   beq_irip=0.
+  beq_duct=.FALSE.
   beq_arip=0.
   beq_psiref=1
   beq_thetaref=0
   beq_ntheta=32
   beq_fldspec=1
   beq_psibig=0
+  equil_helicity_ok=.FALSE.
   beq_xsearch=0
   beq_xrsta=0
   beq_xrend=0
   beq_xzsta=0
   beq_xzend=0
+  limiter_search=0
+  search_r_start=0
+  search_r_end=0
+  search_z_start=0
+  search_z_end=0
   beq_vacuum_field_file='null'
 
   !!read beq parameters
@@ -2507,7 +2796,7 @@ subroutine beq_readcon(selfn,kin)
   if(beq_psiopt==1.AND.beq_psimin<=0) &
  &call log_error(m_name,s_name,3,error_fatal,'beq_psimin must be > 0')
 
-  if(beq_bdryopt<=0.OR.beq_bdryopt>=13) &
+  if(beq_bdryopt<=0.OR.beq_bdryopt>=16) &
  &call log_error(m_name,s_name,6,error_fatal,'beq_bdryopt must be small positive integer')
   if(beq_nopt<=0.OR.beq_nopt>=4) &
  &call log_error(m_name,s_name,4,error_fatal,'beq_nopt must be small positive integer')
@@ -2551,22 +2840,40 @@ subroutine beq_readcon(selfn,kin)
  &call log_error(m_name,s_name,7,error_fatal,'beq_fldspec must be small positive integer')
   if(beq_psibig<0.OR.beq_psibig>=2) &
  &call log_error(m_name,s_name,8,error_fatal,'beq_psibig must be small non-negative integer')
+  if(.NOT.equil_helicity_ok) &
+ &call log_error(m_name,s_name,8,error_warning,'Sense of helicity of field input may be changed - check log file')
   if(beq_xsearch<0.OR.beq_xsearch>=2) &
  &call log_error(m_name,s_name,9,error_fatal,'beq_xsearch must be small non-negative integer')
+  if(limiter_search<0.OR.limiter_search>=2) &
+ &call log_error(m_name,s_name,9,error_fatal,'limiter_search must be small non-negative integer')
   if(beq_xsearch==1) then
-    z1=min(beq_xrsta,beq_xrend)
-    z2=max(beq_xrsta,beq_xrend)
-    if (abs(z1-z2)<1.e-3) &
- &  call log_error(m_name,s_name,10,error_fatal,'X-point search box too small in R')
-    beq_xrsta=z1
-    beq_xrend=z2
-    z1=min(beq_xzsta,beq_xzend)
-    z2=max(beq_xzsta,beq_xzend)
-    if (abs(z1-z2)<1.e-3) &
- &  call log_error(m_name,s_name,11,error_fatal,'X-point search box too small in Z')
-    beq_xzsta=z1
-    beq_xzend=z2
+     z1=min(beq_xrsta,beq_xrend)
+     z2=max(beq_xrsta,beq_xrend)
+     if (abs(z1-z2)<1.e-3) &
+ &   call log_error(m_name,s_name,10,error_fatal,'X-point search box too small in R')
+     beq_xrsta=z1
+     beq_xrend=z2
+     z1=min(beq_xzsta,beq_xzend)
+     z2=max(beq_xzsta,beq_xzend)
+     if (abs(z1-z2)<1.e-3) &
+ &   call log_error(m_name,s_name,11,error_fatal,'X-point search box too small in Z')
+     beq_xzsta=z1
+     beq_xzend=z2
   end if
+  if(limiter_search==1) then
+     z1=min(search_r_start,search_r_end)
+     z2=max(search_r_start,search_r_end)
+     if (abs(z1-z2)<1.e-3) &
+ &   call log_error(m_name,s_name,10,error_fatal,'search box too small in R')
+     search_r_start=z1
+     search_r_end=z2
+     z1=min(search_z_start,search_z_end)
+     z2=max(search_z_start,search_z_end)
+     if (abs(z1-z2)<1.e-3) &
+ &   call log_error(m_name,s_name,10,error_fatal,'search box too small in Z')
+     search_z_start=z1
+     search_z_end=z2
+   end if
 
   !! store values
   selfn%cenopt=beq_cenopt
@@ -2584,6 +2891,7 @@ subroutine beq_readcon(selfn,kin)
   selfn%xiopt=beq_xiopt
   selfn%mrip=beq_mrip
   selfn%irip=beq_irip
+  selfn%duct=beq_duct
   selfn%arip=beq_arip
 
   selfn%delpsi=beq_delpsi
@@ -2642,11 +2950,17 @@ subroutine beq_readcon(selfn,kin)
   end if
   selfn%fldspec=beq_fldspec
   selfn%psibig=beq_psibig
+  selfn%leqok=equil_helicity_ok
   selfn%xsearch=beq_xsearch
   selfn%xrsta=beq_xrsta
   selfn%xrend=beq_xrend
   selfn%xzsta=beq_xzsta
   selfn%xzend=beq_xzend
+  selfn%search=limiter_search
+  selfn%lkrsta=search_r_start
+  selfn%lkrend=search_r_end
+  selfn%lkzsta=search_z_start
+  selfn%lkzend=search_z_end
   selfn%vacfile=beq_vacuum_field_file
 
 end subroutine beq_readcon
@@ -2696,15 +3010,15 @@ subroutine beq_psilt(self)
   else if (self%n%psiopt==3) then
      zpsimin=min(self%n%psimin, self%n%psimax)
      zpsimax=max(self%n%psimin, self%n%psimax)
-     if (rsig>0) then
+!S     if (rsig>0) then
         !  psi increases outward
         self%n%psimin=zpsimin
         self%n%psimax=zpsimax
-     else
-        !  psi decreases outward
-        self%n%psimin=zpsimax
-        self%n%psimax=zpsimin
-     end if
+!S     else
+!S        !  psi decreases outward
+!S        self%n%psimin=zpsimax
+!S        self%n%psimax=zpsimin
+!S     end if
   end if
 
 end subroutine beq_psilt
@@ -2856,17 +3170,17 @@ subroutine beq_psix(self)
   do_hemi: do jhemi=0,mhemi-1
 
      if (self%n%xsearch==1) then
-     zt2=-const_pid ; zt1=const_pid
-     i1=1+max(int((self%n%xrsta-self%rmin)/self%dr),0)
-     i2=2+min(int((self%n%xrend-self%rmin)/self%dr),self%mr-2)
-     j1=1+max(int((self%n%xzsta-self%zmin)/self%dz),0)
-     j2=2+min(int((self%n%xzend-self%zmin)/self%dz),self%mz-2)
+        zt2=-const_pid ; zt1=const_pid
+        i1=1+max(int((self%n%xrsta-self%rmin)/self%dr),0)
+        i2=2+min(int((self%n%xrend-self%rmin)/self%dr),self%mr-2)
+        j1=1+max(int((self%n%xzsta-self%zmin)/self%dz),0)
+        j2=2+min(int((self%n%xzend-self%zmin)/self%dz),self%mz-2)
      else
-     zt2=(jhemi-1)*const_pid ; zt1=jhemi*const_pid
-     j1=2+(self%mz/2)*jhemi
-     j2=(self%mz/2)*(jhemi+1)-1
-     i1=2
-     i2=self%mr-1
+        zt2=(jhemi-1)*const_pid ; zt1=jhemi*const_pid
+        j1=2+(self%mz/2)*jhemi
+        j2=(self%mz/2)*(jhemi+1)-1
+        i1=2
+        i2=self%mr-1
      end if
      zsr1=zsrmin ; zsr2=-zsrmin
      isrmin=0 ; jsrmin=0
@@ -2921,13 +3235,13 @@ subroutine beq_psix(self)
      zt3=zg1*zt1+zg2*zt2
      zeps=zepsr
      call beq_rextremum(self,zsr1,zsr2,zt1,zpsi1,zeps,ierr)
-!DEXT write(*,*) 'zsr1,zsr2,zt1,zpsi1,zeps,ierr',zsr1,zsr2,zt1,zpsi1,zeps,ierr !DEXT
+     !DEXT write(*,*) 'zsr1,zsr2,zt1,zpsi1,zeps,ierr',zsr1,zsr2,zt1,zpsi1,zeps,ierr !DEXT
      if (ierr/=0) call log_error(m_name,s_name,10+ierr,error_fatal,'no extremum found where expected')
      call beq_rextremum(self,zsr1,zsr2,zt2,zpsi2,zeps,ierr)
-!DEXT write(*,*) 'zsr1,zsr2,zt2,zpsi2,zeps,ierr',zsr1,zsr2,zt2,zpsi2,zeps,ierr !DEXT
+     !DEXT write(*,*) 'zsr1,zsr2,zt2,zpsi2,zeps,ierr',zsr1,zsr2,zt2,zpsi2,zeps,ierr !DEXT
      if (ierr/=0) call log_error(m_name,s_name,20+ierr,error_fatal,'no extremum found where expected')
      call beq_rextremum(self,zsr1,zsr2,zt3,zpsi3,zeps,ierr)
-!DEXT write(*,*) 'zsr1,zsr2,zt3,zpsi3,zeps,ierr',zsr1,zsr2,zt3,zpsi3,zeps,ierr !DEXT
+     !DEXT write(*,*) 'zsr1,zsr2,zt3,zpsi3,zeps,ierr',zsr1,zsr2,zt3,zpsi3,zeps,ierr !DEXT
      if (ierr/=0) call log_error(m_name,s_name,30+ierr,error_fatal,'no extremum found where expected')
      ! step three, converge to X-point in theta, searching for a MAXimum in theta if rsig<0
      do_converge: do jcount=1,mcount
@@ -2935,7 +3249,7 @@ subroutine beq_psix(self)
         zeps=max( zepsg , epsr*(abs(zpsi3-zpsi1)+abs(zpsi3-zpsi2)) )
         zt4=zg1*zt1+zg2*zt3
         call beq_rextremum(self,zsr1,zsr2,zt4,zpsi4,zeps,ierr)
-!DEXT write(*,*) 'zsr1,zsr2,zt4,zpsi4,zeps,ierr',zsr1,zsr2,zt4,zpsi4,zeps,ierr !DEXT
+        !DEXT write(*,*) 'zsr1,zsr2,zt4,zpsi4,zeps,ierr',zsr1,zsr2,zt4,zpsi4,zeps,ierr !DEXT
         if (ierr/=0) call log_error(m_name,s_name,40+ierr,error_fatal,'no extremum found where expected')
         if ((zpsi4-zpsi3)*rsig>0) then
            zpsi1=zpsi4
@@ -2950,7 +3264,7 @@ subroutine beq_psix(self)
 
         zt5=zg1*zt2+zg2*zt3
         call beq_rextremum(self,zsr1,zsr2,zt5,zpsi5,zeps,ierr)
-!DEXT write(*,*) 'zsr1,zsr2,zt5,zpsi5,zeps,ierr',zsr1,zsr2,zt5,zpsi5,zeps,ierr !DEXT
+        !DEXT write(*,*) 'zsr1,zsr2,zt5,zpsi5,zeps,ierr',zsr1,zsr2,zt5,zpsi5,zeps,ierr !DEXT
         if (ierr/=0) call log_error(m_name,s_name,50+ierr,error_fatal,'no extremum found where expected')
         if ((zpsi5-zpsi3)*rsig>0) then
            zpsi2=zpsi5
@@ -2965,7 +3279,7 @@ subroutine beq_psix(self)
         ! reevaluate psi3 with tighter tolerance
         if (is3chnged==0) then
            call beq_rextremum(self,zsr1,zsr2,zt3,zpsi3,zeps,ierr)
-!DEXT write(*,*) 'zsr1,zsr2,zt3,zpsi3,zeps,ierr',zsr1,zsr2,zt3,zpsi3,zeps,ierr !DEXT
+           !DEXT write(*,*) 'zsr1,zsr2,zt3,zpsi3,zeps,ierr',zsr1,zsr2,zt3,zpsi3,zeps,ierr !DEXT
            if (ierr/=0) call log_error(m_name,s_name,60+ierr,error_fatal,'no extremum found where expected')
         end if
         ! convergence test
@@ -3041,9 +3355,9 @@ subroutine beq_bdryrb(self)
   real(kr8) :: cylj    !<  current estimated in cylindrical approx.
 
   pick_angle : select case (self%n%bdryopt)
-  case(4,5,7,11) ! inboard point selected
+  case(4,5,7,11,14) ! inboard point selected
      ztheta=const_pid
-  case(8,9,10,12) ! outboard point selected
+  case(8,9,10,12,15) ! outboard point selected
      ztheta=0.0_kr8
   case default ! do nothing
      return
@@ -3430,7 +3744,7 @@ subroutine beq_rpsi(self)
   real(kr8) :: zpsi    !<  \f$ \psi_i \f$
   real(kr8), dimension(:), allocatable :: swap !< workspace for reversing
 
-! write(*,'(2G12.5)') (self%srmax(j),self%srmin(j),j=self%ntmin,self%ntmax)
+  ! write(*,'(2G12.5)') (self%srmax(j),self%srmin(j),j=self%ntmin,self%ntmax)
   ! allocate generous amount of space for work (roughly half this should be needed, see  cpsi)
   iext=4*self%n%npsi
   allocate(wvextn(iext), stat=status)
@@ -3465,6 +3779,8 @@ subroutine beq_rpsi(self)
      zsig=sign(1._kr8,self%srmax(j)-self%srmin(j))
      isig=1
      if (zsig<0) isig=0
+     !rev isig=0 ! reverse!!
+     !rev if (zsig<0) isig=1 !!
 
      ! loop over r to define 1-D splines
      zsr=self%srmin(j)
@@ -3488,10 +3804,10 @@ subroutine beq_rpsi(self)
         if ( i>1 .AND. (zsr-self%srmax(j))*(zsr-self%srmin(j)) > 0 ) goto 2
         zdsr=abs(cpsi/zdpdsr)
         zsr=zsr+zsig*max(zdsr,zdsrmin)
-!        write(*,*) 'zsr=',zsr
+        !        write(*,*) 'zsr=',zsr
         zdpdsrl=zdpdsr
-     end do 
-!     write(*,*) 'i,j',i,j
+     end do
+     !     write(*,*) 'i,j',i,j
      call log_error(m_name,s_name,21,error_fatal,'Too many nodes')
 
 2        continue

@@ -84,7 +84,12 @@ subroutine vcontrol_read(file,numerics)
   integer(ki4), dimension(maximum_number_of_files) :: vtk_label_number !< numeric label for input file (not used)
   character(len=20) :: angle_units  !< units, either radian(s) or degree(s)
   character(len=20) :: option !< for defining panels and their transforms
+  logical :: new_controls !< true if vtktfmparameters namelist is present
   character(len=80) :: vtk_output_file  !< vtk format geometry data output file
+  logical :: split_file !<  split file by attribute if set
+  logical :: make_same !< make attribute take same value
+  integer(ki4) :: same_value !<  value for attribute to take
+  character(len=80) :: process_by_name !<  name of attribute to be split / homogenised
   integer(ki4) :: number_of_panels !< number of panels for which bodies defined
   integer(ki4) :: number_of_transforms !< number of panels for which transform defined
   integer(ki4) :: max_number_of_files !< number >= no. of files for which transform defined
@@ -93,7 +98,7 @@ subroutine vcontrol_read(file,numerics)
   integer(ki4), dimension(2*maximum_number_of_panels) :: panel_transform !< number of transform to apply
   character(len=20), dimension(maximum_number_of_panels) :: transform_id !< INACTIVE id of transform to apply
   integer(ki4), dimension(2*maximum_number_of_panels) :: panel_bodies !< bodies defining the geometry
-  logical :: filefound !< true of file exists
+  logical :: filefound !< true if file exists
   logical :: lflag !< flags if no panel transforms defined (two places)
   type(tfmdata_t) :: ztfmdata   !< position transform numeric controls
   integer(ki4) :: infil=0 !< number of files detected
@@ -103,10 +108,21 @@ subroutine vcontrol_read(file,numerics)
   integer(ki4) :: intfm=0 !< number of transforms detected
   integer(ki4) :: iflag=0 !< allow position_readcon to return on error
   integer(ki4) :: icode !< body code when copies present
+  logical :: ilcopy !< test whether there are copies in the input
+  integer(ki4), dimension(2) :: iswap !< swap array
 
   !> misc parameters, unusually comes first
   namelist /miscparameters/ &
+ &option, new_controls, &
+ &max_number_of_files, angle_units, &
+ &max_number_of_panels,max_number_of_transforms,&
+ &number_of_panels,number_of_transforms
+
+  !> vtktfm parameters
+  namelist /vtktfmparameters/ &
  &option, &
+ &split_file, make_same, same_value, &
+ &process_by_name, &
  &max_number_of_files, angle_units, &
  &max_number_of_panels,max_number_of_transforms,&
  &number_of_panels,number_of_transforms
@@ -124,6 +140,7 @@ subroutine vcontrol_read(file,numerics)
 
   !---------------------------------------------------------------------
   !! set default misc parameters
+  new_controls = .FALSE.
   max_number_of_panels = 1
   max_number_of_files = 1
   max_number_of_transforms = 1
@@ -139,6 +156,21 @@ subroutine vcontrol_read(file,numerics)
      call log_getunit(ilog)
      write(ilog,nml=miscparameters)
      call log_error(m_name,s_name,1,error_fatal,'Error reading misc parameters')
+  end if
+
+  split_file=.FALSE.
+  make_same=.TRUE.
+  same_value=1
+  process_by_name='Body'
+  if (new_controls) then
+     !!read vtktfm parameters
+     read(nin,nml=vtktfmparameters,iostat=status)
+     if(status/=0) then
+        print '("Fatal error reading vtktfm parameters")'
+        call log_getunit(ilog)
+        write(ilog,nml=vtktfmparameters)
+        call log_error(m_name,s_name,2,error_fatal,'Error reading vtktfm parameters')
+     end if
   end if
 
   !! check for valid data
@@ -169,6 +201,10 @@ subroutine vcontrol_read(file,numerics)
      option='split'
   end if
   numerics%angles=angle_units(1:6)
+  numerics%split=split_file
+  numerics%same=make_same
+  numerics%nvalue=same_value
+  numerics%name=process_by_name
 
   !---------------------------------------------------------------------
   !! read input file names and associated data
@@ -369,7 +405,11 @@ subroutine vcontrol_read(file,numerics)
   !! bodies with codes 501...510 must appear in panel_bodies
 
   !write(*,*) inbod, (panel_bodies(l), l=1,inbod)
+  ilcopy=.FALSE.
   if (maxval(panel_bodies(:inbod))>100) then
+     ! This implies copies exist, so bodies are not numbered contiguously
+     ! so trick below to generate virtual bodies will not work
+     ilcopy=.TRUE.
      do j=1,infil
         do k=1,number_of_copies(j)
            icode=j*100+k
@@ -388,16 +428,37 @@ subroutine vcontrol_read(file,numerics)
   end if
   !! allocate and assign
   !! panel transform parameters
-  allocate(numerics%pantfm(inpan), stat=status)
+  allocate(numerics%pantfm(maximum_number_of_panels), stat=status)
   call log_alloc_check(m_name,s_name,50,status)
-  numerics%pantfm=panel_transform(:inpan)
   !! panel bodies
-  allocate(numerics%panbod(2,inpan), stat=status)
+  allocate(numerics%panbod(2,maximum_number_of_panels), stat=status)
   call log_alloc_check(m_name,s_name,51,status)
-  do i=1,inpan
-     numerics%panbod(1,i)=panel_bodies(2*i-1)
-     numerics%panbod(2,i)=panel_bodies(2*i)
-  end do
+  ! default
+  numerics%pantfm=0
+  ! redefine only those in input
+  numerics%pantfm(:inpan)=panel_transform(:inpan)
+  if (ilcopy) then
+     do i=1,inpan
+        numerics%panbod(1,i)=panel_bodies(2*i-1)
+        numerics%panbod(2,i)=panel_bodies(2*i)
+     end do
+  else
+     do i=1,maximum_number_of_panels
+        numerics%panbod(:,i)=i
+     end do
+     do j=1,inpan
+        do i=1,maximum_number_of_panels
+           if (numerics%panbod(1,i)==panel_bodies(2*j-1)) then
+              ! swap to make sure all panbod still defined
+              iswap=numerics%panbod(:,j)
+              numerics%panbod(1,j)=panel_bodies(2*j-1)
+              numerics%panbod(2,j)=panel_bodies(2*j)
+              numerics%panbod(:,i)=iswap
+              exit
+           end if
+        end do
+     end do
+  end if
 
   !---------------------------------------------------------------------
   ! define transformations

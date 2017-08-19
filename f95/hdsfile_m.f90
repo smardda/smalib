@@ -99,8 +99,8 @@ end subroutine hdsfile_dinit
 subroutine hdsfile_write(geobjl,numerics,btree)
 
   !! arguments
-  type(geobjlist_t), intent(in) :: geobjl !< point data
-  type(numerics_t), intent(inout) :: numerics !< local variable
+  type(geobjlist_t), intent(in) :: geobjl !< geometry data
+  type(numerics_t), intent(inout) :: numerics !< geobjlist controls
   type(btree_t), intent(in) :: btree !< btree data
 
   !! local
@@ -174,6 +174,22 @@ subroutine hdsfile_write(geobjl,numerics,btree)
   call log_write_check(m_name,s_name,25,status)
   write(nouth,*,iostat=status)  numerics%position_coord_tfm
   call log_write_check(m_name,s_name,26,status)
+
+  write(nouth,'(a)',iostat=status) 'ADDCU'
+  call log_write_check(m_name,s_name,27,status)
+
+  write(nouth,*,iostat=status)  numerics%nbdcub
+  call log_write_check(m_name,s_name,30,status)
+  write(nouth,*,iostat=status)  numerics%dilen
+  call log_write_check(m_name,s_name,31,status)
+  write(nouth,*,iostat=status)  numerics%dolen
+  call log_write_check(m_name,s_name,32,status)
+  write(nouth,*,iostat=status)  numerics%cornflag
+  call log_write_check(m_name,s_name,33,status)
+  write(nouth,*,iostat=status)  numerics%lowcorner
+  call log_write_check(m_name,s_name,34,status)
+  write(nouth,*,iostat=status)  numerics%upcorner
+  call log_write_check(m_name,s_name,35,status)
 
 end subroutine hdsfile_write
 !---------------------------------------------------------------------
@@ -276,6 +292,32 @@ subroutine hdsfile_read(geobjl,numerics,btree)
         read(nouth,*,iostat=status)  numerics%position_coord_tfm
         if(status/=0) then
            call log_error(m_name,s_name,26,error_fatal,'Error reading numpar ')
+        end if
+
+     else if (ichar=='ADDCU') then
+        read(nouth,*,iostat=status)  numerics%nbdcub
+        if(status/=0) then
+           call log_error(m_name,s_name,30,error_fatal,'Error reading addcubes ')
+        end if
+        read(nouth,*,iostat=status)  numerics%dilen
+        if(status/=0) then
+           call log_error(m_name,s_name,31,error_fatal,'Error reading addcubes ')
+        end if
+        read(nouth,*,iostat=status)  numerics%dolen
+        if(status/=0) then
+           call log_error(m_name,s_name,32,error_fatal,'Error reading addcubes ')
+        end if
+        read(nouth,*,iostat=status)  numerics%cornflag
+        if(status/=0) then
+           call log_error(m_name,s_name,33,error_fatal,'Error reading addcubes ')
+        end if
+        read(nouth,*,iostat=status)  numerics%lowcorner
+        if(status/=0) then
+           call log_error(m_name,s_name,34,error_fatal,'Error reading addcubes ')
+        end if
+        read(nouth,*,iostat=status)  numerics%upcorner
+        if(status/=0) then
+           call log_error(m_name,s_name,35,error_fatal,'Error reading addcubes ')
         end if
 
      end if
