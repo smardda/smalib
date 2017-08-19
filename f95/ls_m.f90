@@ -225,10 +225,10 @@ subroutine ls_add(self,kadr,k2,kitem)
         !! add to existing
         self%list(kadr,k2)=kitem
      else
-        call log_error(m_name,s_name,1,error_fatal,'List array not large enough')
+        call log_error(m_name,s_name,1,error_fatal,'List array not large enough, increase btree_sizel')
      end if
   else
-     call log_error(m_name,s_name,2,error_fatal,'List array not large enough')
+     call log_error(m_name,s_name,2,error_fatal,'List array not large enough, increase btree_sizel')
   end if
 
 end subroutine ls_add

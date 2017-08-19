@@ -669,7 +669,7 @@ subroutine geoq_writev(self,kchar,kplot)
      end do
 
      ! output CELL data
-     write(kplot,'(''CELLS '',I8,I8)') self%objl%ng,self%objl%ng+isum
+     write(kplot,'(''CELLS '',I8,1X,I8)') self%objl%ng,self%objl%ng+isum
      i=1
      do j=1,self%objl%ng
         inn=geobj_entry_table(self%objl%obj2(j)%typ)
@@ -763,7 +763,7 @@ subroutine geoq_writev(self,kchar,kplot)
      end do
 
      ! output CELL data
-     write(kplot,'(''CELLS '',I8,I8)') self%objl%ng,self%objl%ng+isum
+     write(kplot,'(''CELLS '',I8,1X,I8)') self%objl%ng,self%objl%ng+isum
      i=1
      do j=1,self%objl%ng
         inn=geobj_entry_table(self%objl%obj2(j)%typ)

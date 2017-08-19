@@ -25,7 +25,8 @@ module const_numphys_h
  &const_massu = 1.673774424e-27_kr8,        & !<  Hydrogen atom mass in kg.
  &const_massp = 1.6726219e-27_kr8,     & !< proton mass in kg.
  &const_masse = 9.10938e-31_kr8,           & !< mass of electron in kg.
- &const_slite  = 299.7925_kr8                  !< Speed of light in Mm/s (NB factor of 1e6)
+ &const_slite  = 299.7925_kr8,                 & !< Speed of light in Mm/s (NB factor of 1e6)
+ &const_kb = 1.38064852e-23_kr8      !< boltzmann constant
 
   real(kr4) , parameter, public :: const_pushinf = 1.e+8_kr4 !<  infinity for particle push
 

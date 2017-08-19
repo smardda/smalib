@@ -63,6 +63,7 @@ program datvtk_p
   integer(ki4), dimension(2):: idum !< dummy array
   integer(ki4) :: inarg   !< number of command line arguments
   integer(ki4) :: inda   !< index of dash in command line argument
+  integer(ki4) :: iopt   !< option for reading bods
 !--------------------------------------------------------------------------
 !! initialise timing
 
@@ -104,10 +105,12 @@ program datvtk_p
         end if
      end if
      call get_command_argument(inarg,value=fileroot)
-!! strip any final '.dat' string
+!! strip any final '.dat' or '.vtk' string
      islen=len_trim(fileroot)
      if (islen>4) then
         if (fileroot(islen-3:islen)=='.dat') then
+           fileroot(islen-3:islen)='    '
+        else if (fileroot(islen-3:islen)=='.vtk') then
            fileroot(islen-3:islen)='    '
         end if
      end if
@@ -135,13 +138,17 @@ program datvtk_p
   case('v')
      call geobjlist_read(geobjl,trim(fileroot)//'.vtk',iched)
      inquire(file=trim(fileroot)//'.vtk',number=nread)
+     iopt=1
+     call vfile_iscalarread(bods,geobjl%ng,trim(fileroot)//'.vtk','Body',nread,iopt)
   case('c')
-     call geobjlist_create3d(geobjl,numerics)
      iched='converted dat files in '//fileroot//'.ctl'
+     call geobjlist_create3d(geobjl,numerics)
+     call bods_init(bods,geobjl,1)
   case default
      iched='converted dat file '//fileroot//'.dat'
      call dfile_init(fileroot,nread)
      call geobjlist_dread(geobjl,nread)
+     call bods_init(bods,geobjl,1)
   end select input_type
   call clock_stop(4)
 !--------------------------------------------------------------------------
@@ -164,7 +171,6 @@ program datvtk_p
 
   call clock_start(30,'outfile_init time')
 !     write(*,*) 'iched=',iched
-  call bods_init(bods,geobjl,1)
   divide_type: select case(optarg(3:3))
   case('d','s')
 !! write out as separate files
