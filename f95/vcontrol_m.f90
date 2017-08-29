@@ -1,10 +1,13 @@
 module vcontrol_m
 
   use const_kind_m
+  use const_numphys_h
   use log_m
   use position_h
   use vcontrol_h
   use position_m
+  use scontrol_m
+!< access keys defined for sorting
 
   implicit none
   private
@@ -110,6 +113,15 @@ subroutine vcontrol_read(file,numerics)
   integer(ki4) :: icode !< body code when copies present
   logical :: ilcopy !< test whether there are copies in the input
   integer(ki4), dimension(2) :: iswap !< swap array
+  integer(ki4) :: ierr !< error return code
+
+  logical :: paneltfm !< apply transform if .TRUE.
+  logical :: extract !< extract objects according to key and limits
+  character(len=80) :: extract_key !< key for extraction
+  real(kr8), dimension(2) :: plasma_centre !< centre of discharge in \f$ (R,Z) \f$
+  real(kr8) :: minimum_angle !< minimum angle for extraction
+  real(kr8) :: maximum_angle !< maximum angle for extraction
+
 
   !> misc parameters, unusually comes first
   namelist /miscparameters/ &
@@ -125,7 +137,9 @@ subroutine vcontrol_read(file,numerics)
  &process_by_name, &
  &max_number_of_files, angle_units, &
  &max_number_of_panels,max_number_of_transforms,&
- &number_of_panels,number_of_transforms
+ &number_of_panels,number_of_transforms,&
+ &paneltfm, extract, extract_key,&
+ &plasma_centre, minimum_angle, maximum_angle
 
   !! file names
   namelist /vtkfiles/ &
@@ -162,6 +176,13 @@ subroutine vcontrol_read(file,numerics)
   make_same=.TRUE.
   same_value=1
   process_by_name='Body'
+  paneltfm = .true.
+  extract = .false.
+  extract_key = 'null  '
+  plasma_centre =  (/1,0/)
+  minimum_angle = -22.5
+  maximum_angle = 22.5
+
   if (new_controls) then
      !!read vtktfm parameters
      read(nin,nml=vtktfmparameters,iostat=status)
@@ -200,13 +221,42 @@ subroutine vcontrol_read(file,numerics)
      call log_error(m_name,s_name,15,error_warning,'split panels assumed')
      option='split'
   end if
+  if (extract) then
+     if (maximum_angle-minimum_angle<=0) then
+        call log_error(m_name,s_name,16,error_fatal,'invalid range for extraction')
+     end if
+     ! Check key
+     numerics%key=extract_key
+     call lowor(numerics%key,1,len_trim(extract_key))
+     ierr=1
+     do j=1,RECOGNISED_KEYS
+        if (numerics%key(1:6)==reckey(j)) then
+           ierr=0
+           exit
+        end if
+     end do
+     if (ierr==1) then
+        call log_value("key ", numerics%key)
+        call log_error(m_name,s_name,17,error_fatal,'Unrecognised key')
+     end if
+     numerics%centre  =  plasma_centre
+     if(angle_units(1:6)=='degree') then
+        numerics%angmin=minimum_angle*const_pid/180
+        numerics%angmax=maximum_angle*const_pid/180
+     else
+        numerics%angmin=minimum_angle
+        numerics%angmax=maximum_angle
+     end if
+  end if
+  numerics%paneltfm =  paneltfm
+  numerics%extract  =  extract
   numerics%angles=angle_units(1:6)
   numerics%split=split_file
   numerics%same=make_same
   numerics%nvalue=same_value
   numerics%name=process_by_name
 
-  !---------------------------------------------------------------------
+!---------------------------------------------------------------------
   !! read input file names and associated data
   vtk_input_file='null'
   vtk_output_file='null'
@@ -285,6 +335,9 @@ subroutine vcontrol_read(file,numerics)
   panel_transform=-1
   panel_bodies=0
   transform_id='null'
+
+  ! no need for another namelist
+  if (.NOT.paneltfm) return
 
   !!read panelarray parameters
   read(nin,nml=panelarrayparameters,iostat=status)

@@ -209,7 +209,7 @@ subroutine pcle_move(selfo,selfn,kstep,geol,btree,kobj)
   integer(ki4) :: inod2 !< tree node number
   integer(ki4) :: inod3 !< tree node number
 
-  logical, parameter :: iljump=.false. !< allow jumps in 1 direction
+  logical, parameter :: iljump=.TRUE. !< allow jumps in 1 direction
   logical, parameter :: ilrawpos=.false. !< positions to be quantised
 
   ! set defaults
@@ -446,6 +446,8 @@ subroutine pcle_move(selfo,selfn,kstep,geol,btree,kobj)
            lcoll=(hitobj/=0)
            if (lcoll) goto 200
         end if
+     else
+        ivecc(d2)=i2d
      end if
   end if
 
@@ -484,6 +486,10 @@ subroutine pcle_move(selfo,selfn,kstep,geol,btree,kobj)
         lcoll=(hitobj/=0)
         goto 200
      else if ( (i1-i1n)*isgalf > 0 ) then
+        ! have overshot
+        ! leave in right node
+        inodn=btree_newnode(btree,ivecn,inode)
+        zpcle%node=inodn
         lcoll=.FALSE.
         goto 200
      end if

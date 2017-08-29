@@ -92,6 +92,8 @@ subroutine smanal_rekey(self)
   real(kr8), dimension(3) :: zcentr !< average of centroids
   real(kr8) :: zrcen    !<   \f$ R_C \f$
   real(kr8) :: zr    !<   \f$ R \f$
+  real(kr8) :: zx    !<   \f$ X \f$
+  real(kr8) :: zy    !<   \f$ Y \f$
   real(kr8) :: zz    !<   \f$ Z-Z_C \f$
   real(kr8) :: zangmin !< minimum angle
   real(kr8) :: zangmax !< maximum angle
@@ -110,8 +112,9 @@ subroutine smanal_rekey(self)
 
   self%inbin=iindict
   new_key: select case (self%n%newkey)
-  case('null','angle')
-  ! new sort key based on angle
+
+  case('null','angle','poloidal')
+  ! new sort key based on poloidal angle
   allocate(self%bin(iindict), self%oldict(iindict), stat=status)
   call log_alloc_check(m_name,s_name,1,status)
   do i=1,iindict
@@ -126,6 +129,22 @@ subroutine smanal_rekey(self)
   zangmin=minval(self%bin)
   zangmax=maxval(self%bin)
   zbinsiz=(zangmax-zangmin)/self%n%nbin
+
+  case('toroidal')
+  ! new sort key based on toroidal angle
+  allocate(self%bin(iindict), self%oldict(iindict), stat=status)
+  call log_alloc_check(m_name,s_name,1,status)
+  do i=1,iindict
+     zx=self%centr(1,i)
+     zy=self%centr(2,i)
+     self%bin(i)=atan2(zy,zx)
+  end do
+  self%oldict=self%dict
+  ! bin size
+  zangmin=minval(self%bin)
+  zangmax=maxval(self%bin)
+  zbinsiz=(zangmax-zangmin)/self%n%nbin
+
   end select new_key
 
   ! create dictionary
