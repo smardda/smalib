@@ -314,12 +314,9 @@ subroutine control_read(file,numerics,plot)
   call log_error(m_name,s_name,21,error_warning,'Obsolete plot selection feature activated')
   end if
 
-
 end  subroutine control_read
-
 !!---------------------------------------------------------------------
-!! control dengen reading of controls
-
+!> control dengen reading of controls
 subroutine control_dread(file,numerics,plot)
 
   !! arguments
@@ -933,9 +930,9 @@ subroutine control_btree(numerics,kin)
   if(tree_ttalg<0.OR.tree_ttalg>2) &
  &call log_error(m_name,s_name,7,error_fatal,'tree_ttalg must be >= 0 and <=2')
   if(any(tree_nxyz<1)) &
- &call log_error(m_name,s_name,8,error_fatal,'all tree_nxyz must be > 0')
+ &call log_error(m_name,s_name,9,error_fatal,'all tree_nxyz must be > 0')
   if(any(tree_hxyz<0.)) &
- &call log_error(m_name,s_name,9,error_fatal,'all tree_hxyz must be > 0')
+ &call log_error(m_name,s_name,10,error_fatal,'all tree_hxyz must be > 0')
 
   if (tree_type==1) then
      ! BSP

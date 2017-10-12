@@ -26,11 +26,16 @@ mcontrol_m.f90 \
 beq_m.f90 \
 beqan_m.f90 \
 posang_m.f90 \
+bods_h.f90 \
 geobjlist_h.f90 \
 position_m.f90 \
 fmesh_m.f90 \
 ls_m.f90 \
 btree_m.f90 \
+li_m.f90 \
+ld_m.f90 \
+dbtree_h.f90 \
+dbtree_m.f90 \
 geobj_m.f90 \
 stack_m.f90 \
 query_m.f90 \
@@ -92,11 +97,16 @@ geoq.f90 : mcontrol_m.mod
 geoq.f90 : beq_m.mod
 geoq.f90 : beqan_m.mod
 geoq.f90 : posang_m.mod
+geoq.f90 : bods_h.mod
 geoq.f90 : geobjlist_h.mod
 geoq.f90 : position_m.mod
 geoq.f90 : fmesh_m.mod
 geoq.f90 : ls_m.mod
 geoq.f90 : btree_m.mod
+geoq.f90 : li_m.mod
+geoq.f90 : ld_m.mod
+geoq.f90 : dbtree_h.mod
+geoq.f90 : dbtree_m.mod
 geoq.f90 : geobj_m.mod
 geoq.f90 : stack_m.mod
 geoq.f90 : query_m.mod
@@ -172,6 +182,7 @@ posang_m.f90 : position_h.mod
 posang_m.f90 : fmesh_h.mod
 posang_m.f90 : beq_h.mod
 posang_m.f90 : spl2d_m.mod
+bods_h.f90 : const_kind_m.mod
 geobjlist_h.f90 : const_kind_m.mod
 geobjlist_h.f90 : position_h.mod
 geobjlist_h.f90 : geobj_m.mod
@@ -194,6 +205,28 @@ btree_m.f90 : position_m.mod
 btree_m.f90 : geobj_m.mod
 btree_m.f90 : query_m.mod
 btree_m.f90 : ls_m.mod
+li_m.f90 : const_kind_m.mod
+li_m.f90 : log_m.mod
+ld_m.f90 : const_kind_m.mod
+ld_m.f90 : log_m.mod
+dbtree_h.f90 : const_kind_m.mod
+dbtree_h.f90 : position_h.mod
+dbtree_h.f90 : ls_m.mod
+dbtree_h.f90 : li_m.mod
+dbtree_h.f90 : ld_m.mod
+dbtree_m.f90 : const_kind_m.mod
+dbtree_m.f90 : const_numphys_h.mod
+dbtree_m.f90 : ls_m.mod
+dbtree_m.f90 : btree_m.mod
+dbtree_m.f90 : li_m.mod
+dbtree_m.f90 : ld_m.mod
+dbtree_m.f90 : dbtree_h.mod
+dbtree_m.f90 : log_m.mod
+dbtree_m.f90 : position_h.mod
+dbtree_m.f90 : geobjlist_h.mod
+dbtree_m.f90 : position_m.mod
+dbtree_m.f90 : geobj_m.mod
+dbtree_m.f90 : const_kind_m.mod
 geobj_m.f90 : const_kind_m.mod
 geobj_m.f90 : const_numphys_h.mod
 geobj_m.f90 : log_m.mod
@@ -219,6 +252,7 @@ geobjlist_m.f90 : const_kind_m.mod
 geobjlist_m.f90 : log_m.mod
 geobjlist_m.f90 : const_numphys_h.mod
 geobjlist_m.f90 : position_h.mod
+geobjlist_m.f90 : bods_h.mod
 geobjlist_m.f90 : geobjlist_h.mod
 geobjlist_m.f90 : position_m.mod
 geobjlist_m.f90 : control_h.mod
@@ -227,6 +261,10 @@ geobjlist_m.f90 : dcontrol_h.mod
 geobjlist_m.f90 : posang_h.mod
 geobjlist_m.f90 : ls_m.mod
 geobjlist_m.f90 : btree_m.mod
+geobjlist_m.f90 : li_m.mod
+geobjlist_m.f90 : ld_m.mod
+geobjlist_m.f90 : dbtree_h.mod
+geobjlist_m.f90 : dbtree_m.mod
 geobjlist_m.f90 : geobj_m.mod
 geobjlist_m.f90 : query_m.mod
 geobjlist_m.f90 : posang_m.mod

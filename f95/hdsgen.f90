@@ -14,10 +14,15 @@ program hdsgen_p
   use posang_h
   use ls_m
   use btree_m
+  use li_m
+  use ld_m
+  use dbtree_h
+  use dbtree_m
   use mtest_m
   use termplane_h
   use pcle_h
   use pcle_m
+  use bods_h
   use geobjlist_h
   use geobjlist_m
   use indict_m
@@ -113,13 +118,14 @@ program hdsgen_p
 !!sort geobjl onto bins
 
   call clock_start(9,'geobjlist_sort time')
-  call geobjlist_step(geobjl,btree)
+  call geobjlist_bin(geobjl,btree)
   numerics%geobj_coord_tfm=geobjl%quantfm
   call clock_stop(9)
 
 !--------------------------------------------------------------------------
 !! sorted btree and geobjl data diagnostics
 
+  call btree_dia(btree)
 
 !!plot mapped HDS
   if(plot%hdsm) then
@@ -200,6 +206,7 @@ program hdsgen_p
 !--------------------------------------------------------------------------
 !! cleanup and closedown
   call geobjlist_delete(geobjl)
+  call btree_delete(btree)
 
   call clock_stop(1)
   call clock_summary
