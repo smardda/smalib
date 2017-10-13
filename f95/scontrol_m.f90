@@ -209,6 +209,15 @@ subroutine scontrol_read(param,file,plot)
 
   !!smanal file root
   file%smanalout = trim(root)//"_smanal.out"
+  filefound=.false.
+  inquire(file=file%smanalout,exist=filefound)
+  call log_value("smanal output file",trim(file%smanalout))
+  if(filefound) then
+     !! error opening file
+     print '("Fatal error: Output file ",a, " already exists")',trim(file%smanalout)
+     print '("Remove it and restart run")'
+     call log_error(m_name,s_name,4,error_fatal,'Output file already exists')
+  end if
 
   !---------------------------------------------------------------------
   !! set default misc parameters
