@@ -24,6 +24,7 @@ beq_m.f90 \
 beqan_h.f90 \
 beqan_m.f90 \
 posang_m.f90 \
+bods_h.f90 \
 geobjlist_h.f90 \
 position_m.f90 \
 control_h.f90 \
@@ -107,6 +108,7 @@ powcal.f90 : beq_m.mod
 powcal.f90 : beqan_h.mod
 powcal.f90 : beqan_m.mod
 powcal.f90 : posang_m.mod
+powcal.f90 : bods_h.mod
 powcal.f90 : geobjlist_h.mod
 powcal.f90 : position_m.mod
 powcal.f90 : control_h.mod
@@ -209,6 +211,7 @@ posang_m.f90 : position_h.mod
 posang_m.f90 : fmesh_h.mod
 posang_m.f90 : beq_h.mod
 posang_m.f90 : spl2d_m.mod
+bods_h.f90 : const_kind_m.mod
 geobjlist_h.f90 : const_kind_m.mod
 geobjlist_h.f90 : position_h.mod
 geobjlist_h.f90 : geobj_m.mod
@@ -277,6 +280,7 @@ geobjlist_m.f90 : const_kind_m.mod
 geobjlist_m.f90 : log_m.mod
 geobjlist_m.f90 : const_numphys_h.mod
 geobjlist_m.f90 : position_h.mod
+geobjlist_m.f90 : bods_h.mod
 geobjlist_m.f90 : geobjlist_h.mod
 geobjlist_m.f90 : position_m.mod
 geobjlist_m.f90 : control_h.mod

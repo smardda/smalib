@@ -74,8 +74,8 @@ module beq_m
 ! public variables
   integer(ki4), public, parameter :: BEQ_MZETA=193 !< number of points for
  &! display in direction of invariant coordinate \f$ \zeta \f$
-  real(kr8), public, parameter :: beq_dzeta=2*const_pid/(BEQ_MZETA-1) !< local variable
- &!< increment in direction of invariant coordinate \f$ \zeta \f$
+  real(kr8), public, parameter :: beq_dzeta=2*const_pid/(BEQ_MZETA-1) !< increment
+ &! in direction of invariant coordinate \f$ \zeta \f$
 
 ! private types
 
@@ -660,24 +660,24 @@ subroutine beq_readequil(self,infile,numerics)
   self%zqcen=zmaxis
 
   if (.NOT.numerics%leqok) then
-  if (BEQ_OVERRIDE_ITER) then
-     call log_error(m_name,s_name,49,log_info,'override for ITER')
-     ! special for ITER to align current and toroidal field
-     if (ssimag1>ssibry1) then
-        self%psiaxis=-ssimag1*psifac
-        self%psiqbdry=-ssibry1*psifac
-        self%psibdry=self%psiqbdry
-        work2=-work2
-     else
+     if (BEQ_OVERRIDE_ITER) then
+        call log_error(m_name,s_name,49,log_info,'override for ITER')
+        ! special for ITER to align current and toroidal field
+        if (ssimag1>ssibry1) then
+           self%psiaxis=-ssimag1*psifac
+           self%psiqbdry=-ssibry1*psifac
+           self%psibdry=self%psiqbdry
+           work2=-work2
+        else
+           ! possibly also in case where psi increases from axis
+           self%f=-self%f
+        end if
+     else if (BEQ_OVERRIDE_FTU) then
+        call log_error(m_name,s_name,48,log_info,'override for FTU')
+        ! special for FTU modelling to align current and toroidal field
         ! possibly also in case where psi increases from axis
         self%f=-self%f
      end if
-  else if (BEQ_OVERRIDE_FTU) then
-     call log_error(m_name,s_name,48,log_info,'override for FTU')
-     ! special for FTU modelling to align current and toroidal field
-     ! possibly also in case where psi increases from axis
-     self%f=-self%f
-  end if
   end if
 
   !! now additional standard eqdsk stuff
@@ -810,10 +810,14 @@ subroutine beq_readequil(self,infile,numerics)
   end if
   print '("number of Bz values read = ",i10)',nw*nh
   call log_value("number of Bz values read ",nw*nh)
-  ! fix sign consistent with psi above
-  if (ssimag1>ssibry1) then
-     workr2=-workr2
-     workz2=-workz2
+  if (.NOT.numerics%leqok) then
+     if (BEQ_OVERRIDE_ITER) then
+        ! fix sign consistent with psi above
+        if (ssimag1>ssibry1) then
+           workr2=-workr2
+           workz2=-workz2
+        end if
+     end if
   end if
   close(iin)
 
@@ -982,25 +986,25 @@ subroutine beq_readequ(self,infile,numerics)
 
   fld_specn: select case (numerics%fldspec)
   case(1,3)
-  if (.NOT.numerics%leqok) then
-     if (BEQ_OVERRIDE_ITER) then
-        call log_error(m_name,s_name,49,log_info,'override for ITER')
-        ! special for ITER to align current and toroidal field
-        if (psic>psib) then
-           self%psiaxis=-psic
-           self%psiqbdry=-psib
-           self%psibdry=self%psiqbdry
-           work2=-work2
-        else
+     if (.NOT.numerics%leqok) then
+        if (BEQ_OVERRIDE_ITER) then
+           call log_error(m_name,s_name,49,log_info,'override for ITER')
+           ! special for ITER to align current and toroidal field
+           if (psic>psib) then
+              self%psiaxis=-psic
+              self%psiqbdry=-psib
+              self%psibdry=self%psiqbdry
+              work2=-work2
+           else
+              ! possibly also in case where psi increases from axis
+              self%f=-self%f
+           end if
+        else if (BEQ_OVERRIDE_FTU) then
+           call log_error(m_name,s_name,50,log_info,'override for FTU')
+           ! special for FTU modelling to align current and toroidal field
            ! possibly also in case where psi increases from axis
            self%f=-self%f
         end if
-     else if (BEQ_OVERRIDE_FTU) then
-        call log_error(m_name,s_name,50,log_info,'override for FTU')
-        ! special for FTU modelling to align current and toroidal field
-        ! possibly also in case where psi increases from axis
-        self%f=-self%f
-     end if
      end if
   case(2)
      ! Separating this case enables MAST test deck case to work,
@@ -1323,7 +1327,7 @@ subroutine beq_sense(self,k3d)
 
   !write(*,*) self%n%vacfile
   if ( (k3d==0.AND.self%n%vacfile/='null') .OR. &
- & (k3d==1.AND.self%n%vacfile=='null') ) return
+ &(k3d==1.AND.self%n%vacfile=='null') ) return
   ! sense (R,Z) values
   posang%pos(1)=self%rmin+0.7*(self%rmax-self%rmin)
   posang%pos(2)=0
@@ -1337,7 +1341,7 @@ subroutine beq_sense(self,k3d)
   isleft=sign(1.05_kr8,posang%vec(3)/posang%vec(2))
   if (isleft==1) then
      call log_error(m_name,s_name,1,log_info,'Left-handed helical field UNlike ITER')
-  else 
+  else
      call log_error(m_name,s_name,2,log_info,'Right-handed helical field like ITER')
   end if
 
@@ -2873,7 +2877,7 @@ subroutine beq_readcon(selfn,kin)
  &   call log_error(m_name,s_name,10,error_fatal,'search box too small in Z')
      search_z_start=z1
      search_z_end=z2
-   end if
+  end if
 
   !! store values
   selfn%cenopt=beq_cenopt
@@ -3010,15 +3014,15 @@ subroutine beq_psilt(self)
   else if (self%n%psiopt==3) then
      zpsimin=min(self%n%psimin, self%n%psimax)
      zpsimax=max(self%n%psimin, self%n%psimax)
-!S     if (rsig>0) then
-        !  psi increases outward
-        self%n%psimin=zpsimin
-        self%n%psimax=zpsimax
-!S     else
-!S        !  psi decreases outward
-!S        self%n%psimin=zpsimax
-!S        self%n%psimax=zpsimin
-!S     end if
+     !S     if (rsig>0) then
+     !  psi increases outward
+     self%n%psimin=zpsimin
+     self%n%psimax=zpsimax
+     !S     else
+     !S        !  psi decreases outward
+     !S        self%n%psimin=zpsimax
+     !S        self%n%psimax=zpsimin
+     !S     end if
   end if
 
 end subroutine beq_psilt

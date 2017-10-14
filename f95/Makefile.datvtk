@@ -40,6 +40,7 @@ gfile_m.f90 \
 datline_h.f90 \
 datline_m.f90 \
 dfile_m.f90 \
+bods_h.f90 \
 bods_m.f90 \
 stlfile_m.f90 \
 stack_m.f90 \
@@ -103,6 +104,7 @@ datvtk.f90 : gfile_m.mod
 datvtk.f90 : datline_h.mod
 datvtk.f90 : datline_m.mod
 datvtk.f90 : dfile_m.mod
+datvtk.f90 : bods_h.mod
 datvtk.f90 : bods_m.mod
 datvtk.f90 : stlfile_m.mod
 datvtk.f90 : stack_m.mod
@@ -196,6 +198,7 @@ geobjlist_m.f90 : const_kind_m.mod
 geobjlist_m.f90 : log_m.mod
 geobjlist_m.f90 : const_numphys_h.mod
 geobjlist_m.f90 : position_h.mod
+geobjlist_m.f90 : bods_h.mod
 geobjlist_m.f90 : geobjlist_h.mod
 geobjlist_m.f90 : position_m.mod
 geobjlist_m.f90 : control_h.mod
@@ -236,9 +239,11 @@ dfile_m.f90 : const_kind_m.mod
 dfile_m.f90 : log_m.mod
 dfile_m.f90 : datline_h.mod
 dfile_m.f90 : datline_m.mod
+bods_h.f90 : const_kind_m.mod
 bods_m.f90 : const_kind_m.mod
 bods_m.f90 : log_m.mod
 bods_m.f90 : const_numphys_h.mod
+bods_m.f90 : bods_h.mod
 bods_m.f90 : position_h.mod
 bods_m.f90 : geobjlist_h.mod
 bods_m.f90 : position_m.mod

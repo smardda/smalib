@@ -27,6 +27,9 @@ module vcontrol_h
      type(vtfmdata_t) :: vptfm !< array of position \f$ x \f$ to \f$ x \f$ scaling
      type(vtfmdata_t) :: vpantfm !< for each panel, array of position \f$ x \f$ to \f$ x \f$ scaling
      logical :: paneltfm !< apply transform if .TRUE.
+     integer(ki4) :: maxindx !< dimension of bods index array
+     integer(ki4) :: maxbodsf !< used to generate unique bods numbers over many files
+     logical :: preserve !< bods remain distinct
      logical :: extract !< extract objects according to criterion
      character(len=80) :: key !< key for extraction
      real(kr8), dimension(2) :: centre !< centre of discharge in \f$ (R,Z) \f$

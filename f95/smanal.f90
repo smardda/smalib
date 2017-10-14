@@ -12,6 +12,7 @@ program smanal_p
   use posang_h
 !  use pcle_h
 !  use pcle_m
+  use bods_h
   use geobjlist_h
   use control_h
   use li_m

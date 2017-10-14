@@ -17,6 +17,7 @@ clock_m.f90 \
 position_m.f90 \
 geobj_m.f90 \
 posang_h.f90 \
+bods_h.f90 \
 geobjlist_h.f90 \
 control_h.f90 \
 li_m.f90 \
@@ -82,6 +83,7 @@ smanal.f90 : clock_m.mod
 smanal.f90 : position_m.mod
 smanal.f90 : geobj_m.mod
 smanal.f90 : posang_h.mod
+smanal.f90 : bods_h.mod
 smanal.f90 : geobjlist_h.mod
 smanal.f90 : control_h.mod
 smanal.f90 : li_m.mod
@@ -129,6 +131,7 @@ geobj_m.f90 : log_m.mod
 geobj_m.f90 : position_h.mod
 geobj_m.f90 : position_m.mod
 posang_h.f90 : const_kind_m.mod
+bods_h.f90 : const_kind_m.mod
 geobjlist_h.f90 : const_kind_m.mod
 geobjlist_h.f90 : position_h.mod
 geobjlist_h.f90 : geobj_m.mod
@@ -190,6 +193,7 @@ geobjlist_m.f90 : const_kind_m.mod
 geobjlist_m.f90 : log_m.mod
 geobjlist_m.f90 : const_numphys_h.mod
 geobjlist_m.f90 : position_h.mod
+geobjlist_m.f90 : bods_h.mod
 geobjlist_m.f90 : geobjlist_h.mod
 geobjlist_m.f90 : position_m.mod
 geobjlist_m.f90 : control_h.mod

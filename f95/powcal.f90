@@ -18,6 +18,7 @@ program powcal_p
   use beqan_m
   use posang_m
 
+  use bods_h
   use geobjlist_h
   use position_m
   use control_h

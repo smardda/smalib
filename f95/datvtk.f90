@@ -35,6 +35,7 @@ program datvtk_p
   use datline_h
   use datline_m
   use dfile_m
+  use bods_h
   use bods_m
   use stlfile_m
   use stack_m
@@ -56,11 +57,10 @@ program datvtk_p
   character(len=256) :: vtkdesc !< descriptor line for vtk files
   character(len=80),save :: iched !< vtk field file descriptor
 
-  integer(ki4), dimension(:), allocatable :: bods !< array of bodies for geometrical objects
+  type(bods_t) :: bods !< type of bods for geometrical objects
   integer(ki4):: nplot !< unit for vtk files
   integer(ki4):: nread !< unit for dat files
   integer(ki4):: nin !< unit for other data
-  integer(ki4):: nscal !< number of scalars (body identifiers)
   integer(ki4):: i !< loop variable
   integer(ki4):: j !< loop variable
   integer(ki4) :: islen   !< length of input field filename
@@ -143,16 +143,16 @@ program datvtk_p
      call geobjlist_read(geobjl,trim(fileroot)//'.vtk',iched)
      inquire(file=trim(fileroot)//'.vtk',number=nread)
      iopt=1
-     call vfile_iscalarread(bods,geobjl%ng,trim(fileroot)//'.vtk','Body',nread,iopt)
+     call vfile_iscalarread(bods%list,geobjl%ng,trim(fileroot)//'.vtk','Body',nread,iopt)
   case('c')
      iched='converted dat files in '//fileroot//'.ctl'
      call geobjlist_create3d(geobjl,numerics)
-     call bods_init(bods,geobjl,1)
+     call bods_initlist(bods,geobjl,1)
   case default
      iched='converted dat file '//fileroot//'.dat'
      call dfile_init(fileroot,nread)
      call geobjlist_dread(geobjl,nread)
-     call bods_init(bods,geobjl,1)
+     call bods_initlist(bods,geobjl,1)
   end select input_type
   call clock_stop(4)
 !--------------------------------------------------------------------------
@@ -178,7 +178,7 @@ program datvtk_p
   divide_type: select case(optarg(3:3))
   case('d','s')
 !! write out as separate files
-     call bods_write(bods,size(bods),geobjl,fileroot,'none','Body',1)
+     call bods_write(bods,geobjl,fileroot,'none','Body',1)
      call vfile_close
   case('t')
      ! stl, one set of triangles
@@ -193,14 +193,15 @@ program datvtk_p
   case default
      call vfile_init(trim(fileroot)//'_out',iched,nplot)
      call geobjlist_writev(geobjl,'geometry',nplot)
-     if (optarg(3:3)=='m') bods=1 ! suppress body information
-     call vfile_iscalarwrite(bods,size(bods),'Body','CELL',nplot,1)
+     if (optarg(3:3)=='m') bods%list=1 ! suppress body information
+     call vfile_iscalarwrite(bods%list,bods%nbod,'Body','CELL',nplot,1)
      call vfile_close
   end select divide_type
   call clock_stop(30)
 !--------------------------------------------------------------------------
 !! cleanup and closedown
   call geobjlist_delete(geobjl)
+  call bods_delete(bods)
 
   call clock_stop(1)
   call clock_summary

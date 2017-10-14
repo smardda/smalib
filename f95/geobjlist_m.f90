@@ -4,6 +4,7 @@ module geobjlist_m
   use log_m
   use const_numphys_h
   use position_h
+  use bods_h
   use geobjlist_h
   use position_m
   use control_h
@@ -1524,10 +1525,10 @@ subroutine geobjlist_qtfm(self,kt)
 end subroutine geobjlist_qtfm
 !---------------------------------------------------------------------
 !> transform positions on a panel-by-panel basis
-subroutine geobjlist_paneltfm(self,kbods,numerics)
+subroutine geobjlist_paneltfm(self,bods,numerics)
   !! arguments
   type(geobjlist_t), intent(inout) :: self !< geobj list data
-  integer(ki4), dimension(:), intent(in) :: kbods !< integer scalar list data of bodies for each point
+  type(bods_t), intent(in) :: bods !< bods data for each point
   type(vnumerics_t), intent(inout) :: numerics !< input numerical parameters
 
   !! local
@@ -1538,6 +1539,7 @@ subroutine geobjlist_paneltfm(self,kbods,numerics)
   type(posang_t) :: zposang !< local variable
   integer(ki4) :: ibod   !< body identifier
   integer(ki4) :: ibod1  !< body identifier
+!dbgw  integer(ki4) :: iibod  !< body identifier !dbgw
   integer(ki4) :: ipan   !< panel identifier
   integer(ki4) :: inbod   !< number of bodies
   integer(ki4) :: inpan   !< number of panels
@@ -1609,9 +1611,13 @@ subroutine geobjlist_paneltfm(self,kbods,numerics)
   !BP   !      write(*,*) 'ibodpan',ibodpan
 
   !! loop over objects to get panel centroids (if needed)
+!dbgw  write(*,*) 'inpan=', inpan !dbgw
   do j=1,self%ng
-     !w write(*,*)'j=',j
-     ibod=kbods(j)
+     !w write(*,*)'j=',j !w
+     ibod=bods%list(j)
+!dbgw     iibod=ibod !dbgw
+     if (bods%nindx>0) ibod=bods%indx(ibod)
+!dbgw     write(110,*) j,iibod,ibod !dbgw
      !BP      !w    ipan=ibodpan(ibod)
      ipan=indict2(inpan,numerics%panbod,ibod)
      if (ipan==0) then
@@ -1765,7 +1771,10 @@ subroutine geobjlist_paneltfm(self,kbods,numerics)
   ibod1=-999
   do j=1,self%ng
 
-     ibod=kbods(j)
+     ibod=bods%list(j)
+!dbgw     iibod=ibod !dbgw
+     if (bods%nindx>0) ibod=bods%indx(ibod)
+!dbgw     write(110,*) j,iibod,ibod !dbgw
      !BP      !w    ipan=ibodpan(ibod)
      ipan=indict2(inpan,numerics%panbod,ibod)
      if (ipan==0) then
@@ -2026,6 +2035,7 @@ subroutine geobjlist_bbin(self,btree)
   end do loop_99
 
   if (.not.iltest) then
+     call btree_dia(btree)
      call log_error(m_name,s_name,2,error_warning, &
  &   'binary tree not completed-increase quantising and/or depth and/or minobj')
   end if
@@ -2247,6 +2257,7 @@ subroutine geobjlist_mbin(self,btree)
   end do loop_99
 
   if (.not.iltest) then
+     call btree_dia(btree)
      call log_error(m_name,s_name,2,error_fatal, &
  &   'binary tree not completed-try increasing limit_geobj_in_bin')
   end if
@@ -2462,16 +2473,20 @@ subroutine geobjlist_iinit(self,knpt,knobj,knnod,kgtype,kopt)
   self%ngunassigned=0
   allocate(self%posl%pos(self%np), stat=status)
   call log_alloc_check(m_name,s_name,1,status)
-  if (kgtype==1.OR.kopt/=0) then
+  if (kgtype==1) then
      allocate(self%obj(self%np), stat=status)
      call log_alloc_check(m_name,s_name,2,status)
+     self%nwset=min(1,kopt)
+  else if (kopt/=0) then
+     allocate(self%obj(self%ng), stat=status)
+     call log_alloc_check(m_name,s_name,3,status)
      self%nwset=min(1,kopt)
   end if
   if (kgtype==2) then
      allocate(self%nodl(self%nnod), stat=status)
-     call log_alloc_check(m_name,s_name,3,status)
-     allocate(self%obj2(self%ng), stat=status)
      call log_alloc_check(m_name,s_name,4,status)
+     allocate(self%obj2(self%ng), stat=status)
+     call log_alloc_check(m_name,s_name,5,status)
      self%nwset=kopt
   end if
 
@@ -3640,7 +3655,7 @@ end subroutine geobjlist_querynode
 subroutine geobjlist_centroids(self,key,dict,kndict,centroids)
   !! arguments
   type(geobjlist_t), intent(inout) :: self !< geobj list data
-  integer(ki4), dimension(*), intent(in) :: key !< key array (bods)
+  integer(ki4), dimension(*), intent(in) :: key !< key array (bodies)
   integer(ki4), dimension(*), intent(in) :: dict !< dictionary
   integer(ki4), intent(in) :: kndict !< dictionary size (size fn seems to have issues in gfortran)
   real(kr8), dimension(:,:), allocatable, intent(out) :: centroids   !< centroids position data

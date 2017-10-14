@@ -15,7 +15,6 @@ module btree_m
 ! public subroutines
   public ::  &
   btree_init,   & !< create  tree data structure
-  btree_delete, & !< delete  tree data structure
   btree_write, &  !< write  binary tree structure
   btree_read,   & !< read  binary tree structure
   btree_writev, & !< write (vtk) binary tree structure
@@ -25,9 +24,11 @@ module btree_m
   btree_madd,   & !< split node and assign to new nodes presorted array of start addresses
   btree_find,   & !< find node containing normalised point vector in BSP btree
   btree_mfind,   & !< locate node containing point vector in many-one btree
+  btree_dia, &  !< object diagnostics to log file
   btree_newnode,   & !< return node containing point vector starting from given node
   btree_readnolab, & !< read unlabelled binary tree structure
-  btree_floatvec  !< return float btree short integer vector
+  btree_floatvec, &  !< return float btree short integer vector
+  btree_delete !< delete object
 !<       btree_match,   & ! match in binary tree
 !<       btree_next1, &  ! next at numbered level in binary tree
 !<       btree_next, &  ! next in binary tree (bottom level)
@@ -70,9 +71,8 @@ module btree_m
   integer(ki4) :: ii !< loop counter
   integer(ki4) :: jj !< loop counter
   integer(ki4) :: kk !< loop counter
-  integer(ki2):: idepthe !< max depth of tree (provisional)
   integer(ki2):: idepth !< max depth of tree
-  integer(ki2):: iquante !< max scaled extent of tree (provisional, log)
+  integer(ki4) :: ilog !< file unit for logging
 
   contains
 
@@ -92,7 +92,9 @@ subroutine btree_init(self,numerics)
   integer(ki4) :: isizel !< size of list array
   integer(ki4):: ittype !< type of tree
   integer(ki4):: ittalg !< type of top of tree algorithm
-  integer(ki4) :: btree_size  !< local variable
+  integer(ki4) :: ibsize  !< btree size
+  integer(ki2):: idepthe !< max depth of tree (provisional)
+  integer(ki2):: iquante !< max scaled extent of tree (provisional, log)
   integer(ki4) :: igeobj  !< local variable
   integer(ki4) :: imtype  !< local variable
   integer(ki2), dimension(3) :: ixyz  !< local variable
@@ -133,9 +135,9 @@ subroutine btree_init(self,numerics)
      call log_error(m_name,s_name,4,error_fatal,'No data')
   end if
 
-  btree_size=isizee
-  if(btree_size>0) then
-     allocate(self%exten(3,btree_size), &
+  ibsize=isizee
+  if(ibsize>0) then
+     allocate(self%exten(3,ibsize), &
  &   stat=status)
      !! check successful allocation
      if(status/=0) then
@@ -184,19 +186,6 @@ subroutine btree_init(self,numerics)
   end do
 
 end subroutine btree_init
-!---------------------------------------------------------------------
-!> delete btree_t
-subroutine btree_delete(self)
-
-  !! arguments
-  type(btree_t), intent(inout) :: self !< binary tree
-  !! local
-
-  deallocate(self%desc)
-  deallocate(self%corner)
-  deallocate(self%exten)
-
-end subroutine btree_delete
 !---------------------------------------------------------------------
 !> write out binary tree data
 subroutine btree_write(self,numerics,kout)
@@ -600,6 +589,7 @@ subroutine btree_add(self,kd,knode,kadra)
   iexten=self%nexten
   ! check space
   if (intr+2>size(self%pter,2)) then
+     call btree_dia(self)
      call log_error(m_name,s_name,1,error_fatal,'Binary tree size exceeded')
   end if
   ! complete description of original node
@@ -626,6 +616,7 @@ subroutine btree_add(self,kd,knode,kadra)
   if ( imatch==0 ) then
      ! add to exten array
      if (iexten+1>size(self%exten,2)) then
+        call btree_dia(self)
         call log_error(m_name,s_name,2,error_fatal,'Binary tree exten size exceeded')
      end if
      iexten=iexten+1
@@ -830,6 +821,7 @@ subroutine btree_madd(self,kxyz,knode,kadra,kd,kextn,kcorna,kchildn,kbsiz)
 
   ! check space
   if (intr+kchildn>size(self%pter,2)) then
+     call btree_dia(self)
      call log_error(m_name,s_name,1,error_fatal,'Binary tree size exceeded')
   end if
   ! test against existing entries
@@ -844,6 +836,7 @@ subroutine btree_madd(self,kxyz,knode,kadra,kd,kextn,kcorna,kchildn,kbsiz)
   if ( imatch==0 ) then
      ! add to exten array
      if (iexten+1>size(self%exten,2)) then
+        call btree_dia(self)
         call log_error(m_name,s_name,2,error_fatal,'Binary tree exten size exceeded')
      end if
      iexten=iexten+1
@@ -949,6 +942,7 @@ subroutine btree_find(self,obj,query,knode)
 
   ! check object really is in node
   if (knode<=0) then
+     call btree_dia(self)
      call log_error(m_name,s_name,1,error_fatal,'Binary tree does not exist')
   else
      ! corner
@@ -1061,6 +1055,7 @@ subroutine btree_mfind(self,obj,poslis,knode)
 
   ! check object really is in node
   if (knode<=0) then
+     call btree_dia(self)
      call log_error(m_name,s_name,5,error_fatal,'Binary tree may be corrupt')
   else
      ! corner
@@ -1074,6 +1069,73 @@ subroutine btree_mfind(self,obj,poslis,knode)
   end if
 
 end subroutine btree_mfind
+!---------------------------------------------------------------------
+!> output to log file
+subroutine btree_dia(self)
+
+  !! arguments
+  type(btree_t), intent(in) :: self !< module object
+  !! local
+  character(*), parameter :: s_name='btree_dia' !< subroutine name
+  integer(ki2) :: iexmin !< minimum exten value
+  integer(ki2) :: idescent !< binary depth (or descent) actually used
+  integer(ki4) :: inleaf  !<  count number of leaves
+  integer(ki4) :: inentry  !<  count number of entries
+  integer(ki4) :: itlist  !<  local list type
+  integer(ki4) :: jl  !< local loop
+
+  call log_getunit(ilog)
+  write(ilog,*) ' tree type ', self%nttype
+  write(ilog,*) ' split at top of tree ', self%nxyz
+  write(ilog,*) ' type of tree algorithm ', self%nttalg
+  write(ilog,*) ' size of tree pointer array or numerics%nsize ', &
+ &self%nt,' used out of  ',size(self%pter,2), ' (max_size_tree_array)'
+  write(ilog,*) ' size of extents array or numerics%nsizee ', &
+ &self%nexten,' used out of ',size(self%exten,2), ' (max_size_exten_array)'
+  iexmin=minval( self%exten(1:3,1) )
+  write(*,*) ' 1 ', self%exten(1:3,1)  !dbg
+  do jl=2,self%nexten
+     iexmin=min( iexmin, minval( self%exten(1:3,jl) ) )
+     write(*,*) jl, self%exten(1:3,jl)  !dbg
+  end do
+  idescent=self%ndepth-iexmin
+  write(ilog,*) ' descent of tree ', &
+ &idescent, ' used out of ', self%ndepth, ' (log_2(quantising number))'
+  ! count leaves and entries
+  inleaf=0
+  !! loop over all tree entries
+  do jl=1,self%nt
+     if (self%pter(3,jl)>0) cycle
+     inleaf=inleaf+1
+  end do
+  write(ilog,*) ' number of leaves ', inleaf
+  write(ilog,*) ' maximum number of entries in any node given by limit_geobj_in_bin'
+  itlist=0 ! hardwired
+  write(ilog,*) ' type of list structure ', itlist
+  list_type: select case (itlist)
+  case(0)
+     write(ilog,*) 'list type  ls'
+     write(ilog,*) ' number of entries in list array numerics%nsizel ', &
+ &   self%objectls%nlist,' used out of ',size(self%objectls%list,1), ' (max_size_list_array)'
+  case(1)
+     write(ilog,*) 'list type  li'
+     !write(ilog,*) ' number of entries in hoc array ', &
+     !&self%objectli%nhoc,' used out of ',self%n%nsizeh
+!     write(ilog,*) ' number of entries in conten array ', &
+! &   self%objectli%nconten,' used out of ',self%n%nsizel,  ' (max_size_list_array)'
+  case(2)
+     write(ilog,*) 'list type  ld'
+     !write(ilog,*) ' number of entries in hoc array ', &
+     !&self%objectld%nhoc,' used out of ',self%n%nsizeh
+!     write(ilog,*) ' number of entries in conten array ', &
+! &   self%objectld%nconten,' used out of ',self%n%nsizel, ' (max_size_list_array)'
+  end select list_type
+
+  !dbg  do jl=1,1000 ! dbg
+  !dbg  write(ilog,*) jl ! dbg
+  !dbg  end do ! dbg
+
+end subroutine btree_dia
 !---------------------------------------------------------------------
 !> return node containing point vector starting from given node
 function btree_newnode(self,kvec,k)
@@ -1230,6 +1292,7 @@ function btree_newnode(self,kvec,k)
 
   ! check right node
   if (inode<=0) then
+     call btree_dia(self)
      call log_error(m_name,s_name,5,error_fatal,'Binary tree does not exist')
   else
      ! corner
@@ -1310,5 +1373,30 @@ pure type(posvecl_t) function btree_floatvec(kvec)
   btree_floatvec=zvec
   return
 end function btree_floatvec
+!---------------------------------------------------------------------
+!> delete object
+subroutine btree_delete(self)
+
+  !! arguments
+  type(btree_t), intent(inout) :: self !< module object
+  !! local
+  character(*), parameter :: s_name='btree_delete' !< subroutine name
+  integer(ki4) :: itlist  !<  local list type
+
+  deallocate(self%pter)
+  deallocate(self%desc)
+  deallocate(self%corner)
+  deallocate(self%exten)
+  itlist=0 ! hardwired
+  list_type: select case (itlist)
+  case(0)
+     call ls_delete(self%objectls)
+  case(1)
+  !  call li_delete(self%objectli)
+  case(2)
+  !  call ld_delete(self%objectld)
+  end select list_type
+
+end subroutine btree_delete
 
 end module btree_m

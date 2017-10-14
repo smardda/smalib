@@ -18,6 +18,7 @@ module ccontrol_m
 
   integer(ki4), parameter :: maximum_number_of_lines=100 !< maximum number of lines in files allowed
   integer(ki4), parameter :: maximum_number_of_namelists=20 !< maximum number of namelists in files allowed
+  integer(ki4), parameter :: maximum_number_of_bodies_in_file=100 !< maximum number of bodies in files allowed
   character(len=3), dimension(maximum_number_of_lines), save :: filekey  !< labels data input line
   character(len=132), dimension(maximum_number_of_lines), save :: filecon !< contents of data input line
   integer(ki4) :: nincon !< number of entries in filecon
@@ -319,7 +320,7 @@ subroutine ccontrol_writectl
 
   !! panelarray parameters
   do j=1,inpfile
-     panel_bodies(j)=100*j+1
+     panel_bodies(j)=maximum_number_of_bodies_in_file*j+1
   end do
   if (inpfile==1) panel_bodies(1)=1
   panel_transform=ntfm

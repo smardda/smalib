@@ -29,6 +29,7 @@ mtest_m.f90 \
 termplane_h.f90 \
 pcle_h.f90 \
 pcle_m.f90 \
+bods_h.f90 \
 geobjlist_h.f90 \
 geobjlist_m.f90 \
 indict_m.f90 \
@@ -94,6 +95,7 @@ hdsgen.f90 : mtest_m.mod
 hdsgen.f90 : termplane_h.mod
 hdsgen.f90 : pcle_h.mod
 hdsgen.f90 : pcle_m.mod
+hdsgen.f90 : bods_h.mod
 hdsgen.f90 : geobjlist_h.mod
 hdsgen.f90 : geobjlist_m.mod
 hdsgen.f90 : indict_m.mod
@@ -188,6 +190,7 @@ pcle_m.f90 : geobj_m.mod
 pcle_m.f90 : query_m.mod
 pcle_m.f90 : geobjlist_h.mod
 pcle_m.f90 : termplane_h.mod
+bods_h.f90 : const_kind_m.mod
 geobjlist_h.f90 : const_kind_m.mod
 geobjlist_h.f90 : position_h.mod
 geobjlist_h.f90 : geobj_m.mod
@@ -195,6 +198,7 @@ geobjlist_m.f90 : const_kind_m.mod
 geobjlist_m.f90 : log_m.mod
 geobjlist_m.f90 : const_numphys_h.mod
 geobjlist_m.f90 : position_h.mod
+geobjlist_m.f90 : bods_h.mod
 geobjlist_m.f90 : geobjlist_h.mod
 geobjlist_m.f90 : position_m.mod
 geobjlist_m.f90 : control_h.mod

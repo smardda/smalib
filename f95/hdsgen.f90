@@ -22,6 +22,7 @@ program hdsgen_p
   use termplane_h
   use pcle_h
   use pcle_m
+  use bods_h
   use geobjlist_h
   use geobjlist_m
   use indict_m
@@ -124,6 +125,7 @@ program hdsgen_p
 !--------------------------------------------------------------------------
 !! sorted btree and geobjl data diagnostics
 
+  call btree_dia(btree)
 
 !!plot mapped HDS
   if(plot%hdsm) then
@@ -204,6 +206,7 @@ program hdsgen_p
 !--------------------------------------------------------------------------
 !! cleanup and closedown
   call geobjlist_delete(geobjl)
+  call btree_delete(btree)
 
   call clock_stop(1)
   call clock_summary
