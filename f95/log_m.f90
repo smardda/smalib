@@ -27,18 +27,18 @@ module log_m
   end interface
 
 ! public variables
-  integer, public, parameter :: error_fatal=0 !< local variable
-  integer, public, parameter :: error_serious=1 !< local variable
-  integer, public, parameter :: error_warning=2 !< local variable
-  integer, public, parameter :: error_info=3 !< local variable
-  integer, public, parameter :: error_debug=4 !< local variable
-  integer, public, parameter :: log_info=5 !< local variable
+  integer, public, parameter :: error_fatal=0 !< public variable
+  integer, public, parameter :: error_serious=1 !< public variable
+  integer, public, parameter :: error_warning=2 !< public variable
+  integer, public, parameter :: error_info=3 !< public variable
+  integer, public, parameter :: error_debug=4 !< public variable
+  integer, public, parameter :: log_info=5 !< public variable
 
 
 ! private variables
   type(date_time_t) :: timedate !< timestamp
   character(*), parameter :: m_name='log_m' !< module name
-  character(*), dimension(0:5), parameter :: errorname = & !< local variable
+  character(*), dimension(0:5), parameter :: errorname = & !< type of "error"
  &(/'Fatal  ','Serious','Warning', 'Info   ', 'Debug  ','Info   '/)
   character(128) :: logfile !< name of error logging file
   integer(ki4) :: nlog    !< error logging unit number
@@ -48,7 +48,8 @@ module log_m
   integer(ki4),parameter :: maxseriouserrors=10 !< max no of serious errors
 
   contains
-!>---------------------------------------------------------------------
+!---------------------------------------------------------------------
+!> create log file and initialise
 subroutine log_init(fileroot,timestamp)
 
   !! arguments

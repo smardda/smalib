@@ -25,6 +25,10 @@ program geoq_p
   use fmesh_m
   use ls_m
   use btree_m
+  use li_m
+  use ld_m
+  use dbtree_h
+  use dbtree_m
   use geobj_m
   use stack_m
   use query_m

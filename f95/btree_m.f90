@@ -16,20 +16,21 @@ module btree_m
   public ::  &
   btree_init,   & !< create  tree data structure
   btree_delete, & !< delete  tree data structure
-  btree_read,   & !< read  binary tree structure
   btree_write, &  !< write  binary tree structure
+  btree_read,   & !< read  binary tree structure
   btree_writev, & !< write (vtk) binary tree structure
-  btree_find,   & !< find in binary tree structure
-  btree_mfind,   & !< find in many-one binary tree structure
-  btree_newnode,   & !< find node in many-one binary tree structure
-  btree_floatvec, & !< float btree short integer vector
+  btree_add,    & !< split BSP node and assign to new nodes presorted array of start addresses
+  btree_limits,    & !< limits of normalised btree
+  btree_mdefn,   & !< define boxes for node split
+  btree_madd,   & !< split node and assign to new nodes presorted array of start addresses
+  btree_find,   & !< find node containing normalised point vector in BSP btree
+  btree_mfind,   & !< locate node containing point vector in many-one btree
+  btree_newnode,   & !< return node containing point vector starting from given node
+  btree_readnolab, & !< read unlabelled binary tree structure
+  btree_floatvec  !< return float btree short integer vector
 !<       btree_match,   & ! match in binary tree
 !<       btree_next1, &  ! next at numbered level in binary tree
 !<       btree_next, &  ! next in binary tree (bottom level)
-  btree_add,    &    !< add to binary tree
-  btree_limits,    &    !< binary tree limits
-  btree_mdefn,   & !< define many-one binary tree control parameters
-  btree_madd    !< add to many-one binary tree
 
 
 ! public types
@@ -50,8 +51,8 @@ module btree_m
      integer(ki4):: mtype !< type of margin for quantising
      integer(ki4) :: nttalg !< type of binary tree algorithm for top node
      real(kr4), dimension(3)  :: hxyz !< specified mesh sizes
-     type(ls_t) :: objectls !< local variable
-
+     type(ls_t) :: objectls !< general list object for children
+     integer(ki4) :: maxchildn !< maximum number of children of a node
   end type btree_t
 
 !public variables
@@ -75,6 +76,7 @@ module btree_m
 
   contains
 
+!> create  tree data structure
 subroutine btree_init(self,numerics)
 
   !! arguments
@@ -183,7 +185,7 @@ subroutine btree_init(self,numerics)
 
 end subroutine btree_init
 !---------------------------------------------------------------------
-!! delete btree_t
+!> delete btree_t
 subroutine btree_delete(self)
 
   !! arguments
@@ -196,7 +198,7 @@ subroutine btree_delete(self)
 
 end subroutine btree_delete
 !---------------------------------------------------------------------
-!> read in binary tree data
+!> write out binary tree data
 subroutine btree_write(self,numerics,kout)
 
   !! arguments
@@ -274,6 +276,8 @@ subroutine btree_write(self,numerics,kout)
   call ls_write(self%objectls,numerics,kout)
 
 end subroutine btree_write
+!---------------------------------------------------------------------
+!> read binary tree data
 subroutine btree_read(self,numerics,kchar,kin)
 
   !! arguments
@@ -382,7 +386,7 @@ subroutine btree_read(self,numerics,kchar,kin)
   end if
 
 end subroutine btree_read
-
+!---------------------------------------------------------------------
 !> write in visualisation format
 subroutine btree_writev(self,numerics,kchar,kout)
 
@@ -568,14 +572,15 @@ subroutine btree_writev(self,numerics,kchar,kout)
   close(kout)
 
 end subroutine btree_writev
-
+!---------------------------------------------------------------------
+!> split BSP node and assign to new nodes presorted array of start addresses
 subroutine btree_add(self,kd,knode,kadra)
 
   !! arguments
   type(btree_t), intent(inout) :: self   !< binary tree data
   integer(ki2), intent(in) :: kd   !< direction of split
   integer(ki4), intent(in) :: knode   !< node to be split
-  integer(ki4), dimension(*), intent(in) :: kadra !< array of new list ddresses
+  integer(ki4), dimension(*), intent(in) :: kadra !< array of new list addresses
 
   !! local
   character(*), parameter :: s_name='btree_add' !< subroutine name
@@ -668,7 +673,8 @@ subroutine btree_add(self,kd,knode,kadra)
   self%nexten= iexten
 
 end subroutine btree_add
-
+!---------------------------------------------------------------------
+!> limits of normalised btree
 subroutine btree_limits(self,pbb)
 
   !! arguments
@@ -711,6 +717,8 @@ subroutine btree_limits(self,pbb)
   end do
 
 end subroutine btree_limits
+!---------------------------------------------------------------------
+!> define boxes for node split
 subroutine btree_mdefn(self,kxyz,knode,kd,kextn,kcorna,kchildn,kbsiz)
 
   !! arguments
@@ -784,14 +792,15 @@ subroutine btree_mdefn(self,kxyz,knode,kd,kextn,kcorna,kchildn,kbsiz)
   end do
 
 end subroutine btree_mdefn
-
+!---------------------------------------------------------------------
+!> split node and assign to new nodes presorted array of start addresses
 subroutine btree_madd(self,kxyz,knode,kadra,kd,kextn,kcorna,kchildn,kbsiz)
 
   !! arguments
   type(btree_t), intent(inout) :: self   !< btree data
   integer(ki2), dimension(*), intent(in) :: kxyz   !< defines split
   integer(ki4), intent(in) :: knode   !< node to be split
-  integer(ki4), dimension(*), intent(in) :: kadra !< array of new list ddresses
+  integer(ki4), dimension(*), intent(in) :: kadra !< array of new list addresses
   integer(ki2), intent(in) :: kd   !< split direction
   integer(ki2), dimension(3), intent(in) :: kextn  !< local variable
   integer(ki2), dimension(3,*), intent(in) :: kcorna !< new corners
@@ -879,7 +888,8 @@ subroutine btree_madd(self,kxyz,knode,kadra,kd,kextn,kcorna,kchildn,kbsiz)
   self%nexten= iexten
 
 end subroutine btree_madd
-
+!---------------------------------------------------------------------
+!> find node containing normalised point vector in BSP btree
 subroutine btree_find(self,obj,query,knode)
 
   !! arguments
@@ -922,7 +932,6 @@ subroutine btree_find(self,obj,query,knode)
            k=self%pter(3,k)
            cycle
         end if
-
      else if (self%pter(3,k) == -2 ) then
         ! empty node
         knode=k
@@ -936,27 +945,25 @@ subroutine btree_find(self,obj,query,knode)
         knode=k
         exit
      end if
-
   end do
 
   ! check object really is in node
   if (knode<=0) then
      call log_error(m_name,s_name,1,error_fatal,'Binary tree does not exist')
   else
-
      ! corner
      icorn=self%corner(:,knode)
      ! extent
      iext=self%exten(:,self%desc(2,knode))
-
      if ( .not.geobj_innbox( obj,query%posl,icorn,iext )  ) then
-
         call log_error(m_name,s_name,2,error_warning,'Object not found in binary tree')
         knode=-1
      end if
   end if
 
 end subroutine btree_find
+!---------------------------------------------------------------------
+!> locate node containing point vector in many-one btree
 subroutine btree_mfind(self,obj,poslis,knode)
 
   !! arguments
@@ -1049,36 +1056,33 @@ subroutine btree_mfind(self,obj,poslis,knode)
            knode=k
            exit
         end if
-
      end do
-
   end if
+
   ! check object really is in node
   if (knode<=0) then
      call log_error(m_name,s_name,5,error_fatal,'Binary tree may be corrupt')
   else
-
      ! corner
      icorn=self%corner(:,knode)
      ! extent
      iext=self%exten(:,self%desc(2,knode))+iofftype
-
      if ( .not.geobj_innbox( obj,poslis,icorn,iext )  ) then
-
         call log_error(m_name,s_name,6,error_warning,'Object not found in binary tree')
         knode=-1
      end if
   end if
 
 end subroutine btree_mfind
-
+!---------------------------------------------------------------------
+!> return node containing point vector starting from given node
 function btree_newnode(self,kvec,k)
 
   ! This is only designed for octree.
 
+  integer(ki4) :: btree_newnode !< returned function value
   !! arguments
   type(btree_t), intent(in) :: self   !< binary tree data
-  integer(ki4) :: btree_newnode !< local variable
   integer(ki2), dimension(3), intent(in) :: kvec   !< position to be noded
   integer(ki4), intent(in) :: k   !< start node
 
@@ -1246,6 +1250,8 @@ function btree_newnode(self,kvec,k)
   btree_newnode=inode
 
 end function btree_newnode
+!---------------------------------------------------------------------
+!> read unlabelled binary tree structure
 subroutine btree_readnolab(self,numerics,kin)
 
   !! arguments
@@ -1293,6 +1299,7 @@ subroutine btree_readnolab(self,numerics,kin)
   call ls_read(self%objectls,numerics,kin)
 
 end subroutine btree_readnolab
+!---------------------------------------------------------------------
 
 pure type(posvecl_t) function btree_floatvec(kvec)
   integer(ki2), dimension(3), intent(in) :: kvec  !< local variable

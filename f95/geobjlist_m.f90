@@ -12,6 +12,10 @@ module geobjlist_m
   use posang_h
   use ls_m
   use btree_m
+  use li_m
+  use ld_m
+  use dbtree_h
+  use dbtree_m
   use geobj_m
   use query_m
   use posang_m
@@ -33,20 +37,24 @@ module geobjlist_m
   geobjlist_writev,   & !< write (vtk)  geobjlist data structure
   geobjlist_nodlmv,   & !< rearrange (vtk)  geobjlist data structure
   geobjlist_writestl,   & !< write (stl)  geobjlist data structure
-  geobjlist_step, &   !< control processing of  geobjlist data structure
-  geobjlist_stepquery, &   !< density processing of geobjlist data structure
+  geobjlist_bin, &   !< control sorting of  geobjlist data structure
+  geobjlist_bindyn, &   !< control dynamic sorting of  geobjlist data structure
+  geobjlist_binquery, &   !< density processing of geobjlist data structure
+  geobjlist_binbtree, & !< sort triangle objects into leaves bins of dbtree
   geobjlist_getbb,   & !< bb of  geobjlist data structure
+  geobjlist_bound, & !< bounding volume of geobjlist coordinates
   geobjlist_tfm,   & !< transform geobjlist data structure
   geobjlist_spectfm,   & !< special transform of geobjlist data structure
   geobjlist_qtfm,   & !< quantise geobjlist data structure
   geobjlist_paneltfm,   & !< transform positions on a panel-by-panel basis
-  geobjlist_bin,    & !< bin geobjlist data structure
+  geobjlist_bbin,    & !< bin geobjlist data structure
   geobjlist_mbin,   & !< bin many-one geobjlist data structure
   geobjlist_dread,  & !< read dat file
   geobjlist_iinit,  & !< initialise geobjlist from internal data
   geobjlist_ptcompress,  & !< compress points
   geobjlist_orientri,  & !< orient triangles consistently
   geobjlist_shelltets, & !< shell set of tetrahedra
+  geobjlist_querynode, &  !< analyse node density
   geobjlist_copy, &  !< copy geobjlist to another
   geobjlist_cumulate, &  !< append geobjlist to first
   geobjlist_create, & !< create some 2-D geobjlists
@@ -59,7 +67,6 @@ module geobjlist_m
 
 !public variables
 
-  integer(ki4), public :: geobjlist_maxchildn !< local variable
 ! private types
 
 ! private variables
@@ -597,8 +604,6 @@ subroutine geobjlist_addcube(self)
   integer(ki4) :: innod !< number of entries in augmented list of nodes
   integer(ki4) :: ioffn !< offset for addition to inodl
   integer(ki4) :: idelta !< offset of positions for addition to inodl
-  real(kr4), dimension(3) :: xlbb !< min corner of geometry
-  real(kr4), dimension(3) :: xubb !< max corner of geometry
   real(kr4), dimension(3)  :: zlow !< temporary lower corner of bounding cube
   real(kr4), dimension(3)  :: zup !< temporary upper corner of bounding cube
   real(kr4) :: zdelta   !< temporary cube separation
@@ -736,7 +741,7 @@ subroutine geobjlist_writev(self,kchar,kplot)
   case('geometry')
 
      write(kplot,'(''DATASET UNSTRUCTURED_GRID'')')
-     write(kplot,'(''POINTS '',I8, '' float'')') self%np
+     write(kplot,'(''POINTS '',I10, '' float'')') self%np
      do j=1,self%np
         call position_writev(self%posl%pos(j),kplot)
      end do
@@ -750,25 +755,25 @@ subroutine geobjlist_writev(self,kchar,kplot)
      end do
 
      ! output CELL data
-     write(kplot,'(''CELLS '',I8,1X,I8)') self%ng,self%ng+isum
+     write(kplot,'(''CELLS '',I10,1X,I10)') self%ng,self%ng+isum
      i=1
      do j=1,self%ng
         inn=geobj_entry_table(self%obj2(j)%typ)
-        write(kplot,'(8(1X,I8))') inn,(self%nodl(i+ij-1)-1,ij=1,inn)
+        write(kplot,'(8(1X,I10))') inn,(self%nodl(i+ij-1)-1,ij=1,inn)
         i=i+inn
      end do
      write(kplot, '('' '')')
 
      ! output CELL types
-     write(kplot,'(''CELL_TYPES '',I8)') self%ng
+     write(kplot,'(''CELL_TYPES '',I10)') self%ng
      do j=1,self%ng
-        write(kplot,'(1X,I8)') self%obj2(j)%typ
+        write(kplot,'(1X,I10)') self%obj2(j)%typ
      end do
 
      if (self%nwset==2) then
         write(kplot, '('' '')')
         !! weights
-        write(kplot,'(''CELL_DATA'',I8)') self%ng
+        write(kplot,'(''CELL_DATA'',I10)') self%ng
         write(kplot,'(''SCALARS weights float 1'')')
         write(kplot,'(''LOOKUP_TABLE default'')')
         write(kplot,cfmtbs1) (self%obj(i)%weight, i=1,self%ng)
@@ -778,21 +783,21 @@ subroutine geobjlist_writev(self,kchar,kplot)
      !! plot list of all quantised positions
      ! output points only
      write(kplot,'(''DATASET UNSTRUCTURED_GRID'')')
-     write(kplot,'(''POINTS '',I8, '' float'')') self%np
+     write(kplot,'(''POINTS '',I10, '' float'')') self%np
      do j=1,self%np
         call position_writev(self%posl%pos(j),kplot)
      end do
      write(kplot, '('' '')')
 
-     write(kplot,'(''CELLS 1 '',I8)') self%np+1
-     write(kplot,'(I8)') self%np,  (i-1,i=1,self%np)
+     write(kplot,'(''CELLS 1 '',I10)') self%np+1
+     write(kplot,'(I10)') self%np,  (i-1,i=1,self%np)
      write(kplot,'(''CELL_TYPES 1'')')
      write(kplot,'(''2'')')
      write(kplot, '('' '')')
 
      if (self%ngtype==1) then
         !! weights
-        write(kplot,'(''POINT_DATA'',I8)') self%np
+        write(kplot,'(''POINT_DATA'',I10)') self%np
         write(kplot,'(''SCALARS weights float 1'')')
         write(kplot,'(''LOOKUP_TABLE default'')')
         write(kplot,cfmtbs1) (self%obj(i)%weight, &
@@ -891,12 +896,12 @@ subroutine geobjlist_writestl(self,kchar,kplot)
 end subroutine geobjlist_writestl
 !---------------------------------------------------------------------
 !> control sorting of  coordinates into bins
-subroutine geobjlist_step(self,btree)
+subroutine geobjlist_bin(self,btree)
   !! arguments
   type(geobjlist_t), intent(inout) :: self !< geobj list data
   type(btree_t), intent(inout) :: btree !< btree data
   !! local
-  character(*), parameter :: s_name='geobjlist_step' !< subroutine name
+  character(*), parameter :: s_name='geobjlist_bin' !< subroutine name
 
   ! rotate and translate positions as needed
 
@@ -912,22 +917,127 @@ subroutine geobjlist_step(self,btree)
   ! create btree according to quantised positions
   if (btree%nttype==1) then
      ! special for BSP
-     call geobjlist_bin(self,btree)
+     call geobjlist_bbin(self,btree)
   else
      call geobjlist_mbin(self,btree)
   end if
 
+end subroutine geobjlist_bin
+!---------------------------------------------------------------------
+!> control dynamic sorting of  coordinates into bins
+subroutine geobjlist_bindyn(self,dbtree,kcall,bbox)
+  !! arguments
+  type(geobjlist_t), intent(inout) :: self !< geobj list data
+  type(dbtree_t), intent(inout) :: dbtree !< dbtree data
+  integer(ki4), intent(in) :: kcall  !<  0 - initialise
+  real(kr8), dimension(3,2), intent(in), optional :: bbox !< bounding box corners
 
-end subroutine geobjlist_step
+  !! local
+  character(*), parameter :: s_name='geobjlist_bindyn' !< subroutine name
+  type(geobj_t) :: igeobj   !< geobj
+  real(kr4), dimension(3,8) :: znodes !< nodes vector
+  real(kr8), dimension(3,2)  :: zbbox !< bounding box corners
+  integer(ki4) :: itryn   !< local variable
+  integer(ki4) :: ij   !< local index
+  type(posveclis_t) :: zposl !< local variable
+
+  if (kcall==0) then
+
+     ! rotate and translate positions as needed
+     call position_tfmlis(self%posl,self%tfmdata)
+
+     ! get bounding box
+     if (present(bbox)) then
+        zbbox=bbox
+     else
+        ! use geobjlist
+        call geobjlist_bound(self,zbbox,1)
+     end if
+
+     ! initialise tree
+     call dbtree_init(dbtree,zbbox)
+
+  end if
+
+  if (.NOT.allocated(zposl%pos)) then
+     allocate(zposl%pos(1), stat=status)
+     call log_alloc_check(m_name,s_name,1,status)
+     zposl%np=1
+  end if
+
+  ! create dbtree dynamically according to quantised positions
+  igeobj%objtyp=VTK_VERTEX ! always point
+  itryn=1
+  do j=1,self%nsampl
+     ij=(kcall-1)*self%nsampl+j
+     ! quantise position and return to array
+     zposl%pos(1)=position_qtfm(self%posl%pos(ij),dbtree%quantfm)
+     self%posl%pos(ij)=zposl%pos(1)
+  end do
+
+  do j=1,self%nsampl
+     ij=(kcall-1)*self%nsampl+j
+     igeobj%geobj=ij !=self%obj2(ij)%ptr
+     call dbtree_addobj(dbtree,igeobj,self%posl,itryn)
+  end do
+
+end subroutine geobjlist_bindyn
+!---------------------------------------------------------------------
+!> bounding volume of geobjlist coordinates
+subroutine geobjlist_bound(self,bbox,lmargin)
+  !! arguments
+  type(geobjlist_t), intent(inout) :: self !< geobj list data defining bound
+  real(kr8), dimension(3,2), intent(out) :: bbox !< bounding box corners
+  integer(ki4), intent(in) :: lmargin !< small margin added to bb if positive
+  !! local
+  character(*), parameter :: s_name='geobjlist_bound' !< subroutine name
+  real(kr4) :: margin !< margin added to bb
+  real(kr4) :: maxside !< max side of bb
+
+  ! find bound on model
+  xlbb=self%posl%pos(1)%posvec
+  xubb=xlbb
+  do j=2,self%np
+     do i=1,3
+        xlbb(i)=min(xlbb(i),self%posl%pos(j)%posvec(i))
+        xubb(i)=max(xubb(i),self%posl%pos(j)%posvec(i))
+     end do
+  end do
+
+  if (lmargin>0) then
+     ! set binning bb
+     maxside=0.0
+     do i=1,3
+        if(maxside<xubb(i)-xlbb(i))then
+           maxside=xubb(i)-xlbb(i)
+           l=i
+        end if
+     end do
+
+     margin=maxside*epsilon(maxside)
+     self%tolerance=max(self%tolerance,margin)+margin
+     self%minmaxtolerance=max(self%minmaxtolerance,margin)+margin
+
+     !! bb with small margin
+     do i=1,3
+        xlbb(i)=xlbb(i)-self%tolerance
+        xubb(i)=xubb(i)+self%tolerance
+     end do
+  end if
+
+  bbox(:,1)=xlbb
+  bbox(:,2)=xubb
+
+end subroutine geobjlist_bound
 !---------------------------------------------------------------------
 !> control calculation of density
-subroutine geobjlist_stepquery(self,btree,query)
+subroutine geobjlist_binquery(self,btree,query)
   !! arguments
   type(geobjlist_t), intent(inout) :: self !< geobj list data
   type(btree_t), intent(inout) :: btree !< btree data
   type(queryset_t), intent(inout) :: query   !< query position data
   !! local
-  character(*), parameter :: s_name='geobjlist_stepquery' !< subroutine name
+  character(*), parameter :: s_name='geobjlist_binquery' !< subroutine name
 
   ! rotate and quantise geobj positions
   !     call geobjlist_tfm(self,1)
@@ -939,7 +1049,192 @@ subroutine geobjlist_stepquery(self,btree,query)
   ! calculate density at quantised positions
   call geobjlist_query(self,btree,query)
 
-end subroutine geobjlist_stepquery
+end subroutine geobjlist_binquery
+!---------------------------------------------------------------------
+!> sort triangle objects into leaves bins of dbtree
+subroutine geobjlist_binbtree(self,dbtree,ksamp,mark)
+  !! arguments
+  type(geobjlist_t), intent(in) :: self !< geobj list data
+  type(dbtree_t), intent(in) :: dbtree !< dbtree data
+  integer(ki4), intent(in) :: ksamp  !<  number of sample points per line
+  integer(ki4), dimension(:), allocatable, intent(out) :: mark !< mark with bin number
+
+  !! local
+  character(*), parameter :: s_name='geobjlist_binbtree' !< subroutine name
+  integer(ki4) :: isamp !< number of samples per line actually used
+  integer(ki4) :: isamp2d !< number of samples per triangle
+  type(geobj_t) :: igeobj   !<  local geobj
+  type(geobj_t) :: igeobj1  !<  local geobj
+  type(posvecl_t) :: zpos1   !< position data
+  type(posveclis_t) :: zposl   !< list of position data
+  integer(ki4), dimension(:), allocatable  :: ntoleaf !< return leaf number of tree node
+  integer(ki4), dimension(:), allocatable  :: nm !< tree node of sample point
+  integer(ki4), dimension(:), allocatable  :: nc !< number of points in tree node
+  real(kr4), dimension(:,:), allocatable :: znodes !< sample points vector
+  real(kr4), dimension(3) :: zsampl !< sample vector
+  real(kr4) :: zh !< sample vector spacing in barycentric coordinates
+  real(kr4) :: x1 !< sample vector component
+  real(kr4) :: x2 !< sample vector component
+  real(kr4) :: x3 !< sample vector component
+  integer(ki4) :: inode !< node/bin number
+  integer(ki4) :: ilastleaf !< node/bin number
+  integer(ki4) :: innode !< number of proper entries in inodea
+  integer(ki4), dimension(:), allocatable :: inodea  !< local variable
+  integer(ki4) :: indiff !< number of different node/bins occupied by object
+  integer(ki4) :: imost !< node/bin number with the most sample points
+  integer(ki4) :: ima !< number of matches
+  integer(ki4) :: ileaf  !<  leaf number
+  integer(ki4) :: ileafc !< leaf occupancy counter
+  integer(ki4) :: inleaf  !<  count number of leaves
+  integer(ki4) :: innd !< position of first entry for object in nodl
+  integer(ki4) :: ityp  !< local variable
+  integer(ki4) :: ipt  !< local variable
+  integer(ki4) :: inumpts !< length of object in nodl array
+
+  isamp=ksamp
+  ! initialise arrays
+  if (isamp<=0) then
+     ! simple fix up
+     isamp=3
+     call log_error(m_name,s_name,1,error_warning,'fixing up for number sample poinsts')
+  end if
+  zh=1./isamp
+  isamp2d=((isamp+1)*(isamp+2))/2
+  allocate(nm(isamp2d),nc(isamp2d),znodes(3,isamp2d),stat=status)
+  call log_alloc_check(m_name,s_name,10,status)
+  l=0
+  do j=0,isamp
+     x3=j*zh
+     do i=0,isamp-j
+        x1=i*zh
+        x2=1.-x1-x3
+        l=l+1
+        znodes(:,l)=(/x1,x2,x3/)
+     end do
+  end do
+  allocate(inodea(dbtree%maxallb), stat=status)
+  call log_alloc_check(m_name,s_name,11,status)
+  inodea=0
+  allocate(mark(self%ng), stat=status)
+  call log_alloc_check(m_name,s_name,12,status)
+  mark=0
+  allocate(zposl%pos(1), stat=status)
+  call log_alloc_check(m_name,s_name,13,status)
+  allocate(ntoleaf(-1:dbtree%nt), stat=status)
+  call log_alloc_check(m_name,s_name,14,status)
+  ntoleaf=0
+
+  ! set up mapping from nodes to leaves
+  inleaf=0
+  do j=1,dbtree%nt
+     if (dbtree%pter(3,j)>0) cycle
+     inleaf=inleaf+1
+     ntoleaf(j)=inleaf
+  end do
+
+  ! preliminary assignment of objects to bins
+  inode=1
+  igeobj1%objtyp=VTK_VERTEX
+  igeobj1%geobj=1
+  do j=1,self%ng
+     innd=self%obj2(j)%ptr
+     ityp=self%obj2(j)%typ
+     inumpts=geobj_entry_table(ityp)
+     !! loop over points defining object
+     do jj=1,inumpts
+        ipt=self%nodl(innd-1+jj)
+        zposl%pos(1)=position_qtfm(self%posl%pos(ipt),dbtree%quantfm)
+        if (dbtree%n%nttype==1) then
+           ! BSP
+           call dbtree_find(dbtree,igeobj1,zposl,inode)
+        else
+           call dbtree_mfind(dbtree,igeobj1,zposl,inode)
+        end if
+        if (inode==-1) cycle
+        ileaf=ntoleaf(inode)
+        if (mark(j)<0) then
+           cycle
+        else if (mark(j)==0) then
+           mark(j)=ileaf
+        else if (mark(j)>0) then
+           ! in more than one node
+           mark(j)=-mark(j)
+        end if
+     end do
+  end do
+  ilastleaf=ileaf
+
+  ! reassign objects in more than one node on basis of sample point bins
+  inode=1
+  igeobj1%geobj=1
+  igeobj%objtyp=VTK_TRIANGLE
+  do j=1,self%ng
+     if (mark(j)<0) then
+        indiff=0
+        igeobj%geobj=self%obj2(j)%ptr
+        do l=1,isamp2d
+           call geobj_sample(igeobj,self%posl,self%nodl,znodes(1,l),zsampl)
+           ! locate each sample point in a node
+           zpos1%posvec=zsampl
+           zposl%pos(1)=position_qtfm(zpos1,dbtree%quantfm)
+           if (dbtree%n%nttype==1) then
+              ! BSP
+              call dbtree_find(dbtree,igeobj1,zposl,inode)
+           else
+              call dbtree_mfind(dbtree,igeobj1,zposl,inode)
+           end if
+           if (inode==-1) cycle
+           ! count number of matches against different nodes
+           ima=0
+           ileaf=ntoleaf(inode)
+           if (indiff==0) then
+              indiff=1
+              nm(1)=ileaf
+              nc(1)=1
+           else
+              do k=1,indiff
+                 if (ileaf==nm(k)) then
+                    ima=k
+                    exit
+                 end if
+              end do
+              if (ima==0) then
+                 ! no match, add to list of different nodes
+                 indiff=indiff+1
+                 nm(indiff)=ileaf
+                 nc(indiff)=1
+              else
+                 nc(ima)=nc(ima)+1
+              end if
+           end if
+        end do
+        ! find node with most sample points
+        imost=1
+        ileafc=nc(1)
+        do k=2,indiff
+           if (nc(k)>ileafc) then
+              imost=k
+              ileafc=nc(k)
+           end if
+        end do
+        ! finally assign node/bin to object
+        mark(j)=nm(imost)
+     else if (mark(j)==0) then
+        ! warning
+        call log_error(m_name,s_name,10,error_warning,'object not found in dbtree')
+        ! assign to last node so processing can at least proceed
+        mark(j)=ilastleaf
+     end if
+     ! write(999,*) j,mark(j)  !dbg
+     ! write(998,*) j,(nc(jj),nm(jj),jj=1,indiff)  !dbg
+  end do
+
+  deallocate(inodea)
+  deallocate(znodes)
+  deallocate(nm,nc)
+  deallocate(zposl%pos)
+
+end subroutine geobjlist_binbtree
 !---------------------------------------------------------------------
 !> transform positions
 subroutine geobjlist_tfm(self,kt)
@@ -1071,11 +1366,11 @@ subroutine geobjlist_getbb(self,btree)
   if (btree%nttype==1) then
      ! BSP
      ixyz=(/2,1,1/)
-     geobjlist_maxchildn=2
+     btree%maxchildn=2
   else if (btree%nttype==2) then
      ! standard octree
      ixyz=(/2,2,2/)
-     geobjlist_maxchildn=8
+     btree%maxchildn=8
   else if (btree%nttype==3) then
      !special top octree
      if (btree%nttalg==0) then
@@ -1122,7 +1417,7 @@ subroutine geobjlist_getbb(self,btree)
         !           minside=min(zwork(1),zwork(2),zwork(3))
         !           zubb=zlbb+float(ixyz)*minside
      end if
-     geobjlist_maxchildn=max(ixyz(1)*ixyz(2)*ixyz(3),8)
+     btree%maxchildn=max(ixyz(1)*ixyz(2)*ixyz(3),8)
      ! test quantising not excessive
      imxyz=max(ixyz(1),ixyz(2),ixyz(3))
      ipow2=2
@@ -1554,12 +1849,12 @@ subroutine geobjlist_paneltfm(self,kbods,numerics)
 end subroutine geobjlist_paneltfm
 !---------------------------------------------------------------------
 !> sort coordinates into bins
-subroutine geobjlist_bin(self,btree)
+subroutine geobjlist_bbin(self,btree)
   !! arguments
   type(geobjlist_t), intent(inout) :: self !< geobj list data
   type(btree_t), intent(inout) :: btree !< btree data
   !! local
-  character(*), parameter :: s_name='geobjlist_bin' !< subroutine name
+  character(*), parameter :: s_name='geobjlist_bbin' !< subroutine name
   integer(ki4) :: first  !< local variable
   integer(ki4) :: last  !< local variable
   type(geobj_t) :: iobj !< geo object
@@ -1737,7 +2032,7 @@ subroutine geobjlist_bin(self,btree)
 
   btree%ndepth=idepth
 
-end subroutine geobjlist_bin
+end subroutine geobjlist_bbin
 !---------------------------------------------------------------------
 !> sort objects into bins (one object may go in many bins)
 subroutine geobjlist_mbin(self,btree)
@@ -1763,14 +2058,14 @@ subroutine geobjlist_mbin(self,btree)
   integer(ki2) :: idepth  !< local variable
   integer(ki2), dimension(3) :: iextn  !< local variable
   real(kr4), dimension(3,2) :: box !< bounding box corners
-  integer(ki2), dimension(3,geobjlist_maxchildn) :: icorna !< new corner array
+  integer(ki2), dimension(:,:), allocatable :: icorna !< new corner array
   integer(ki4) :: inext  !< local variable
   integer(ki4) :: inadr  !< local variable
   integer(ki4) :: ileaf  !< local variable
   logical :: ilsplit !< logical flag
   logical :: ilall !< logical flag
-  integer(ki4), dimension(geobjlist_maxchildn) :: iadra  !< local variable
-  integer(ki4), dimension(geobjlist_maxchildn) :: ina  !< local variable
+  integer(ki4), dimension(:), allocatable :: iadra  !< local variable
+  integer(ki4), dimension(:), allocatable :: ina  !< local variable
   integer(ki4) :: iadr0 !< loop variable
   integer(ki4) :: in0  !< local variable
   integer(ki4) :: in1  !< local variable
@@ -1778,7 +2073,7 @@ subroutine geobjlist_mbin(self,btree)
   integer(ki4) :: iadr00  !< local variable
   integer(ki4) :: iadr01  !< local variable
   integer(ki4) :: iadd  !< local variable
-!HH  integer(ki4) :: iadrmax  !< maximum address !HH
+  !HH  integer(ki4) :: iadrmax  !< maximum address !HH
   integer(ki4), dimension(3) :: ibsiz !< actual size of box
   integer(ki2) :: ichildn  !< local variable
   integer(ki2) :: id1  !< local variable
@@ -1788,11 +2083,15 @@ subroutine geobjlist_mbin(self,btree)
   last=1
   ilsplit=.false.
   ittype=btree%nttype
-!HH  iadrmax=0 !HH
+  !HH  iadrmax=0 !HH
+
+  allocate(icorna(3,btree%maxchildn), iadra(btree%maxchildn), &
+ &ina(btree%maxchildn), stat=status)
+  call log_alloc_check(m_name,s_name,1,status)
 
   !! loop over depth
   loop_99 : do j=1,btree%ndepth
-!HH     write(*,*) 'depth=',j !HH
+     !HH     write(*,*) 'depth=',j !HH
      idepth=j
      id=1+mod(j-1,3)
      if (ittype==1 ) then
@@ -1811,7 +2110,7 @@ subroutine geobjlist_mbin(self,btree)
      iltest=.true.
      ! loop over volumes down to level j
      loop_9 : do k=1,last
-!HH     write(*,*) 'k,last=',k,last !HH
+        !HH     write(*,*) 'k,last=',k,last !HH
         !! test for empty node
         ileaf=btree%pter(3,k)
         if (ileaf==-2.OR. (k<first.AND.ileaf/=-1) ) then
@@ -1852,18 +2151,18 @@ subroutine geobjlist_mbin(self,btree)
 
                     loop_list: do l=1,inls
 
-!AB                        iobj%geobj=inext!points
-!AB                        iobj%objtyp=self%ngtype!points
+                       !AB                        iobj%geobj=inext!points
+                       !AB                        iobj%objtyp=self%ngtype!points
                        inext=btree%objectls%list(inadr+l,2)
                        iobj%geobj=self%obj2(inext)%ptr
                        iobj%objtyp=self%obj2(inext)%typ
-!DBG                       if (l==196) then !DBG
-!DBG                         idummy=idummy+1 !DBG
-!DBG                       end if !DBG
+                       !DBG                       if (l==196) then !DBG
+                       !DBG                         idummy=idummy+1 !DBG
+                       !DBG                       end if !DBG
                        if ( geobj_inbox( iobj,self%posl,self%nodl,box )  ) then
-!DBG                         if (l==196) then !DBG
-!DBG                         idummy=idummy+1 !DBG
-!DBG                         end if !DBG
+                          !DBG                         if (l==196) then !DBG
+                          !DBG                         idummy=idummy+1 !DBG
+                          !DBG                         end if !DBG
                           ! add to 0-ls (iadr0)
                           call ls_add(btree%objectls,iadr0,0,inext)
                           iadr0=iadr0+1
@@ -1875,8 +2174,8 @@ subroutine geobjlist_mbin(self,btree)
                     end do loop_list
                     iadra(i)=iadr01
                     ina(i)=in0
-!HH                    iadrmax=max(iadrmax,iadr0) !HH
-!HH                    write(*,*) 'loop_child,adresses=',i,iadr01,iadr0 !HH
+                    !HH                    iadrmax=max(iadrmax,iadr0) !HH
+                    !HH                    write(*,*) 'loop_child,adresses=',i,iadr01,iadr0 !HH
                     !  complete 0 list (with number of entries)
                     call ls_add(btree%objectls,iadr01,0,in0)
                  end do loop_child
@@ -1888,10 +2187,10 @@ subroutine geobjlist_mbin(self,btree)
                     if (in1>0) then
                        call log_error(m_name,s_name,1,error_warning,'object unassigned')
                        inl1=inl1+1
-!DBG                       in1=btree%objectls%list(inadr+l,2) !DBG
-!DBG                       iobj%geobj=self%obj2(in1)%ptr !DBG
-!DBG                       iobj%objtyp=self%obj2(in1)%typ !DBG
-!DBG                       write(*,*) 'inadr, loops j,k,l and object unass',inadr,j,k,l,in1,iobj !DBG
+                       !DBG                       in1=btree%objectls%list(inadr+l,2) !DBG
+                       !DBG                       iobj%geobj=self%obj2(in1)%ptr !DBG
+                       !DBG                       iobj%objtyp=self%obj2(in1)%typ !DBG
+                       !DBG                       write(*,*) 'inadr, loops j,k,l and object unass',inadr,j,k,l,in1,iobj !DBG
                     end if
                  end do
                  self%ngunassigned=self%ngunassigned+inl1
@@ -1931,7 +2230,7 @@ subroutine geobjlist_mbin(self,btree)
            ! ensure node gets no more processing
            btree%pter(2,k)=iadr00
            btree%pter(3,k)=ileaf
-!HH           iadrmax=max(iadrmax,iadr00) !HH
+           !HH           iadrmax=max(iadrmax,iadr00) !HH
         end if
 
 
@@ -1953,7 +2252,7 @@ subroutine geobjlist_mbin(self,btree)
   end if
 
   btree%ndepth=idepth
-!HH  write(*,*) 'maximum address=',iadrmax !HH
+  !HH  write(*,*) 'maximum address=',iadrmax !HH
 
 end subroutine geobjlist_mbin
 !---------------------------------------------------------------------
@@ -2164,11 +2463,11 @@ subroutine geobjlist_iinit(self,knpt,knobj,knnod,kgtype,kopt)
   allocate(self%posl%pos(self%np), stat=status)
   call log_alloc_check(m_name,s_name,1,status)
   if (kgtype==1.OR.kopt/=0) then
-     allocate(self%obj(self%ng), stat=status)
+     allocate(self%obj(self%np), stat=status)
      call log_alloc_check(m_name,s_name,2,status)
      self%nwset=min(1,kopt)
   end if
-  if (kgtype/=1) then
+  if (kgtype==2) then
      allocate(self%nodl(self%nnod), stat=status)
      call log_alloc_check(m_name,s_name,3,status)
      allocate(self%obj2(self%ng), stat=status)
@@ -3180,7 +3479,7 @@ subroutine geobjlist_query(self,btree,query)
 
   ! loop over query positions
   do j=1,query%np
-     iobj%geobj=j
+     iobj%geobj=j !=self%obj2(j)%ptr
      iobj%objtyp=self%ngtype
      call btree_find(btree,iobj,query,inode)
      call geobjlist_querynode(self,btree,inode,query%which,query%res(j))
@@ -3188,7 +3487,8 @@ subroutine geobjlist_query(self,btree,query)
   ! any additional smoothing
 
 end subroutine geobjlist_query
-
+!---------------------------------------------------------------------
+!> analyse node density
 subroutine geobjlist_querynode(self,btree,knode,kchar,pres)
 
   !! arguments
@@ -3262,7 +3562,6 @@ subroutine geobjlist_querynode(self,btree,knode,kchar,pres)
               pres=zsum/zvol
            end if
         else
-
            call log_error(m_name,s_name,3,error_warning,'Zero volume node found in binary tree')
            pres=0.
         end if
@@ -3302,7 +3601,6 @@ subroutine geobjlist_querynode(self,btree,knode,kchar,pres)
               pres=pres/zvol
            end if
         else
-
            call log_error(m_name,s_name,3,error_warning,'Zero volume node found in binary tree')
            pres=0.
         end if
@@ -3330,7 +3628,6 @@ subroutine geobjlist_querynode(self,btree,knode,kchar,pres)
               pres=znorm*zsum/zvol
            end if
         else
-
            call log_error(m_name,s_name,5,error_warning,'Zero volume node found in binary tree')
            pres=0.
         end if
@@ -3475,7 +3772,7 @@ end subroutine geobjlist_extract
 subroutine geobjlist_area(self,area)
   !! arguments
   type(geobjlist_t), intent(inout) :: self !< geobj list data
-  real(kr8), dimension(:), allocatable, intent(out) :: area  !< area position data
+  real(kr4), dimension(:), allocatable, intent(out) :: area  !< area position data
 
   !! local
   character(*), parameter :: s_name='geobjlist_area' !< subroutine name

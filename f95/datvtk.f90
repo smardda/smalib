@@ -17,7 +17,11 @@ program datvtk_p
 
   use geobjlist_h
   use position_m
+  use li_m
+  use ld_m
   use ls_m
+  use dbtree_h
+  use dbtree_m
   use btree_m
   use geobj_m
   use query_m

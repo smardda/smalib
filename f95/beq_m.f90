@@ -3353,6 +3353,9 @@ subroutine beq_bdryrb(self)
   real(kr8) :: zpsi    !<  \f$ \psi \f$
   real(kr8) :: zf    !<   \f$ f(\psi) = RB_T \f$
   real(kr8) :: cylj    !<  current estimated in cylindrical approx.
+  real(kr8) :: zbr    !<  radial field component
+  real(kr8) :: zbz    !<  vertical field component
+  real(kr8) :: zbt    !<  toroidal field component
 
   pick_angle : select case (self%n%bdryopt)
   case(4,5,7,11,14) ! inboard point selected
@@ -3533,6 +3536,13 @@ subroutine beq_bdryrb(self)
   call log_value("SMITER-GEOQ btotbdry ",self%btotbdry)
   cylj=abs(zsr*self%bpbdry/2.e-7)
   call log_value("Estimated cylindrical current ",cylj)
+
+  zbr=-(1/re)*zdpdz
+  zbz=(1/re)*zdpdr
+  zbt=zf/re
+  call log_value("radial field component",zbr)
+  call log_value("vertical field component",zbz)
+  call log_value("toroidal field component",zbt)
 
   deallocate(wvextn)
   deallocate(wvext)

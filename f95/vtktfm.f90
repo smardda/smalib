@@ -19,6 +19,10 @@ program vtktfm_p
   use geobjlist_h
   use position_m
   use ls_m
+  use li_m
+  use ld_m
+  use dbtree_h
+  use dbtree_m
   use btree_m
   use geobj_m
   use query_m
@@ -34,6 +38,7 @@ program vtktfm_p
   use stack_m
 
   use bods_m
+  use scontrol_h
   use scontrol_m
 
   implicit none

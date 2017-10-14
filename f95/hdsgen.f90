@@ -14,6 +14,10 @@ program hdsgen_p
   use posang_h
   use ls_m
   use btree_m
+  use li_m
+  use ld_m
+  use dbtree_h
+  use dbtree_m
   use mtest_m
   use termplane_h
   use pcle_h
@@ -113,7 +117,7 @@ program hdsgen_p
 !!sort geobjl onto bins
 
   call clock_start(9,'geobjlist_sort time')
-  call geobjlist_step(geobjl,btree)
+  call geobjlist_bin(geobjl,btree)
   numerics%geobj_coord_tfm=geobjl%quantfm
   call clock_stop(9)
 
