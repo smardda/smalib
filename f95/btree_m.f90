@@ -1093,10 +1093,10 @@ subroutine btree_dia(self)
   write(ilog,*) ' size of extents array or numerics%nsizee ', &
  &self%nexten,' used out of ',size(self%exten,2), ' (max_size_exten_array)'
   iexmin=minval( self%exten(1:3,1) )
-  write(*,*) ' 1 ', self%exten(1:3,1)  !dbg
+!dbg  write(*,*) ' 1 ', self%exten(1:3,1)  !dbg
   do jl=2,self%nexten
      iexmin=min( iexmin, minval( self%exten(1:3,jl) ) )
-     write(*,*) jl, self%exten(1:3,jl)  !dbg
+!dbg     write(*,*) jl, self%exten(1:3,jl)  !dbg
   end do
   idescent=self%ndepth-iexmin
   write(ilog,*) ' descent of tree ', &
