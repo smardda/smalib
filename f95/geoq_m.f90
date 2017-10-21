@@ -263,6 +263,9 @@ subroutine geoq_psilimiter(self)
   real(kr8) :: zdpdz    !<  \f$ \frac{\partial\psi}{\partial Z} \f$
   real(kr8) :: zsr    !< \f$  r_i \f$
   real(kr8) :: cylj    !<  current estimated in cylindrical approx.
+  real(kr8) :: zbr    !<  radial field component
+  real(kr8) :: zbz    !<  vertical field component
+  real(kr8) :: zbt    !<  toroidal field component
 
   zpsimin=1.E+8
   zpsimax=-1.E+8
@@ -335,6 +338,13 @@ subroutine geoq_psilimiter(self)
   cylj=abs(zsr*self%beq%bpbdry/2.e-7)
   call log_value("Estimated cylindrical current ",cylj)
 
+  zbr=-(1/zr)*zdpdz
+  zbz=(1/zr)*zdpdr
+  zbt=zf/zr
+  call log_value("radial field component",zbr)
+  call log_value("vertical field component",zbz)
+  call log_value("toroidal field component",zbt)
+
   call log_error(m_name,s_name,2,log_info,'Object limits ')
   call log_value("OBJECT LIMIT psimax ",zpsimax)
   call log_value("OBJECT LIMIT psimin ",zpsimin)
@@ -373,6 +383,9 @@ subroutine geoq_psisilh(self)
   real(kr8) :: zdpdz    !<  \f$ \frac{\partial\psi}{\partial Z} \f$
   real(kr8) :: zsr    !< \f$  r_i \f$
   real(kr8) :: cylj    !<  current estimated in cylindrical approx.
+  real(kr8) :: zbr    !<  radial field component
+  real(kr8) :: zbz    !<  vertical field component
+  real(kr8) :: zbt    !<  toroidal field component
 
   zpsimin=1.E+8
   zpsimax=-1.E+8
@@ -450,6 +463,13 @@ subroutine geoq_psisilh(self)
   zsr=sqrt( max(0.,(zr-self%beq%n%rcen)**2+(zz-self%beq%n%zcen)**2) )
   cylj=abs(zsr*self%beq%bpbdry/2.e-7)
   call log_value("Estimated cylindrical current ",cylj)
+
+  zbr=-(1/zr)*zdpdz
+  zbz=(1/zr)*zdpdr
+  zbt=zf/zr
+  call log_value("radial field component",zbr)
+  call log_value("vertical field component",zbz)
+  call log_value("toroidal field component",zbt)
 
 end subroutine geoq_psisilh
 !---------------------------------------------------------------------

@@ -191,6 +191,14 @@ subroutine hdsfile_write(geobjl,numerics,btree)
   write(nouth,*,iostat=status)  numerics%upcorner
   call log_write_check(m_name,s_name,35,status)
 
+  write(nouth,'(a)',iostat=status) 'BOUBOX'
+  call log_write_check(m_name,s_name,37,status)
+
+  write(nouth,*,iostat=status)  geobjl%coordbb
+  call log_write_check(m_name,s_name,40,status)
+  write(nouth,*,iostat=status)  geobjl%binbb
+  call log_write_check(m_name,s_name,41,status)
+
 end subroutine hdsfile_write
 !---------------------------------------------------------------------
 !> read HDS file
@@ -198,7 +206,7 @@ subroutine hdsfile_read(geobjl,numerics,btree)
 
   !! arguments
   type(geobjlist_t), intent(inout) :: geobjl !< point data
-  type(numerics_t), intent(inout) :: numerics !< local variable
+  type(numerics_t), intent(inout) :: numerics !< geobjlist controls
   type(btree_t), intent(inout) :: btree !< btree data
 
   !! local
@@ -215,6 +223,7 @@ subroutine hdsfile_read(geobjl,numerics,btree)
 
   do
      read(nouth,'(a)',iostat=status) ichar
+     !write(*,*) 'ichar=',ichar
      !!eof
      if(status<0) then
         exit
@@ -320,6 +329,16 @@ subroutine hdsfile_read(geobjl,numerics,btree)
            call log_error(m_name,s_name,35,error_fatal,'Error reading addcubes ')
         end if
 
+     else if (ichar=='BOUBO') then
+        read(nouth,*,iostat=status)  geobjl%coordbb
+        !write(*,*) 'geobjl%coordbb',geobjl%coordbb
+        if(status/=0) then
+           call log_error(m_name,s_name,40,error_fatal,'Error reading coordbb ')
+        end if
+        read(nouth,*,iostat=status)  geobjl%binbb
+        if(status/=0) then
+           call log_error(m_name,s_name,41,error_fatal,'Error reading binbb ')
+        end if
      end if
 
   end do

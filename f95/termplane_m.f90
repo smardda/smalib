@@ -11,8 +11,8 @@ module termplane_m
 
 ! public subroutines
   public :: &
-  termplane_readcon, & ! read termination planes control data
-  termplane_delete ! deallocate termination planes arrays
+  termplane_readcon, & !< read termination planes control data
+  termplane_delete !< deallocate termination planes arrays
 
 !public variables
 
@@ -154,7 +154,7 @@ subroutine termplane_readcon(self,kin)
 
 end subroutine termplane_readcon
 !---------------------------------------------------------------------
-!! delete termplane_t
+!> delete termplane_t
 subroutine termplane_delete(self)
 
   !! arguments
