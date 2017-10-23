@@ -1862,6 +1862,7 @@ subroutine dbtree_delete(self)
   !! local
   character(*), parameter :: s_name='dbtree_delete' !< subroutine name
 
+  deallocate(self%pter)
   deallocate(self%desc)
   deallocate(self%corner)
   deallocate(self%exten)
