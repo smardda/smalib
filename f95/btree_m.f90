@@ -1089,9 +1089,9 @@ subroutine btree_dia(self)
   write(ilog,*) ' split at top of tree ', self%nxyz
   write(ilog,*) ' type of tree algorithm ', self%nttalg
   write(ilog,*) ' size of tree pointer array or numerics%nsize ', &
- &self%nt,' used out of  ',size(self%pter,2), ' (max_size_tree_array)'
+ &self%nt,' used out of  ',size(self%pter,2), ' (btree_size)'
   write(ilog,*) ' size of extents array or numerics%nsizee ', &
- &self%nexten,' used out of ',size(self%exten,2), ' (max_size_exten_array)'
+ &self%nexten,' used out of ',size(self%exten,2), ' (btree_sizee)'
   iexmin=minval( self%exten(1:3,1) )
 !dbg  write(*,*) ' 1 ', self%exten(1:3,1)  !dbg
   do jl=2,self%nexten
@@ -1116,7 +1116,7 @@ subroutine btree_dia(self)
   case(0)
      write(ilog,*) 'list type  ls'
      write(ilog,*) ' number of entries in list array numerics%nsizel ', &
- &   self%objectls%nlist,' used out of ',size(self%objectls%list,1), ' (max_size_list_array)'
+ &   self%objectls%nlist,' used out of ',size(self%objectls%list,1), ' (btree_sizel)'
   case(1)
      write(ilog,*) 'list type  li'
      !write(ilog,*) ' number of entries in hoc array ', &

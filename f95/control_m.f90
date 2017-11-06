@@ -891,11 +891,11 @@ subroutine control_btree(numerics,kin)
  &tree_type
 
   !! set default btree parameters
-  btree_size=2000000
+  btree_size=2000000 !max_size_tree_array
   btree_sizep=3 !! BSP
-  btree_sizee=1000
+  btree_sizee=1000 !max_size_exten_array)
   btree_sizeh=2
-  btree_sizel=2000000
+  btree_sizel=2000000 ! max_size_list_array
   btree_depth=30
   tree_type=1 !! BSP 1 -BSP 2-octree 3-octree with special top
   tree_ttalg=1 !! for special top: 0 -default 1- use hxyz 2- use nxyz

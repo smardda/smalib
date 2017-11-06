@@ -1456,8 +1456,8 @@ subroutine odes_1stfunct(pt,py,pydot,pdia,pdfaca,rispldr,rispldz)
   real(kr8) :: zridpdr    !<  \f$ \frac{R}{I}\frac{\partial\psi}{\partial R} \f$
   real(kr8) :: zridpdz    !<  \f$ \frac{R}{I}\frac{\partial\psi}{\partial Z} \f$
 
-     call spl2d_eval(rispldr,py(1),py(2),zridpdr)
-     call spl2d_eval(rispldz,py(1),py(2),zridpdz)
+     call spl2d_evaln(rispldr,py(1),py(2),1,zridpdr)
+     call spl2d_evaln(rispldz,py(1),py(2),2,zridpdz)
      pydot(1)=pdfaca(1)*zridpdz
      pydot(2)=pdfaca(2)*zridpdr
      !D     write(*,*) pt,py,pydot !D

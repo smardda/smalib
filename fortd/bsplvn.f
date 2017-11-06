@@ -24,8 +24,10 @@ C-----------------------------------------------------------------------
        DIMENSION   XT(*),    VNIKX(*)
        DIMENSION   DELTAM(20),         DELTAP(20)
 
-         DELTAM=0
-         DELTAP=0
+         DO 1 K=1,5
+         DELTAM(K)=0
+         DELTAP(K)=0
+    1    CONTINUE
          J = 1
          VNIKX(1) = 1
 
