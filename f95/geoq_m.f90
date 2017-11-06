@@ -318,9 +318,9 @@ subroutine geoq_psilimiter(self)
   self%beq%thetagmax=zthetamax
   self%beq%thetagmin=zthetamin
 
-  call spl2d_eval(self%beq%dpsidr,zr,zz,zdpdr)
-  call spl2d_eval(self%beq%dpsidz,zr,zz,zdpdz)
-  call spl2d_eval(self%beq%psi,zr,zz,zpsi)
+  call spl2d_evaln(self%beq%dpsidr,zr,zz,1,zdpdr)
+  call spl2d_evaln(self%beq%dpsidz,zr,zz,2,zdpdz)
+  call spl2d_evaln(self%beq%psi,zr,zz,2,zpsi)
   self%beq%rbdry=zr
   self%beq%bpbdry=(1/zr)*sqrt( max(0.,(zdpdr**2+zdpdz**2)) )
 
@@ -444,8 +444,8 @@ subroutine geoq_psisilh(self)
      self%beq%psiotr=zpsimin
   end if
   write(*,*) 'psiltr,psiotr', self%beq%psiltr,self%beq%psiotr !dbg
-  call spl2d_eval(self%beq%dpsidr,zr,zz,zdpdr)
-  call spl2d_eval(self%beq%dpsidz,zr,zz,zdpdz)
+  call spl2d_evaln(self%beq%dpsidr,zr,zz,1,zdpdr)
+  call spl2d_evaln(self%beq%dpsidz,zr,zz,2,zdpdz)
   self%beq%rbdry=zr
   self%beq%bpbdry=(1/zr)*sqrt( max(0.,(zdpdr**2+zdpdz**2)) )
 

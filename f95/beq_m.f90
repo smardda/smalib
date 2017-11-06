@@ -1877,8 +1877,8 @@ subroutine beq_writev(self,kchar,kplot)
            ztheta=self%n%thetamin+(j-1)*self%dtheta
            do i=1,self%n%npsi+1
               zpsi=self%n%psimin +(i-1)*self%dpsi
-              call spl2d_eval(self%r,zpsi,ztheta,zr)
-              call spl2d_eval(self%z,zpsi,ztheta,zz)
+              call spl2d_evaln(self%r,zpsi,ztheta,1,zr)
+              call spl2d_evaln(self%z,zpsi,ztheta,2,zz)
               posang%pos(1)=zr ; posang%pos(2)=zz ; posang%pos(3)=zeta
               posang%opt=1 ; posang%units=0
               ! posn to cartesians and output
@@ -1898,10 +1898,10 @@ subroutine beq_writev(self,kchar,kplot)
            ztheta=self%n%thetamin+(j-1)*self%dtheta
            do i=1,self%n%npsi+1
               zpsi=self%n%psimin +(i-1)*self%dpsi
-              call spl2d_eval(self%r,zpsi,ztheta,zr)
-              call spl2d_eval(self%z,zpsi,ztheta,zz)
-              call spl2d_eval(self%dpsidr,zr,zz,zdpdr)
-              call spl2d_eval(self%dpsidz,zr,zz,zdpdz)
+              call spl2d_evaln(self%r,zpsi,ztheta,1,zr)
+              call spl2d_evaln(self%z,zpsi,ztheta,2,zz)
+              call spl2d_evaln(self%dpsidr,zr,zz,1,zdpdr)
+              call spl2d_evaln(self%dpsidz,zr,zz,2,zdpdz)
               posang%pos(1)=zr ; posang%pos(2)=zz ; posang%pos(3)=zeta
               posang%units=0
               ! evaluate I aka f at psi
@@ -2057,8 +2057,8 @@ subroutine beq_dia(self)
      ztheta=self%n%thetamin+(j-1)*self%dtheta
      do i=1,self%n%npsi+1
         zpsi=self%n%psimin +(i-1)*self%dpsi
-        call spl2d_eval(self%r,zpsi,ztheta,zr)
-        call spl2d_eval(self%z,zpsi,ztheta,zz)
+        call spl2d_evaln(self%r,zpsi,ztheta,1,zr)
+        call spl2d_evaln(self%z,zpsi,ztheta,2,zz)
         call spl2d_eval(self%psi,zr,zz,zpsin)
         zpsidiff=zpsin-zpsi
         zthetan=atan2(zz-self%n%zcen,zr-self%n%rcen)
@@ -3199,8 +3199,8 @@ subroutine beq_psix(self)
            re=self%rmin+(i-1)*self%dr
            zsrsq=(re-self%n%rcen)**2+(ze-self%n%zcen)**2
            if (zsrsq>zsrlt) then
-              call spl2d_eval(self%dpsidr,re,ze,zdpdr)
-              call spl2d_eval(self%dpsidz,re,ze,zdpdz)
+              call spl2d_evaln(self%dpsidr,re,ze,1,zdpdr)
+              call spl2d_evaln(self%dpsidz,re,ze,2,zdpdz)
               if (zdpdr*zdpdz<0.) then
                  zgpsi=zdpdr**2+zdpdz**2
                  if (zgpsi<zgpsimin) then
@@ -3435,8 +3435,8 @@ subroutine beq_bdryrb(self)
      end if
 
      ! check monotone
-     call spl2d_eval(self%dpsidr,re,ze,zdpdr)
-     call spl2d_eval(self%dpsidz,re,ze,zdpdz)
+     call spl2d_evaln(self%dpsidr,re,ze,1,zdpdr)
+     call spl2d_evaln(self%dpsidz,re,ze,2,zdpdz)
      zdpdsr=zdpdr*zcos+zdpdz*zsin
      if(idplset==1) then
         if(zdpdsrl*zdpdsr<=0) then
@@ -3478,9 +3478,9 @@ subroutine beq_bdryrb(self)
   do i=1,iext
      re=self%n%rcen+zsr*zcos
      ze=self%n%zcen+zsr*zsin
-     call spl2d_eval(self%psi,re,ze,zp)
-     call spl2d_eval(self%dpsidr,re,ze,zdpdr)
-     call spl2d_eval(self%dpsidz,re,ze,zdpdz)
+     call spl2d_evaln(self%psi,re,ze,1,zp)
+     call spl2d_evaln(self%dpsidr,re,ze,2,zdpdr)
+     call spl2d_evaln(self%dpsidz,re,ze,2,zdpdz)
      zdpdsr=zdpdr*zcos+zdpdz*zsin
      if(i>1.AND.zdpdsrl*zdpdsr<=0) then
         ! should only be small non-monotone region, try to ignore
@@ -3523,8 +3523,8 @@ subroutine beq_bdryrb(self)
 
   re=self%n%rcen+zsr*zcos
   ze=self%n%zcen+zsr*zsin
-  call spl2d_eval(self%dpsidr,re,ze,zdpdr)
-  call spl2d_eval(self%dpsidz,re,ze,zdpdz)
+  call spl2d_evaln(self%dpsidr,re,ze,1,zdpdr)
+  call spl2d_evaln(self%dpsidz,re,ze,2,zdpdz)
   self%rbdry=re
   self%bpbdry=(1/re)*sqrt( max(0.,(zdpdr**2+zdpdz**2)) )
 
@@ -3673,8 +3673,8 @@ subroutine beq_rextrema(self)
         end if
 
         ! check monotone
-        call spl2d_eval(self%dpsidr,re,ze,zdpdr)
-        call spl2d_eval(self%dpsidz,re,ze,zdpdz)
+        call spl2d_evaln(self%dpsidr,re,ze,1,zdpdr)
+        call spl2d_evaln(self%dpsidz,re,ze,2,zdpdz)
         zdpdsr=zdpdr*zcos+zdpdz*zsin
         if(idplset==1) then
            if(zdpdsrl*zdpdsr<=0) then
@@ -3801,9 +3801,9 @@ subroutine beq_rpsi(self)
      do i=1,iext
         re=self%n%rcen+zsr*zcos
         ze=self%n%zcen+zsr*zsin
-        call spl2d_eval(self%psi,re,ze,zp)
-        call spl2d_eval(self%dpsidr,re,ze,zdpdr)
-        call spl2d_eval(self%dpsidz,re,ze,zdpdz)
+        call spl2d_evaln(self%psi,re,ze,1,zp)
+        call spl2d_evaln(self%dpsidr,re,ze,2,zdpdr)
+        call spl2d_evaln(self%dpsidz,re,ze,2,zdpdz)
         zdpdsr=zdpdr*zcos+zdpdz*zsin
         if(i>1.AND.zdpdsrl*zdpdsr<=0) then
            ! should only be small non-monotone region, try to ignore
@@ -3901,10 +3901,10 @@ subroutine beq_rjpsi(self)
      ztheta=self%n%thetamin+(j-1)*self%dtheta
      do i=1,self%n%npsi+1
         zpsi=self%n%psimin +(i-1)*self%dpsi
-        call spl2d_eval(self%r,zpsi,ztheta,zr)
-        call spl2d_eval(self%z,zpsi,ztheta,zz)
-        call spl2d_eval(self%dpsidr,zr,zz,zdpdr)
-        call spl2d_eval(self%dpsidz,zr,zz,zdpdz)
+        call spl2d_evaln(self%r,zpsi,ztheta,1,zr)
+        call spl2d_evaln(self%z,zpsi,ztheta,2,zz)
+        call spl2d_evaln(self%dpsidr,zr,zz,1,zdpdr)
+        call spl2d_evaln(self%dpsidz,zr,zz,2,zdpdz)
         zsrsq=(zr-self%n%rcen)**2+(zz-self%n%zcen)**2
         work2(i,ij)= zrgfac*(zr - self%n%rmove) &
  &      * (zdpdr*(zr-self%n%rcen)+zdpdz*(zz-self%n%zcen))/zsrsq
@@ -3948,9 +3948,9 @@ subroutine beq_rispld(self)
      zz=self%zmin+(j-1)*self%dz
      do i=1,self%mr
         zr=self%rmin +(i-1)*self%dr
-        call spl2d_eval(self%dpsidr,zr,zz,zdpdr)
-        call spl2d_eval(self%dpsidz,zr,zz,zdpdz)
-        call spl2d_eval(self%psi,zr,zz,zpsi)
+        call spl2d_evaln(self%dpsidr,zr,zz,1,zdpdr)
+        call spl2d_evaln(self%dpsidz,zr,zz,2,zdpdz)
+        call spl2d_evaln(self%psi,zr,zz,2,zpsi)
         ! evaluate I aka f at psi
         call spleval(self%f,self%mr,self%psiaxis,self%psiqbdry,zpsi,zf,1)
         workr2(i,j)=-zr*zdpdz/zf
@@ -4011,9 +4011,9 @@ subroutine beq_b(self,posang,kopt)
      call posang_invtfm(posang,0)
      zr=posang%pos(1)
      zz=posang%pos(2)
-     call spl2d_eval(self%dpsidr,zr,zz,zdpdr)
-     call spl2d_eval(self%dpsidz,zr,zz,zdpdz)
-     call spl2d_eval(self%psi,zr,zz,zpsi)
+     call spl2d_evaln(self%dpsidr,zr,zz,1,zdpdr)
+     call spl2d_evaln(self%dpsidz,zr,zz,2,zdpdz)
+     call spl2d_evaln(self%psi,zr,zz,2,zpsi)
      ! evaluate I aka f at psi
      call spleval(self%f,self%mr,self%psiaxis,self%psiqbdry,zpsi,zf,1)
      ! B in toroidal-cyl polars
@@ -4053,8 +4053,8 @@ subroutine beq_b(self,posang,kopt)
         ! calculate vector (RBR,RBZ,BT) at quantised coordinate
         zr=posang%pos(1)
         zz=posang%pos(2)
-        call spl2d_eval(self%dpsidr,zr,zz,zdpdr)
-        call spl2d_eval(self%dpsidz,zr,zz,zdpdz)
+        call spl2d_evaln(self%dpsidr,zr,zz,1,zdpdr)
+        call spl2d_evaln(self%dpsidz,zr,zz,2,zdpdz)
         call spl3d_evalm(self%vacfld,posang%pos,zvecf)
         posang%vec(1)=-zdpdz+zvecf(1)
         posang%vec(2)=zdpdr+zvecf(2)
@@ -4375,8 +4375,8 @@ subroutine beq_psicont(self,pcont,pr,pz)
   zpsi=pcont
   do j=1,self%r%n2p
      ztheta=self%r%pos2(j)
-     call spl2d_eval(self%r,zpsi,ztheta,zrn)
-     call spl2d_eval(self%z,zpsi,ztheta,zzn)
+     call spl2d_evaln(self%r,zpsi,ztheta,1,zrn)
+     call spl2d_evaln(self%z,zpsi,ztheta,2,zzn)
      pr(j)=zrn
      pz(j)=zzn
   end do
@@ -4416,14 +4416,14 @@ subroutine beq_findrzm(self,pxl,pang)
   zpsi=self%psibdry
 
   ztheta=self%r%pos2(ij)
-  call spl2d_eval(self%r,zpsi,ztheta,zr)
-  call spl2d_eval(self%z,zpsi,ztheta,zz)
+  call spl2d_evaln(self%r,zpsi,ztheta,1,zr)
+  call spl2d_evaln(self%z,zpsi,ztheta,2,zz)
   zdotprod=0.
   do j=2,self%r%n2p
      ij=j
      ztheta=self%r%pos2(ij)
-     call spl2d_eval(self%r,zpsi,ztheta,zrn)
-     call spl2d_eval(self%z,zpsi,ztheta,zzn)
+     call spl2d_evaln(self%r,zpsi,ztheta,1,zrn)
+     call spl2d_evaln(self%z,zpsi,ztheta,2,zzn)
      zrdiff=zrn-zr
      zzdiff=zzn-zz
      zdotprodn=zrdiff*zcos+zzdiff*zsin

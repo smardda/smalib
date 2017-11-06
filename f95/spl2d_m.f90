@@ -771,8 +771,8 @@ subroutine spl2d_eval(self,p1,p2,pe)
 
   !! local
   character(*), parameter :: s_name='spl2d_eval' !< subroutine name
-  integer(ki4) :: ipp   !<  first integer coordinate of point (poss. offset)
-  integer(ki4) :: iqq   !<  second integer coordinate of point (poss. offset)
+  integer(ki4), save :: ipp=0   !<  first integer coordinate of point (poss. offset)
+  integer(ki4), save :: iqq=0   !<  second integer coordinate of point (poss. offset)
   integer(ki4) :: ip   !<  first integer coordinate of point
   integer(ki4) :: iq   !<  second integer coordinate of point
   integer(ki4) :: ii   !<  integer loop work
@@ -880,8 +880,8 @@ subroutine spl2d_evaln(self,p1,p2,kcall,pe)
 
   !! local
   character(*), parameter :: s_name='spl2d_evaln' !< subroutine name
-  integer(ki4) :: ipp   !<  first integer coordinate of point (poss. offset)
-  integer(ki4) :: iqq   !<  second integer coordinate of point (poss. offset)
+  integer(ki4), save :: ipp=0   !<  first integer coordinate of point (poss. offset)
+  integer(ki4), save :: iqq=0   !<  second integer coordinate of point (poss. offset)
   integer(ki4) :: ip   !<  first integer coordinate of point
   integer(ki4) :: iq   !<  second integer coordinate of point
   integer(ki4) :: ii   !<  integer loop work

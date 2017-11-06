@@ -1489,8 +1489,8 @@ subroutine odes_2ndfunct(pt,pdt,py,pydot,pdia,pdfaca,pf,dspldr,dspldz)
   real(kr8),parameter :: pgauss=0.788675135D0 !<  Gauss point on [0,1] \f$ 1/2+\sqrt{3}/6 \f$
   real(kr8),parameter :: pgaussm=1-pgauss    !<  Gauss point on [0,1]
 
-     call spl2d_eval(dspldr,py(1),py(2),zdpdr)
-     call spl2d_eval(dspldz,py(1),py(2),zdpdz)
+     call spl2d_evaln(dspldr,py(1),py(2),1,zdpdr)
+     call spl2d_evaln(dspldz,py(1),py(2),2,zdpdz)
      zdhdr=(pf(py(1),py(2),pt+pgaussm*pdt,1)+ &
  &   pf(py(1),py(2),pt+pgauss*pdt,1))/2
      pydot(1)=-pdfaca(1)*zdpdz/zdhdr
@@ -1520,8 +1520,8 @@ subroutine odes_3rdfunct(pt,py,pydot,pdia,pdfaca,spl3d,dspldr,dspldz)
   real(kr8) :: zdpdz    !<  \f$ \frac{\partial\psi}{\partial Z} \f$
   real(kr8), dimension(3)  :: zvecf    !<  Vacuum field
 
-     call spl2d_eval(dspldr,py(1),py(2),zdpdr)
-     call spl2d_eval(dspldz,py(1),py(2),zdpdz)
+     call spl2d_evaln(dspldr,py(1),py(2),1,zdpdr)
+     call spl2d_evaln(dspldz,py(1),py(2),2,zdpdz)
      call spl3d_evalm(spl3d,py,zvecf)
      pydot(1)=pdfaca(1)*(-zdpdz+zvecf(1))
      pydot(2)=pdfaca(2)*(zdpdr+zvecf(2))
@@ -1552,8 +1552,8 @@ subroutine odes_4thfunct(pt,py,pydot,pdia,pdfaca,pf,dspldr,dspldz)
   real(kr8) :: zdpdr    !<  \f$ \frac{\partial\psi}{\partial R} \f$
   real(kr8) :: zdpdz    !<  \f$ \frac{\partial\psi}{\partial Z} \f$
 
-     call spl2d_eval(dspldr,py(1),py(2),zdpdr)
-     call spl2d_eval(dspldz,py(1),py(2),zdpdz)
+     call spl2d_evaln(dspldr,py(1),py(2),1,zdpdr)
+     call spl2d_evaln(dspldz,py(1),py(2),2,zdpdz)
      pydot(1)=-pdfaca(1)*zdpdz
      pydot(2)=pdfaca(2)*zdpdr
      pydot(3)=pdfaca(3)*pf/(py(1)-pdfaca(4))
