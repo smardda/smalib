@@ -23,6 +23,7 @@ module ls_m
      integer(ki4), dimension(:,:), allocatable  :: list  !< list array
      integer(ki4) :: nlist   !< number of entries in `2' array
      integer(ki4) :: n2   !< second number of entries in `2' array
+     integer(ki4) :: listype    !< Type of list
   end type ls_t
 
 !public variables
@@ -42,28 +43,33 @@ module ls_m
   contains
 !---------------------------------------------------------------------
 !> initialise ls
-subroutine ls_init(self,ksizeh,ksize)
+subroutine ls_init(self,ksizeh,ksize,ktype)
 
   !! arguments
   type(ls_t), intent(out) :: self   !< list
   integer(ki4) , intent(in) :: ksize !< size of list
   integer(ki4) , intent(in) :: ksizeh !< second size of list
+  integer(ki4) , intent(in), optional :: ktype !< type of list
 
 
   !! local
   character(*), parameter :: s_name='ls_init' !< subroutine name
   integer(ki4) :: isize  !< local variable
 
-  !! allocate storage
   isize=ksizeh
-  if(isize>0) then
+  !! check values
+  if (present(ktype)) then
+   tree_type: select case (ktype)
+   case(1)
+   isize=0
+   end select tree_type
+  end if
+
+  !! allocate storage
+  if(isize>=0) then
      if(ksize>0) then
-        allocate(self%list(ksize,0:ksizeh), &
- &      stat=status)
-        !! check successful allocation
-        if(status/=0) then
-           call log_error(m_name,s_name,1,error_fatal,'Unable to allocate memory')
-        end if
+        allocate(self%list(ksize,0:isize), stat=status)
+        call log_alloc_check(m_name,s_name,1,status)
      else
         call log_error(m_name,s_name,2,error_fatal,'No data')
      end if
@@ -72,7 +78,7 @@ subroutine ls_init(self,ksizeh,ksize)
   end if
 
   self%nlist=0
-  self%n2=ksizeh
+  self%n2=isize
 
 end subroutine ls_init
 !---------------------------------------------------------------------
@@ -115,8 +121,8 @@ subroutine ls_read(self,numerics,kin)
   call ls_init(self,isizeh,isizel)
   ! init sets nlist to zero
   self%nlist=ilist
-  ! read ls list array (only last or 2 array signifies)
 
+  ! read ls list array (only last or 2 array signifies)
   read(kin,*,iostat=status) (self%list(j,2),j=1,ilist)
   if(status/=0) then
      call log_error(m_name,s_name,2,error_fatal,'Error reading ls list')
@@ -155,7 +161,7 @@ subroutine ls_write(self,numerics,kout)
   end if
 
 end subroutine ls_write
-!>---------------------------------------------------------------------
+!---------------------------------------------------------------------
 subroutine ls_write1(self,kadr,kout)
 
   !! arguments
@@ -177,12 +183,8 @@ subroutine ls_write1(self,kadr,kout)
         return
      else
         !! add to array
-        allocate(iout(in), &
- &      stat=status)
-        !! check successful allocation
-        if(status/=0) then
-           call log_error(m_name,s_name,1,error_fatal,'Unable to allocate memory')
-        end if
+        allocate(iout(in), stat=status)
+        call log_alloc_check(m_name,s_name,1,status)
      end if
      loop_1 : do j=1,in
         iout(j)=self%list(kadr+j,2)
@@ -202,6 +204,7 @@ subroutine ls_write1(self,kadr,kout)
   deallocate(iout)
 
 end subroutine ls_write1
+!---------------------------------------------------------------------
 subroutine ls_add(self,kadr,k2,kitem)
 
   !! arguments
@@ -232,6 +235,7 @@ subroutine ls_add(self,kadr,k2,kitem)
   end if
 
 end subroutine ls_add
+!---------------------------------------------------------------------
 subroutine ls_copy(self,kadr1,k1,kadr2,k2,klen)
 
   !! arguments
@@ -266,6 +270,5 @@ subroutine ls_copy(self,kadr1,k1,kadr2,k2,klen)
   end if
 
 end subroutine ls_copy
-
 
 end module ls_m

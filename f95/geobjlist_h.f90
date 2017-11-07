@@ -18,6 +18,7 @@ module geobjlist_h
      integer(ki4)  :: nnod !< no of nodes
      integer(ki4)  :: ng !< no of geobjs
      integer(ki4)  :: ngunassigned !< no of geobjs not assigned
+     integer(ki4)  :: nsampl !< no of geobjs in sample
      integer(ki2)  :: nquant !< estimated then actual quantising number (log)
      integer(ki4)  :: minobj !< minimum number of geobj in a bin
      integer(ki4)  :: nparam=0 !< integer parameter from file header

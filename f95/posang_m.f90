@@ -189,8 +189,8 @@ subroutine posang_invpsitfm(self,pbeq)
   position_format: select case (iopt)
   case(2,18) ! position
      zpsi=self%pos(1) ; ztheta=self%pos(2) ; zeta=self%pos(3)
-     call spl2d_eval(pbeq%r,zpsi,ztheta,zr)
-     call spl2d_eval(pbeq%z,zpsi,ztheta,zz)
+     call spl2d_evaln(pbeq%r,zpsi,ztheta,1,zr)
+     call spl2d_evaln(pbeq%z,zpsi,ztheta,2,zz)
      zx1=zr
      zx2=zz
      zx3=zeta

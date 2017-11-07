@@ -1105,6 +1105,7 @@ subroutine spl3d_eval(self,pt,pe)
   real(kr8) :: zxi  !< \f$ \xi \f$
   integer(ki4) :: ikmin   !< min wavenumber to be used in evaluation
   integer(ki4) :: ikmax   !< max wavenumber to be used in evaluation
+  integer(ki4) :: icall   !< if unity, evaluate coeffs, else reuse previous
 
   allocate(work3(self%ncpt,self%n0,0:self%nk), stat=status)
   call log_alloc_check(m_name,s_name,1,status)
@@ -1118,11 +1119,13 @@ subroutine spl3d_eval(self,pt,pe)
   !f     write(*,*) 'posk', self%posk
   !f      write(*,*) 'pt', pt
   !  get Fourier coeffts
+  icall=0
   loopget: do l=ikmin,ikmax
      do k=1,self%n0
         do j=1,self%ncpt
            if (l>=self%kmin(j).AND.l<=self%kmax(j)) then
-              call  spl2d_eval(self%farm(j,k,l),pt(1),pt(2),ze(j))
+              icall=icall+1
+              call  spl2d_evaln(self%farm(j,k,l),pt(1),pt(2),icall,ze(j))
            else
               ze(j)=0
            end if
@@ -1166,6 +1169,7 @@ subroutine spl3d_evalm(self,pt,pe)
   integer(ki4) :: ikmax   !< max wavenumber to be used in evaluation
   integer(ki4) :: i1   !< largest integer index positioned less then point 1 coordinate
   integer(ki4) :: i2   !< largest integer index positioned less then point 2 coordinate
+  integer(ki4) :: icall   !< if unity, evaluate coeffs, else reuse previous
   real(kr8), dimension(:,:), allocatable :: zwork2 !< 2D work array
   real(kr8), dimension(:,:), allocatable :: workc !< work array for coeffts
 
@@ -1194,6 +1198,7 @@ subroutine spl3d_evalm(self,pt,pe)
 
   !WAtest. test data has spurious even-parity content, hence lpddtest
   ! outer loop over field components
+  icall=0
   do j=1,self%ncpt
      zwork2(1:2,0:ikmax)=0
 
@@ -1208,8 +1213,9 @@ subroutine spl3d_evalm(self,pt,pe)
         end if
         !KMAX      write(*,*) 'mask, j,k,i1,i2,ikmax=',j,k,i1,i2,ikmax !KMAX
         do l=ikmin,ikmax
-           call  spl2d_eval(self%farm(j,k,l),pt(1),pt(2),ze)
-           !f     write(*,*) 'j,k,l', j,k,l,ze
+           icall=icall+1
+           call  spl2d_evaln(self%farm(j,k,l),pt(1),pt(2),icall,ze)
+           !f     write(*,*) 'j,k,l', j,k,l,icall,ze
            zwork2(k,l)=ze
         end do
         k=k-1
@@ -1217,8 +1223,9 @@ subroutine spl3d_evalm(self,pt,pe)
 
      if (lpddtest) then
         if(self%parity(j)==2)then
+           icall=icall+1
            !WAtest include zero mode amplitude even if only odd parity set
-           call  spl2d_eval(self%farm(j,1,0),pt(1),pt(2),ze)
+           call  spl2d_evaln(self%farm(j,1,0),pt(1),pt(2),icall,ze)
            zwork2(1,0)=ze
         end if
      end if

@@ -263,6 +263,9 @@ subroutine geoq_psilimiter(self)
   real(kr8) :: zdpdz    !<  \f$ \frac{\partial\psi}{\partial Z} \f$
   real(kr8) :: zsr    !< \f$  r_i \f$
   real(kr8) :: cylj    !<  current estimated in cylindrical approx.
+  real(kr8) :: zbr    !<  radial field component
+  real(kr8) :: zbz    !<  vertical field component
+  real(kr8) :: zbt    !<  toroidal field component
 
   zpsimin=1.E+8
   zpsimax=-1.E+8
@@ -315,9 +318,9 @@ subroutine geoq_psilimiter(self)
   self%beq%thetagmax=zthetamax
   self%beq%thetagmin=zthetamin
 
-  call spl2d_eval(self%beq%dpsidr,zr,zz,zdpdr)
-  call spl2d_eval(self%beq%dpsidz,zr,zz,zdpdz)
-  call spl2d_eval(self%beq%psi,zr,zz,zpsi)
+  call spl2d_evaln(self%beq%dpsidr,zr,zz,1,zdpdr)
+  call spl2d_evaln(self%beq%dpsidz,zr,zz,2,zdpdz)
+  call spl2d_evaln(self%beq%psi,zr,zz,2,zpsi)
   self%beq%rbdry=zr
   self%beq%bpbdry=(1/zr)*sqrt( max(0.,(zdpdr**2+zdpdz**2)) )
 
@@ -334,6 +337,13 @@ subroutine geoq_psilimiter(self)
   zsr=sqrt( max(0.,(zr-self%beq%n%rcen)**2+(zz-self%beq%n%zcen)**2) )
   cylj=abs(zsr*self%beq%bpbdry/2.e-7)
   call log_value("Estimated cylindrical current ",cylj)
+
+  zbr=-(1/zr)*zdpdz
+  zbz=(1/zr)*zdpdr
+  zbt=zf/zr
+  call log_value("radial field component",zbr)
+  call log_value("vertical field component",zbz)
+  call log_value("toroidal field component",zbt)
 
   call log_error(m_name,s_name,2,log_info,'Object limits ')
   call log_value("OBJECT LIMIT psimax ",zpsimax)
@@ -373,6 +383,9 @@ subroutine geoq_psisilh(self)
   real(kr8) :: zdpdz    !<  \f$ \frac{\partial\psi}{\partial Z} \f$
   real(kr8) :: zsr    !< \f$  r_i \f$
   real(kr8) :: cylj    !<  current estimated in cylindrical approx.
+  real(kr8) :: zbr    !<  radial field component
+  real(kr8) :: zbz    !<  vertical field component
+  real(kr8) :: zbt    !<  toroidal field component
 
   zpsimin=1.E+8
   zpsimax=-1.E+8
@@ -431,8 +444,8 @@ subroutine geoq_psisilh(self)
      self%beq%psiotr=zpsimin
   end if
   write(*,*) 'psiltr,psiotr', self%beq%psiltr,self%beq%psiotr !dbg
-  call spl2d_eval(self%beq%dpsidr,zr,zz,zdpdr)
-  call spl2d_eval(self%beq%dpsidz,zr,zz,zdpdz)
+  call spl2d_evaln(self%beq%dpsidr,zr,zz,1,zdpdr)
+  call spl2d_evaln(self%beq%dpsidz,zr,zz,2,zdpdz)
   self%beq%rbdry=zr
   self%beq%bpbdry=(1/zr)*sqrt( max(0.,(zdpdr**2+zdpdz**2)) )
 
@@ -450,6 +463,13 @@ subroutine geoq_psisilh(self)
   zsr=sqrt( max(0.,(zr-self%beq%n%rcen)**2+(zz-self%beq%n%zcen)**2) )
   cylj=abs(zsr*self%beq%bpbdry/2.e-7)
   call log_value("Estimated cylindrical current ",cylj)
+
+  zbr=-(1/zr)*zdpdz
+  zbz=(1/zr)*zdpdr
+  zbt=zf/zr
+  call log_value("radial field component",zbr)
+  call log_value("vertical field component",zbz)
+  call log_value("toroidal field component",zbt)
 
 end subroutine geoq_psisilh
 !---------------------------------------------------------------------

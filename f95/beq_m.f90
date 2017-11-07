@@ -74,8 +74,8 @@ module beq_m
 ! public variables
   integer(ki4), public, parameter :: BEQ_MZETA=193 !< number of points for
  &! display in direction of invariant coordinate \f$ \zeta \f$
-  real(kr8), public, parameter :: beq_dzeta=2*const_pid/(BEQ_MZETA-1) !< local variable
- &!< increment in direction of invariant coordinate \f$ \zeta \f$
+  real(kr8), public, parameter :: beq_dzeta=2*const_pid/(BEQ_MZETA-1) !< increment
+ &! in direction of invariant coordinate \f$ \zeta \f$
 
 ! private types
 
@@ -660,24 +660,24 @@ subroutine beq_readequil(self,infile,numerics)
   self%zqcen=zmaxis
 
   if (.NOT.numerics%leqok) then
-  if (BEQ_OVERRIDE_ITER) then
-     call log_error(m_name,s_name,49,log_info,'override for ITER')
-     ! special for ITER to align current and toroidal field
-     if (ssimag1>ssibry1) then
-        self%psiaxis=-ssimag1*psifac
-        self%psiqbdry=-ssibry1*psifac
-        self%psibdry=self%psiqbdry
-        work2=-work2
-     else
+     if (BEQ_OVERRIDE_ITER) then
+        call log_error(m_name,s_name,49,log_info,'override for ITER')
+        ! special for ITER to align current and toroidal field
+        if (ssimag1>ssibry1) then
+           self%psiaxis=-ssimag1*psifac
+           self%psiqbdry=-ssibry1*psifac
+           self%psibdry=self%psiqbdry
+           work2=-work2
+        else
+           ! possibly also in case where psi increases from axis
+           self%f=-self%f
+        end if
+     else if (BEQ_OVERRIDE_FTU) then
+        call log_error(m_name,s_name,48,log_info,'override for FTU')
+        ! special for FTU modelling to align current and toroidal field
         ! possibly also in case where psi increases from axis
         self%f=-self%f
      end if
-  else if (BEQ_OVERRIDE_FTU) then
-     call log_error(m_name,s_name,48,log_info,'override for FTU')
-     ! special for FTU modelling to align current and toroidal field
-     ! possibly also in case where psi increases from axis
-     self%f=-self%f
-  end if
   end if
 
   !! now additional standard eqdsk stuff
@@ -810,10 +810,14 @@ subroutine beq_readequil(self,infile,numerics)
   end if
   print '("number of Bz values read = ",i10)',nw*nh
   call log_value("number of Bz values read ",nw*nh)
-  ! fix sign consistent with psi above
-  if (ssimag1>ssibry1) then
-     workr2=-workr2
-     workz2=-workz2
+  if (.NOT.numerics%leqok) then
+     if (BEQ_OVERRIDE_ITER) then
+        ! fix sign consistent with psi above
+        if (ssimag1>ssibry1) then
+           workr2=-workr2
+           workz2=-workz2
+        end if
+     end if
   end if
   close(iin)
 
@@ -982,25 +986,25 @@ subroutine beq_readequ(self,infile,numerics)
 
   fld_specn: select case (numerics%fldspec)
   case(1,3)
-  if (.NOT.numerics%leqok) then
-     if (BEQ_OVERRIDE_ITER) then
-        call log_error(m_name,s_name,49,log_info,'override for ITER')
-        ! special for ITER to align current and toroidal field
-        if (psic>psib) then
-           self%psiaxis=-psic
-           self%psiqbdry=-psib
-           self%psibdry=self%psiqbdry
-           work2=-work2
-        else
+     if (.NOT.numerics%leqok) then
+        if (BEQ_OVERRIDE_ITER) then
+           call log_error(m_name,s_name,49,log_info,'override for ITER')
+           ! special for ITER to align current and toroidal field
+           if (psic>psib) then
+              self%psiaxis=-psic
+              self%psiqbdry=-psib
+              self%psibdry=self%psiqbdry
+              work2=-work2
+           else
+              ! possibly also in case where psi increases from axis
+              self%f=-self%f
+           end if
+        else if (BEQ_OVERRIDE_FTU) then
+           call log_error(m_name,s_name,50,log_info,'override for FTU')
+           ! special for FTU modelling to align current and toroidal field
            ! possibly also in case where psi increases from axis
            self%f=-self%f
         end if
-     else if (BEQ_OVERRIDE_FTU) then
-        call log_error(m_name,s_name,50,log_info,'override for FTU')
-        ! special for FTU modelling to align current and toroidal field
-        ! possibly also in case where psi increases from axis
-        self%f=-self%f
-     end if
      end if
   case(2)
      ! Separating this case enables MAST test deck case to work,
@@ -1323,7 +1327,7 @@ subroutine beq_sense(self,k3d)
 
   !write(*,*) self%n%vacfile
   if ( (k3d==0.AND.self%n%vacfile/='null') .OR. &
- & (k3d==1.AND.self%n%vacfile=='null') ) return
+ &(k3d==1.AND.self%n%vacfile=='null') ) return
   ! sense (R,Z) values
   posang%pos(1)=self%rmin+0.7*(self%rmax-self%rmin)
   posang%pos(2)=0
@@ -1337,7 +1341,7 @@ subroutine beq_sense(self,k3d)
   isleft=sign(1.05_kr8,posang%vec(3)/posang%vec(2))
   if (isleft==1) then
      call log_error(m_name,s_name,1,log_info,'Left-handed helical field UNlike ITER')
-  else 
+  else
      call log_error(m_name,s_name,2,log_info,'Right-handed helical field like ITER')
   end if
 
@@ -1873,8 +1877,8 @@ subroutine beq_writev(self,kchar,kplot)
            ztheta=self%n%thetamin+(j-1)*self%dtheta
            do i=1,self%n%npsi+1
               zpsi=self%n%psimin +(i-1)*self%dpsi
-              call spl2d_eval(self%r,zpsi,ztheta,zr)
-              call spl2d_eval(self%z,zpsi,ztheta,zz)
+              call spl2d_evaln(self%r,zpsi,ztheta,1,zr)
+              call spl2d_evaln(self%z,zpsi,ztheta,2,zz)
               posang%pos(1)=zr ; posang%pos(2)=zz ; posang%pos(3)=zeta
               posang%opt=1 ; posang%units=0
               ! posn to cartesians and output
@@ -1894,10 +1898,10 @@ subroutine beq_writev(self,kchar,kplot)
            ztheta=self%n%thetamin+(j-1)*self%dtheta
            do i=1,self%n%npsi+1
               zpsi=self%n%psimin +(i-1)*self%dpsi
-              call spl2d_eval(self%r,zpsi,ztheta,zr)
-              call spl2d_eval(self%z,zpsi,ztheta,zz)
-              call spl2d_eval(self%dpsidr,zr,zz,zdpdr)
-              call spl2d_eval(self%dpsidz,zr,zz,zdpdz)
+              call spl2d_evaln(self%r,zpsi,ztheta,1,zr)
+              call spl2d_evaln(self%z,zpsi,ztheta,2,zz)
+              call spl2d_evaln(self%dpsidr,zr,zz,1,zdpdr)
+              call spl2d_evaln(self%dpsidz,zr,zz,2,zdpdz)
               posang%pos(1)=zr ; posang%pos(2)=zz ; posang%pos(3)=zeta
               posang%units=0
               ! evaluate I aka f at psi
@@ -2053,8 +2057,8 @@ subroutine beq_dia(self)
      ztheta=self%n%thetamin+(j-1)*self%dtheta
      do i=1,self%n%npsi+1
         zpsi=self%n%psimin +(i-1)*self%dpsi
-        call spl2d_eval(self%r,zpsi,ztheta,zr)
-        call spl2d_eval(self%z,zpsi,ztheta,zz)
+        call spl2d_evaln(self%r,zpsi,ztheta,1,zr)
+        call spl2d_evaln(self%z,zpsi,ztheta,2,zz)
         call spl2d_eval(self%psi,zr,zz,zpsin)
         zpsidiff=zpsin-zpsi
         zthetan=atan2(zz-self%n%zcen,zr-self%n%rcen)
@@ -2873,7 +2877,7 @@ subroutine beq_readcon(selfn,kin)
  &   call log_error(m_name,s_name,10,error_fatal,'search box too small in Z')
      search_z_start=z1
      search_z_end=z2
-   end if
+  end if
 
   !! store values
   selfn%cenopt=beq_cenopt
@@ -3010,15 +3014,15 @@ subroutine beq_psilt(self)
   else if (self%n%psiopt==3) then
      zpsimin=min(self%n%psimin, self%n%psimax)
      zpsimax=max(self%n%psimin, self%n%psimax)
-!S     if (rsig>0) then
-        !  psi increases outward
-        self%n%psimin=zpsimin
-        self%n%psimax=zpsimax
-!S     else
-!S        !  psi decreases outward
-!S        self%n%psimin=zpsimax
-!S        self%n%psimax=zpsimin
-!S     end if
+     !S     if (rsig>0) then
+     !  psi increases outward
+     self%n%psimin=zpsimin
+     self%n%psimax=zpsimax
+     !S     else
+     !S        !  psi decreases outward
+     !S        self%n%psimin=zpsimax
+     !S        self%n%psimax=zpsimin
+     !S     end if
   end if
 
 end subroutine beq_psilt
@@ -3195,8 +3199,8 @@ subroutine beq_psix(self)
            re=self%rmin+(i-1)*self%dr
            zsrsq=(re-self%n%rcen)**2+(ze-self%n%zcen)**2
            if (zsrsq>zsrlt) then
-              call spl2d_eval(self%dpsidr,re,ze,zdpdr)
-              call spl2d_eval(self%dpsidz,re,ze,zdpdz)
+              call spl2d_evaln(self%dpsidr,re,ze,1,zdpdr)
+              call spl2d_evaln(self%dpsidz,re,ze,2,zdpdz)
               if (zdpdr*zdpdz<0.) then
                  zgpsi=zdpdr**2+zdpdz**2
                  if (zgpsi<zgpsimin) then
@@ -3353,6 +3357,9 @@ subroutine beq_bdryrb(self)
   real(kr8) :: zpsi    !<  \f$ \psi \f$
   real(kr8) :: zf    !<   \f$ f(\psi) = RB_T \f$
   real(kr8) :: cylj    !<  current estimated in cylindrical approx.
+  real(kr8) :: zbr    !<  radial field component
+  real(kr8) :: zbz    !<  vertical field component
+  real(kr8) :: zbt    !<  toroidal field component
 
   pick_angle : select case (self%n%bdryopt)
   case(4,5,7,11,14) ! inboard point selected
@@ -3428,8 +3435,8 @@ subroutine beq_bdryrb(self)
      end if
 
      ! check monotone
-     call spl2d_eval(self%dpsidr,re,ze,zdpdr)
-     call spl2d_eval(self%dpsidz,re,ze,zdpdz)
+     call spl2d_evaln(self%dpsidr,re,ze,1,zdpdr)
+     call spl2d_evaln(self%dpsidz,re,ze,2,zdpdz)
      zdpdsr=zdpdr*zcos+zdpdz*zsin
      if(idplset==1) then
         if(zdpdsrl*zdpdsr<=0) then
@@ -3471,9 +3478,9 @@ subroutine beq_bdryrb(self)
   do i=1,iext
      re=self%n%rcen+zsr*zcos
      ze=self%n%zcen+zsr*zsin
-     call spl2d_eval(self%psi,re,ze,zp)
-     call spl2d_eval(self%dpsidr,re,ze,zdpdr)
-     call spl2d_eval(self%dpsidz,re,ze,zdpdz)
+     call spl2d_evaln(self%psi,re,ze,1,zp)
+     call spl2d_evaln(self%dpsidr,re,ze,2,zdpdr)
+     call spl2d_evaln(self%dpsidz,re,ze,2,zdpdz)
      zdpdsr=zdpdr*zcos+zdpdz*zsin
      if(i>1.AND.zdpdsrl*zdpdsr<=0) then
         ! should only be small non-monotone region, try to ignore
@@ -3516,8 +3523,8 @@ subroutine beq_bdryrb(self)
 
   re=self%n%rcen+zsr*zcos
   ze=self%n%zcen+zsr*zsin
-  call spl2d_eval(self%dpsidr,re,ze,zdpdr)
-  call spl2d_eval(self%dpsidz,re,ze,zdpdz)
+  call spl2d_evaln(self%dpsidr,re,ze,1,zdpdr)
+  call spl2d_evaln(self%dpsidz,re,ze,2,zdpdz)
   self%rbdry=re
   self%bpbdry=(1/re)*sqrt( max(0.,(zdpdr**2+zdpdz**2)) )
 
@@ -3533,6 +3540,13 @@ subroutine beq_bdryrb(self)
   call log_value("SMITER-GEOQ btotbdry ",self%btotbdry)
   cylj=abs(zsr*self%bpbdry/2.e-7)
   call log_value("Estimated cylindrical current ",cylj)
+
+  zbr=-(1/re)*zdpdz
+  zbz=(1/re)*zdpdr
+  zbt=zf/re
+  call log_value("radial field component",zbr)
+  call log_value("vertical field component",zbz)
+  call log_value("toroidal field component",zbt)
 
   deallocate(wvextn)
   deallocate(wvext)
@@ -3659,8 +3673,8 @@ subroutine beq_rextrema(self)
         end if
 
         ! check monotone
-        call spl2d_eval(self%dpsidr,re,ze,zdpdr)
-        call spl2d_eval(self%dpsidz,re,ze,zdpdz)
+        call spl2d_evaln(self%dpsidr,re,ze,1,zdpdr)
+        call spl2d_evaln(self%dpsidz,re,ze,2,zdpdz)
         zdpdsr=zdpdr*zcos+zdpdz*zsin
         if(idplset==1) then
            if(zdpdsrl*zdpdsr<=0) then
@@ -3787,9 +3801,9 @@ subroutine beq_rpsi(self)
      do i=1,iext
         re=self%n%rcen+zsr*zcos
         ze=self%n%zcen+zsr*zsin
-        call spl2d_eval(self%psi,re,ze,zp)
-        call spl2d_eval(self%dpsidr,re,ze,zdpdr)
-        call spl2d_eval(self%dpsidz,re,ze,zdpdz)
+        call spl2d_evaln(self%psi,re,ze,1,zp)
+        call spl2d_evaln(self%dpsidr,re,ze,2,zdpdr)
+        call spl2d_evaln(self%dpsidz,re,ze,2,zdpdz)
         zdpdsr=zdpdr*zcos+zdpdz*zsin
         if(i>1.AND.zdpdsrl*zdpdsr<=0) then
            ! should only be small non-monotone region, try to ignore
@@ -3887,10 +3901,10 @@ subroutine beq_rjpsi(self)
      ztheta=self%n%thetamin+(j-1)*self%dtheta
      do i=1,self%n%npsi+1
         zpsi=self%n%psimin +(i-1)*self%dpsi
-        call spl2d_eval(self%r,zpsi,ztheta,zr)
-        call spl2d_eval(self%z,zpsi,ztheta,zz)
-        call spl2d_eval(self%dpsidr,zr,zz,zdpdr)
-        call spl2d_eval(self%dpsidz,zr,zz,zdpdz)
+        call spl2d_evaln(self%r,zpsi,ztheta,1,zr)
+        call spl2d_evaln(self%z,zpsi,ztheta,2,zz)
+        call spl2d_evaln(self%dpsidr,zr,zz,1,zdpdr)
+        call spl2d_evaln(self%dpsidz,zr,zz,2,zdpdz)
         zsrsq=(zr-self%n%rcen)**2+(zz-self%n%zcen)**2
         work2(i,ij)= zrgfac*(zr - self%n%rmove) &
  &      * (zdpdr*(zr-self%n%rcen)+zdpdz*(zz-self%n%zcen))/zsrsq
@@ -3934,9 +3948,9 @@ subroutine beq_rispld(self)
      zz=self%zmin+(j-1)*self%dz
      do i=1,self%mr
         zr=self%rmin +(i-1)*self%dr
-        call spl2d_eval(self%dpsidr,zr,zz,zdpdr)
-        call spl2d_eval(self%dpsidz,zr,zz,zdpdz)
-        call spl2d_eval(self%psi,zr,zz,zpsi)
+        call spl2d_evaln(self%dpsidr,zr,zz,1,zdpdr)
+        call spl2d_evaln(self%dpsidz,zr,zz,2,zdpdz)
+        call spl2d_evaln(self%psi,zr,zz,2,zpsi)
         ! evaluate I aka f at psi
         call spleval(self%f,self%mr,self%psiaxis,self%psiqbdry,zpsi,zf,1)
         workr2(i,j)=-zr*zdpdz/zf
@@ -3997,9 +4011,9 @@ subroutine beq_b(self,posang,kopt)
      call posang_invtfm(posang,0)
      zr=posang%pos(1)
      zz=posang%pos(2)
-     call spl2d_eval(self%dpsidr,zr,zz,zdpdr)
-     call spl2d_eval(self%dpsidz,zr,zz,zdpdz)
-     call spl2d_eval(self%psi,zr,zz,zpsi)
+     call spl2d_evaln(self%dpsidr,zr,zz,1,zdpdr)
+     call spl2d_evaln(self%dpsidz,zr,zz,2,zdpdz)
+     call spl2d_evaln(self%psi,zr,zz,2,zpsi)
      ! evaluate I aka f at psi
      call spleval(self%f,self%mr,self%psiaxis,self%psiqbdry,zpsi,zf,1)
      ! B in toroidal-cyl polars
@@ -4039,8 +4053,8 @@ subroutine beq_b(self,posang,kopt)
         ! calculate vector (RBR,RBZ,BT) at quantised coordinate
         zr=posang%pos(1)
         zz=posang%pos(2)
-        call spl2d_eval(self%dpsidr,zr,zz,zdpdr)
-        call spl2d_eval(self%dpsidz,zr,zz,zdpdz)
+        call spl2d_evaln(self%dpsidr,zr,zz,1,zdpdr)
+        call spl2d_evaln(self%dpsidz,zr,zz,2,zdpdz)
         call spl3d_evalm(self%vacfld,posang%pos,zvecf)
         posang%vec(1)=-zdpdz+zvecf(1)
         posang%vec(2)=zdpdr+zvecf(2)
@@ -4361,8 +4375,8 @@ subroutine beq_psicont(self,pcont,pr,pz)
   zpsi=pcont
   do j=1,self%r%n2p
      ztheta=self%r%pos2(j)
-     call spl2d_eval(self%r,zpsi,ztheta,zrn)
-     call spl2d_eval(self%z,zpsi,ztheta,zzn)
+     call spl2d_evaln(self%r,zpsi,ztheta,1,zrn)
+     call spl2d_evaln(self%z,zpsi,ztheta,2,zzn)
      pr(j)=zrn
      pz(j)=zzn
   end do
@@ -4402,14 +4416,14 @@ subroutine beq_findrzm(self,pxl,pang)
   zpsi=self%psibdry
 
   ztheta=self%r%pos2(ij)
-  call spl2d_eval(self%r,zpsi,ztheta,zr)
-  call spl2d_eval(self%z,zpsi,ztheta,zz)
+  call spl2d_evaln(self%r,zpsi,ztheta,1,zr)
+  call spl2d_evaln(self%z,zpsi,ztheta,2,zz)
   zdotprod=0.
   do j=2,self%r%n2p
      ij=j
      ztheta=self%r%pos2(ij)
-     call spl2d_eval(self%r,zpsi,ztheta,zrn)
-     call spl2d_eval(self%z,zpsi,ztheta,zzn)
+     call spl2d_evaln(self%r,zpsi,ztheta,1,zrn)
+     call spl2d_evaln(self%z,zpsi,ztheta,2,zzn)
      zrdiff=zrn-zr
      zzdiff=zzn-zz
      zdotprodn=zrdiff*zcos+zzdiff*zsin

@@ -1,7 +1,7 @@
 # config file.
 include ../config/config.inc
 
-src =  bsplvn.f  bvalue.f  interu.f  interv.f  tb06a.f  tc01a.f  tg04a.f \
+src =  bsplvn.f bsplwn.f  bvalue.f  interu.f  interv.f  interw.f tb06a.f  tc01a.f  tg04a.f \
 	isnumb.f spleval.f msrect.f lowor.f \
 	isort.f \
 	cfftb1.f cffti1.f passb3.f passb5.f passf2.f passf4.f passf.f zfftf.f \

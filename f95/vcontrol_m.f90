@@ -116,6 +116,9 @@ subroutine vcontrol_read(file,numerics)
   integer(ki4) :: ierr !< error return code
 
   logical :: paneltfm !< apply transform if .TRUE.
+  integer(ki4) :: max_bods_index !< dimension of bods index array
+  integer(ki4) :: max_bods_in_file !< used to generate unique bods numbers over many files
+  logical :: preserve_input_structure !< bods remain distinct
   logical :: extract !< extract objects according to key and limits
   character(len=80) :: extract_key !< key for extraction
   real(kr8), dimension(2) :: plasma_centre !< centre of discharge in \f$ (R,Z) \f$
@@ -128,6 +131,7 @@ subroutine vcontrol_read(file,numerics)
  &option, new_controls, &
  &max_number_of_files, angle_units, &
  &max_number_of_panels,max_number_of_transforms,&
+ &max_bods_index, max_bods_in_file, preserve_input_structure,&
  &number_of_panels,number_of_transforms
 
   !> vtktfm parameters
@@ -139,6 +143,7 @@ subroutine vcontrol_read(file,numerics)
  &max_number_of_panels,max_number_of_transforms,&
  &number_of_panels,number_of_transforms,&
  &paneltfm, extract, extract_key,&
+ &max_bods_index, max_bods_in_file, preserve_input_structure,&
  &plasma_centre, minimum_angle, maximum_angle
 
   !! file names
@@ -158,6 +163,9 @@ subroutine vcontrol_read(file,numerics)
   max_number_of_panels = 1
   max_number_of_files = 1
   max_number_of_transforms = 1
+  max_bods_index = 1000
+  max_bods_in_file = 100
+  preserve_input_structure = .false.
   number_of_panels = 0
   number_of_transforms = 0
   angle_units = 'radians'
@@ -248,7 +256,14 @@ subroutine vcontrol_read(file,numerics)
         numerics%angmax=maximum_angle
      end if
   end if
+  if(max_bods_index<0) &
+ &call log_error(m_name,s_name,18,error_warning,'max size of index must be >=0')
+  if(max_bods_in_file<=0) &
+ &call log_error(m_name,s_name,19,error_fatal,'max number of bodies in file setting must be >0')
   numerics%paneltfm =  paneltfm
+  numerics%maxindx =  max_bods_index
+  numerics%maxbodsf =  max_bods_in_file
+  numerics%preserve =  preserve_input_structure
   numerics%extract  =  extract
   numerics%angles=angle_units(1:6)
   numerics%split=split_file

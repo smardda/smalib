@@ -314,12 +314,9 @@ subroutine control_read(file,numerics,plot)
   call log_error(m_name,s_name,21,error_warning,'Obsolete plot selection feature activated')
   end if
 
-
 end  subroutine control_read
-
 !!---------------------------------------------------------------------
-!! control dengen reading of controls
-
+!> control dengen reading of controls
 subroutine control_dread(file,numerics,plot)
 
   !! arguments
@@ -894,11 +891,11 @@ subroutine control_btree(numerics,kin)
  &tree_type
 
   !! set default btree parameters
-  btree_size=2000000
+  btree_size=2000000 !max_size_tree_array
   btree_sizep=3 !! BSP
-  btree_sizee=1000
+  btree_sizee=1000 !max_size_exten_array)
   btree_sizeh=2
-  btree_sizel=2000000
+  btree_sizel=2000000 ! max_size_list_array
   btree_depth=30
   tree_type=1 !! BSP 1 -BSP 2-octree 3-octree with special top
   tree_ttalg=1 !! for special top: 0 -default 1- use hxyz 2- use nxyz
@@ -933,9 +930,9 @@ subroutine control_btree(numerics,kin)
   if(tree_ttalg<0.OR.tree_ttalg>2) &
  &call log_error(m_name,s_name,7,error_fatal,'tree_ttalg must be >= 0 and <=2')
   if(any(tree_nxyz<1)) &
- &call log_error(m_name,s_name,8,error_fatal,'all tree_nxyz must be > 0')
+ &call log_error(m_name,s_name,9,error_fatal,'all tree_nxyz must be > 0')
   if(any(tree_hxyz<0.)) &
- &call log_error(m_name,s_name,9,error_fatal,'all tree_hxyz must be > 0')
+ &call log_error(m_name,s_name,10,error_fatal,'all tree_hxyz must be > 0')
 
   if (tree_type==1) then
      ! BSP

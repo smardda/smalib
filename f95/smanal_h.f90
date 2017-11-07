@@ -30,11 +30,11 @@ module smanal_h
      integer(ki4) :: nrpams !< number of real parameters
      integer(ki4) :: nipams !< number of integer parameters
      real(kr8), dimension(:,:), allocatable   :: centr !< centroids of bodies
-     real(kr8), dimension(:), allocatable   :: areab !< areas of bodies
+     real(kr4), dimension(:), allocatable   :: areab !< areas of bodies
      real(kr8), dimension(:), allocatable   :: bin !< rekey bins
      integer(ki4) :: inbin !< number of entries in bin
      logical  :: larea !< whether areas of geometrical objects calculated
-     real(kr8), dimension(:), allocatable   :: area !< areas of geometrical objects
+     real(kr4), dimension(:), allocatable   :: area !< areas of geometrical objects
      integer(ki4), dimension(:), allocatable   :: newkey !< new set of keys, e.g. based on position
      real(kr8), dimension(:), allocatable   :: rpar !< general real parameters
      integer(ki4), dimension(:), allocatable   :: npar !< general integer parameters

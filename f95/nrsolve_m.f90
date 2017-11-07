@@ -118,7 +118,7 @@ subroutine nrsolve_spl2dfn(spl2d,dspldr,dspldz,pval,pr,pz,kerr,kopt)
 
   ! loop
   do i=1,maxit
-     call spl2d_eval(spl2d,zr,zz,zp)
+     call spl2d_evaln(spl2d,zr,zz,1,zp)
      zra(i)=zr
      zza(i)=zz
      zpa(i)=zp
@@ -128,8 +128,8 @@ subroutine nrsolve_spl2dfn(spl2d,dspldr,dspldz,pval,pr,pz,kerr,kopt)
         return
      end if
 
-     call spl2d_eval(dspldr,zr,zz,zdpdr)
-     call spl2d_eval(dspldz,zr,zz,zdpdz)
+     call spl2d_evaln(dspldr,zr,zz,2,zdpdr)
+     call spl2d_evaln(dspldz,zr,zz,2,zdpdz)
      zdpsq=zdpdr**2+zdpdz**2
      !D      if (i==1) write(*,*) icall,zdpsq    !D
      if (zdpsq<derepssq) then

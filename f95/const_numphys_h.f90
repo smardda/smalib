@@ -37,5 +37,6 @@ module const_numphys_h
 
   real(kr8) , parameter, public :: const_infty = 1.e+30_kr8 !<  numerical infinity
   real(kr4) , parameter, public :: const_degrad = const_pi/180 !<  degrees to radians conversion factor
+  real(kr8) , parameter, public :: const_r36th = 1.0_kr8/36.0_kr8 !<  spl2d normaliser
 
 end module const_numphys_h

@@ -88,7 +88,7 @@ program magtfm_p
 !--------------------------------------------------------------------------
 !! read  applied field data
 
-  call clock_start(4,'geobjlist_read time')
+  call clock_start(4,'field_data_read time')
   call apb_readmlab(apb,file%magdata)
   call apb_copy(apb,apbsave)
   call apb_checkperiod(apb)
