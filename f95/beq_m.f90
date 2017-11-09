@@ -1144,6 +1144,7 @@ subroutine beq_readana(self,beqan,kfldspec)
      ! possibly also in case where psi increases from axis
      self%f=-self%f
   end if
+  self%psicen=self%psiaxis
 
 end subroutine beq_readana
 !---------------------------------------------------------------------
@@ -1258,6 +1259,7 @@ subroutine beq_init(self,numerics,fmesh)
   ! initialise control structure
   self%n=numerics
   self%fmesh=fmesh
+  self%replasi=.FALSE.
 
   ! set flag for whether psi increases or decreases with minor radius
   !     rsig=sign(1._kr8,self%psiqbdry-self%psiaxis)
@@ -2641,8 +2643,20 @@ subroutine beq_centre(self)
   call log_error(m_name,s_name,1,log_info,'Equil. centre')
   call log_value("SMITER-GEOQ rcen ",self%n%rcen)
   call log_value("SMITER-GEOQ zcen ",self%n%zcen)
-  call log_value("SMITER-GEOQ psicen ",zpp)
+  self%psicen=zpp
+  call log_value("SMITER-GEOQ psicen ",self%psicen)
   call log_value("SMITER-GEOQ psiaxis ",self%psiaxis)
+  if (abs(self%psicen-self%psiaxis)> 0.1*self%psinorm) then
+     call log_error(m_name,s_name,2,error_warning,'Eqdsk value of psi on axis very different from computed')
+     call log_error(m_name,s_name,2,error_warning,'Using geoq computed value psicen')
+     self%replasi=.TRUE.
+     self%psiaxis=self%psicen
+     call log_error(m_name,s_name,2,error_warning,'plasma boundary psi may change')
+     boundary_type: select case (self%n%bdryopt)
+     case(2,6,7,10,11,12)
+        call log_error(m_name,s_name,3,error_warning,'beq_bdryopt may not work as expected')
+     end select boundary_type
+  end if
 
 end subroutine beq_centre
 !---------------------------------------------------------------------
@@ -3521,6 +3535,11 @@ subroutine beq_bdryrb(self)
      call log_error(m_name,s_name,30,error_warning,'failure to improve r value')
   end if
 
+  ! check for replacement
+  if (self%replasi) then
+     call log_value('psi plasma boundary replaced with',self%psibdry)
+     self%psiqbdry=self%psibdry
+  end if
   re=self%n%rcen+zsr*zcos
   ze=self%n%zcen+zsr*zsin
   call spl2d_evaln(self%dpsidr,re,ze,1,zdpdr)
@@ -3532,7 +3551,7 @@ subroutine beq_bdryrb(self)
   call spleval(self%f,self%mr,self%psiaxis,self%psiqbdry,zpsi,zf,1)
   self%btotbdry=sqrt( max(0.,(self%bpbdry**2+(zf/re)**2)) )
 
-  call log_error(m_name,s_name,1,log_info,'Reference boundary values')
+  call log_error(m_name,s_name,2,log_info,'Reference boundary values')
   call log_value("SMITER-GEOQ psibdry ",self%psibdry)
   call log_value("SMITER-GEOQ rbdry ",self%rbdry)
   call log_value("SMITER-GEOQ zbdry ",ze)

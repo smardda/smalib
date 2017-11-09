@@ -174,6 +174,8 @@ module beq_h
      real(kr8), dimension(:), allocatable :: srmin !< \f$ r_{\min}(\theta) \f$, set of \f$ r \f$  corresponding to \f$ \psi_{\min} \f$
      real(kr8), dimension(:), allocatable :: srmax !< &  \f$ r_{\max}(\theta) \f$, set of \f$ r \f$  corresponding to \f$ \psi_{\max} \f$
      real(kr8) :: ivac !< \f$ I \f$ for vacuum field
+     real(kr8) :: psicen !<  Computed \f$ \psi \f$ on axis, compare PSIAXIS from eqdsk
+     logical :: replasi !< If .TRUE. geoq is replacing psiaxis and psiqbdry from EQDSK with its estimates
      type(spl3d_t)  :: vacfld  !< vacuum field structure
      type(fmesh_t)  :: fmesh  !< field mesh for calculation in duct coordinates
   end type beq_t
