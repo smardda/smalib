@@ -1996,14 +1996,14 @@ subroutine beq_writev(self,kchar,kplot)
      ztmin=self%n%thetamin+(self%ntmin-1)*self%dtheta
      write(kplot,'(''DATASET STRUCTURED_POINTS'')')
      write(kplot,'(''DIMENSIONS '',I8,I8,I8)') self%n%npsi+1,intheta,BEQ_MZETA
-     write(kplot,'(''ORIGIN '','//cfmt1v) self%n%psimin,ztmin,0.
+     write(kplot,'(''ORIGIN '','//cfmt1v) self%n%psimin,ztmin,-const_pid
      write(kplot,'(''SPACING '','//cfmt1v) self%dpsi,self%dtheta,beq_dzeta
      write(kplot,'(''POINT_DATA '',I8)') (self%n%npsi+1)*intheta*BEQ_MZETA
      write(kplot,'(''VECTORS Bpt float'')')
 
      zc1=0
      do k=1,BEQ_MZETA
-        zeta=(k-1)*beq_dzeta
+        zeta=(k-1)*beq_dzeta-const_pid
         do j=self%ntmin,self%ntmax
            ztheta=self%n%thetamin+(j-1)*self%dtheta
            do i=1,self%n%npsi+1

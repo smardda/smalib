@@ -391,6 +391,10 @@ subroutine powelt_move(self,powcal,gshadl,btree)
   type(posvecl_t) :: zpos1   !< one position data
   type(posvecl_t) :: zpos2   !< one position data
   type(posveclis_t) :: rposl   !< list of position data
+  real(kr8), dimension(2) :: zk !< sector number
+  type(posnode_t) :: xm !< local variable
+  real(kr8) :: zzeta !< value of \f$ \zeta \f$
+  real(kr8) :: zpsim !< value of \f$ \psi \f$ at field line end (diagnostic)
   logical :: lcoll   !< collision on path
 
   ! find element number
@@ -574,6 +578,39 @@ subroutine powelt_move(self,powcal,gshadl,btree)
      ! close file and deallocate
      deallocate(wposl%pos)
      close(nplot)
+  end if
+
+  if (nobjhit==-2.AND.ibacktr==ipback.AND.powcal%powres%flinends) then
+     ! write first and last points in Cartesian coordinates
+     ! first convert track points
+     allocate(wposl%pos(3), stat=status)
+     call log_alloc_check(m_name,s_name,11,status)
+     wposl%pos(1)%posvec=powcal%odes%vecp%pos(1)%posvec
+     zk(1)=powcal%odes%posk(1)
+     wposl%pos(2)%posvec=xm%posvec
+     zk(2)=powcal%odes%posk(ip)
+     do l=1,2
+        ! dequantise
+        zpos1%posvec=wposl%pos(l)%posvec
+        zpos2=position_invqtfm(zpos1,powcal%powres%geobjl%quantfm)
+        ! convert xi to zeta
+        zzeta=(zpos2%posvec(3)+2*const_pid*zk(l))/powcal%powres%beq%nzets
+        zpos2%posvec(3)=zzeta
+        zposang%pos=zpos2%posvec
+        zposang%opt=1 ; zposang%units=0
+        call posang_tfm(zposang,-3)
+        wposl%pos(l)%posvec=zposang%pos
+     end do
+     wposl%np=3
+     ! open file to record Cartesian track and write
+     wposl%pos(3)%posvec(1)=self%ie
+     wposl%pos(3)%posvec(2)=self%je
+     wposl%pos(3)%posvec(3)=zpsim
+     do l=1,3
+        call position_writev(wposl%pos(l),powcal%powres%nflends)
+     end do
+     ! deallocate
+     deallocate(wposl%pos)
   end if
 
   if (nobjhit<0.AND.ibacktr<ipback) then
