@@ -20,7 +20,8 @@ module position_m
  &position_readv, & !< read in visualisation format
  &position_writev, & !< write in visualisation format
  &position_readcon, & !< read position control data
- &position_unitfm, & !> set identity position transform
+ &position_unitfm, & !< set identity position transform
+ &position_unitfmq, & !< set identity quantising position transform
  &position_readtfm, & !< read position control data
  &position_tfmquery, & !< interrogate position control data
  &position_writetfm, & !< write position control data
@@ -479,6 +480,22 @@ subroutine position_unitfm(tfmdata)
   tfmdata%ntfm=1
 
 end subroutine position_unitfm
+!---------------------------------------------------------------------
+!> set identity quantising position transform
+subroutine position_unitfmq(tfmdata)
+
+  !! arguments
+  type(quantfm_t), intent(out) :: tfmdata   !< position transform numeric controls
+
+  !! local
+  character(*), parameter :: s_name='position_unitfmq' !< subroutine name
+
+  tfmdata%hmin=1
+  tfmdata%rhmin=1
+  tfmdata%offvec=0
+  tfmdata%nqtfm=1
+
+end subroutine position_unitfmq
 !---------------------------------------------------------------------
 !> get position control data
 subroutine position_tfmquery(tfmdata,kchar,object)
