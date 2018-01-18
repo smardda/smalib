@@ -926,11 +926,12 @@ subroutine geobjlist_bin(self,btree)
 end subroutine geobjlist_bin
 !---------------------------------------------------------------------
 !> control dynamic sorting of  coordinates into bins
-subroutine geobjlist_bindyn(self,dbtree,kcall,bbox)
+subroutine geobjlist_bindyn(self,dbtree,kcall,qtfmdata,bbox)
   !! arguments
   type(geobjlist_t), intent(inout) :: self !< geobj list data
   type(dbtree_t), intent(inout) :: dbtree !< dbtree data
   integer(ki4), intent(in) :: kcall  !<  0 - initialise
+  type(quantfm_t), intent(in) :: qtfmdata   !< position transform (usually identity)
   real(kr8), dimension(3,2), intent(in), optional :: bbox !< bounding box corners
 
   !! local
@@ -956,7 +957,7 @@ subroutine geobjlist_bindyn(self,dbtree,kcall,bbox)
      end if
 
      ! initialise tree
-     call dbtree_init(dbtree,zbbox)
+     call dbtree_init(dbtree,zbbox,qtfmdata)
 
   end if
 

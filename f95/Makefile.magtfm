@@ -131,5 +131,4 @@ mcontrol_m.f90 : position_m.mod
 moutfile_m.f90 : const_kind_m.mod
 moutfile_m.f90 : log_m.mod
 moutfile_m.f90 : mcontrol_h.mod
-moutfile_m.f90 : mcontrol_m.mod
 moutfile_m.f90 : date_time_m.mod

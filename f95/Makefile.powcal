@@ -345,7 +345,6 @@ poutfile_m.f90 : powcal_m.mod
 moutfile_m.f90 : const_kind_m.mod
 moutfile_m.f90 : log_m.mod
 moutfile_m.f90 : mcontrol_h.mod
-moutfile_m.f90 : mcontrol_m.mod
 moutfile_m.f90 : date_time_m.mod
 vfile_m.f90 : const_kind_m.mod
 vfile_m.f90 : log_m.mod
