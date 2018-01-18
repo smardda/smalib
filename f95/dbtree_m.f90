@@ -175,7 +175,7 @@ subroutine dbtree_readcon(selfn,channel)
   !! 3. multi-octree (octree with special root node)
   tree_type=1
   type_tree_algorithm=1
-  splitting_algorithm=3 !< most symmetric split (1 is least)
+  splitting_algorithm=0
   limit_geobj_in_bin=20
   type_list_structure=0
   top_tree_children=(/2,2,2/) !< for special top octree default
@@ -230,7 +230,7 @@ subroutine dbtree_readcon(selfn,channel)
   if(type_tree_algorithm<0.OR.type_tree_algorithm>2) &
  &call log_error(m_name,s_name,7,error_fatal,'type_tree_algorithm must be >= 0 and <=2')
   if(splitting_algorithm<0.OR.splitting_algorithm>3) &
- &call log_error(m_name,s_name,10,error_fatal,'splitting_algorithm must be >= 1 and <=3')
+ &call log_error(m_name,s_name,10,error_fatal,'splitting_algorithm must be >= 0 and <=3')
   if(limit_geobj_in_bin<1) &
  &call log_error(m_name,s_name,11,error_fatal,'limit_geobj_in_bin must be > 0')
   if(any(top_tree_children<1)) &
@@ -1949,7 +1949,7 @@ subroutine ordersplit(kna,kord)
   integer(ki4) :: idiscp  !< discrepancy in split
   integer(ki4) :: idiscpmax  !< max discrepancy in split
   integer(ki4) :: idiscpmin  !< min discrepancy in split
-  integer(ki4), dimension(3) :: isuma  !< sum over lower boces in direction of index
+  integer(ki4), dimension(3) :: isuma  !< sum over lower boxes in direction of index
   integer(ki4) :: jl  !< local loop
 
   isumh=sum(kna(1:8))/2
