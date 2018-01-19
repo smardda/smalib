@@ -1,4 +1,4 @@
-glecevmodule powelt_m
+module powelt_m
   
   use const_kind_m
   use const_numphys_h
@@ -354,7 +354,7 @@ subroutine powelt_dep(self,powcal,gshadl)
      powcal%powres%pmask(inpow)=nint(sign(1._kr4,zpow))
      powcal%powres%psista(inpow)=zpsi
      if (nint(sign(1._kr4,zpow)) > 0) then
-        powcal%powres%angle(inpow) = 90 - angleVec(zb,znorma
+        powcal%powres%angle(inpow) = 90 - angleVec(zb,znormal)
      else
         powcal%powres%angle(inpow) = angleVec(zb,znormal) - 90
      end if
