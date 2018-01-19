@@ -353,10 +353,10 @@ subroutine powelt_dep(self,powcal,gshadl)
      powcal%powres%pow(inpow)=zpow
      powcal%powres%pmask(inpow)=nint(sign(1._kr4,zpow))
      powcal%powres%psista(inpow)=zpsi
-     if (angleVec(zb,znormal) > 90) then
+     if (nint(sign(1._kr4,zpow)) > 0) then
         powcal%powres%angle(inpow) = angleVec(zb,znormal) - 90
      else
-        powcal%powres%angle(inpow) = angleVec(zb,znormal)
+        powcal%powres%angle(inpow) = 90 - angleVec(zb,znormal)
      end if
      
      !        write(*,*) inpow, zpow, zbdotn, zpsi
