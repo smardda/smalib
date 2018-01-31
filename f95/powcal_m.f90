@@ -146,9 +146,10 @@ subroutine powcal_init(self,numerics,plot,gnumerics)
      ! set size of psista array
      allocate(self%powres%psista(self%powres%geobjl%ng), stat=status)
      allocate(self%powres%angle(self%powres%geobjl%ng), stat=status)
+     allocate(self%powres%zbdotnvec(self%powres%geobjl%ng), stat=status)
      call log_alloc_check(m_name,s_name,4,status)
      self%powres%psista=0
-     self%powres%angle = 0
+     self%powres%zbdotnvec = 0
   case default
   end select calcn_type
   ! set size and zero of mask array
@@ -776,6 +777,9 @@ subroutine powcal_writev(self,kchar,kplot)
      if (allocated(self%powres%angle)) then
         call vfile_rscalarwrite(self%powres%angle,self%powres%geobjl%ng,'angle','CELL',kplot,0)
      end if
+     if (allocated(self%powres%zbdotnvec)) then
+        call vfile_rscalarwrite(self%powres%zbdotnvec,self%powres%geobjl%ng,'zbdotn','CELL',kplot,0)
+     end if
 
      call vfile_iscalarwrite(self%powres%pmask,self%powres%geobjl%ng,'Msign','CELL',kplot,0)
      if (infilelevel>self%n%nlevel) then
@@ -975,6 +979,7 @@ subroutine powcal_delete(self)
   case('afws','local','msus','global')
      deallocate(self%powres%psista)
      deallocate(self%powres%angle)
+     deallocate(self%powres%zbdotnvec)
   case default
   end select calcn_type
 
