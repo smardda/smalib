@@ -344,9 +344,9 @@ subroutine posang_invtfmlis(self,kunits,kzetp)
 
   !! transform list of positions as posangs
   do j=1,self%np
-     zposang%pos = self%pos(j)%posvec ; zposang%opt = 0 ; zposang%units = 0 ! millimetres, cartesians
-     call posang_invtfm(zposang,kunits)
+     zposang%pos = self%pos(j)%posvec ; zposang%opt = 0 ; zposang%units = -3 ! millimetres, cartesians
      zposang%pos(3) = zposang%pos(3)*kzetp
+     call posang_invtfm(zposang,kunits)
      self%pos(j)%posvec=zposang%pos
   end do
 
