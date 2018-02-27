@@ -3380,7 +3380,14 @@ subroutine beq_bdryrb(self)
      ztheta=const_pid
   case(8,9,10,12,15) ! outboard point selected
      ztheta=0.0_kr8
-  case default ! do nothing
+  case(1,3,13)
+     ! check for replacement
+     if (self%replasi) then
+        call log_value('psi plasma boundary replaced with',self%psibdry)
+        self%psiqbdry=self%psibdry
+     end if
+     return
+  case default ! do nothing (assuming psiqbdry OK in eqdsk)
      return
   end select pick_angle
 
