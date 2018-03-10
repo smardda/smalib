@@ -1616,6 +1616,8 @@ subroutine geobjlist_paneltfm(self,bods,numerics)
   do j=1,self%ng
      !w write(*,*)'j=',j !w
      ibod=bods%list(j)
+     ! object may have no associated body
+     if (ibod==0) cycle
 !dbgw     iibod=ibod !dbgw
      if (bods%nindx>0) ibod=bods%indx(ibod)
 !dbgw     write(110,*) j,iibod,ibod !dbgw
@@ -1773,6 +1775,8 @@ subroutine geobjlist_paneltfm(self,bods,numerics)
   do j=1,self%ng
 
      ibod=bods%list(j)
+     ! object may have no associated body
+     if (ibod==0) cycle
 !dbgw     iibod=ibod !dbgw
      if (bods%nindx>0) ibod=bods%indx(ibod)
 !dbgw     write(110,*) j,iibod,ibod !dbgw

@@ -70,13 +70,22 @@ subroutine smanal_read(self,file,numerics)
      call geobjlist_centroids(self%geobjl,self%key,self%dict,self%ndict,self%centr)
   end if
 
-  !! scalar typically pow
-  igeobjl%ngtype=2
-  call geobjlist_read(igeobjl,file%vtk,iched)
-  ninscal=0
-  iopt=1
-  call vfile_dscalarread(self%scal,self%nscal,file%vtk,numerics%namescal,ninscal,iopt)
-  call geobjlist_delete(igeobjl)
+  !dbg write(*,*) numerics%namekey, numerics%namescal !dbg
+  if (trim(adjustl(numerics%namekey))==trim(adjustl(numerics%namescal))) then
+  !! scalar is in first file, ie. Body or Surf
+     self%nscal=self%nkey
+     allocate(self%scal(self%nscal),stat=status)
+     call log_alloc_check(m_name,s_name,1,status)
+     self%scal=self%key
+   else
+     !! scalar typically pow
+     igeobjl%ngtype=2
+     call geobjlist_read(igeobjl,file%vtk,iched)
+     ninscal=0
+     iopt=1
+     call vfile_dscalarread(self%scal,self%nscal,file%vtk,numerics%namescal,ninscal,iopt)
+     call geobjlist_delete(igeobjl)
+  end if
 
   self%n=numerics
 

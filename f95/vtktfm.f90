@@ -64,6 +64,8 @@ program vtktfm_p
   integer(ki4):: iopt=1 !< option for bodies
   integer(ki4):: icall !< call number for bods_cumulate2
   integer(ki4):: j !< loop variable
+!dbgw  integer(ki4):: ii !< loop variable !dbgw
+!dbgw  integer(ki4):: ij !< loop variable !dbgw
 !--------------------------------------------------------------------------
 !! initialise timing
 
@@ -104,14 +106,14 @@ program vtktfm_p
 
   call clock_start(4,'geobjlist_read time')
   geobjl%ngtype=2
-! write(*,*) "fn,iopt=",file%nvtkdata, iopt
+!dbgw  write(*,*) "fn,iopt=",file%nvtkdata, iopt  !dbgw
   if (file%nvtkdata==1) then
 ! just one file with Body data
      call geobjlist_read(geobjl,file%vtkdata(1),iched)
-!     write(*,*) 'first',(geobjl%nodl(j),j=1,20)
+!dbgw     write(*,*) 'first',(geobjl%nodl(j),j=1,20) !dbgw
      nin=0
      call vfile_iscalarread(bods%list,nscal,file%vtkdata(1),numerics%name,nin,iopt) !W
-     !write(*,*) "fn,iopt=",file%nvtkdata, iopt
+!dbgw  write(*,*) "fn,iopt=",file%nvtkdata, iopt !dbgw
      if (iopt==0) then
         numerics%npans=maxval(bods%list)
 ! read data OK, but may still suppress
@@ -139,7 +141,7 @@ program vtktfm_p
         call geobjlist_read(igeobjl,file%vtkdata(j),iched)
         nin=0
         call vfile_iscalarread(ibods,nscal,file%vtkdata(j),numerics%name,nin,iopt) !W
-!     write(*,*) 'first',(geobjl%nodl(j),j=1,20)
+!dbgw     write(*,*) 'second',(geobjl%nodl(ij),ij=1,20)  !dbgw
         call geobjlist_cumulate(geobjl,igeobjl,cpstart,file%vtkcopies(j),iopt)
         call bods_cumulate2(bods,ibods,igeobjl,j,cpstart,file%vtkcopies(j),icall)
         cpstart=1
@@ -155,7 +157,7 @@ program vtktfm_p
      do j=1,file%nvtkdata
         igeobjl%ngtype=2
         call geobjlist_read(igeobjl,file%vtkdata(j),iched)
-!     write(*,*) 'first',(geobjl%nodl(j),j=1,20)
+!dbgw     write(*,*) 'third',(geobjl%nodl(ij),ij=1,20)  !dbgw
         call geobjlist_cumulate(geobjl,igeobjl,cpstart,file%vtkcopies(j),iopt)
         call bods_cumulate(bods,igeobjl,j,cpstart,file%vtkcopies(j),0)
         cpstart=1
@@ -170,8 +172,9 @@ program vtktfm_p
   call clock_start(6,'position transform time')
 !     line below needed for debugging version to run
 !  write(*,*) 'this output helps gfortran sometimes',(geobjl%nodl(j),j=1,2)
-!     write(*,*) 'second',((numerics%panbod(i,j),i=1,2),j=1,9)
+!dbgw     write(*,*) 'fourth',((numerics%panbod(ii,ij),ii=1,2),ij=1,9)  !dbgw
   if (numerics%paneltfm) then
+!dbgw write(*,*) 'caling paneltfm' !dbgw
      call geobjlist_paneltfm(geobjl,bods,numerics)
   end if
   if (numerics%extract) then
@@ -187,7 +190,7 @@ program vtktfm_p
      call bods_write(bods,geobjl,fileroot,'none',numerics%name,1)
   else
      call vfile_init(file%vtkout,iched,nplot)
-!     write(*,*) 'iched=',iched
+!dbgw     write(*,*) 'iched=',iched  !dbgw
      call geobjlist_writev(geobjl,'geometry',nplot)
      call vfile_iscalarwrite(bods%list,bods%nbod,numerics%name,'CELL',nplot,1)
      call vfile_close
