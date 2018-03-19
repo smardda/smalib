@@ -356,7 +356,8 @@ subroutine beq_readequil(self,infile,numerics)
   character(len=15) :: cfmtdh !< fixed format for header
   character(len=15) :: cfmtd !< fixed format for header
   logical, parameter :: debug=.TRUE. !< flag for e16.9 output
-  logical, parameter :: opbdry=.FALSE. !< flag for o/p of boundary and limiter data
+  logical, parameter :: OPBDRY=.TRUE. !< flag for o/p of boundary and limiter data
+  logical, parameter :: SKIPB=.TRUE. !< do not read B cpts from file
   logical :: unitused !< flag to test unit is available
   logical :: needfixup=.FALSE. !< flag special SMITER fix up
   integer(ki4) :: istatus   !< inner status variable
@@ -710,7 +711,7 @@ subroutine beq_readequil(self,infile,numerics)
   if(status/=0) then
      call log_error(m_name,s_name,54,error_fatal,'Error reading boundary data')
   end if
-  if (opbdry) then
+  if (OPBDRY) then
      write(200,*) nbbbs
      do i=1,nbbbs
         write(200,*) workr1(i),workz1(i)
@@ -732,7 +733,7 @@ subroutine beq_readequil(self,infile,numerics)
   if(status/=0) then
      call log_error(m_name,s_name,57,error_fatal,'Error reading limiter data')
   end if
-  if (opbdry) then
+  if (OPBDRY) then
      write(201,*) limitr
      do i=1,limitr
         write(201,*) workr1(i),workz1(i)
@@ -744,7 +745,8 @@ subroutine beq_readequil(self,infile,numerics)
   ! error indicates not present
   !coil data
   read(iin,*,iostat=status) ncoil
-  beq_nobinq=(status/=0)
+  ! optionally skip B in file
+  beq_nobinq=(status/=0).OR.SKIPB
   if(beq_nobinq) then
      call log_error(m_name,s_name,60,error_warning,'Error reading ncoil')
      call log_value("Giving up on EQDSK for B values, status",status)
