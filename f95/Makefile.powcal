@@ -72,6 +72,8 @@ MODULES=$(SOURCES:.f90=.mod)
 
 OBJECTS=$(SOURCES:.f90=.o)
 
+F90 = mpif90
+
 
 $(PROG): $(OBJECTS) 
 	$(F90) $(F90FLAGS) -o $(PROG) $(OBJECTS)  $(LIBS)

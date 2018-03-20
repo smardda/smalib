@@ -25,6 +25,7 @@ module powcal_m
   use termplane_m
   use edgprof_h
   use edgprof_m
+  use mpi
 
   implicit none
   private
@@ -561,6 +562,10 @@ subroutine powcal_move(self,gshadl,btree)
   character(*), parameter :: s_name='powcal_move' !< subroutine name
   type(powelt_t) :: zelt   !< power element
 
+  INTEGER rank, error, processes
+  call MPI_Comm_size (MPI_COMM_WORLD, processes, error)
+  call MPI_Comm_rank(MPI_COMM_WORLD, rank, error)
+
   ! check for axisymmetric
   if (self%powres%beq%n%vacfile=='null') then
      if (self%powres%beq%n%mrip/=0) then
@@ -578,7 +583,8 @@ subroutine powcal_move(self,gshadl,btree)
         ! axisymmetric (no ripple field)
         field_type: select case (self%powres%beq%n%fldspec)
         case (1) ! should only be for caltype='local', no termplane
-           do i=1,self%powres%npowe
+           print *, 'MPIDEBUG 0:', self%powres%npowe
+           do i=1+rank,self%powres%npowe,processes
               zelt%ie=i
               do j=imlevel,inlevel
                  zelt%je=j

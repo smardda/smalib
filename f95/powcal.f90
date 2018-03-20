@@ -62,6 +62,8 @@ program powcal_p
   use odes_m
   use stack_m
 
+  use mpi
+
   implicit none
 
 ! Local variables
@@ -83,6 +85,9 @@ program powcal_p
   integer(ki4):: ifldspec !< field specification
   real(kr8):: zivac !< value of I in field file
   real(kr8):: zfac !< ratio of I in different field files
+
+  integer error
+  call MPI_Init ( error )
 !--------------------------------------------------------------------------
 !! initialise timing
 
@@ -205,6 +210,7 @@ program powcal_p
   call powcal_refine(powcal,gshadl,btree)
   call clock_stop(8)
 !--------------------------------------------------------------------------
+if (.false.) then
 ! field line ends
   if (powcal%powres%flinends) then
      call gfile_close
@@ -248,6 +254,7 @@ program powcal_p
   call poutfile_write(powcal,timestamp)
   call poutfile_close
   call clock_stop(30)
+end if
 !--------------------------------------------------------------------------
 !! cleanup and closedown
 !      if (powcal%powres%n%nanalau==1) then
@@ -264,5 +271,6 @@ program powcal_p
   call log_close
   call clock_delete
 !--------------------------------------------------------------------------
+  call MPI_Finalize ( error )
 
 end program powcal_p

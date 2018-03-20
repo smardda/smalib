@@ -2,6 +2,7 @@ module log_m
 
   use const_kind_m
   use date_time_m
+  use mpi
 
   implicit none
   private
@@ -59,6 +60,9 @@ subroutine log_init(fileroot,timestamp)
   logical :: unitused !< flag to test unit is available
   integer(ki4) :: ilen  !< length of string
 
+  integer rank, error
+  character(5)  :: log_id
+
   !! initialise counters
   errorno=0
   seriouserrors=0
@@ -73,6 +77,10 @@ subroutine log_init(fileroot,timestamp)
   logfile=fileroot(1:ilen)//'.log'
   ! and reset file root
   fileroot=logfile(1:ilen)
+
+  call MPI_Comm_Rank(MPI_COMM_WORLD, rank, error)
+  write(log_id, '(I5.5)'), rank
+  logfile = trim(logfile)//'-'//trim(log_id)
 
   !! get file unit
   do i=99,1,-1
