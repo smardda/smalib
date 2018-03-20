@@ -42,6 +42,7 @@ module powres_h
      real(kr4), dimension(:), allocatable :: psista !< \f$ \psi \f$ at start of fieldline
      !-----------------
      real(kr4), dimension(:), allocatable :: angle
+     real(kr4), dimension(:), allocatable :: zbdotnvec
      !-----------------
      type(prnumerics_t) :: n !< control  parameters
      real(kr8) :: psimin !< minimum value of \f$ \psi \f$ for interpolation

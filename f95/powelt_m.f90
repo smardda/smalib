@@ -94,8 +94,11 @@ module powelt_m
 
   !angleVec
   real, external :: angleVec
-          real :: num
-          integer :: igor
+  real :: num
+  integer :: igor
+
+  !write to file
+  integer, parameter :: out_unit = 20
     
   contains
 !---------------------------------------------------------------------
@@ -350,13 +353,21 @@ subroutine powelt_dep(self,powcal,gshadl)
      ! psibdry is not quantised
      zpsid=zpsi-powcal%powres%beq%psibdry
      zpow=zbdotn*edgprof_fn(powcal%edgprof,zpsid)
+     print *, "psibdry",powcal%powres%beq%psibdry
+     print *, "zpsid",zpsid
+     print *, "zbdotn",zbdotn
+     !open(unit=out_unit,file="results.txt",action="write",position="")
+     !write(out_unit,*) zpsid," ",zbdotn
+     !close(out_unit)
      powcal%powres%pow(inpow)=zpow
      powcal%powres%pmask(inpow)=nint(sign(1._kr4,zpow))
      powcal%powres%psista(inpow)=zpsi
-     if (angleVec(zb,znormal) > 90) then
-        powcal%powres%angle(inpow) = angleVec(zb,znormal) - 90
+     powcal%powres%zbdotnvec(inpow)=zbdotn
+     !powcal%powres%angle(inpow) =zbdotn
+     if (nint(sign(1._kr4,zpow)) > 0) then
+        powcal%powres%angle(inpow) = 90 - angleVec(zb,znormal)
      else
-        powcal%powres%angle(inpow) = angleVec(zb,znormal)
+        powcal%powres%angle(inpow) = angleVec(zb,znormal) - 90
      end if
      
      !        write(*,*) inpow, zpow, zbdotn, zpsi
