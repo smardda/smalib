@@ -562,7 +562,9 @@ subroutine powcal_move(self,gshadl,btree)
   character(*), parameter :: s_name='powcal_move' !< subroutine name
   type(powelt_t) :: zelt   !< power element
 
-  INTEGER rank, error, processes
+  INTEGER rank, error, processes, request, mpi_status(MPI_STATUS_SIZE)
+  INTEGER expected_number_of_elements !< to receive in rank 0
+  INTEGER k !< counter for elements to be send
   call MPI_Comm_size (MPI_COMM_WORLD, processes, error)
   call MPI_Comm_rank(MPI_COMM_WORLD, rank, error)
 
@@ -590,6 +592,45 @@ subroutine powcal_move(self,gshadl,btree)
                  zelt%je=j
                  call powelt_move(zelt,self,gshadl,btree)
               end do
+              if (rank .eq. 0) then
+                 if (self%powres%npowe - i .ge. processes) then
+                    expected_number_of_elements = processes - 1
+                 else
+                    expected_number_of_elements = self%powres%npowe - i
+                 end if
+                 do k=1, expected_number_of_elements
+                    call MPI_IRecv(self%powres%pow(i+k), 1, MPI_REAL, &
+                         & k, 111, MPI_COMM_WORLD, request, error)
+                    call MPI_IRecv(self%powres%pmask(i+k), 1, MPI_INTEGER, &
+                         & k, 111, MPI_COMM_WORLD, request, error)
+                    call MPI_IRecv(self%powres%pows(i+k), 1, MPI_REAL, &
+                         & k, 111, MPI_COMM_WORLD, request, error)
+                    call MPI_IRecv(self%powres%powa(i+k), 1, MPI_REAL, &
+                         & k, 111, MPI_COMM_WORLD, request, error)
+                    call MPI_IRecv(self%powres%psista(i+k), 1, MPI_REAL, &
+                         & k, 111, MPI_COMM_WORLD, request, error)
+                    call MPI_IRecv(self%powres%angle(i+k), 1, MPI_REAL, &
+                         & k, 111, MPI_COMM_WORLD, request, error)
+                    call MPI_IRecv(self%powres%zbdotnvec(i+k), 1, MPI_REAL, &
+                         & k, 111, MPI_COMM_WORLD, request, error)
+                 end do
+              else
+                 call MPI_ISend(self%powres%pow(i), 1, MPI_REAL, &
+                      & 0, 111, MPI_COMM_WORLD, request, error)
+                 call MPI_ISend(self%powres%pmask(i), 1, MPI_INTEGER, &
+                      & 0, 111, MPI_COMM_WORLD, request, error)
+                 call MPI_ISend(self%powres%pows(i), 1, MPI_REAL, &
+                      & 0, 111, MPI_COMM_WORLD, request, error)
+                 call MPI_ISend(self%powres%powa(i), 1, MPI_REAL, &
+                      & 0, 111, MPI_COMM_WORLD, request, error)
+                 call MPI_ISend(self%powres%psista(i), 1, MPI_REAL, &
+                      & 0, 111, MPI_COMM_WORLD, request, error)
+                 call MPI_ISend(self%powres%angle(i), 1, MPI_REAL, &
+                      & 0, 111, MPI_COMM_WORLD, request, error)
+                 call MPI_ISend(self%powres%zbdotnvec(i), 1, MPI_REAL, &
+                      & 0, 111, MPI_COMM_WORLD, request, error)
+              end if
+              call MPI_Barrier(MPI_COMM_WORLD, error)
            end do
         case default ! should only be fldspec=3, all caltypes with termplane
            calcn_type: select case (self%n%caltype)

@@ -86,7 +86,7 @@ program powcal_p
   real(kr8):: zivac !< value of I in field file
   real(kr8):: zfac !< ratio of I in different field files
 
-  integer error
+  integer error, rank
   call MPI_Init ( error )
 !--------------------------------------------------------------------------
 !! initialise timing
@@ -210,7 +210,9 @@ program powcal_p
   call powcal_refine(powcal,gshadl,btree)
   call clock_stop(8)
 !--------------------------------------------------------------------------
-if (.false.) then
+  call MPI_Comm_rank(MPI_COMM_WORLD, rank, error)
+
+if (1 .eq. 0) then
 ! field line ends
   if (powcal%powres%flinends) then
      call gfile_close
