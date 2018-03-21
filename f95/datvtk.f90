@@ -162,6 +162,8 @@ program datvtk_p
   transform_type: select case(optarg(2:2))
   case('o')
      call geobjlist_orientri(geobjl)
+  case('f')
+     call geobjlist_fliptri(geobjl)
   case('s')
      call geobjlist_shelltets(geobjl,geobj2)
      call geobjlist_delete(geobjl)

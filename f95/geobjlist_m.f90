@@ -54,6 +54,7 @@ module geobjlist_m
   geobjlist_iinit,  & !< initialise geobjlist from internal data
   geobjlist_ptcompress,  & !< compress points
   geobjlist_orientri,  & !< orient triangles consistently
+  geobjlist_fliptri, & !< flip orientation of triangles
   geobjlist_shelltets, & !< shell set of tetrahedra
   geobjlist_querynode, &  !< analyse node density
   geobjlist_copy, &  !< copy geobjlist to another
@@ -3225,6 +3226,33 @@ subroutine geobjlist_orientri(self)
   deallocate(imark)
 
 end subroutine geobjlist_orientri
+!---------------------------------------------------------------------
+!> flip orientation of triangles
+subroutine geobjlist_fliptri(self)
+  !! arguments
+  type(geobjlist_t), intent(inout) :: self !< geobj list data
+
+  !! local
+  character(*), parameter :: s_name='geobjlist_fliptri' !< subroutine name
+  integer(ki4) :: ip !< point number
+  integer(ki4) :: innd !< position of first entry for object in nodl
+  integer(ki4) :: ityp !< type of object (5 for triangle)
+  integer(ki4) :: inumpts !< length of object in nodl array
+
+  do j=1,self%ng
+     ityp=self%obj2(j)%typ
+     if (ityp==VTK_TRIANGLE) then
+        ! triangles only
+        innd=self%obj2(j)%ptr
+        inumpts=geobj_entry_table(ityp)
+        !! interchange first and second points defining object
+        ip=self%nodl(innd)
+        self%nodl(innd)=self%nodl(innd+1)
+        self%nodl(innd+1)=ip
+     end if
+  end do
+
+end subroutine geobjlist_fliptri
 !---------------------------------------------------------------------
 !> shell set of tetrahedra
 subroutine geobjlist_shelltets(self,geobjtri)

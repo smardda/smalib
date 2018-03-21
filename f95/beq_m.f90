@@ -357,7 +357,7 @@ subroutine beq_readequil(self,infile,numerics)
   character(len=15) :: cfmtd !< fixed format for header
   logical, parameter :: debug=.TRUE. !< flag for e16.9 output
   logical, parameter :: OPBDRY=.TRUE. !< flag for o/p of boundary and limiter data
-  logical, parameter :: SKIPB=.TRUE. !< do not read B cpts from file
+  logical, parameter :: SKIPB=.FALSE. !< read B cpts from file unless TRUE
   logical :: unitused !< flag to test unit is available
   logical :: needfixup=.FALSE. !< flag special SMITER fix up
   integer(ki4) :: istatus   !< inner status variable
