@@ -562,15 +562,18 @@ subroutine powcal_move(self,gshadl,btree)
   character(*), parameter :: s_name='powcal_move' !< subroutine name
   type(powelt_t) :: zelt   !< power element
 
-  integer rank, error, processes
+  integer :: rank, processes, error, request !< Standard MPI layout variables
+  integer :: mpi_status(MPI_STATUS_SIZE)
   integer, parameter :: blocklengths(2) = (/1, 1/)
   integer, parameter :: mpi_kr4_stride_array_types(2) = (/MPI_REAL4, MPI_UB/)
-  integer, parameter :: mpi_ki4_stride_array_types(2) = (/MPI_INTEGER4, MPI_UB/)
-  integer, parameter :: num_arr_irecv = 7 !> num. of od arrays to IRecv
+  integer, parameter :: mpi_ki4_stride_array_types(2) = (/MPI_INTEGER4,MPI_UB/)
+  integer, parameter :: num_arr_irecv = 1 !> num. of od arrays to IRecv
   integer :: displacements(2)
   integer, dimension(:,:), allocatable :: array_of_statuses
   integer, dimension(:), allocatable :: array_of_requests
   integer :: mpi_kr4_stride_type, mpi_ki4_stride_type
+  integer :: strided_block_count !< expected number of strided blocks
+  logical, parameter :: use_non_blocking_communication = .true.
 
   call MPI_Comm_size (MPI_COMM_WORLD, processes, error)
   call MPI_Comm_rank(MPI_COMM_WORLD, rank, error)
@@ -586,8 +589,41 @@ subroutine powcal_move(self,gshadl,btree)
        & mpi_ki4_stride_array_types, mpi_ki4_stride_type, error)
   call MPI_Type_commit(mpi_ki4_stride_type, error)
 
-  allocate(array_of_statuses(MPI_STATUS_SIZE, num_arr_irecv*processes))
-  allocate(array_of_requests(num_arr_irecv*processes))
+  if (use_non_blocking_communication) then
+     if (rank .eq. 0) then
+        allocate(array_of_statuses(MPI_STATUS_SIZE,num_arr_irecv*(processes-1)))
+        allocate(array_of_requests(num_arr_irecv*(processes-1)))
+        do i = 1, processes-1 ! i == rank from which we expect array
+           strided_block_count = (self%powres%npowe-i)/processes
+           if (mod(self%powres%npowe-i, processes) .gt. 0) &
+                strided_block_count = strided_block_count + 1
+           call MPI_IRecv(self%powres%pow(i+1), strided_block_count, &
+                & mpi_kr4_stride_type, i, 111, MPI_COMM_WORLD, &
+                & array_of_requests((i-1)*num_arr_irecv + 1), error)
+           !call MPI_IRecv(self%powres%pmask(i+1), strided_block_count, &
+           !     & mpi_ki4_stride_type, i, 112, MPI_COMM_WORLD, &
+           !     & array_of_requests((i-1)*num_arr_irecv + 2), error)
+           !call MPI_IRecv(self%powres%pows(i+1), strided_block_count, &
+           !     & mpi_kr4_stride_type, i, 113, MPI_COMM_WORLD, &
+           !     & array_of_requests((i-1)*num_arr_irecv + 3), error)
+           !call MPI_IRecv(self%powres%powa(i+1), strided_block_count, &
+           !     & mpi_kr4_stride_type, i, 114, MPI_COMM_WORLD, &
+           !     & array_of_requests((i-1)*num_arr_irecv + 4), error)
+           !call MPI_IRecv(self%powres%psista(i+1), strided_block_count, &
+           !     & mpi_kr4_stride_type, i, 115, MPI_COMM_WORLD, &
+           !     & array_of_requests((i-1)*num_arr_irecv + 5), error)
+           !call MPI_IRecv(self%powres%angle(i+1), strided_block_count, &
+           !     & mpi_kr4_stride_type, i, 116, MPI_COMM_WORLD, &
+           !     & array_of_requests((i-1)*num_arr_irecv + 6), error)
+           !call MPI_IRecv(self%powres%zbdotnvec(i+1), strided_block_count, &
+           !     & mpi_kr4_stride_type, i, 117, MPI_COMM_WORLD, &
+           !     & array_of_requests((i-1)*num_arr_irecv + 7), error)
+        end do
+     else
+        allocate(array_of_statuses(MPI_STATUS_SIZE, num_arr_irecv))
+        allocate(array_of_requests(num_arr_irecv))
+     end if
+  end if
 
   ! check for axisymmetric
   if (self%powres%beq%n%vacfile=='null') then
@@ -655,6 +691,61 @@ subroutine powcal_move(self,gshadl,btree)
         end do
      end do
   end if
+  if (use_non_blocking_communication) then
+     if (rank .eq. 0) then
+        call MPI_Waitall(num_arr_irecv*(processes-1), array_of_requests, &
+             & array_of_statuses, error)
+     else
+        strided_block_count = (self%powres%npowe-rank)/processes
+        if (mod(self%powres%npowe-rank, processes) .gt. 0) &
+             strided_block_count = strided_block_count + 1
+        call MPI_Send(self%powres%pow(rank+1), strided_block_count, &
+             & mpi_kr4_stride_type, 0, 111, MPI_COMM_WORLD, &
+             &  error)
+        !call MPI_Send(self%powres%pmask(rank+1), strided_block_count, &
+        !     & mpi_ki4_stride_type, 0, 112, MPI_COMM_WORLD, &
+        !     &  error)
+        !call MPI_Send(self%powres%pows(rank+1), strided_block_count, &
+        !     & mpi_kr4_stride_type, 0, 113, MPI_COMM_WORLD, &
+        !     &  error)
+        !call MPI_Send(self%powres%powa(rank+1), strided_block_count, &
+        !     & mpi_kr4_stride_type, 0, 114, MPI_COMM_WORLD, &
+        !     &  error)
+        !call MPI_Send(self%powres%psista(rank+1), strided_block_count, &
+        !     & mpi_kr4_stride_type, 0, 115, MPI_COMM_WORLD, &
+        !     &  error)
+        !call MPI_Send(self%powres%angle(rank+1), strided_block_count, &
+        !     & mpi_kr4_stride_type, 0, 116, MPI_COMM_WORLD, &
+        !     &  error)
+        !call MPI_Send(self%powres%zbdotnvec(rank+1), strided_block_count, &
+        !     & mpi_kr4_stride_type, 0, 117, MPI_COMM_WORLD, &
+        !     & error)
+        !call MPI_Waitall(num_arr_irecv, array_of_requests, &
+        !     & array_of_statuses, error)
+     end if
+  else ! use blocking communication
+     if (rank .eq. 0) then
+        do i=1, processes-1 ! i = rank
+           strided_block_count = (self%powres%npowe-i)/processes
+           if (mod(self%powres%npowe-i, processes) .gt. 0) &
+                strided_block_count = strided_block_count + 1
+           call MPI_Recv(self%powres%pow(i+1), strided_block_count, &
+                mpi_kr4_stride_type, i, 111, MPI_COMM_WORLD, mpi_status, error) 
+           call MPI_Recv(self%powres%angle(i+1), strided_block_count, &
+                mpi_kr4_stride_type, i, 111, MPI_COMM_WORLD, mpi_status, error) 
+        end do
+     else
+        strided_block_count = (self%powres%npowe-rank)/processes
+        if (mod(self%powres%npowe-rank, processes) .gt. 0) &
+             strided_block_count = strided_block_count + 1
+        call MPI_Send(self%powres%pow(rank+1), strided_block_count, &
+             mpi_kr4_stride_type, 0, 111, MPI_COMM_WORLD, error) 
+        call MPI_Send(self%powres%angle(rank+1), strided_block_count, &
+             mpi_kr4_stride_type, 0, 111, MPI_COMM_WORLD, error) 
+     end if
+  end if
+
+
 
   call MPI_Type_free(mpi_ki4_stride_type, error)
   call MPI_Type_free(mpi_kr4_stride_type, error)

@@ -211,8 +211,8 @@ program powcal_p
   call clock_stop(8)
 !--------------------------------------------------------------------------
   call MPI_Comm_rank(MPI_COMM_WORLD, rank, error)
-
-if (1 .eq. 0) then
+  call MPI_Barrier(MPI_COMM_WORLD, error)
+if (rank .eq. 0) then
 ! field line ends
   if (powcal%powres%flinends) then
      call gfile_close
