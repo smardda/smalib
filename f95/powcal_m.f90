@@ -562,11 +562,32 @@ subroutine powcal_move(self,gshadl,btree)
   character(*), parameter :: s_name='powcal_move' !< subroutine name
   type(powelt_t) :: zelt   !< power element
 
-  INTEGER rank, error, processes, request, mpi_status(MPI_STATUS_SIZE)
-  INTEGER expected_number_of_elements !< to receive in rank 0
-  INTEGER k !< counter for elements to be send
+  integer rank, error, processes
+  integer, parameter :: blocklengths(2) = (/1, 1/)
+  integer, parameter :: mpi_kr4_stride_array_types(2) = (/MPI_REAL4, MPI_UB/)
+  integer, parameter :: mpi_ki4_stride_array_types(2) = (/MPI_INTEGER4, MPI_UB/)
+  integer, parameter :: num_arr_irecv = 7 !> num. of od arrays to IRecv
+  integer :: displacements(2)
+  integer, dimension(:,:), allocatable :: array_of_statuses
+  integer, dimension(:), allocatable :: array_of_requests
+  integer :: mpi_kr4_stride_type, mpi_ki4_stride_type
+
   call MPI_Comm_size (MPI_COMM_WORLD, processes, error)
   call MPI_Comm_rank(MPI_COMM_WORLD, rank, error)
+
+  displacements(1) = 0 !< just one INT or REAL the stride at MPI_LB address
+  displacements(2) = 4*processes !< stride of reals and ints of 4 bytes
+
+  call MPI_Type_struct(2, blocklengths, displacements, &
+       & mpi_kr4_stride_array_types, mpi_kr4_stride_type, error)
+  call MPI_Type_commit(mpi_kr4_stride_type, error)
+
+  call MPI_Type_struct(2, blocklengths, displacements, &
+       & mpi_ki4_stride_array_types, mpi_ki4_stride_type, error)
+  call MPI_Type_commit(mpi_ki4_stride_type, error)
+
+  allocate(array_of_statuses(MPI_STATUS_SIZE, num_arr_irecv*processes))
+  allocate(array_of_requests(num_arr_irecv*processes))
 
   ! check for axisymmetric
   if (self%powres%beq%n%vacfile=='null') then
@@ -634,6 +655,9 @@ subroutine powcal_move(self,gshadl,btree)
         end do
      end do
   end if
+
+  call MPI_Type_free(mpi_ki4_stride_type, error)
+  call MPI_Type_free(mpi_kr4_stride_type, error)
 
 end subroutine powcal_move
 !---------------------------------------------------------------------
