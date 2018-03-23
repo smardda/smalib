@@ -571,7 +571,7 @@ subroutine powcal_move(self,gshadl,btree)
   integer :: displacements(2)
   integer, dimension(:,:), allocatable :: array_of_statuses
   integer, dimension(:), allocatable :: array_of_requests
-  integer :: mpi_kr4_stride_type, mpi_ki4_stride_type
+  integer :: mpi_kr4_stride_type
   integer :: strided_block_count !< expected number of strided blocks
   logical, parameter :: use_non_blocking_communication = .true.
 
@@ -585,10 +585,6 @@ subroutine powcal_move(self,gshadl,btree)
        & mpi_kr4_stride_array_types, mpi_kr4_stride_type, error)
   call MPI_Type_commit(mpi_kr4_stride_type, error)
 
-  call MPI_Type_struct(2, blocklengths, displacements, &
-       & mpi_ki4_stride_array_types, mpi_ki4_stride_type, error)
-  call MPI_Type_commit(mpi_ki4_stride_type, error)
-
   if (use_non_blocking_communication) then
      if (rank .eq. 0) then
         allocate(array_of_statuses(MPI_STATUS_SIZE,num_arr_irecv*(processes-1)))
@@ -600,28 +596,7 @@ subroutine powcal_move(self,gshadl,btree)
            call MPI_IRecv(self%powres%pow(i+1), strided_block_count, &
                 & mpi_kr4_stride_type, i, 111, MPI_COMM_WORLD, &
                 & array_of_requests((i-1)*num_arr_irecv + 1), error)
-           !call MPI_IRecv(self%powres%pmask(i+1), strided_block_count, &
-           !     & mpi_ki4_stride_type, i, 112, MPI_COMM_WORLD, &
-           !     & array_of_requests((i-1)*num_arr_irecv + 2), error)
-           !call MPI_IRecv(self%powres%pows(i+1), strided_block_count, &
-           !     & mpi_kr4_stride_type, i, 113, MPI_COMM_WORLD, &
-           !     & array_of_requests((i-1)*num_arr_irecv + 3), error)
-           !call MPI_IRecv(self%powres%powa(i+1), strided_block_count, &
-           !     & mpi_kr4_stride_type, i, 114, MPI_COMM_WORLD, &
-           !     & array_of_requests((i-1)*num_arr_irecv + 4), error)
-           !call MPI_IRecv(self%powres%psista(i+1), strided_block_count, &
-           !     & mpi_kr4_stride_type, i, 115, MPI_COMM_WORLD, &
-           !     & array_of_requests((i-1)*num_arr_irecv + 5), error)
-           !call MPI_IRecv(self%powres%angle(i+1), strided_block_count, &
-           !     & mpi_kr4_stride_type, i, 116, MPI_COMM_WORLD, &
-           !     & array_of_requests((i-1)*num_arr_irecv + 6), error)
-           !call MPI_IRecv(self%powres%zbdotnvec(i+1), strided_block_count, &
-           !     & mpi_kr4_stride_type, i, 117, MPI_COMM_WORLD, &
-           !     & array_of_requests((i-1)*num_arr_irecv + 7), error)
         end do
-     else
-        allocate(array_of_statuses(MPI_STATUS_SIZE, num_arr_irecv))
-        allocate(array_of_requests(num_arr_irecv))
      end if
   end if
 
@@ -631,7 +606,7 @@ subroutine powcal_move(self,gshadl,btree)
         ! not axisymmetric
         ! analytic ripple model, has to be fldspec=2
         ! no termplane criteria
-        do i=1,self%powres%npowe
+        do i=1+rank,self%powres%npowe,processes
            zelt%ie=i
            do j=imlevel,inlevel
               zelt%je=j
@@ -653,7 +628,7 @@ subroutine powcal_move(self,gshadl,btree)
         case default ! should only be fldspec=3, all caltypes with termplane
            calcn_type: select case (self%n%caltype)
            case ('afws','local')
-              do i=1,self%powres%npowe
+              do i=1+rank,self%powres%npowe,processes
                  zelt%ie=i
                  do j=imlevel,inlevel
                     zelt%je=j
@@ -661,7 +636,7 @@ subroutine powcal_move(self,gshadl,btree)
                  end do
               end do
            case ('msus','global','msum','middle')
-              do i=1,self%powres%npowe
+              do i=1+rank,self%powres%npowe,processes
                  zelt%ie=i
                  do j=imlevel,inlevel
                     zelt%je=j
@@ -674,7 +649,7 @@ subroutine powcal_move(self,gshadl,btree)
   ! remaining cases non-axisymmetric, ripple defined by vacuum file
   else if (self%n%ltermplane) then
      ! more sophisticated termination criteria
-     do i=1,self%powres%npowe
+     do i=1+rank,self%powres%npowe,processes
         zelt%ie=i
         do j=imlevel,inlevel
            zelt%je=j
@@ -683,7 +658,7 @@ subroutine powcal_move(self,gshadl,btree)
      end do
   else
      ! older midplane-based termination criteria
-     do i=1,self%powres%npowe
+     do i=1+rank,self%powres%npowe,processes
         zelt%ie=i
         do j=imlevel,inlevel
            zelt%je=j
@@ -695,6 +670,7 @@ subroutine powcal_move(self,gshadl,btree)
      if (rank .eq. 0) then
         call MPI_Waitall(num_arr_irecv*(processes-1), array_of_requests, &
              & array_of_statuses, error)
+        deallocate(array_of_statuses, array_of_requests)
      else
         strided_block_count = (self%powres%npowe-rank)/processes
         if (mod(self%powres%npowe-rank, processes) .gt. 0) &
@@ -702,26 +678,6 @@ subroutine powcal_move(self,gshadl,btree)
         call MPI_Send(self%powres%pow(rank+1), strided_block_count, &
              & mpi_kr4_stride_type, 0, 111, MPI_COMM_WORLD, &
              &  error)
-        !call MPI_Send(self%powres%pmask(rank+1), strided_block_count, &
-        !     & mpi_ki4_stride_type, 0, 112, MPI_COMM_WORLD, &
-        !     &  error)
-        !call MPI_Send(self%powres%pows(rank+1), strided_block_count, &
-        !     & mpi_kr4_stride_type, 0, 113, MPI_COMM_WORLD, &
-        !     &  error)
-        !call MPI_Send(self%powres%powa(rank+1), strided_block_count, &
-        !     & mpi_kr4_stride_type, 0, 114, MPI_COMM_WORLD, &
-        !     &  error)
-        !call MPI_Send(self%powres%psista(rank+1), strided_block_count, &
-        !     & mpi_kr4_stride_type, 0, 115, MPI_COMM_WORLD, &
-        !     &  error)
-        !call MPI_Send(self%powres%angle(rank+1), strided_block_count, &
-        !     & mpi_kr4_stride_type, 0, 116, MPI_COMM_WORLD, &
-        !     &  error)
-        !call MPI_Send(self%powres%zbdotnvec(rank+1), strided_block_count, &
-        !     & mpi_kr4_stride_type, 0, 117, MPI_COMM_WORLD, &
-        !     & error)
-        !call MPI_Waitall(num_arr_irecv, array_of_requests, &
-        !     & array_of_statuses, error)
      end if
   else ! use blocking communication
      if (rank .eq. 0) then
@@ -745,9 +701,6 @@ subroutine powcal_move(self,gshadl,btree)
      end if
   end if
 
-
-
-  call MPI_Type_free(mpi_ki4_stride_type, error)
   call MPI_Type_free(mpi_kr4_stride_type, error)
 
 end subroutine powcal_move

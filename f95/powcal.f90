@@ -88,6 +88,8 @@ program powcal_p
 
   integer error, rank
   call MPI_Init ( error )
+  call MPI_Comm_rank(MPI_COMM_WORLD, rank, error)
+
 !--------------------------------------------------------------------------
 !! initialise timing
 
@@ -96,11 +98,14 @@ program powcal_p
   call clock_start(1,'powcal run time')
 !--------------------------------------------------------------------------
 !! print header
-
-  print *, '----------------------------------------------------'
-  print *, 'powcal: surface power deposition calculation '
-  print *, '----------------------------------------------------'
-  print '(a)', timestamp%long
+  if ( rank .eq. 0) then
+     print *, '----------------------------------------------------'
+     print *, 'powcal: surface power deposition calculation '
+     print *, '----------------------------------------------------'
+     print '(a)', timestamp%long
+  else
+     print *, 'Process rank ', rank, ' started'
+  end if
 !--------------------------------------------------------------------------
 !! get file root from arg
   if(command_argument_count()<1) then
@@ -210,8 +215,6 @@ program powcal_p
   call powcal_refine(powcal,gshadl,btree)
   call clock_stop(8)
 !--------------------------------------------------------------------------
-  call MPI_Comm_rank(MPI_COMM_WORLD, rank, error)
-  call MPI_Barrier(MPI_COMM_WORLD, error)
 if (rank .eq. 0) then
 ! field line ends
   if (powcal%powres%flinends) then
@@ -268,7 +271,7 @@ end if
 !      end if
 
   call clock_stop(1)
-  call clock_summary
+  if (rank .eq. 0) call clock_summary
 
   call log_close
   call clock_delete
