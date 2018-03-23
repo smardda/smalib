@@ -317,7 +317,7 @@ subroutine edgprof_factors(self,rbdry,bpbdry,btotbdry,psign)
   case('eich')
      zrblfac=zrbfac/self%lmid
      self%slfac=self%sigma/(2*self%lmid)
-     self%rblfac=2*const_pid*zrblfac
+     self%rblfac=2*const_pid*zrblfac*psign
      self%fpfac=(self%f/2)*self%ploss*zrblfac
 
   case('samples')
