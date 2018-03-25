@@ -14,6 +14,7 @@ module beq_m
   use fmesh_m
   use posang_m
   use beqan_m
+  use gfile_m
 
   implicit none
   private
@@ -356,8 +357,6 @@ subroutine beq_readequil(self,infile,numerics)
   character(len=15) :: cfmtdh !< fixed format for header
   character(len=15) :: cfmtd !< fixed format for header
   logical, parameter :: debug=.TRUE. !< flag for e16.9 output
-  logical, parameter :: OPBDRY=.TRUE. !< flag for o/p of boundary and limiter data
-  logical, parameter :: SKIPB=.FALSE. !< read B cpts from file unless TRUE
   logical :: unitused !< flag to test unit is available
   logical :: needfixup=.FALSE. !< flag special SMITER fix up
   integer(ki4) :: istatus   !< inner status variable
@@ -394,6 +393,7 @@ subroutine beq_readequil(self,infile,numerics)
   integer(ki4) :: nbbbs  !< EFIT number of points describing boundary
   integer(ki4) :: limitr  !< EFIT number of points describing limitr
   integer(ki4) :: ncoil  !< EFIT number of points describing one of five coils
+  integer(ki4) :: igunit  !< Unit for output of boundary data from eqdsk
 
   iffiesta=numerics%fiesta
   !! get file unit
@@ -711,11 +711,13 @@ subroutine beq_readequil(self,infile,numerics)
   if(status/=0) then
      call log_error(m_name,s_name,54,error_fatal,'Error reading boundary data')
   end if
-  if (OPBDRY) then
-     write(200,*) nbbbs
+  if (numerics%eqbdry) then
+     call gfile_init(numerics%eqbdryfile,'eqdsk (R,Z) boundary data',igunit)
+     write(igunit,'(A,1PG12.5)') '#  ', nbbbs
      do i=1,nbbbs
-        write(200,*) workr1(i),workz1(i)
+        write(igunit,*) workr1(i),workz1(i)
      end do
+     call gfile_close
   end if
   deallocate(workr1)
   deallocate(workz1)
@@ -733,11 +735,13 @@ subroutine beq_readequil(self,infile,numerics)
   if(status/=0) then
      call log_error(m_name,s_name,57,error_fatal,'Error reading limiter data')
   end if
-  if (OPBDRY) then
-     write(201,*) limitr
+  if (numerics%eqbdry) then
+     call gfile_init(numerics%eqltrfile,'eqdsk (R,Z) limiter data',igunit)
+     write(igunit,'(A,1PG12.5)') '#  ', limitr
      do i=1,limitr
-        write(201,*) workr1(i),workz1(i)
+        write(igunit,*) workr1(i),workz1(i)
      end do
+     call gfile_close
   end if
   deallocate(workr1)
   deallocate(workz1)
@@ -746,9 +750,9 @@ subroutine beq_readequil(self,infile,numerics)
   !coil data
   read(iin,*,iostat=status) ncoil
   ! optionally skip B in file
-  beq_nobinq=(status/=0).OR.SKIPB
+  beq_nobinq=(status/=0).OR.numerics%skipb
   if(beq_nobinq) then
-     call log_error(m_name,s_name,60,error_warning,'Error reading ncoil')
+     call log_error(m_name,s_name,60,error_warning,'Unable to read ncoil')
      call log_value("Giving up on EQDSK for B values, status",status)
      !        deallocate(workr1)
      !        deallocate(workz1)
@@ -843,7 +847,6 @@ subroutine beq_readequ(self,infile,numerics)
   !! local
   character(*), parameter :: s_name='beq_readequ' !< subroutine name
   character(8), parameter :: cfmt1='(5f17.8)'
-  logical, parameter :: opbdry=.FALSE. !< flag for o/p of boundary and limiter data
   logical :: unitused !< flag to test unit is available
   integer(ki4) :: iin   !< input channel for object data structure
   integer(ki4) :: jm  !< FIESTA number of grid points in R-direction
@@ -2695,6 +2698,7 @@ subroutine beq_readcon(selfn,kin)
   real(kr8) :: beq_zetamin !< namelist \f$ \zeta_{\min} \f$
   real(kr8) :: beq_zetamax !< namelist \f$ \zeta_{\max} \f$
   integer(ki4) :: beq_nzetap !< namelist \f$ N_{\zeta P} \f$
+  logical :: skip_eqdsk_b !< read B cpts from eqdsk file unless .TRUE.
   real(kr8) :: beq_rmove !< namelist \f$ R_{mov} \f$ equilibrium displaced
   real(kr8) :: beq_zmove !< namelist \f$ Z_{mov} \f$ equilibrium displaced
   real(kr8) :: beq_fscale !< namelist \f$ f \f$ equilibrium scaled
@@ -2737,6 +2741,7 @@ subroutine beq_readcon(selfn,kin)
  &beq_duct,&
  &beq_psiref,&
  &beq_zetamin, beq_zetamax, beq_nzetap,&
+ &skip_eqdsk_b,&
  &beq_thetaref, beq_ntheta, beq_fldspec,&
  &beq_psibig,&
  &equil_helicity_ok,&
@@ -2766,6 +2771,7 @@ subroutine beq_readcon(selfn,kin)
   beq_zetamin=0
   beq_zetamax=2*const_pid
   beq_nzetap=0
+  skip_eqdsk_b=.FALSE.
   beq_rmove=0.
   beq_zmove=0.
   beq_fscale=1
@@ -2941,6 +2947,7 @@ subroutine beq_readcon(selfn,kin)
      selfn%thetamax=selfn%thetamax-const_pid/2-selfn%thetaref
   end if
   selfn%nzetp=beq_nzetap
+  selfn%skipb=skip_eqdsk_b
   if(selfn%zetaopt==1) then
      selfn%zetamin=beq_zetamin
      selfn%zetamax=beq_zetamax

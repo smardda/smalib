@@ -96,6 +96,10 @@ module beq_h
      real(kr8) :: thetaref !< \f$ \theta_X \f$
      integer(ki4) :: ntheta !< \f$ N_{\theta} \f$
      integer(ki4) :: nzetp !< \f$ N_{\zeta P} \f$
+     logical :: skipb !< read B cpts from eqdsk file unless .TRUE.
+     logical :: eqbdry !< produce files containing boundary and limiter points from eqdsk
+     character(len=80) :: eqbdryfile !< file containing boundary points from eqdsk
+     character(len=80) :: eqltrfile !< file containing limiter points from eqdsk
    !> specifies way equilibrium field described
    !! 1. R/J implies mapped case (axisymmetric) -> move
    !! 2. psi gradients
