@@ -7,17 +7,17 @@ include ../config/config.inc
 LIBS = ./LIB/lib$(DBG).a
 
 SOURCES = \
-const_kind_m.f90 \
-date_time_m.f90 \
-log_m.f90 \
-ccontrol_m.f90 \
-ctlgen.f90
+const_kind_m.F90 \
+date_time_m.F90 \
+log_m.F90 \
+ccontrol_m.F90 \
+ctlgen.F90
  
 PROG = ctlgen
 
-MODULES=$(SOURCES:.f90=.mod)
+MODULES=$(SOURCES:.F90=.mod)
 
-OBJECTS=$(SOURCES:.f90=.o)
+OBJECTS=$(SOURCES:.F90=.o)
 
 
 $(PROG): $(OBJECTS) 
@@ -26,7 +26,7 @@ $(PROG): $(OBJECTS)
 $(OBJECTS):$(MODULES)
 	@touch .TOUCHFILE
 
-$(MODULES): %.mod : %.f90
+$(MODULES): %.mod : %.F90
 	$(F90) $(F90FLAGS) -c $<
 
 clean:
@@ -38,11 +38,11 @@ distclean: clean
 
 .PHONY : clean distclean
 
-ctlgen.f90 : const_kind_m.mod
-ctlgen.f90 : date_time_m.mod
-ctlgen.f90 : log_m.mod
-ctlgen.f90 : ccontrol_m.mod
-log_m.f90 : const_kind_m.mod
-log_m.f90 : date_time_m.mod
-ccontrol_m.f90 : const_kind_m.mod
-ccontrol_m.f90 : log_m.mod
+ctlgen.F90 : const_kind_m.mod
+ctlgen.F90 : date_time_m.mod
+ctlgen.F90 : log_m.mod
+ctlgen.F90 : ccontrol_m.mod
+log_m.F90 : const_kind_m.mod
+log_m.F90 : date_time_m.mod
+ccontrol_m.F90 : const_kind_m.mod
+ccontrol_m.F90 : log_m.mod

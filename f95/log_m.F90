@@ -2,8 +2,9 @@ module log_m
 
   use const_kind_m
   use date_time_m
+#ifdef WITH_MPI
   use mpi
-
+#endif
   implicit none
   private
 
@@ -59,9 +60,11 @@ subroutine log_init(fileroot,timestamp)
   !! local
   logical :: unitused !< flag to test unit is available
   integer(ki4) :: ilen  !< length of string
-
+#ifdef WITH_MPI
   integer rank, error
   character(5)  :: log_id
+#endif
+
 
   !! initialise counters
   errorno=0
@@ -77,12 +80,12 @@ subroutine log_init(fileroot,timestamp)
   logfile=fileroot(1:ilen)//'.log'
   ! and reset file root
   fileroot=logfile(1:ilen)
-
-  return
+#ifdef WITH_MPI
   call MPI_Comm_Rank(MPI_COMM_WORLD, rank, error)
-  write(log_id, '(I5.5)'), rank
-  logfile = trim(logfile)//'-'//trim(log_id)
-
+  if (rank .ne. 0) return
+  !write(log_id, '(I5.5)'), rank
+  !logfile = trim(logfile)//'-'//trim(log_id)
+#endif
   !! get file unit
   do i=99,1,-1
      inquire(i,opened=unitused)
@@ -114,7 +117,11 @@ subroutine log_error(modname,subname,point,severity,errormessage)
   character(*), intent(in) :: errormessage  !< error message
 
   !! local
-  return
+#ifdef WITH_MPI
+  integer rank, error
+  call MPI_Comm_Rank(MPI_COMM_WORLD, rank, error)
+  if (rank .ne. 0) return
+#endif
   if(severity<log_info) then
      errorno=errorno+1
      write(nlog, '(i7.7,a,i2,a)') &
@@ -235,7 +242,11 @@ end subroutine log_getunit
 subroutine log_close
 
   !! arguments
-  return
+#ifdef WITH_MPI
+  integer rank, error
+  call MPI_Comm_Rank(MPI_COMM_WORLD, rank, error)
+  if (rank .ne. 0) return
+#endif
   write(nlog, '(//,a,/,a)') ' Error Summary ',' ------------- '
   write(nlog, '(a,i7)') ' total number of errors   = ',errorno
   write(nlog, '(a,i7)') ' number of serious errors = ',seriouserrors
@@ -251,7 +262,11 @@ subroutine log_value_ki4(varname,value,units)
   character(*), intent(in) :: varname  !< variable name
   integer(ki4), intent(in) :: value    !< variable value
   character(*), intent(in),optional :: units  !< units name
-  return
+#ifdef WITH_MPI
+  integer rank, error
+  call MPI_Comm_Rank(MPI_COMM_WORLD, rank, error)
+  if (rank .ne. 0) return
+#endif
   !!output
   if(present(units)) then
      write(nlog, '("Log  : ",a," = ",i10,1x,a)') varname,value,units
@@ -265,7 +280,11 @@ subroutine log_value_kr4(varname,value,units)
   real(ki4), intent(in) :: value    !< variable value
   character(*), intent(in), optional :: units  !< units name
   !!output
-  return
+#ifdef WITH_MPI
+  integer rank, error
+  call MPI_Comm_Rank(MPI_COMM_WORLD, rank, error)
+  if (rank .ne. 0) return
+#endif
   if(present(units)) then
      write(nlog, '("Log  : ",a32,"  = ",g12.5,1x,a)') varname,value,units
   else
@@ -278,7 +297,11 @@ subroutine log_value_kr8(varname,value,units)
   real(ki8), intent(in) :: value    !< variable value
   character(*), intent(in),optional :: units  !< units name
   !!output
-  return
+#ifdef WITH_MPI
+  integer rank, error
+  call MPI_Comm_Rank(MPI_COMM_WORLD, rank, error)
+  if (rank .ne. 0) return
+#endif
   if(present(units)) then
      write(nlog, '("Log  : ",a32,"  = ",1pe15.8,2x,a)') varname,value,units
   else
@@ -290,7 +313,11 @@ subroutine log_value_kl(varname,value)
   character(*), intent(in) :: varname  !< variable name
   logical, intent(in) :: value    !< variable value
   !!output
-  return
+#ifdef WITH_MPI
+  integer rank, error
+  call MPI_Comm_Rank(MPI_COMM_WORLD, rank, error)
+  if (rank .ne. 0) return
+#endif
   write(nlog, '("Log  : ",a," = ",l2)') varname,value
 end subroutine log_value_kl
 subroutine log_value_char(varname,value)
@@ -298,7 +325,11 @@ subroutine log_value_char(varname,value)
   character(*), intent(in) :: varname  !< variable name
   character(*), intent(in) :: value    !< variable value
   !!output
-  return
+#ifdef WITH_MPI
+  integer rank, error
+  call MPI_Comm_Rank(MPI_COMM_WORLD, rank, error)
+  if (rank .ne. 0) return
+#endif
   write(nlog, '("Log  : ",a," = ",a)') varname,value
 end subroutine log_value_char
 

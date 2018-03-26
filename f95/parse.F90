@@ -1,4 +1,7 @@
 program parse
+#ifdef WITH_MPI
+  use mpi
+#endif
    implicit none
 
    character(len=20) :: typetest !< type of test
@@ -10,6 +13,12 @@ program parse
    integer   :: j     !< loop variable
    real   :: realno   !< input
    real   :: reallt   !< input range descriptor
+#ifdef WITH_MPI
+  integer error, rank
+  call MPI_Init ( error )
+  call MPI_Comm_rank(MPI_COMM_WORLD, rank, error)
+  if (rank .eq. 0) then
+#endif
 !--------------------------------------------------------------------------
 !! get arguments from arg
    inarg=command_argument_count()
@@ -74,5 +83,8 @@ program parse
       end if
       end do
    end select test_type
-
+#ifdef WITH_MPI
+  end if
+  call MPI_Finalize ( error )
+#endif
 end program parse

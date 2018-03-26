@@ -61,9 +61,9 @@ program powcal_p
   use odes_h
   use odes_m
   use stack_m
-
+#ifdef WITH_MPI
   use mpi
-
+#endif
   implicit none
 
 ! Local variables
@@ -85,11 +85,13 @@ program powcal_p
   integer(ki4):: ifldspec !< field specification
   real(kr8):: zivac !< value of I in field file
   real(kr8):: zfac !< ratio of I in different field files
-
+#ifdef WITH_MPI
   integer error, rank
   call MPI_Init ( error )
   call MPI_Comm_rank(MPI_COMM_WORLD, rank, error)
-
+#else
+  integer, parameter :: rank = 0
+#endif
 !--------------------------------------------------------------------------
 !! initialise timing
 
@@ -272,10 +274,10 @@ end if
 
   call clock_stop(1)
   if (rank .eq. 0) call clock_summary
-
   call log_close
   call clock_delete
 !--------------------------------------------------------------------------
+#ifdef WITH_MPI
   call MPI_Finalize ( error )
-
+#endif
 end program powcal_p

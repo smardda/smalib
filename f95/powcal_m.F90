@@ -25,8 +25,9 @@ module powcal_m
   use termplane_m
   use edgprof_h
   use edgprof_m
+#ifdef WITH_MPI
   use mpi
-
+#endif
   implicit none
   private
 
@@ -561,7 +562,7 @@ subroutine powcal_move(self,gshadl,btree)
   !! local
   character(*), parameter :: s_name='powcal_move' !< subroutine name
   type(powelt_t) :: zelt   !< power element
-
+#ifdef WITH_MPI
   integer :: rank, processes, error, request !< Standard MPI layout variables
   integer :: mpi_status(MPI_STATUS_SIZE)
   integer, parameter :: blocklengths(2) = (/1, 1/)
@@ -599,7 +600,9 @@ subroutine powcal_move(self,gshadl,btree)
         end do
      end if
   end if
-
+#else
+  integer, parameter :: rank = 0, processes = 1
+#endif
   ! check for axisymmetric
   if (self%powres%beq%n%vacfile=='null') then
      if (self%powres%beq%n%mrip/=0) then
@@ -617,7 +620,6 @@ subroutine powcal_move(self,gshadl,btree)
         ! axisymmetric (no ripple field)
         field_type: select case (self%powres%beq%n%fldspec)
         case (1) ! should only be for caltype='local', no termplane
-           print *, 'MPIDEBUG 0:', self%powres%npowe
            do i=1+rank,self%powres%npowe,processes
               zelt%ie=i
               do j=imlevel,inlevel
@@ -666,6 +668,7 @@ subroutine powcal_move(self,gshadl,btree)
         end do
      end do
   end if
+#ifdef WITH_MPI
   if (use_non_blocking_communication) then
      if (rank .eq. 0) then
         call MPI_Waitall(num_arr_irecv*(processes-1), array_of_requests, &
@@ -702,7 +705,7 @@ subroutine powcal_move(self,gshadl,btree)
   end if
 
   call MPI_Type_free(mpi_kr4_stride_type, error)
-
+#endif
 end subroutine powcal_move
 !---------------------------------------------------------------------
 !> coordinate calculation of power deposition (=powres_XX)

@@ -1,5 +1,8 @@
 program datvtk_p
 
+#ifdef WITH_MPI
+  use mpi
+#endif
   use const_kind_m
   use const_numphys_h
   use date_time_m
@@ -68,6 +71,12 @@ program datvtk_p
   integer(ki4) :: inarg   !< number of command line arguments
   integer(ki4) :: inda   !< index of dash in command line argument
   integer(ki4) :: iopt   !< option for reading bods
+#ifdef WITH_MPI
+  integer error, rank
+  call MPI_Init ( error )
+  call MPI_Comm_rank(MPI_COMM_WORLD, rank, error)
+  if (rank .eq. 0) then
+#endif
 !--------------------------------------------------------------------------
 !! initialise timing
 
@@ -209,5 +218,8 @@ program datvtk_p
   call log_close
   call clock_delete
 !--------------------------------------------------------------------------
-
+#ifdef WITH_MPI
+  end if
+  call MPI_Finalize ( error )
+#endif
 end program datvtk_p
