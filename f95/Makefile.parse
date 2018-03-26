@@ -7,13 +7,13 @@ include ../config/config.inc
 LIBS = 
 
 SOURCES = \
-parse.f90
+parse.F90
  
 PROG = parse
 
-MODULES=$(SOURCES:.f90=.mod)
+MODULES=$(SOURCES:.F90=.mod)
 
-OBJECTS=$(SOURCES:.f90=.o)
+OBJECTS=$(SOURCES:.F90=.o)
 
 
 $(PROG): $(OBJECTS) 
@@ -22,7 +22,7 @@ $(PROG): $(OBJECTS)
 $(OBJECTS):$(MODULES)
 	@touch .TOUCHFILE
 
-$(MODULES): %.mod : %.f90
+$(MODULES): %.mod : %.F90
 	$(F90) $(F90FLAGS) -c $<
 
 clean:

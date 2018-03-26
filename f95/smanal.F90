@@ -1,5 +1,8 @@
 program smanal_p
 
+#ifdef WITH_MPI
+  use mpi
+#endif
   use const_kind_m
   use const_numphys_h
   use scontrol_h
@@ -59,6 +62,12 @@ program smanal_p
   integer(ki4):: nin !< unit for vtk files
   integer(ki4):: nplot !< unit for vtk file output
   integer(ki4):: nprint !< unit for gnu file output
+#ifdef WITH_MPI
+  integer error, rank
+  call MPI_Init ( error )
+  call MPI_Comm_rank(MPI_COMM_WORLD, rank, error)
+  if (rank .eq. 0) then
+#endif
 
 !--------------------------------------------------------------------------
 !! initialise timing
@@ -172,5 +181,8 @@ program smanal_p
   call clock_delete
 
 !--------------------------------------------------------------------------
-
+#ifdef WITH_MPI
+  end if
+  call MPI_Finalize ( error )
+#endif
 end program smanal_p

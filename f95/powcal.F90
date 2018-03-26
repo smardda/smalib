@@ -61,7 +61,9 @@ program powcal_p
   use odes_h
   use odes_m
   use stack_m
-
+#ifdef WITH_MPI
+  use mpi
+#endif
   implicit none
 
 ! Local variables
@@ -83,6 +85,13 @@ program powcal_p
   integer(ki4):: ifldspec !< field specification
   real(kr8):: zivac !< value of I in field file
   real(kr8):: zfac !< ratio of I in different field files
+#ifdef WITH_MPI
+  integer error, rank
+  call MPI_Init ( error )
+  call MPI_Comm_rank(MPI_COMM_WORLD, rank, error)
+#else
+  integer, parameter :: rank = 0
+#endif
 !--------------------------------------------------------------------------
 !! initialise timing
 
@@ -91,11 +100,14 @@ program powcal_p
   call clock_start(1,'powcal run time')
 !--------------------------------------------------------------------------
 !! print header
-
-  print *, '----------------------------------------------------'
-  print *, 'powcal: surface power deposition calculation '
-  print *, '----------------------------------------------------'
-  print '(a)', timestamp%long
+  if ( rank .eq. 0) then
+     print *, '----------------------------------------------------'
+     print *, 'powcal: surface power deposition calculation '
+     print *, '----------------------------------------------------'
+     print '(a)', timestamp%long
+  else
+     print *, 'Process rank ', rank, ' started'
+  end if
 !--------------------------------------------------------------------------
 !! get file root from arg
   if(command_argument_count()<1) then
@@ -205,6 +217,7 @@ program powcal_p
   call powcal_refine(powcal,gshadl,btree)
   call clock_stop(8)
 !--------------------------------------------------------------------------
+if (rank .eq. 0) then
 ! field line ends
   if (powcal%powres%flinends) then
      call gfile_close
@@ -248,6 +261,7 @@ program powcal_p
   call poutfile_write(powcal,timestamp)
   call poutfile_close
   call clock_stop(30)
+end if
 !--------------------------------------------------------------------------
 !! cleanup and closedown
 !      if (powcal%powres%n%nanalau==1) then
@@ -259,10 +273,11 @@ program powcal_p
 !      end if
 
   call clock_stop(1)
-  call clock_summary
-
+  if (rank .eq. 0) call clock_summary
   call log_close
   call clock_delete
 !--------------------------------------------------------------------------
-
+#ifdef WITH_MPI
+  call MPI_Finalize ( error )
+#endif
 end program powcal_p
