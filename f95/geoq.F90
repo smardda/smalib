@@ -1,5 +1,8 @@
 program geoq_p
 
+#ifdef WITH_MPI
+  use mpi
+#endif
   use const_kind_m
   use const_numphys_h
   use date_time_m
@@ -72,6 +75,13 @@ program geoq_p
   integer(ki4):: ifldspec !< field specification
   real(kr8):: zivac !< value of I in field file
   character(len=80) :: ibuf !< character workspace
+#ifdef WITH_MPI
+  integer error, rank
+  call MPI_Init ( error )
+  call MPI_Comm_rank(MPI_COMM_WORLD, rank, error)
+  if (rank .eq. 0) then
+#endif
+
 !--------------------------------------------------------------------------
 !! initialise timing
 
@@ -383,5 +393,8 @@ program geoq_p
   call log_close
   call clock_delete
 !--------------------------------------------------------------------------
-
+#ifdef WITH_MPI
+  end if
+  call MPI_Finalize ( error )
+#endif
 end program geoq_p

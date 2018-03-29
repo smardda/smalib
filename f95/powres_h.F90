@@ -36,7 +36,7 @@ module powres_h
      real(kr8) :: qfac !< quantising factor
      real(kr8), dimension(3) :: qfaca !< quantising factors
      real(kr4), dimension(:), allocatable :: pow !< power
-     integer(kr4), dimension(:), allocatable :: pmask !< power mask
+     integer(ki4), dimension(:), allocatable :: pmask !< power mask
      real(kr4), dimension(:), allocatable :: pows !< power statistic
      real(kr4), dimension(:), allocatable :: powa !< power average statistic
      real(kr4), dimension(:), allocatable :: psista !< \f$ \psi \f$ at start of fieldline

@@ -1,5 +1,8 @@
 program vtktfm_p
 
+#ifdef WITH_MPI
+  use mpi
+#endif
   use const_kind_m
   use const_numphys_h
   use date_time_m
@@ -64,6 +67,12 @@ program vtktfm_p
   integer(ki4):: iopt=1 !< option for bodies
   integer(ki4):: icall !< call number for bods_cumulate2
   integer(ki4):: j !< loop variable
+#ifdef WITH_MPI
+  integer error, rank
+  call MPI_Init ( error )
+  call MPI_Comm_rank(MPI_COMM_WORLD, rank, error)
+  if (rank .eq. 0) then
+#endif
 !--------------------------------------------------------------------------
 !! initialise timing
 
@@ -204,5 +213,8 @@ program vtktfm_p
   call log_close
   call clock_delete
 !--------------------------------------------------------------------------
-
+#ifdef WITH_MPI
+  end if
+  call MPI_Finalize ( error )
+#endif
 end program vtktfm_p

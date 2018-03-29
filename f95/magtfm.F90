@@ -1,5 +1,8 @@
 program magtfm_p
 
+#ifdef WITH_MPI
+  use mpi
+#endif
   use const_kind_m
   use const_numphys_h
   use date_time_m
@@ -46,6 +49,12 @@ program magtfm_p
   real(kr8), dimension(3) :: zeval !< vector value
   real(kr8) :: zfac  !< local variable
   integer(ki4), parameter :: iphchange=0 !< change phase of zeta/reflect if =3
+#ifdef WITH_MPI
+  integer error, rank
+  call MPI_Init ( error )
+  call MPI_Comm_rank(MPI_COMM_WORLD, rank, error)
+  if (rank .eq. 0) then
+#endif
 !--------------------------------------------------------------------------
 !! initialise timing
 
@@ -180,5 +189,8 @@ program magtfm_p
   call log_close
   call clock_delete
 !--------------------------------------------------------------------------
-
+#ifdef WITH_MPI
+  end if
+  call MPI_Finalize ( error )
+#endif
 end program magtfm_p
