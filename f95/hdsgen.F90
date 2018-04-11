@@ -1,5 +1,8 @@
 program hdsgen_p
 
+#ifdef WITH_MPI
+  use mpi
+#endif
   use const_kind_m
   use const_numphys_h
   use control_h
@@ -55,6 +58,12 @@ program hdsgen_p
 
   integer(ki4):: nplot !< unit for vfiles
   integer(ki4):: nouth !< unit for hdsfiles
+#ifdef WITH_MPI
+  integer error, rank
+  call MPI_Init ( error )
+  call MPI_Comm_rank(MPI_COMM_WORLD, rank, error)
+  if (rank .eq. 0) then
+#endif
 
 !--------------------------------------------------------------------------
 !! initialise timing
@@ -215,5 +224,8 @@ program hdsgen_p
   call clock_delete
 
 !--------------------------------------------------------------------------
-
+#ifdef WITH_MPI
+  end if
+  call MPI_Finalize ( error )
+#endif
 end program hdsgen_p
