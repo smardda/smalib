@@ -170,6 +170,7 @@ beq_m.F90 : spl3d_m.mod
 beq_m.F90 : fmesh_m.mod
 beq_m.F90 : posang_m.mod
 beq_m.F90 : beqan_m.mod
+beq_m.F90 : gfile_m.mod
 beqan_m.F90 : beqan_h.mod
 beqan_m.F90 : log_m.mod
 beqan_m.F90 : const_kind_m.mod

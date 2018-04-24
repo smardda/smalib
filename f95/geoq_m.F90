@@ -443,7 +443,7 @@ subroutine geoq_psisilh(self)
      zr=zrmax ; zz=zzmax
      self%beq%psiotr=zpsimin
   end if
-  write(*,*) 'psiltr,psiotr', self%beq%psiltr,self%beq%psiotr !dbg
+  !dbg write(*,*) 'psiltr,psiotr', self%beq%psiltr,self%beq%psiotr !dbg
   call spl2d_evaln(self%beq%dpsidr,zr,zz,1,zdpdr)
   call spl2d_evaln(self%beq%dpsidz,zr,zz,2,zdpdz)
   self%beq%rbdry=zr
