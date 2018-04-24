@@ -20,6 +20,8 @@ module posang_m
   posang_invpsitfm,& !< convert flux back to polar coordinates
   posang_cartfm,&   !< rotate and translate to geometry cartesian coordinates
   posang_invcartfm,& !< rotate and translate from geometry cartesian coordinates
+  posang_tfmlis, & !> transform list of positions as posangs
+  posang_invtfmlis, & !> inverse transform list of positions as posangs
   posang_writev !< output posang vector
 
 ! private variables
@@ -303,6 +305,52 @@ subroutine posang_invcartfm(self,tfmdata,kunits)
   end select position_format
 
 end subroutine posang_invcartfm
+!---------------------------------------------------------------------
+!> transform list of positions as posangs
+subroutine posang_tfmlis(self,kunits,kzetp)
+
+  !! arguments
+  type(posveclis_t), intent(inout) :: self !< posang list data
+  integer(ki4), intent(in) :: kunits !< units of result (-3 for millimetres)
+  integer(ki4), intent(in) :: kzetp !< reciprocal factor to convert to zeta from xi
+
+  !! local
+  character(*), parameter :: s_name='posang_tfmlis' !< subroutine name
+  type(posvecl_t) :: zpos !< local variable
+  type(posang_t) :: zposang !<local
+
+  !! transform list of positions as posangs
+  do j=1,self%np
+     zposang%pos = self%pos(j)%posvec ; zposang%opt = 1 ; zposang%units = 0 ! metres, polars
+     zposang%pos(3) = zposang%pos(3)/kzetp
+     call posang_tfm(zposang,kunits)
+     self%pos(j)%posvec=zposang%pos
+  end do
+
+end subroutine posang_tfmlis
+!---------------------------------------------------------------------
+!> inverse transform list of positions as posangs
+subroutine posang_invtfmlis(self,kunits,kzetp)
+
+  !! arguments
+  type(posveclis_t), intent(inout) :: self !< posang list data
+  integer(ki4), intent(in) :: kunits !< units of result (-3 for millimetres)
+  integer(ki4), intent(in) :: kzetp !< factor to convert to zeta from xi
+
+  !! local
+  character(*), parameter :: s_name='posang_invtfmlis' !< subroutine name
+  type(posvecl_t) :: zpos !< local variable
+  type(posang_t) :: zposang !<local
+
+  !! transform list of positions as posangs
+  do j=1,self%np
+     zposang%pos = self%pos(j)%posvec ; zposang%opt = 0 ; zposang%units = -3 ! millimetres, cartesians
+     zposang%pos(3) = zposang%pos(3)*kzetp
+     call posang_invtfm(zposang,kunits)
+     self%pos(j)%posvec=zposang%pos
+  end do
+
+end subroutine posang_invtfmlis
 !---------------------------------------------------------------------
 !> output posang vector
 subroutine posang_writev(self,kplot,kopt)

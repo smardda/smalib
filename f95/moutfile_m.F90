@@ -3,7 +3,6 @@ module moutfile_m
   use const_kind_m
   use log_m
   use mcontrol_h
-  use mcontrol_m
   use date_time_m
 
   implicit none

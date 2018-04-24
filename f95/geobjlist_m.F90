@@ -54,6 +54,7 @@ module geobjlist_m
   geobjlist_iinit,  & !< initialise geobjlist from internal data
   geobjlist_ptcompress,  & !< compress points
   geobjlist_orientri,  & !< orient triangles consistently
+  geobjlist_fliptri, & !< flip orientation of triangles
   geobjlist_shelltets, & !< shell set of tetrahedra
   geobjlist_querynode, &  !< analyse node density
   geobjlist_copy, &  !< copy geobjlist to another
@@ -926,11 +927,12 @@ subroutine geobjlist_bin(self,btree)
 end subroutine geobjlist_bin
 !---------------------------------------------------------------------
 !> control dynamic sorting of  coordinates into bins
-subroutine geobjlist_bindyn(self,dbtree,kcall,bbox)
+subroutine geobjlist_bindyn(self,dbtree,kcall,qtfmdata,bbox)
   !! arguments
   type(geobjlist_t), intent(inout) :: self !< geobj list data
   type(dbtree_t), intent(inout) :: dbtree !< dbtree data
   integer(ki4), intent(in) :: kcall  !<  0 - initialise
+  type(quantfm_t), intent(in) :: qtfmdata   !< position transform (usually identity)
   real(kr8), dimension(3,2), intent(in), optional :: bbox !< bounding box corners
 
   !! local
@@ -956,7 +958,7 @@ subroutine geobjlist_bindyn(self,dbtree,kcall,bbox)
      end if
 
      ! initialise tree
-     call dbtree_init(dbtree,zbbox)
+     call dbtree_init(dbtree,zbbox,qtfmdata)
 
   end if
 
@@ -1615,6 +1617,8 @@ subroutine geobjlist_paneltfm(self,bods,numerics)
   do j=1,self%ng
      !w write(*,*)'j=',j !w
      ibod=bods%list(j)
+     ! object may have no associated body
+     if (ibod==0) cycle
 !dbgw     iibod=ibod !dbgw
      if (bods%nindx>0) ibod=bods%indx(ibod)
 !dbgw     write(110,*) j,iibod,ibod !dbgw
@@ -1772,6 +1776,8 @@ subroutine geobjlist_paneltfm(self,bods,numerics)
   do j=1,self%ng
 
      ibod=bods%list(j)
+     ! object may have no associated body
+     if (ibod==0) cycle
 !dbgw     iibod=ibod !dbgw
      if (bods%nindx>0) ibod=bods%indx(ibod)
 !dbgw     write(110,*) j,iibod,ibod !dbgw
@@ -3220,6 +3226,33 @@ subroutine geobjlist_orientri(self)
   deallocate(imark)
 
 end subroutine geobjlist_orientri
+!---------------------------------------------------------------------
+!> flip orientation of triangles
+subroutine geobjlist_fliptri(self)
+  !! arguments
+  type(geobjlist_t), intent(inout) :: self !< geobj list data
+
+  !! local
+  character(*), parameter :: s_name='geobjlist_fliptri' !< subroutine name
+  integer(ki4) :: ip !< point number
+  integer(ki4) :: innd !< position of first entry for object in nodl
+  integer(ki4) :: ityp !< type of object (5 for triangle)
+  integer(ki4) :: inumpts !< length of object in nodl array
+
+  do j=1,self%ng
+     ityp=self%obj2(j)%typ
+     if (ityp==VTK_TRIANGLE) then
+        ! triangles only
+        innd=self%obj2(j)%ptr
+        inumpts=geobj_entry_table(ityp)
+        !! interchange first and second points defining object
+        ip=self%nodl(innd)
+        self%nodl(innd)=self%nodl(innd+1)
+        self%nodl(innd+1)=ip
+     end if
+  end do
+
+end subroutine geobjlist_fliptri
 !---------------------------------------------------------------------
 !> shell set of tetrahedra
 subroutine geobjlist_shelltets(self,geobjtri)

@@ -14,6 +14,7 @@ module beq_m
   use fmesh_m
   use posang_m
   use beqan_m
+  use gfile_m
 
   implicit none
   private
@@ -356,7 +357,6 @@ subroutine beq_readequil(self,infile,numerics)
   character(len=15) :: cfmtdh !< fixed format for header
   character(len=15) :: cfmtd !< fixed format for header
   logical, parameter :: debug=.TRUE. !< flag for e16.9 output
-  logical, parameter :: opbdry=.FALSE. !< flag for o/p of boundary and limiter data
   logical :: unitused !< flag to test unit is available
   logical :: needfixup=.FALSE. !< flag special SMITER fix up
   integer(ki4) :: istatus   !< inner status variable
@@ -393,6 +393,7 @@ subroutine beq_readequil(self,infile,numerics)
   integer(ki4) :: nbbbs  !< EFIT number of points describing boundary
   integer(ki4) :: limitr  !< EFIT number of points describing limitr
   integer(ki4) :: ncoil  !< EFIT number of points describing one of five coils
+  integer(ki4) :: igunit  !< Unit for output of boundary data from eqdsk
 
   iffiesta=numerics%fiesta
   !! get file unit
@@ -710,11 +711,13 @@ subroutine beq_readequil(self,infile,numerics)
   if(status/=0) then
      call log_error(m_name,s_name,54,error_fatal,'Error reading boundary data')
   end if
-  if (opbdry) then
-     write(200,*) nbbbs
+  if (numerics%eqbdry) then
+     call gfile_init(numerics%eqbdryfile,'eqdsk (R,Z) boundary data',igunit)
+     write(igunit,'(A,1PG12.5)') '#  ', nbbbs
      do i=1,nbbbs
-        write(200,*) workr1(i),workz1(i)
+        write(igunit,*) workr1(i),workz1(i)
      end do
+     call gfile_close
   end if
   deallocate(workr1)
   deallocate(workz1)
@@ -732,11 +735,13 @@ subroutine beq_readequil(self,infile,numerics)
   if(status/=0) then
      call log_error(m_name,s_name,57,error_fatal,'Error reading limiter data')
   end if
-  if (opbdry) then
-     write(201,*) limitr
+  if (numerics%eqbdry) then
+     call gfile_init(numerics%eqltrfile,'eqdsk (R,Z) limiter data',igunit)
+     write(igunit,'(A,1PG12.5)') '#  ', limitr
      do i=1,limitr
-        write(201,*) workr1(i),workz1(i)
+        write(igunit,*) workr1(i),workz1(i)
      end do
+     call gfile_close
   end if
   deallocate(workr1)
   deallocate(workz1)
@@ -744,9 +749,10 @@ subroutine beq_readequil(self,infile,numerics)
   ! error indicates not present
   !coil data
   read(iin,*,iostat=status) ncoil
-  beq_nobinq=(status/=0)
+  ! optionally skip B in file
+  beq_nobinq=(status/=0).OR.numerics%skipb
   if(beq_nobinq) then
-     call log_error(m_name,s_name,60,error_warning,'Error reading ncoil')
+     call log_error(m_name,s_name,60,error_warning,'Unable to read ncoil')
      call log_value("Giving up on EQDSK for B values, status",status)
      !        deallocate(workr1)
      !        deallocate(workz1)
@@ -841,7 +847,6 @@ subroutine beq_readequ(self,infile,numerics)
   !! local
   character(*), parameter :: s_name='beq_readequ' !< subroutine name
   character(8), parameter :: cfmt1='(5f17.8)'
-  logical, parameter :: opbdry=.FALSE. !< flag for o/p of boundary and limiter data
   logical :: unitused !< flag to test unit is available
   integer(ki4) :: iin   !< input channel for object data structure
   integer(ki4) :: jm  !< FIESTA number of grid points in R-direction
@@ -1144,6 +1149,7 @@ subroutine beq_readana(self,beqan,kfldspec)
      ! possibly also in case where psi increases from axis
      self%f=-self%f
   end if
+  self%psicen=self%psiaxis
 
 end subroutine beq_readana
 !---------------------------------------------------------------------
@@ -1258,6 +1264,7 @@ subroutine beq_init(self,numerics,fmesh)
   ! initialise control structure
   self%n=numerics
   self%fmesh=fmesh
+  self%replasi=.FALSE.
 
   ! set flag for whether psi increases or decreases with minor radius
   !     rsig=sign(1._kr8,self%psiqbdry-self%psiaxis)
@@ -1994,14 +2001,14 @@ subroutine beq_writev(self,kchar,kplot)
      ztmin=self%n%thetamin+(self%ntmin-1)*self%dtheta
      write(kplot,'(''DATASET STRUCTURED_POINTS'')')
      write(kplot,'(''DIMENSIONS '',I8,I8,I8)') self%n%npsi+1,intheta,BEQ_MZETA
-     write(kplot,'(''ORIGIN '','//cfmt1v) self%n%psimin,ztmin,0.
+     write(kplot,'(''ORIGIN '','//cfmt1v) self%n%psimin,ztmin,-const_pid
      write(kplot,'(''SPACING '','//cfmt1v) self%dpsi,self%dtheta,beq_dzeta
      write(kplot,'(''POINT_DATA '',I8)') (self%n%npsi+1)*intheta*BEQ_MZETA
      write(kplot,'(''VECTORS Bpt float'')')
 
      zc1=0
      do k=1,BEQ_MZETA
-        zeta=(k-1)*beq_dzeta
+        zeta=(k-1)*beq_dzeta-const_pid
         do j=self%ntmin,self%ntmax
            ztheta=self%n%thetamin+(j-1)*self%dtheta
            do i=1,self%n%npsi+1
@@ -2641,8 +2648,20 @@ subroutine beq_centre(self)
   call log_error(m_name,s_name,1,log_info,'Equil. centre')
   call log_value("SMITER-GEOQ rcen ",self%n%rcen)
   call log_value("SMITER-GEOQ zcen ",self%n%zcen)
-  call log_value("SMITER-GEOQ psicen ",zpp)
+  self%psicen=zpp
+  call log_value("SMITER-GEOQ psicen ",self%psicen)
   call log_value("SMITER-GEOQ psiaxis ",self%psiaxis)
+  if (abs(self%psicen-self%psiaxis)> 0.1*self%psinorm) then
+     call log_error(m_name,s_name,2,error_warning,'Eqdsk value of psi on axis very different from computed')
+     call log_error(m_name,s_name,2,error_warning,'Using geoq computed value psicen')
+     self%replasi=.TRUE.
+     self%psiaxis=self%psicen
+     call log_error(m_name,s_name,2,error_warning,'plasma boundary psi may change')
+     boundary_type: select case (self%n%bdryopt)
+     case(2,6,7,10,11,12)
+        call log_error(m_name,s_name,3,error_warning,'beq_bdryopt may not work as expected')
+     end select boundary_type
+  end if
 
 end subroutine beq_centre
 !---------------------------------------------------------------------
@@ -2679,6 +2698,7 @@ subroutine beq_readcon(selfn,kin)
   real(kr8) :: beq_zetamin !< namelist \f$ \zeta_{\min} \f$
   real(kr8) :: beq_zetamax !< namelist \f$ \zeta_{\max} \f$
   integer(ki4) :: beq_nzetap !< namelist \f$ N_{\zeta P} \f$
+  logical :: skip_eqdsk_b !< read B cpts from eqdsk file unless .TRUE.
   real(kr8) :: beq_rmove !< namelist \f$ R_{mov} \f$ equilibrium displaced
   real(kr8) :: beq_zmove !< namelist \f$ Z_{mov} \f$ equilibrium displaced
   real(kr8) :: beq_fscale !< namelist \f$ f \f$ equilibrium scaled
@@ -2721,6 +2741,7 @@ subroutine beq_readcon(selfn,kin)
  &beq_duct,&
  &beq_psiref,&
  &beq_zetamin, beq_zetamax, beq_nzetap,&
+ &skip_eqdsk_b,&
  &beq_thetaref, beq_ntheta, beq_fldspec,&
  &beq_psibig,&
  &equil_helicity_ok,&
@@ -2750,6 +2771,7 @@ subroutine beq_readcon(selfn,kin)
   beq_zetamin=0
   beq_zetamax=2*const_pid
   beq_nzetap=0
+  skip_eqdsk_b=.FALSE.
   beq_rmove=0.
   beq_zmove=0.
   beq_fscale=1
@@ -2925,6 +2947,7 @@ subroutine beq_readcon(selfn,kin)
      selfn%thetamax=selfn%thetamax-const_pid/2-selfn%thetaref
   end if
   selfn%nzetp=beq_nzetap
+  selfn%skipb=skip_eqdsk_b
   if(selfn%zetaopt==1) then
      selfn%zetamin=beq_zetamin
      selfn%zetamax=beq_zetamax
@@ -3366,7 +3389,14 @@ subroutine beq_bdryrb(self)
      ztheta=const_pid
   case(8,9,10,12,15) ! outboard point selected
      ztheta=0.0_kr8
-  case default ! do nothing
+  case(1,3,13)
+     ! check for replacement
+     if (self%replasi) then
+        call log_value('psi plasma boundary replaced with',self%psibdry)
+        self%psiqbdry=self%psibdry
+     end if
+     return
+  case default ! do nothing (assuming psiqbdry OK in eqdsk)
      return
   end select pick_angle
 
@@ -3521,6 +3551,11 @@ subroutine beq_bdryrb(self)
      call log_error(m_name,s_name,30,error_warning,'failure to improve r value')
   end if
 
+  ! check for replacement
+  if (self%replasi) then
+     call log_value('psi plasma boundary replaced with',self%psibdry)
+     self%psiqbdry=self%psibdry
+  end if
   re=self%n%rcen+zsr*zcos
   ze=self%n%zcen+zsr*zsin
   call spl2d_evaln(self%dpsidr,re,ze,1,zdpdr)
@@ -3532,7 +3567,7 @@ subroutine beq_bdryrb(self)
   call spleval(self%f,self%mr,self%psiaxis,self%psiqbdry,zpsi,zf,1)
   self%btotbdry=sqrt( max(0.,(self%bpbdry**2+(zf/re)**2)) )
 
-  call log_error(m_name,s_name,1,log_info,'Reference boundary values')
+  call log_error(m_name,s_name,2,log_info,'Reference boundary values')
   call log_value("SMITER-GEOQ psibdry ",self%psibdry)
   call log_value("SMITER-GEOQ rbdry ",self%rbdry)
   call log_value("SMITER-GEOQ zbdry ",ze)

@@ -54,6 +54,7 @@ module dbtree_h
      type(ls_t) :: objectls !< numbered list object for children
      type(li_t) :: objectli !< simple linked list object for children
      type(ld_t) :: objectld !< doubly linked list object for children
+     type(quantfm_t) :: quantfmq !< geobj \f$ x \f$ between quantised mesh units scaling
      type(quantfm_t) :: quantfm !< geobj \f$ x \f$ to mesh units scaling
      real(kr4), dimension(3,2) :: binbb !< bb for geobj binning
      integer(ki4) :: maxchildn !< maximum number of children of a node
