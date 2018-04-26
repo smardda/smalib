@@ -120,7 +120,8 @@ subroutine powcal_init(self,numerics,plot,gnumerics)
   call log_value("data file has refinement level ",infilelevel)
   call log_value("input demands refinement level ",self%n%nlevel)
   if (self%n%nlevel>infilelevel) then
-     call log_error(m_name,s_name,1,error_fatal,'Requested refinement level too high')
+     call log_error(m_name,s_name,1,error_warning,'Requested refinement level too high, using file value')
+     self%n%nlevel=infilelevel
   end if
   ! set size of pow array
   allocate(self%powres%pow(self%powres%geobjl%ng), stat=status)

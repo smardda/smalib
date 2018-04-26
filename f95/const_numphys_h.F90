@@ -26,6 +26,8 @@ module const_numphys_h
  &const_massp = 1.6726219e-27_kr8,     & !< proton mass in kg.
  &const_masse = 9.10938e-31_kr8,           & !< mass of electron in kg.
  &const_slite  = 299.7925_kr8,                 & !< Speed of light in Mm/s (NB factor of 1e6)
+ &const_epsilon0  = 8.8542e-12_kr8,                 & !< Permeability of free space
+ &const_mu0  = 4*const_pid*1.e-7_kr8,                 & !< Permittivity of free space
  &const_kb = 1.38064852e-23_kr8      !< boltzmann constant
 
   real(kr4) , parameter, public :: const_pushinf = 1.e+8_kr4 !<  infinity for particle push

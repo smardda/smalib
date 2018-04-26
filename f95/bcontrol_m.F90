@@ -46,6 +46,8 @@ module bcontrol_m
      character(len=80)  :: gnusil !< gnuplot file of silhouette as function of \f$ (R,Z) \f$
      character(len=80)  :: gnusilm !< gnuplot file of silhouette as function of \f$ (\psi,\theta) \f$
      character(len=80)  :: geoqfldxyz   !< \f$ \bf{B} \f$ in Cartesians on Cartesian grid
+     character(len=80)  :: eqbdry   !< file containing boundary points from eqdsk
+     character(len=80)  :: eqltr   !< file containing limiter points from eqdsk
      character(len=80)  :: fmesh   !< define special mesh on input file name
   end type bfiles_t
 
@@ -75,6 +77,7 @@ module bcontrol_m
      logical  :: gnum !< gnuplot file of \f$ fns(\psi,\theta) \f$
      logical  :: geofldxyz   !< geometry and field in Cartesians
      logical  :: geoqvolxyz   !< geometry and field in Cartesians on Cartesian grid
+     logical  :: eqbdry   !< produce files containing boundary and limiter points from eqdsk
   end type bplots_t
 
 
@@ -169,6 +172,7 @@ subroutine bcontrol_read(file,numerics,plot)
   logical :: plot_gnum !< gnum plot selector
   logical :: plot_gnusil !< gnusil plot selector
   logical :: plot_gnusilm !< gnusilm plot selector
+  logical :: plot_eqdsk_boundary !< eqbdry plot selector
   logical :: plot_geoqfldxyz !< save field in special format
 
   !! file names
@@ -205,6 +209,7 @@ subroutine bcontrol_read(file,numerics,plot)
  &plot_gnum, &
  &plot_gnusil, &
  &plot_gnusilm, &
+ &plot_eqdsk_boundary, &
  &plot_geoqfldxyz
 
   !! read input file names
@@ -249,7 +254,7 @@ subroutine bcontrol_read(file,numerics,plot)
 
   ! set equilibrium type depending on suffix
   indot=index(equil_input_file,'.',.TRUE.)
-  if (indot>80) then
+  if (indot<2.OR.indot>80) then
      call log_error(m_name,s_name,2,error_fatal,'Beq field data file has no suffix')
   end if
   icsuf=equil_input_file(indot+1:)
@@ -321,6 +326,8 @@ subroutine bcontrol_read(file,numerics,plot)
   file%gnu     =trim(root)//"_gnu"
   file%gnusil     =trim(root)//"_gnusil"
   file%gnusilm     =trim(root)//"_gnusilm"
+  file%eqbdry     =file%equil(1:indot-1)//"_eqbdry"
+  file%eqltr     =file%equil(1:indot-1)//"_eqltr"
   !! special field file format
   file%geoqfldxyz     =trim(root)//"_geoqfldxyz"
   file%geoqfldxyz     =trim(root)//"_fieldi"
@@ -366,6 +373,7 @@ subroutine bcontrol_read(file,numerics,plot)
   plot_gnum = .false.
   plot_gnusil = .false.
   plot_gnusilm = .false.
+  plot_eqdsk_boundary = .false.
   plot_geoqfldxyz = .false.
 
   !!read plot selections
@@ -398,6 +406,7 @@ subroutine bcontrol_read(file,numerics,plot)
   plot%gnum     = plot_gnum
   plot%gnusil     = plot_gnusil
   plot%gnusilm     = plot_gnusilm
+  plot%eqbdry     = plot_eqdsk_boundary
   if (plot_frzxi) then
      plot%geoqm = plot_frzxi
      file%geoqm = file%frzxi
@@ -416,6 +425,10 @@ subroutine bcontrol_read(file,numerics,plot)
   end if
 
   call beq_readcon(numerics,nin)
+
+  numerics%eqbdry=plot%eqbdry
+  numerics%eqbdryfile=file%eqbdry
+  numerics%eqltrfile=file%eqltr
 
 end  subroutine bcontrol_read
 

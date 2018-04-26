@@ -175,7 +175,7 @@ subroutine dbtree_readcon(selfn,channel)
   !! 3. multi-octree (octree with special root node)
   tree_type=1
   type_tree_algorithm=1
-  splitting_algorithm=3 !< most symmetric split (1 is least)
+  splitting_algorithm=0
   limit_geobj_in_bin=20
   type_list_structure=0
   top_tree_children=(/2,2,2/) !< for special top octree default
@@ -230,7 +230,7 @@ subroutine dbtree_readcon(selfn,channel)
   if(type_tree_algorithm<0.OR.type_tree_algorithm>2) &
  &call log_error(m_name,s_name,7,error_fatal,'type_tree_algorithm must be >= 0 and <=2')
   if(splitting_algorithm<0.OR.splitting_algorithm>3) &
- &call log_error(m_name,s_name,10,error_fatal,'splitting_algorithm must be >= 1 and <=3')
+ &call log_error(m_name,s_name,10,error_fatal,'splitting_algorithm must be >= 0 and <=3')
   if(limit_geobj_in_bin<1) &
  &call log_error(m_name,s_name,11,error_fatal,'limit_geobj_in_bin must be > 0')
   if(any(top_tree_children<1)) &
@@ -318,11 +318,12 @@ subroutine dbtree_quantise(nquante,kquante,kqtfm)
 end subroutine dbtree_quantise
 !---------------------------------------------------------------------
 !> initialise object possibly using bbox to quantise
-subroutine dbtree_init(self,bbox,numerics)
+subroutine dbtree_init(self,bbox,qtfmdata,numerics)
 
   !! arguments
   type(dbtree_t), intent(inout) :: self !< module object
   real(kr8), dimension(3,2), intent(inout) :: bbox !< bounding box corners
+  type(quantfm_t), intent(in) :: qtfmdata !< geobj \f$ x \f$ to mesh units scaling
   type(dbnumerics_t), intent(in), optional :: numerics !< dbtree parameters
 
   !! local
@@ -368,7 +369,7 @@ subroutine dbtree_init(self,bbox,numerics)
   end if
 
   ! initialise tfm and nxyz at top of tree
-  call dbtree_initfm(self,bbox)
+  call dbtree_initfm(self,qtfmdata,bbox)
 
   self%nt=1
   self%npter=isizep
@@ -407,9 +408,10 @@ subroutine dbtree_init(self,bbox,numerics)
 end subroutine dbtree_init
 !---------------------------------------------------------------------
 !> initialise dbtree transformation using binbb
-subroutine dbtree_initfm(self,bbox)
+subroutine dbtree_initfm(self,qtfmdata,bbox)
   !! arguments
   type(dbtree_t), intent(inout) :: self !< dbtree data
+  type(quantfm_t), intent(in) :: qtfmdata !< geobj \f$ x \f$ to mesh units scaling
   real(kr8), dimension(3,2), intent(inout) :: bbox !< bounding box corners
 
   !! local
@@ -430,6 +432,9 @@ subroutine dbtree_initfm(self,bbox)
   integer(ki2):: ittype !< type of tree
   integer(ki4) :: ipow2  !< local variable
   integer(ki4):: imtype  !< local variable
+  real(kr4), dimension(3,2) :: zbinbb !< bb for geobj binning
+  type(posvecl_t) :: zpos !< local variable
+  type(posvecl_t) :: zposq !< local variable
 
   ! default quantisation
   ittype=self%n%nttype
@@ -524,12 +529,49 @@ subroutine dbtree_initfm(self,bbox)
      end if
   end select tree_types
 
-
-  !! set bb (with margin)
+  !! set bb (ignoring margins set above)
   self%binbb(:,1)=bbox(:,1)
   self%binbb(:,2)=bbox(:,2)
 
+  !!set quantising to quantising transform
+  self%quantfmq%nqtfm=2
+  self%quantfmq%hmin=(/0.,0.,0./)
+  zhmin=0.
+  imtype=self%n%mtype
+
+  ! set hmin vector
+  if (self%n%nttype==1) then
+     ! BSP
+     self%quantfmq%hmin=(self%binbb(:,2)-self%binbb(:,1))/2**self%n%nquante
+  else if (self%n%nttype==2) then
+     ! octree
+     self%quantfmq%hmin=(self%binbb(:,2)-self%binbb(:,1))/2**self%n%nquante
+  else if (self%n%nttype==3) then
+     ! multi-octree
+     if (self%n%nttalg==0) then
+        ! multi-octree, automatic quantisation
+        zhmin=(self%binbb(lmin,2)-self%binbb(lmin,1))/2**self%n%nquante
+        self%quantfmq%hmin=(/zhmin,zhmin,zhmin/)
+     else if (self%n%nttalg==1) then
+        ! multi-octree, using hxyz
+        self%quantfmq%hmin=(self%binbb(:,2)-self%binbb(:,1))/(ixyz*2**self%n%nquante)
+     else if (self%n%nttalg==2) then
+        ! multi-octree, using nxyz
+        self%quantfmq%hmin=(self%binbb(:,2)-self%binbb(:,1))/(ixyz*2**self%n%nquante)
+     end if
+  end if
+
+  self%quantfmq%rhmin=1./self%quantfmq%hmin
+  self%quantfmq%offvec=-self%binbb(:,1)*self%quantfmq%rhmin
+
+
   !!set quantising transform
+  do j=1,2
+  zpos%posvec=self%binbb(:,j)
+  zposq=position_invqtfm(zpos,qtfmdata)
+  zbinbb(:,j)=zposq%posvec
+  end do
+
   self%quantfm%nqtfm=2
   self%quantfm%hmin=(/0.,0.,0./)
   zhmin=0.
@@ -538,27 +580,27 @@ subroutine dbtree_initfm(self,bbox)
   ! set hmin vector
   if (self%n%nttype==1) then
      ! BSP
-     self%quantfm%hmin=(self%binbb(:,2)-self%binbb(:,1))/2**self%n%nquante
+     self%quantfm%hmin=(zbinbb(:,2)-zbinbb(:,1))/2**self%n%nquante
   else if (self%n%nttype==2) then
      ! octree
-     self%quantfm%hmin=(self%binbb(:,2)-self%binbb(:,1))/2**self%n%nquante
+     self%quantfm%hmin=(zbinbb(:,2)-zbinbb(:,1))/2**self%n%nquante
   else if (self%n%nttype==3) then
      ! multi-octree
      if (self%n%nttalg==0) then
         ! multi-octree, automatic quantisation
-        zhmin=(self%binbb(lmin,2)-self%binbb(lmin,1))/2**self%n%nquante
+        zhmin=(zbinbb(lmin,2)-zbinbb(lmin,1))/2**self%n%nquante
         self%quantfm%hmin=(/zhmin,zhmin,zhmin/)
      else if (self%n%nttalg==1) then
         ! multi-octree, using hxyz
-        self%quantfm%hmin=(self%binbb(:,2)-self%binbb(:,1))/(ixyz*2**self%n%nquante)
+        self%quantfm%hmin=(zbinbb(:,2)-zbinbb(:,1))/(ixyz*2**self%n%nquante)
      else if (self%n%nttalg==2) then
         ! multi-octree, using nxyz
-        self%quantfm%hmin=(self%binbb(:,2)-self%binbb(:,1))/(ixyz*2**self%n%nquante)
+        self%quantfm%hmin=(zbinbb(:,2)-zbinbb(:,1))/(ixyz*2**self%n%nquante)
      end if
   end if
 
   self%quantfm%rhmin=1./self%quantfm%hmin
-  self%quantfm%offvec=-self%binbb(:,1)*self%quantfm%rhmin
+  self%quantfm%offvec=-zbinbb(:,1)*self%quantfm%rhmin
 
   self%n%nxyz=ixyz
 
@@ -1776,7 +1818,7 @@ subroutine dbtree_geom(self,kclab,geobjl)
 
   if (kclab(3:6)=='area') then
      ! calculate area in direction normal to direction given by first entry
-     ! (this is incorrect if there is only leaf as first exten refers to
+     ! (this is incorrect if there is only one leaf as first exten refers to
      ! size of virtual sub-boxes)
      read(kclab(1:1),'(i1)') iz
      ix=1+mod(iz,3)
@@ -1899,7 +1941,6 @@ end subroutine dbtree_close
 !---------------------------------------------------------------------
 !> return ordering of discrepancies in split
 subroutine ordersplit(kna,kord)
-  use const_kind_m
   !! arguments
   integer(ki4), dimension(8), intent(in) :: kna !< number in each box
   integer(ki2), dimension(3), intent(out) :: kord  !< order of discrepancies, worst first
@@ -1908,7 +1949,7 @@ subroutine ordersplit(kna,kord)
   integer(ki4) :: idiscp  !< discrepancy in split
   integer(ki4) :: idiscpmax  !< max discrepancy in split
   integer(ki4) :: idiscpmin  !< min discrepancy in split
-  integer(ki4), dimension(3) :: isuma  !< sum over lower boces in direction of index
+  integer(ki4), dimension(3) :: isuma  !< sum over lower boxes in direction of index
   integer(ki4) :: jl  !< local loop
 
   isumh=sum(kna(1:8))/2
