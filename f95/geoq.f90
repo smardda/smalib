@@ -157,6 +157,9 @@ program geoq_p
      call gfile_init(trim(file%gnu)//'_dZ','dpsi/dZ sample in R-Z space',nprint)
      call spl2d_writeg(geoq%beq%dpsidz,'sampl',nprint)
      call gfile_close
+     call gfile_init(trim(file%gnu)//'_cart','all in cartesian',nprint)
+     call beq_writeg(geoq%beq,'allcartesian',nprint)
+     call gfile_close
      call clock_stop(18)
   end if
 

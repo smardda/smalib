@@ -9,6 +9,14 @@ module beq_h
 
 !> numerical control parameters for beq
   type, public :: bnumerics_t
+   !> number of points for gnuplot
+   !! display in direction of invariant coordinate \f$ \zeta \f$,
+   !! if equal to unity, output plane at \f$ \zeta=0 \f$
+     integer(ki4) :: mzetag !< .
+   !> number of points for vtk
+   !! display in direction of invariant coordinate \f$ \zeta \f$,
+   !! if equal to unity, output plane at \f$ \zeta=0 \f$
+     integer(ki4) :: mzetav !< .
    !> \f$ C_{opt} \f$. Set position of plasma centre \f$ R_{cen}, Z_{cen} \f$
    !! 1. User input of \f$ R_{cen}, Z_{cen} \f$
    !! 2. Find mesh-point with extremal psi value, start search at

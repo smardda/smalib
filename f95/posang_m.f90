@@ -378,6 +378,11 @@ subroutine posang_writev(self,kplot,kopt)
         if(status/=0) then
            call log_error(m_name,s_name,2,error_fatal,'Error writing vector')
         end if
+     else if(kopt==3) then
+        write(kplot,cfmtbv2,iostat=status) self%pos,self%vec
+        if(status/=0) then
+           call log_error(m_name,s_name,3,error_fatal,'Error writing vector')
+        end if
      end if
 
   end if

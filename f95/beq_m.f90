@@ -73,10 +73,6 @@ module beq_m
 !see beq_h file
 
 ! public variables
-  integer(ki4), public, parameter :: BEQ_MZETA=193 !< number of points for
- &! display in direction of invariant coordinate \f$ \zeta \f$
-  real(kr8), public, parameter :: beq_dzeta=2*const_pid/(BEQ_MZETA-1) !< increment
- &! in direction of invariant coordinate \f$ \zeta \f$
 
 ! private types
 
@@ -1736,12 +1732,21 @@ end subroutine beq_readplus
 subroutine beq_writeg(self,kchar,kout)
 
   !! arguments
-  type(beq_t), intent(in) :: self   !< object data structure
+  type(beq_t), intent(inout) :: self   !< object data structure
   character(*), intent(in) :: kchar  !< case
   integer(ki4), intent(in) :: kout   !< output channel for object data structure
 
   !! local
   character(*), parameter :: s_name='beq_writeg' !< subroutine name
+  real(kr8) :: dzeta !< increment
+  real(kr8) :: zr    !<   \f$ R(\psi_i,\theta_j) \f$
+  real(kr8) :: zz    !<   \f$ Z(\psi_i,\theta_j) \f$
+  real(kr8) :: zeta    !<  \f$ \zeta_k \f$
+  real(kr8) :: zcos    !<  \f$ \cos(\zeta_k) \f$
+  real(kr8) :: zsin    !<  \f$ \sin(\zeta_k) \f$
+  type(posang_t) :: posang !< position and vector involving angles
+
+  dzeta=2*const_pid/max(1,self%n%mzetag-1)
 
   plot_type: select case (kchar)
   case('R-Z')
@@ -1755,6 +1760,27 @@ subroutine beq_writeg(self,kchar,kout)
         end do
         write(kout,*,iostat=status) ' '
         call log_write_check(m_name,s_name,2,status)
+     end do
+
+  case('allcartesian')
+     do k=1,self%n%mzetag
+        zeta=(k-1)*dzeta
+        zsin=sin(zeta)
+        zcos=cos(zeta)
+        do j=1,self%mz+1
+           zz=self%zmin+(j-1)*self%dz
+           do i=1,self%mr+1
+              zr=self%rmin +(i-1)*self%dr
+              posang%pos(1)=zr ; posang%pos(2)=zz ; posang%pos(3)=zeta
+              posang%opt=1 ; posang%units=0
+              ! posn to cartesians and output posn and vector
+              call posang_tfm(posang,-3)
+              call beq_b(self,posang,0)
+              call posang_writev(posang,kout,3)
+           end do
+        end do
+        write(kout,*,iostat=status) ' '
+        call log_write_check(m_name,s_name,3,status)
      end do
 
   case default
@@ -1868,18 +1894,20 @@ subroutine beq_writev(self,kchar,kplot)
   real(kr8) :: zf    !<   \f$ f(\psi) = RB_T \f$
   real(kr8) :: plotfac    !<   scale to mm
   type(posang_t) :: posang !< position and vector involving angles
+  real(kr8) :: dzeta !< increment
 
+  dzeta=2*const_pid/max(1,self%n%mzetav-1)
   plot_type: select case (kchar)
   case('cartesian')
      call log_error(m_name,s_name,1,log_info,'Plot parameter')
-     call log_value("Number of toroidal points",BEQ_MZETA)
+     call log_value("Number of toroidal points",self%n%mzetav)
      intheta=self%ntmax-self%ntmin+1
      write(kplot,'(''DATASET STRUCTURED_GRID'')')
-     write(kplot,'(''DIMENSIONS '',I8,I8,I8)') self%n%npsi+1,intheta,BEQ_MZETA
-     write(kplot,'(''POINTS '',I8,'' float'')') (self%n%npsi+1)*intheta*BEQ_MZETA
+     write(kplot,'(''DIMENSIONS '',I8,I8,I8)') self%n%npsi+1,intheta,self%n%mzetav
+     write(kplot,'(''POINTS '',I8,'' float'')') (self%n%npsi+1)*intheta*self%n%mzetav
 
-     do k=1,BEQ_MZETA
-        zeta=(k-1)*beq_dzeta ; zsin=sin(zeta) ; zcos=cos(zeta)
+     do k=1,self%n%mzetav
+        zeta=(k-1)*dzeta ; zsin=sin(zeta) ; zcos=cos(zeta)
         do j=self%ntmin,self%ntmax
            ztheta=self%n%thetamin+(j-1)*self%dtheta
            do i=1,self%n%npsi+1
@@ -1895,10 +1923,10 @@ subroutine beq_writev(self,kchar,kplot)
         end do
      end do
 
-     write(kplot,'(''POINT_DATA '',I8)') (self%n%npsi+1)*intheta*BEQ_MZETA
+     write(kplot,'(''POINT_DATA '',I8)') (self%n%npsi+1)*intheta*self%n%mzetav
      write(kplot,'(''VECTORS Bcart float'')')
-     do k=1,BEQ_MZETA
-        zeta=(k-1)*beq_dzeta
+     do k=1,self%n%mzetav
+        zeta=(k-1)*dzeta
         zsin=sin(zeta)
         zcos=cos(zeta)
         do j=self%ntmin,self%ntmax
@@ -1925,14 +1953,14 @@ subroutine beq_writev(self,kchar,kplot)
 
   case('allcartesian')
      call log_error(m_name,s_name,1,log_info,'Plot parameter')
-     call log_value("Number of toroidal points",BEQ_MZETA)
+     call log_value("Number of toroidal points",self%n%mzetav)
 
      write(kplot,'(''DATASET STRUCTURED_GRID'')')
-     write(kplot,'(''DIMENSIONS '',I8,I8,I8)') self%mr+1,self%mz+1,BEQ_MZETA
-     write(kplot,'(''POINTS '',I8,'' float'')') (self%mr+1)*(self%mz+1)*BEQ_MZETA
+     write(kplot,'(''DIMENSIONS '',I8,I8,I8)') self%mr+1,self%mz+1,self%n%mzetav
+     write(kplot,'(''POINTS '',I8,'' float'')') (self%mr+1)*(self%mz+1)*self%n%mzetav
 
-     do k=1,BEQ_MZETA
-        zeta=(k-1)*beq_dzeta
+     do k=1,self%n%mzetav
+        zeta=(k-1)*dzeta
         zsin=sin(zeta)
         zcos=cos(zeta)
         do j=1,self%mz+1
@@ -1948,10 +1976,10 @@ subroutine beq_writev(self,kchar,kplot)
         end do
      end do
 
-     write(kplot,'(''POINT_DATA '',I8)') (self%mr+1)*(self%mz+1)*BEQ_MZETA
+     write(kplot,'(''POINT_DATA '',I8)') (self%mr+1)*(self%mz+1)*self%n%mzetav
      write(kplot,'(''VECTORS Bcart float'')')
-     do k=1,BEQ_MZETA
-        zeta=(k-1)*beq_dzeta
+     do k=1,self%n%mzetav
+        zeta=(k-1)*dzeta
         zsin=sin(zeta)
         zcos=cos(zeta)
         do j=1,self%mz+1
@@ -1995,20 +2023,20 @@ subroutine beq_writev(self,kchar,kplot)
 
   case('psi-theta')
      call log_error(m_name,s_name,1,log_info,'Plot parameter')
-     call log_value("Number of toroidal points",BEQ_MZETA)
+     call log_value("Number of toroidal points",self%n%mzetav)
 
      intheta=self%ntmax-self%ntmin+1
      ztmin=self%n%thetamin+(self%ntmin-1)*self%dtheta
      write(kplot,'(''DATASET STRUCTURED_POINTS'')')
-     write(kplot,'(''DIMENSIONS '',I8,I8,I8)') self%n%npsi+1,intheta,BEQ_MZETA
+     write(kplot,'(''DIMENSIONS '',I8,I8,I8)') self%n%npsi+1,intheta,self%n%mzetav
      write(kplot,'(''ORIGIN '','//cfmt1v) self%n%psimin,ztmin,-const_pid
-     write(kplot,'(''SPACING '','//cfmt1v) self%dpsi,self%dtheta,beq_dzeta
-     write(kplot,'(''POINT_DATA '',I8)') (self%n%npsi+1)*intheta*BEQ_MZETA
+     write(kplot,'(''SPACING '','//cfmt1v) self%dpsi,self%dtheta,dzeta
+     write(kplot,'(''POINT_DATA '',I8)') (self%n%npsi+1)*intheta*self%n%mzetav
      write(kplot,'(''VECTORS Bpt float'')')
 
      zc1=0
-     do k=1,BEQ_MZETA
-        zeta=(k-1)*beq_dzeta-const_pid
+     do k=1,self%n%mzetav
+        zeta=(k-1)*dzeta-const_pid ! not used
         do j=self%ntmin,self%ntmax
            ztheta=self%n%thetamin+(j-1)*self%dtheta
            do i=1,self%n%npsi+1
@@ -2675,6 +2703,8 @@ subroutine beq_readcon(selfn,kin)
 
   !! local
   character(*), parameter :: s_name='beq_readcon' !< subroutine name
+  integer(ki4) :: mzeta_vtk !< number of sample points in  \f$ \zeta \f$ for vtk
+  integer(ki4) :: mzeta_gnup !< number of sample points in  \f$ \zeta \f$ for gnuplot
   integer(ki4) :: beq_cenopt !< namelist option for \f$ R_{cen}, Z_{cen} \f$
   integer(ki4) :: beq_psiopt !< namelist option for \f$ \psi{\min}, \psi_{\max}\f$
   integer(ki4) :: beq_bdryopt !< namelist option for setting reference boundary \f$ \psi \f$
@@ -2729,6 +2759,7 @@ subroutine beq_readcon(selfn,kin)
   !! beq parameters
   namelist /beqparameters/ &
  &beq_cenopt, beq_psiopt, &
+ &mzeta_vtk, mzeta_gnup, &
  &beq_bdryopt, beq_nopt, &
  &beq_thetaopt, &
  &beq_zetaopt, beq_xiopt, &
@@ -2750,6 +2781,8 @@ subroutine beq_readcon(selfn,kin)
  &beq_vacuum_field_file
 
   !! set default beq parameters
+  mzeta_vtk=193
+  mzeta_gnup=1
   ! default is user input
   beq_cenopt=1
   beq_psiopt=1
@@ -2808,6 +2841,10 @@ subroutine beq_readcon(selfn,kin)
 
 
   !! check for valid data
+ if(mzeta_vtk<=0) &
+ &call log_error(m_name,s_name,2,error_fatal,'mzeta_vtk must be positive integer')
+ if(mzeta_gnup<=0) &
+ &call log_error(m_name,s_name,2,error_fatal,'mzeta_gnup must be positive integer')
   if(beq_cenopt<=0.OR.beq_cenopt>=5) &
  &call log_error(m_name,s_name,2,error_fatal,'beq_cenopt must be small positive integer')
   if(beq_cenopt==1.AND.beq_rcen<=0) &
@@ -2903,6 +2940,8 @@ subroutine beq_readcon(selfn,kin)
 
   !! store values
   selfn%cenopt=beq_cenopt
+  selfn%mzetav=mzeta_vtk
+  selfn%mzetag=mzeta_gnup
   selfn%psiopt=beq_psiopt
   selfn%bdryopt=beq_bdryopt
   selfn%nopt=beq_nopt
