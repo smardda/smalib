@@ -20,6 +20,7 @@ module posang_m
   posang_invpsitfm,& !< convert flux back to polar coordinates
   posang_cartfm,&   !< rotate and translate to geometry cartesian coordinates
   posang_invcartfm,& !< rotate and translate from geometry cartesian coordinates
+  posang_units,&   !< convert units of position only
   posang_tfmlis, & !> transform list of positions as posangs
   posang_invtfmlis, & !> inverse transform list of positions as posangs
   posang_writev !< output posang vector
@@ -305,6 +306,38 @@ subroutine posang_invcartfm(self,tfmdata,kunits)
   end select position_format
 
 end subroutine posang_invcartfm
+!---------------------------------------------------------------------
+!> convert units of position only 
+subroutine posang_units(self,kunits)
+
+  !! arguments
+  type(posang_t), intent(inout) :: self   !< object data structure
+  integer(ki4), intent(in) :: kunits !< units of result (-3 for millimetres)
+
+  !! local
+  character(*), parameter :: s_name='posang_units' !< subroutine name
+  type(posvecl_t) :: zpos !< vector
+
+  iopt=self%opt
+
+  zufac=10.**(self%units-kunits)
+  position_format: select case (iopt)
+  case(0,16) ! cartesians
+     zpos%posvec=self%pos
+     self%pos(1)=zufac*zpos%posvec(1)
+     self%pos(2)=zufac*zpos%posvec(2)
+     self%pos(3)=zufac*zpos%posvec(3)
+     self%opt=0 ; self%units=kunits
+  case(1,17) ! polar-toroidal
+     zpos%posvec=self%pos
+     self%pos(1)=zufac*zpos%posvec(1)
+     self%pos(2)=zufac*zpos%posvec(2)
+     self%opt=0 ; self%units=kunits
+  case default
+     call log_error(m_name,s_name,1,error_fatal,'Position in wrong format')
+  end select position_format
+
+end subroutine posang_units
 !---------------------------------------------------------------------
 !> transform list of positions as posangs
 subroutine posang_tfmlis(self,kunits,kzetp)

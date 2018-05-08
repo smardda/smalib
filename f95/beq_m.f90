@@ -1763,6 +1763,12 @@ subroutine beq_writeg(self,kchar,kout)
      end do
 
   case('allcartesian')
+     write(kout,'(a9,'//cfmt2v,iostat=status) &
+ &   '# limits ',self%rmin,self%rmax,self%zmin,self%zmax
+     call log_write_check(m_name,s_name,3,status)
+     write(kout,'(a)',iostat=status) &
+ &   '#X                Y               Z               BX               BY               BZ'
+     call log_write_check(m_name,s_name,4,status)
      do k=1,self%n%mzetag
         zeta=(k-1)*dzeta
         zsin=sin(zeta)
@@ -1774,13 +1780,16 @@ subroutine beq_writeg(self,kchar,kout)
               posang%pos(1)=zr ; posang%pos(2)=zz ; posang%pos(3)=zeta
               posang%opt=1 ; posang%units=0
               ! posn to cartesians and output posn and vector
-              call posang_tfm(posang,-3)
+              call posang_tfm(posang,0)
               call beq_b(self,posang,0)
+              call posang_units(posang,0)
               call posang_writev(posang,kout,3)
            end do
+           write(kout,*,iostat=status) ' '
+           call log_write_check(m_name,s_name,5,status)
         end do
         write(kout,*,iostat=status) ' '
-        call log_write_check(m_name,s_name,3,status)
+        call log_write_check(m_name,s_name,6,status)
      end do
 
   case default
