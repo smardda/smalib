@@ -1986,11 +1986,15 @@ subroutine beq_writev(self,kchar,kplot)
      end do
 
      write(kplot,'(''POINT_DATA '',I8)') (self%mr+1)*(self%mz+1)*self%n%mzetav
+     write(kplot,'(''SCALARS Psi float'')')
+     write(kplot,'(''LOOKUP_TABLE default'')')
+     do k=1,self%n%mzetav
+        call spl2d_writev(self%psi,'sampl',kplot)
+     end do
+
      write(kplot,'(''VECTORS Bcart float'')')
      do k=1,self%n%mzetav
         zeta=(k-1)*dzeta
-        zsin=sin(zeta)
-        zcos=cos(zeta)
         do j=1,self%mz+1
            zz=self%zmin+(j-1)*self%dz
            do i=1,self%mr+1
