@@ -172,7 +172,7 @@ program vtktfm_p
   call clock_start(6,'position transform time')
 !     line below needed for debugging version to run
 !  write(*,*) 'this output helps gfortran sometimes',(geobjl%nodl(j),j=1,2)
-!dbgw     write(*,*) 'fourth',((numerics%panbod(ii,ij),ii=1,2),ij=1,9)  !dbgw
+!     write(*,*) 'fourth',((numerics%panbod(ii,ij),ii=1,2),ij=1,9)  !dbgW
   if (numerics%paneltfm) then
 !dbgw write(*,*) 'caling paneltfm' !dbgw
      call geobjlist_paneltfm(geobjl,bods,numerics)
@@ -185,7 +185,7 @@ program vtktfm_p
 !! output file(s)
 
   call clock_start(30,'outfile_init time')
-  if (numerics%split) then
+  if (numerics%split.OR.numerics%extract) then
 ! write out as separate files
      call bods_write(bods,geobjl,fileroot,'none',numerics%name,1)
   else
