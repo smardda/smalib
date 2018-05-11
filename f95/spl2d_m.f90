@@ -18,6 +18,7 @@ module spl2d_m
   spl2d_scale,  &  !< scale spline values
   spl2d_delete,   & !< delete  spl2d data structure
   spl2d_writeg, & !< write in gnuplot format
+  spl2d_writev, & !< write in paraview format
   spl2d_write, & !< write in data structure format
   spl2d_locpos, & !< find integer coordinates of point
   spl2d_deriv, & !< differentiate with respect to coordinate
@@ -613,6 +614,36 @@ subroutine spl2d_writeg(self,kchar,kout)
   end select plot_type
 
 end subroutine spl2d_writeg
+!---------------------------------------------------------------------
+!> write in paraview format
+subroutine spl2d_writev(self,kchar,kout)
+
+  !! arguments
+  type(spl2d_t), intent(in) :: self   !< object data structure
+  character(*), intent(in) :: kchar  !< case
+  integer(ki4), intent(in) :: kout   !< output channel for object data structure
+
+
+  !! local
+  character(*), parameter :: s_name='spl2d_writev' !< subroutine name
+
+  plot_type: select case (kchar)
+  case('sampl')
+
+     do j=1,self%n2p
+        do i=1,self%n1p
+           write(kout,cfmtbs1,iostat=status) self%sampl(i,j)
+        end do
+     end do
+     if(status/=0) then
+        call log_error(m_name,s_name,1,error_fatal,'Error writing sampl')
+     end if
+
+  case default
+
+  end select plot_type
+
+end subroutine spl2d_writev
 !---------------------------------------------------------------------
 !> write in data format
 subroutine spl2d_write(self,kout)
