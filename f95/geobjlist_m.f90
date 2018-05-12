@@ -173,6 +173,8 @@ subroutine geobjlist_close(self)
      print '("Fatal error: Unable to close file unit, ",i5)',nin
      call log_error(m_name,s_name,1,error_fatal,'Cannot close data file')
      stop
+  else
+     call log_error(m_name,s_name,2,log_info,'unit closed')
   end if
 
 end subroutine geobjlist_close

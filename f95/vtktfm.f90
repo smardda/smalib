@@ -139,6 +139,7 @@ program vtktfm_p
         icall=j-1
         igeobjl%ngtype=2
         call geobjlist_read(igeobjl,file%vtkdata(j),iched)
+        iopt=1
         nin=0
         call vfile_iscalarread(ibods,nscal,file%vtkdata(j),numerics%name,nin,iopt) !W
 !dbgw     write(*,*) 'second',(geobjl%nodl(ij),ij=1,20)  !dbgw
