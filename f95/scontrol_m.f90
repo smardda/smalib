@@ -44,7 +44,6 @@ subroutine scontrol_init(fileroot)
   logical :: unitused !< flag to test unit is available
   character(len=80) :: controlfile !< control file name
 
-
   !! get file unit
   do i=99,1,-1
      inquire(i,opened=unitused)
@@ -65,7 +64,6 @@ subroutine scontrol_init(fileroot)
      call log_error(m_name,s_name,1,error_fatal,'Cannot open control data file')
      stop
   end if
-
 
 end  subroutine scontrol_init
 !---------------------------------------------------------------------
@@ -279,6 +277,10 @@ subroutine scontrol_readcon(self,channel)
   character(len=80) :: analysis_mode !< only one mode available
   character(len=80) :: sort_key !< key to be used to sort scalar field
   character(len=80) :: analyse_scalar !< identifier of scalar field to analyse
+  logical :: user_r_central !< user sets nominal central \f$ R \f$ for poloidal angle analysis
+  logical :: user_z_central !< user sets nominal central \f$ Z \f$ for poloidal angle analysis
+  real(kr8) :: nominal_r_central !< user defined value of central \f$ R \f$
+  real(kr8) :: nominal_z_central !< user defined value of central \f$ Z \f$
   integer(ki4) :: number_of_clusters !< sets cluster size by dividing range
   character(len=80) :: new_key !<  new key for sorting (only angle allowed)
   logical :: rekey !<  only rekey, i.e. use new key, if .true.
@@ -293,6 +295,8 @@ subroutine scontrol_readcon(self,channel)
   namelist /smanalparameters/ &
  &analysis_mode, sort_key, &
  &analyse_scalar, number_of_clusters, &
+ &user_r_central, user_z_central, &
+ &nominal_r_central,nominal_z_central, &
  &new_key, &
  &rekey, &
  &required_statistics
@@ -301,6 +305,10 @@ subroutine scontrol_readcon(self,channel)
   analysis_mode='regular'
   sort_key='Body'
   analyse_scalar='Q'
+  user_r_central=.false.
+  user_z_central=.false.
+  nominal_r_central=5000.
+  nominal_z_central=0.
   number_of_clusters = 18
   new_key = 'null'
   rekey = .false.
@@ -366,6 +374,10 @@ subroutine scontrol_readcon(self,channel)
   !! store values
   self%namekey=sort_key
   self%namescal=analyse_scalar
+  self%lurcen=user_r_central
+  self%luzcen=user_z_central
+  if (user_r_central) self%urcen=nominal_r_central
+  if (user_z_central) self%uzcen=nominal_z_central
   self%nbin=number_of_clusters
   self%newkey=new_key
   self%rekey=rekey
