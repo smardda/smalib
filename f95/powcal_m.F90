@@ -150,6 +150,7 @@ subroutine powcal_init(self,numerics,plot,gnumerics)
      allocate(self%powres%psista(self%powres%geobjl%ng), stat=status)
      allocate(self%powres%angle(self%powres%geobjl%ng), stat=status)
      allocate(self%powres%zbdotnvec(self%powres%geobjl%ng), stat=status)
+     allocate(self%powres%lenpath(self%powres%geobjl%ng), stat=status)     
      call log_alloc_check(m_name,s_name,4,status)
      self%powres%psista=0
      self%powres%zbdotnvec = 0
@@ -856,6 +857,9 @@ subroutine powcal_writev(self,kchar,kplot)
      end if
      if (allocated(self%powres%angle)) then
         call vfile_rscalarwrite(self%powres%angle,self%powres%geobjl%ng,'angle','CELL',kplot,0)
+     end if
+     if (allocated(self%powres%lenpath)) then
+        call vfile_rscalarwrite(self%powres%lenpath,self%powres%geobjl%ng,'lenpath','CELL',kplot,0)
      end if
      if (allocated(self%powres%zbdotnvec)) then
         call vfile_rscalarwrite(self%powres%zbdotnvec,self%powres%geobjl%ng,'zbdotn','CELL',kplot,0)

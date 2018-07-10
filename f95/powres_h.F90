@@ -41,8 +41,9 @@ module powres_h
      real(kr4), dimension(:), allocatable :: powa !< power average statistic
      real(kr4), dimension(:), allocatable :: psista !< \f$ \psi \f$ at start of fieldline
      !-----------------
-     real(kr4), dimension(:), allocatable :: angle
-     real(kr4), dimension(:), allocatable :: zbdotnvec
+     real(kr4), dimension(:), allocatable :: angle !< Angle between normal and fieldline in degrees
+     real(kr4), dimension(:), allocatable :: zbdotnvec !< scalar product of normal vertor and fieldline
+     real(kr4), dimension(:), allocatable :: lenpath !< Fieldline length
      !-----------------
      type(prnumerics_t) :: n !< control  parameters
      real(kr8) :: psimin !< minimum value of \f$ \psi \f$ for interpolation

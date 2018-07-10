@@ -524,6 +524,7 @@ subroutine powelt_move(self,powcal,gshadl,btree)
 100   continue
   ! time step loop for path
   lenpath=0
+  powcal%powres%lenpath(inpow) = 0
   ierr=0
   lcoll=.FALSE.
   !     powcal%odes%near=0
@@ -542,6 +543,7 @@ subroutine powelt_move(self,powcal,gshadl,btree)
         if (abs(lenpath)>powcal%odes%n%termcon(1)) then
            ! find new node and position if hits boundary
            call pcle_move(xo,xn,1,gshadl,btree,nobjhit)
+           powcal%powres%lenpath(inpow) = lenpath
            lcoll=(nobjhit/=0)
         end if
         if (lcoll) then
