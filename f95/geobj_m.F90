@@ -193,14 +193,13 @@ function geobj_inbox(self,posl,nodl,box)
   logical :: geobj_inbox !< local variable
   type(posvecl_t) :: zpos   !< position
   logical :: linint   !< geobj in interval
-  logical :: linbox   !< geobj in interval
+  logical :: linbox=.false.  !< geobj in interval
   integer(ki4) :: ii   !< geobj position
   integer(ki4) :: jj   !< loop counter
   real(kr4), dimension(3,8) :: xnodes !< x(compt,node) of obj
   integer(ki4), dimension(8) :: inod !< nodes of obj
   real(kr4), dimension(3) :: xc !< centre of  box
   real(kr4), dimension(3) :: hh !< half side of box
-
 
   if (self%objtyp==1) then
      ! particle type
@@ -244,7 +243,7 @@ function geobj_innbox(self,posl,kcorn,kext)
   character(*), parameter :: s_name='geobj_innbox' !< subroutine name
   logical :: geobj_innbox !< local variable
   type(posvecl_t) :: zpos   !< position
-  logical :: linbox   !< geobj in interval
+  logical :: linbox=.false.  !< geobj in interval
   integer(ki4) :: ii   !< geobj position
   integer(ki4) :: jj   !< loop counter
   integer(ki2), dimension(3) :: ivec !< integer geobj data
