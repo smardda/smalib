@@ -570,7 +570,7 @@ subroutine powcal_move(self,gshadl,btree)
   integer, parameter :: blocklengths(2) = (/1, 1/)
   integer, parameter :: mpi_kr4_stride_array_types(2) = (/MPI_REAL4, MPI_UB/)
   integer, parameter :: mpi_ki4_stride_array_types(2) = (/MPI_INTEGER4,MPI_UB/)
-  integer, parameter :: num_arr_irecv = 1 !> num. of od arrays to IRecv
+  integer, parameter :: num_arr_irecv = 2 !> num. of od arrays to IRecv
   integer :: displacements(2)
   integer, dimension(:,:), allocatable :: array_of_statuses
   integer, dimension(:), allocatable :: array_of_requests
@@ -599,6 +599,9 @@ subroutine powcal_move(self,gshadl,btree)
            call MPI_IRecv(self%powres%pow(i+1), strided_block_count, &
                 & mpi_kr4_stride_type, i, 111, MPI_COMM_WORLD, &
                 & array_of_requests((i-1)*num_arr_irecv + 1), error)
+           call MPI_IRecv(self%powres%lenpath(i+1), strided_block_count, &
+                & mpi_kr4_stride_type, i, 112, MPI_COMM_WORLD, &
+                & array_of_requests((i-1)*num_arr_irecv + 2), error)
         end do
      end if
   end if
@@ -683,6 +686,9 @@ subroutine powcal_move(self,gshadl,btree)
         call MPI_Send(self%powres%pow(rank+1), strided_block_count, &
              & mpi_kr4_stride_type, 0, 111, MPI_COMM_WORLD, &
              &  error)
+        call MPI_Send(self%powres%lenpath(rank+1), strided_block_count, &
+             & mpi_kr4_stride_type, 0, 112, MPI_COMM_WORLD, &
+             &  error)
      end if
   else ! use blocking communication
      if (rank .eq. 0) then
@@ -692,8 +698,8 @@ subroutine powcal_move(self,gshadl,btree)
                 strided_block_count = strided_block_count + 1
            call MPI_Recv(self%powres%pow(i+1), strided_block_count, &
                 mpi_kr4_stride_type, i, 111, MPI_COMM_WORLD, mpi_status, error) 
-           call MPI_Recv(self%powres%angle(i+1), strided_block_count, &
-                mpi_kr4_stride_type, i, 111, MPI_COMM_WORLD, mpi_status, error) 
+           call MPI_Recv(self%powres%lenpath(i+1), strided_block_count, &
+                mpi_kr4_stride_type, i, 112, MPI_COMM_WORLD, mpi_status, error) 
         end do
      else
         strided_block_count = (self%powres%npowe-rank)/processes
@@ -701,8 +707,8 @@ subroutine powcal_move(self,gshadl,btree)
              strided_block_count = strided_block_count + 1
         call MPI_Send(self%powres%pow(rank+1), strided_block_count, &
              mpi_kr4_stride_type, 0, 111, MPI_COMM_WORLD, error) 
-        call MPI_Send(self%powres%angle(rank+1), strided_block_count, &
-             mpi_kr4_stride_type, 0, 111, MPI_COMM_WORLD, error) 
+        call MPI_Send(self%powres%lenpath(rank+1), strided_block_count, &
+             mpi_kr4_stride_type, 0, 112, MPI_COMM_WORLD, error) 
      end if
   end if
 
