@@ -1,5 +1,5 @@
 module powelt_m
-  
+
   use const_kind_m
   use const_numphys_h
   use log_m
@@ -99,7 +99,7 @@ module powelt_m
 
   !write to file
   integer, parameter :: out_unit = 20
-    
+
   contains
 !---------------------------------------------------------------------
 !> position of element centre in tracking coordinates
@@ -172,7 +172,7 @@ subroutine powelt_vec(self,powcal,pb)
         inod(j)=powcal%powres%geobjl%nodl(iiobj+j-1)
         xnodes(:,j)=powcal%powres%vecb%pos(inod(j))%posvec
      end do
-    
+
      pb=powelt_weights(1,1)*xnodes(:,1)+&
  &   powelt_weights(2,1)*xnodes(:,2)+powelt_weights(3,1)*xnodes(:,3)
   end if
@@ -279,9 +279,9 @@ subroutine powelt_dep(self,powcal,gshadl)
         call powelt_normal(self,powcal,znormal)
         zbdotn=dot_product(zb,znormal)
         !write (*,*) 'zb:', zb, 'znormal:', znormal
-  
+
      case('msum','middle')
-        
+
         field_type: select case (powcal%powres%beq%n%fldspec)
         case(1)
            call log_error(m_name,s_name,6,error_fatal,'No code for case')
@@ -311,7 +311,7 @@ subroutine powelt_dep(self,powcal,gshadl)
            call posang_tfm(zposang,-3)
            zb=zposang%vec
            zbdotn=dot_product(zb,znormal)
-         
+
         end select field_type
      end select calcn_type
 
@@ -353,9 +353,9 @@ subroutine powelt_dep(self,powcal,gshadl)
      ! psibdry is not quantised
      zpsid=zpsi-powcal%powres%beq%psibdry
      zpow=zbdotn*edgprof_fn(powcal%edgprof,zpsid)
-     print *, "psibdry",powcal%powres%beq%psibdry
-     print *, "zpsid",zpsid
-     print *, "zbdotn",zbdotn
+     ! print *, "psibdry",powcal%powres%beq%psibdry
+     ! print *, "zpsid",zpsid
+     ! print *, "zbdotn",zbdotn
      !open(unit=out_unit,file="results.txt",action="write",position="")
      !write(out_unit,*) zpsid," ",zbdotn
      !close(out_unit)
@@ -369,7 +369,7 @@ subroutine powelt_dep(self,powcal,gshadl)
      else
         powcal%powres%angle(inpow) = angleVec(zb,znormal) - 90
      end if
-     
+
      !        write(*,*) inpow, zpow, zbdotn, zpsi
   end if
 
@@ -477,7 +477,7 @@ subroutine powelt_move(self,powcal,gshadl,btree)
   call odes_rjstep1(powcal%odes,ierr,powcal%powres%qfac*zf,powcal%powres%beq%rjac)
   xpath=powcal%odes%vecp%pos(powcal%odes%ndt+1)%posvec-zposd
   zpdotnm=dot_product(xpath,znormald)
-  
+
 
   ! Check behaviour in Cartesians
   call powelt_normal(self,powcal,znormal)
@@ -497,7 +497,7 @@ subroutine powelt_move(self,powcal,gshadl,btree)
      zs=-zs
   end do
   zpdotn=dot_product(xpath,znormald)
-    
+
   if (zpdotn*zpdotnm*beq_rsig()<0) then
      call log_error(m_name,s_name,3,error_warning,'Starting direction uncertain')
      !        zpdotn=sign(1._kr8,zpdotnm)
@@ -756,7 +756,7 @@ subroutine powelt_move0(self,powcal,gshadl,btree)
   if (ierr>0) return
   xpath=powcal%odes%vecp%pos(powcal%odes%ndt+1)%posvec-zposd
   zpdotnm=dot_product(xpath,znormald)
-    
+
   ! Check behaviour in Cartesians
   call powelt_normal(self,powcal,znormal)
   znormald=znormal
@@ -778,7 +778,7 @@ subroutine powelt_move0(self,powcal,gshadl,btree)
      zs=-zs
   end do
   zpdotn=dot_product(xpath,znormald)
-     
+
   if (zpdotn*zpdotnm<0) then
      call log_error(m_name,s_name,3,error_warning,'Starting direction uncertain')
      write(*,*) inpow, zpdotn, zpdotnm
@@ -1182,7 +1182,7 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
   if (ierr>0) return
   xpath=powcal%odes%vecp%pos(powcal%odes%ndt+1)%posvec-zposd
   zpdotnm=dot_product(xpath,znormald)
-    
+
   ! Check behaviour in Cartesians
   call powelt_normal(self,powcal,znormal)
   znormald=znormal
@@ -1204,7 +1204,7 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
      zs=-zs
   end do
   zpdotn=dot_product(xpath,znormald)
-  
+
   if (zpdotn*zpdotnm<0) then
      call log_error(m_name,s_name,3,error_warning,'Starting direction uncertain')
      write(*,*) inpow, zpdotn, zpdotnm
@@ -1561,7 +1561,7 @@ subroutine powelt_move2(self,powcal,gshadl,btree)
   if (ierr>0) return
   xpath=powcal%odes%vecp%pos(powcal%odes%ndt+1)%posvec-zposd
   zpdotnm=dot_product(xpath,znormald)
-   
+
   ! Check behaviour in Cartesians
   call powelt_normal(self,powcal,znormal)
   znormald=znormal
@@ -1583,7 +1583,7 @@ subroutine powelt_move2(self,powcal,gshadl,btree)
      zs=-zs
   end do
   zpdotn=dot_product(xpath,znormald)
-   
+
   if (zpdotn*zpdotnm<0) then
      call log_error(m_name,s_name,3,error_warning,'Starting direction uncertain')
      write(*,*) inpow, zpdotn, zpdotnm
@@ -1864,7 +1864,7 @@ subroutine powelt_move3(self,powcal,gshadl,btree)
   if (ierr>0) return
   xpath=powcal%odes%vecp%pos(powcal%odes%ndt+1)%posvec-zposd
   zpdotnm=dot_product(xpath,znormald)
- 
+
   ! Check behaviour in Cartesians
   call powelt_normal(self,powcal,znormal)
   znormald=znormal
@@ -1886,7 +1886,7 @@ subroutine powelt_move3(self,powcal,gshadl,btree)
      zs=-zs
   end do
   zpdotn=dot_product(xpath,znormald)
-  
+
   if (zpdotn*zpdotnm<0) then
      call log_error(m_name,s_name,3,error_warning,'Starting direction uncertain')
      write(*,*) inpow, zpdotn, zpdotnm
@@ -2251,7 +2251,7 @@ subroutine powelt_move4(self,powcal,gshadl,btree)
   if (ierr>0) return
   xpath=powcal%odes%vecp%pos(powcal%odes%ndt+1)%posvec-zposd
   zpdotnm=dot_product(xpath,znormald)
- 
+
   ! Check behaviour in Cartesians
   call powelt_normal(self,powcal,znormal)
   znormald=znormal
@@ -2273,7 +2273,7 @@ subroutine powelt_move4(self,powcal,gshadl,btree)
      zs=-zs
   end do
   zpdotn=dot_product(xpath,znormald)
-  
+
   if (zpdotn*zpdotnm<0) then
      call log_error(m_name,s_name,3,error_warning,'Starting direction uncertain')
      write(*,*) inpow, zpdotn, zpdotnm
@@ -2661,7 +2661,7 @@ subroutine powelt_move5(self,powcal,gshadl,btree)
   if (ierr>0) return
   xpath=powcal%odes%vecp%pos(powcal%odes%ndt+1)%posvec-zposd
   zpdotnm=dot_product(xpath,znormald)
- 
+
   ! Check behaviour in Cartesians
   call powelt_normal(self,powcal,znormal)
   znormald=znormal
@@ -2683,7 +2683,7 @@ subroutine powelt_move5(self,powcal,gshadl,btree)
      zs=-zs
   end do
   zpdotn=dot_product(xpath,znormald)
-   
+
   if (zpdotn*zpdotnm<0) then
      call log_error(m_name,s_name,3,error_warning,'Starting direction uncertain')
      write(*,*) inpow, zpdotn, zpdotnm
@@ -3211,7 +3211,7 @@ end module powelt_m
 real function angleVec(a,b)
     implicit none
     real, dimension(3) :: a, b
-    real :: x1,y1,x2,y2,z1,z2, angle 
+    real :: x1,y1,x2,y2,z1,z2, angle
     real :: abs_a,abs_b,product, pi
     x1 = a(1)
     y1 = a(2)
@@ -3228,7 +3228,7 @@ real function angleVec(a,b)
 
     abs_b = sqrt(x2**2+y2**2+z2**2)
     !print *, 'abs_b:',abs_b
-    
+
     product = dot_product(a,b)
     !print *, 'product',product
     if (abs_b == 0 .OR. abs_a == 0) then
@@ -3241,5 +3241,5 @@ real function angleVec(a,b)
     !print *, angleVec
     return
  end function angleVec
-  
+
 
