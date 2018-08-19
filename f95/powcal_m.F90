@@ -564,11 +564,6 @@ subroutine powcal_move(self,gshadl,btree)
   !! local
   character(*), parameter :: s_name='powcal_move' !< subroutine name
   type(powelt_t) :: zelt   !< power element
-  integer, dimension(:), allocatable :: selected_elements !< for selection
-  integer :: npowe_save !< save total number of selected elements for restore
-  logical :: unitused !< flag to test unit is available
-  logical :: selection_exists !< flag to test if selected.dat file is available
-  
 #ifdef WITH_MPI
   integer :: rank, processes, error, request !< Standard MPI layout variables
   integer :: mpi_status(MPI_STATUS_SIZE)
@@ -613,26 +608,6 @@ subroutine powcal_move(self,gshadl,btree)
 #else
   integer, parameter :: rank = 0, processes = 1
 #endif
-
-  ! check if only selected elements needs to be computed
-  !! open file
-  do i=99,1,-1
-     inquire(i,opened=unitused)
-     if(.not.unitused) exit
-  end do
-  inquire(file='selected.dat', exist=selection_exists)
-  if (selection_exists) then
-     npowe_save = self%powres%npowe
-     open(unit=i, file='selected.dat', action='read', form='formatted')
-     read(unit=i, fmt='(I8)'), self%powres%npowe
-     print *,'selected.dat exists! ', self%powres%npowe
-     allocate(selected_elements(self%powres%npowe))
-     do j=1,self%powres%npowe
-        read(unit=i, fmt='(I8)'), selected_elements(j)
-     end do
-     close(i)
-  end if
-
   ! check for axisymmetric
   if (self%powres%beq%n%vacfile=='null') then
      if (self%powres%beq%n%mrip/=0) then
@@ -641,7 +616,6 @@ subroutine powcal_move(self,gshadl,btree)
         ! no termplane criteria
         do i=1+rank,self%powres%npowe,processes
            zelt%ie=i
-           if (selection_exists) zelt%ie=selected_elements(i)
            do j=imlevel,inlevel
               zelt%je=j
               call powelt_move2(zelt,self,gshadl,btree)
@@ -653,7 +627,6 @@ subroutine powcal_move(self,gshadl,btree)
         case (1) ! should only be for caltype='local', no termplane
            do i=1+rank,self%powres%npowe,processes
               zelt%ie=i
-              if (selection_exists) zelt%ie=selected_elements(i)
               do j=imlevel,inlevel
                  zelt%je=j
                  call powelt_move(zelt,self,gshadl,btree)
@@ -664,7 +637,6 @@ subroutine powcal_move(self,gshadl,btree)
            case ('afws','local')
               do i=1+rank,self%powres%npowe,processes
                  zelt%ie=i
-                 if (selection_exists) zelt%ie=selected_elements(i)
                  do j=imlevel,inlevel
                     zelt%je=j
                     call powelt_move0(zelt,self,gshadl,btree)
@@ -673,7 +645,6 @@ subroutine powcal_move(self,gshadl,btree)
            case ('msus','global','msum','middle')
               do i=1+rank,self%powres%npowe,processes
                  zelt%ie=i
-                 if (selection_exists) zelt%ie=selected_elements(i)
                  do j=imlevel,inlevel
                     zelt%je=j
                     call powelt_move1(zelt,self,gshadl,btree)
@@ -687,7 +658,6 @@ subroutine powcal_move(self,gshadl,btree)
      ! more sophisticated termination criteria
      do i=1+rank,self%powres%npowe,processes
         zelt%ie=i
-        if (selection_exists) zelt%ie=selected_elements(i)
         do j=imlevel,inlevel
            zelt%je=j
            call powelt_move4(zelt,self,gshadl,btree)
@@ -697,7 +667,6 @@ subroutine powcal_move(self,gshadl,btree)
      ! older midplane-based termination criteria
      do i=1+rank,self%powres%npowe,processes
         zelt%ie=i
-        if (selection_exists) zelt%ie=selected_elements(i)
         do j=imlevel,inlevel
            zelt%je=j
            call powelt_move3(zelt,self,gshadl,btree)
@@ -745,7 +714,6 @@ subroutine powcal_move(self,gshadl,btree)
 
   call MPI_Type_free(mpi_kr4_stride_type, error)
 #endif
-  if (selection_exists) self%powres%npowe = npowe_save
 end subroutine powcal_move
 !---------------------------------------------------------------------
 !> coordinate calculation of power deposition (=powres_XX)
