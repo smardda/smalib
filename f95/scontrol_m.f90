@@ -277,8 +277,8 @@ subroutine scontrol_readcon(self,channel)
   character(len=80) :: analysis_mode !< only one mode available
   character(len=80) :: sort_key !< key to be used to sort scalar field
   character(len=80) :: analyse_scalar !< identifier of scalar field to analyse
-  logical :: user_r_central !< user sets nominal central \f$ R \f$ for poloidal angle analysis
-  logical :: user_z_central !< user sets nominal central \f$ Z \f$ for poloidal angle analysis
+  logical :: set_r_central !< user sets nominal central \f$ R \f$ for poloidal angle analysis
+  logical :: set_z_central !< user sets nominal central \f$ Z \f$ for poloidal angle analysis
   real(kr8) :: nominal_r_central !< user defined value of central \f$ R \f$
   real(kr8) :: nominal_z_central !< user defined value of central \f$ Z \f$
   integer(ki4) :: number_of_clusters !< sets cluster size by dividing range
@@ -295,7 +295,7 @@ subroutine scontrol_readcon(self,channel)
   namelist /smanalparameters/ &
  &analysis_mode, sort_key, &
  &analyse_scalar, number_of_clusters, &
- &user_r_central, user_z_central, &
+ &set_r_central, set_z_central, &
  &nominal_r_central,nominal_z_central, &
  &new_key, &
  &rekey, &
@@ -305,8 +305,8 @@ subroutine scontrol_readcon(self,channel)
   analysis_mode='regular'
   sort_key='Body'
   analyse_scalar='Q'
-  user_r_central=.false.
-  user_z_central=.false.
+  set_r_central=.false.
+  set_z_central=.false.
   nominal_r_central=5000.
   nominal_z_central=0.
   number_of_clusters = 18
@@ -374,10 +374,10 @@ subroutine scontrol_readcon(self,channel)
   !! store values
   self%namekey=sort_key
   self%namescal=analyse_scalar
-  self%lurcen=user_r_central
-  self%luzcen=user_z_central
-  if (user_r_central) self%urcen=nominal_r_central
-  if (user_z_central) self%uzcen=nominal_z_central
+  self%lurcen=set_r_central
+  self%luzcen=set_z_central
+  if (set_r_central) self%urcen=nominal_r_central
+  if (set_z_central) self%uzcen=nominal_z_central
   self%nbin=number_of_clusters
   self%newkey=new_key
   self%rekey=rekey

@@ -359,6 +359,8 @@ subroutine posang_tfmlis(self,kunits,kzetp)
      call posang_tfm(zposang,kunits)
      self%pos(j)%posvec=zposang%pos
   end do
+  self%nparpos(1)=kunits
+  self%nparpos(2)=zposang%opt
 
 end subroutine posang_tfmlis
 !---------------------------------------------------------------------
@@ -382,6 +384,8 @@ subroutine posang_invtfmlis(self,kunits,kzetp)
      call posang_invtfm(zposang,kunits)
      self%pos(j)%posvec=zposang%pos
   end do
+  self%nparpos(1)=kunits
+  self%nparpos(2)=zposang%opt
 
 end subroutine posang_invtfmlis
 !---------------------------------------------------------------------

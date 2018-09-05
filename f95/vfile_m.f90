@@ -499,7 +499,7 @@ subroutine vfile_dscalarread(self,kp,infile,kcname,kin,kopt)
 end subroutine vfile_dscalarread
 !---------------------------------------------------------------------
 !> read vtk integer scalars
-subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt)
+subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt,kcdata)
   !! arguments
   integer(ki4), dimension(:), allocatable, intent(inout) :: kself !< integer scalar list data
   integer(ki4), intent(inout) :: kp   !< size of scalar list data
@@ -510,6 +510,7 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt)
   !! data is missing, return positive code if trouble, else zero
   !! if zero on input, missing data is a fatal error
   integer(ki4), intent(inout) :: kopt   !< .
+  character(*),intent(in), optional :: kcdata !< nonblank, must match POINT_ or CELL_ DATA
 
   !! local
   character(*), parameter :: s_name='vfile_iscalarread' !< subroutine name
@@ -520,6 +521,8 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt)
   integer(ki4) :: islen   !< length of scalar field name
   integer(ki4) :: islen2   !< length of required scalar field name
   logical :: ilfound !< flag whether field name found
+  logical :: ilpointd !< point data is acceptable
+  logical :: ilcelld !< cell data is acceptable
 
   logical :: isnumb !< local variable
   external isnumb
@@ -562,7 +565,18 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt)
 
   end if
 
-  !! File unit now sorted, get to where point data begin
+  ilpointd=.TRUE.
+  ilcelld=.TRUE.
+  if (present(kcdata)) then
+     ! to avoid optional arg, replace with if (kcdata(1)==' ')
+     ilpointd=(kcdata(1:5)=='POINT')
+     ilcelld=(kcdata(1:4)=='CELL')
+     if ( .NOT.(ilpointd.OR.ilcelld) ) then
+        call log_error(m_name,s_name,3,error_warning,'Neither point nor cell data requested')
+     end if
+  end if
+
+  !! File unit now sorted, get to where point/cell data begin
   !! read local header information
   do
      read(nin,fmt='(a)',iostat=status) ibuf1
@@ -575,17 +589,21 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt)
      else
         ibuf2=adjustl(ibuf1)
         if(ibuf2(1:10)=='POINT_DATA') then
-           iltest=isnumb(ibuf2,insca,11)
-           kp=insca
-           exit
+           if (ilpointd) then
+              iltest=isnumb(ibuf2,insca,11)
+              kp=insca
+              exit
+           end if
         else if(ibuf2(1:8)=='POLYGONS') then
            iltest=isnumb(ibuf2,insca,9)
            kp=insca
            exit
         else if(ibuf2(1:9)=='CELL_DATA') then
-           iltest=isnumb(ibuf2,insca,10)
-           kp=insca
-           exit
+           if (ilcelld) then
+              iltest=isnumb(ibuf2,insca,10)
+              kp=insca
+              exit
+           end if
         end if
      end if
   end do
@@ -855,7 +873,7 @@ subroutine vfile_rscalarwrite(self,kp,kcname,kctyp,kplot,kheader)
      write(kplot,'(A,''_DATA'',1X,I9)',iostat=status) kctyp(1:islen),kp
   end if
   call log_write_check(m_name,s_name,1,status)
-  write(kplot,'(''SCALARS '',A,'' float 1'')',iostat=status), kcname(1:islen2)
+  write(kplot,'(''SCALARS '',A,'' float 1'')',iostat=status) kcname(1:islen2)
   call log_write_check(m_name,s_name,2,status)
   write(kplot,'(''LOOKUP_TABLE default'')',iostat=status)
   call log_write_check(m_name,s_name,3,status)
@@ -895,7 +913,7 @@ subroutine vfile_dscalarwrite(self,kp,kcname,kctyp,kplot,kheader)
      write(kplot,'(A,''_DATA'',I8)',iostat=status) kctyp(1:islen),kp
   end if
   call log_write_check(m_name,s_name,1,status)
-  write(kplot,'(''SCALARS '',A,'' float 1'')',iostat=status), kcname(1:islen2)
+  write(kplot,'(''SCALARS '',A,'' float 1'')',iostat=status) kcname(1:islen2)
   call log_write_check(m_name,s_name,2,status)
   write(kplot,'(''LOOKUP_TABLE default'')',iostat=status)
   call log_write_check(m_name,s_name,3,status)
@@ -935,7 +953,7 @@ subroutine vfile_dvectorwrite(self,kp,kcname,kctyp,kplot,kheader)
      write(kplot,'(A,''_DATA'',I8)',iostat=status) kctyp(1:islen),kp
   end if
   call log_write_check(m_name,s_name,1,status)
-  write(kplot,'(''VECTORS '',A,'' float'')',iostat=status), kcname(1:islen2)
+  write(kplot,'(''VECTORS '',A,'' float'')',iostat=status) kcname(1:islen2)
   call log_write_check(m_name,s_name,2,status)
 
   !! write vectors
@@ -975,7 +993,7 @@ subroutine vfile_iscalarwrite(self,kp,kcname,kctyp,kplot,kheader)
      write(kplot,'(A,''_DATA'',I8)',iostat=status) kctyp(1:islen),kp
   end if
   call log_write_check(m_name,s_name,1,status)
-  write(kplot,'(''SCALARS '',A,'' int '')',iostat=status), kcname(1:islen2)
+  write(kplot,'(''SCALARS '',A,'' int '')',iostat=status) kcname(1:islen2)
   call log_write_check(m_name,s_name,2,status)
   write(kplot,'(''LOOKUP_TABLE default'')',iostat=status)
   call log_write_check(m_name,s_name,3,status)

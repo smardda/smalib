@@ -24,7 +24,8 @@ module termplane_h
      !! 4. direction in which auxilliary condition to be applied
      !! 5. sign of direction of auxilliary condition
      integer(ki4), dimension(:,:), allocatable :: termplanedir !< .
-     integer(ki4)  :: ntermplane !< number of active termination planes
+     integer(ki4)  :: ntermplane !< number of termination planes
+     integer(ki4)  :: ntermactive !< number of active termination planes
   end type termplane_t
 
 end module termplane_h

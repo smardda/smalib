@@ -54,6 +54,7 @@ program smanal_p
   type(date_time_t) :: timestamp !< timestamp of run
   character(len=80) :: fileroot !< reference name for all files output by run
   character(len=80) :: cmesg !< message for output files
+  character(len=256) :: vtkdesc !< descriptor line for vtk files
 
   integer(ki4):: iopt !< option
   integer(ki4):: nin !< unit for vtk files
@@ -135,8 +136,9 @@ program smanal_p
 !! vtk output of body statistics (equivalent to a smanal_writev)
   if(plot%vtk) then
      call clock_start(11,'vfile_analysis time')
-     cmesg='Statistics of scalar field '//numerics%namescal
-     call vfile_init(file%vtkfull,cmesg,nplot)
+     cmesg='Statistics of '//numerics%namescal
+     call geobjlist_makehedline(smanal%geobjl,cmesg,vtkdesc)
+     call vfile_init(file%vtkfull,vtkdesc,nplot)
      call smanal_writev(smanal,'full',nplot)
      call clock_stop(11)
   end if
@@ -145,8 +147,9 @@ program smanal_p
 !! corresponding to one point per body
   if(plot%vtksmall) then
      call clock_start(12,'vfile_analysis time')
-     cmesg='Small statistics of scalar field '//numerics%namescal
-     call vfile_init(file%vtksmall,cmesg,nplot)
+     cmesg='Small statistics of '//numerics%namescal
+     call geobjlist_makehedline(smanal%geobjl,cmesg,vtkdesc)
+     call vfile_init(file%vtksmall,vtkdesc,nplot)
      call smanal_writev(smanal,'small',nplot)
      call clock_stop(12)
   end if

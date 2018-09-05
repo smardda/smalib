@@ -68,6 +68,8 @@ clean:
 distclean: clean
 	rm -f $(PROG) 
 
+txt:
+	cat Makefile.$(PROG) $(SOURCES) > $(PROG).txt
 
 .PHONY : clean distclean
 
@@ -220,6 +222,7 @@ geobjlist_m.f90 : datline_h.mod
 geobjlist_m.f90 : datline_m.mod
 geobjlist_m.f90 : stack_m.mod
 geobjlist_m.f90 : indict_m.mod
+geobjlist_m.f90 : vfile_m.mod
 indict_m.f90 : const_kind_m.mod
 indict_m.f90 : const_numphys_h.mod
 indict_m.f90 : log_m.mod

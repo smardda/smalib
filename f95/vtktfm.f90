@@ -54,6 +54,7 @@ program vtktfm_p
   type(date_time_t) :: timestamp !< timestamp of run
   character(len=80) :: fileroot !< reference name for all files output by run
   character(len=80),save :: iched !< vtk field file descriptor
+  character(len=256) :: vtkdesc !< descriptor line for vtk files
 
   type(bods_t) :: bods !< type bods for geometrical objects
   integer(ki4), dimension(:), allocatable :: ibods !< array of more bodies for geometrical objects
@@ -143,7 +144,7 @@ program vtktfm_p
         nin=0
         call vfile_iscalarread(ibods,nscal,file%vtkdata(j),numerics%name,nin,iopt) !W
 !dbgw     write(*,*) 'second',(geobjl%nodl(ij),ij=1,20)  !dbgw
-        call geobjlist_cumulate(geobjl,igeobjl,cpstart,file%vtkcopies(j),iopt)
+        call geobjlist_cumulate(geobjl,igeobjl,cpstart,file%vtkcopies(j),iopt,0_ki2par)
         call bods_cumulate2(bods,ibods,igeobjl,j,cpstart,file%vtkcopies(j),icall)
         cpstart=1
         call geobjlist_delete(igeobjl)
@@ -159,7 +160,7 @@ program vtktfm_p
         igeobjl%ngtype=2
         call geobjlist_read(igeobjl,file%vtkdata(j),iched)
 !dbgw     write(*,*) 'third',(geobjl%nodl(ij),ij=1,20)  !dbgw
-        call geobjlist_cumulate(geobjl,igeobjl,cpstart,file%vtkcopies(j),iopt)
+        call geobjlist_cumulate(geobjl,igeobjl,cpstart,file%vtkcopies(j),iopt,0_ki2par)
         call bods_cumulate(bods,igeobjl,j,cpstart,file%vtkcopies(j),0)
         cpstart=1
         call geobjlist_delete(igeobjl)
@@ -190,7 +191,8 @@ program vtktfm_p
 ! write out as separate files
      call bods_write(bods,geobjl,fileroot,'none',numerics%name,1)
   else
-     call vfile_init(file%vtkout,iched,nplot)
+     call geobjlist_makehedline(geobjl,iched,vtkdesc)
+     call vfile_init(file%vtkout,vtkdesc,nplot)
 !dbgw     write(*,*) 'iched=',iched  !dbgw
      call geobjlist_writev(geobjl,'geometry',nplot)
      call vfile_iscalarwrite(bods%list,bods%nbod,numerics%name,'CELL',nplot,1)
