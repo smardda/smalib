@@ -37,6 +37,7 @@ module pcle_m
   integer(ki4) :: hitobj !< geobj hit
   integer(ki4) :: inls !< number of entries in list
   integer(ki2) :: ileaf !< leaf test
+  logical, parameter :: debug=.TRUE. !< logical flag for debugging
 
   contains
 !---------------------------------------------------------------------
@@ -53,6 +54,7 @@ subroutine pcle_movet(selfo,selfn,kstep,geol,btree,termp,kobj)
 
   !! local
   character(*), parameter :: s_name='pcle_movet' !< subroutine name
+  integer(ki2par) :: igcode   !< code for geometry
   real(kr8) :: zf1 !< fraction of path length
   real(kr8) :: zfmin !< smallest fraction of path length
   integer(ki4) :: idir !< coordinate direction
@@ -64,11 +66,18 @@ subroutine pcle_movet(selfo,selfn,kstep,geol,btree,termp,kobj)
 
   call pcle_move(selfo,selfn,kstep,geol,btree,kobj)
 
+  igcode=0
+  if (kobj>0) igcode=geobj_code_fn(geol%obj2(kobj)%typ)
+  if (igcode>0) then
+     kobj=GEOBJ_OFFSET-1-igcode
+     if (igcode==GEOBJ_SKYLIT) return
+  end if
+
   if (termp%ntermplane==0) return
 
   ! test on path which has been reduced if there is a collision
   zfmin=1.1
-  do jt=1,termp%ntermplane
+  do jt=1,termp%ntermactive
      idir=termp%termplanedir(jt,1)
      idirs=termp%termplanedir(jt,2)
      iop=termp%termplanedir(jt,3)
@@ -83,6 +92,9 @@ subroutine pcle_movet(selfo,selfn,kstep,geol,btree,termp,kobj)
            if (zf1<=zfmin) then
               zfmin=zf1
               kobj=-2
+              if (debug) then
+                 if ( jt==termp%ntermactive ) write(801,*) 'termplane n'
+              end if
            end if
         end if
      case (1)
@@ -590,20 +602,20 @@ subroutine pcle_collinnode(poso,posn,geol,btree,pcle,kobj)
         zvdif=posn%posvec-poso%posvec
         ib=maxloc( (/abs(zvdif(1)),abs(zvdif(2)),abs(zvdif(3))/) , dim=1)
         if ((posn%posvec(ib)-pcle%posvec(ib))*(pcle%posvec(ib)-poso%posvec(ib))>0) then
-          ! check nearest collision takes place in node
-          ! iesum test
-          icorn=btree%corner(:,inode)
-          ivecn=int(pcle%posvec)
-          iext=btree%exten(:,btree%desc(2,inode))
-          iesum=0
-          do j=1,3
-             ie=ishft( ieor(icorn(j),ivecn(j)), -iext(j) )
-             iesum=iesum+ie
-          end do
-          !     kobj=0 if iesum/=0
-          kobj=max(1-iesum,0)*kobj
+           ! check nearest collision takes place in node
+           ! iesum test
+           icorn=btree%corner(:,inode)
+           ivecn=int(pcle%posvec)
+           iext=btree%exten(:,btree%desc(2,inode))
+           iesum=0
+           do j=1,3
+              ie=ishft( ieor(icorn(j),ivecn(j)), -iext(j) )
+              iesum=iesum+ie
+           end do
+           !     kobj=0 if iesum/=0
+           kobj=max(1-iesum,0)*kobj
         else
-          kobj=0
+           kobj=0
         end if
      end if
   end if

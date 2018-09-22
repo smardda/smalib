@@ -31,7 +31,7 @@ module beq_m
   beq_sense,   & !< helical sense of field
   beq_delete,   & !< delete  beq data structure
   beq_readv, & !< read in visualisation format (TO DO)
-  beq_readcheck, & !< check field as mapped or 3-cpt
+  beq_readcheck, & !< check field as mapped or 3-cpt and for extras
   beq_readpart, & !< read field data needed by ITER
   beq_readplus, & !< read field data needed by 'msus','global'
   beq_writeg, & !< write in gnuplot format
@@ -52,7 +52,7 @@ module beq_m
   beq_nset, &  !< calculate \f$ N_{\theta} \f$ and \f$ N_{\psi} \f$
   beq_bdryrb, &  !< calculate \f$ R_m \f$ and \f$ B_m \f$ from \f$ \psi_m \f$
   beq_psix, &  !< calculate  \f$ \psi \f$ at separatrix
-  beq_rextrema, &  !< calculate \f$ r_{min} \f$ and \f$ r_{min} \f$ as functions of \f$ \theta_j \f$
+  beq_rextrema, &  !< calculate \f$ r_{min} \f$ and \f$ r_{max} \f$ as functions of \f$ \theta_j \f$
   beq_rpsi, &  !< calculate \f$ r \f$ as a function of of \f$ \psi \f$
   beq_rispld, &  !< calculate spline coefficients for \f$ R/I \times \psi \f$ derivatives
   beq_rjpsi, &  !< calculate spline coefficients for \f$ R/J (\psi, \theta) \f$
@@ -61,13 +61,21 @@ module beq_m
   beq_ripple, &   !< calculate B-field ripple
   beq_ripple_calch1, & !> calculate B-field ripple as for MAST
   beq_rsig, &  !< return rsig to external module
-  beq_rsigset, & !< set rsig
+  beq_rsigset, & !< set rsig, positive if psi increasing from centre
   beq_psicont, & !< calculate contour  \f$ \psi = \psi_{cont} \f$ as array of  \f$ R,Z \f$ values
   beq_findrzm, & !< calculate displacements (moves) based on argument and psibdry
+  beq_ctrax, & !< calculate complete track of psi extremum through plasma centre
+  beq_ctrack1r, & !< return track of psi extremum through plasma centre
+  beq_ctrackc, & !< calculate track of psi extremum through plasma centre
+  beq_ctrackcq, & !< query position relative to track of psi extremum through plasma centre
+  beq_ctrackpt, & !< find \f$ (R, Z) \f$ position of psi on track through plasma centre
+  beq_getunit,  & !< get unit number
   beq_ripple_h1 !< define ripple as for MAST
 
   private :: &
-  beq_rextremum  !< calculate  extremal \f$ \psi \f$ in search direction
+  beq_rextremum, &  !< calculate  extremal \f$ \psi \f$ in search direction
+  beq_ctrack1 !< update of psi extremum through plasma centre
+
 
 ! public types and variables
 !see beq_h file
@@ -92,7 +100,7 @@ module beq_m
   real(kr8), parameter :: epsg=1.e-6 !< tolerance for searches
   real(kr8), parameter :: epsr=0.01 !< relative tolerance for searches
   integer   :: status   !< error status
-  integer(ki4) :: nin   !< input channel for beq data
+  integer(ki4), save :: nin=-1   !< input channel for beq data
   integer(ki4)  :: ilog      !< for namelist dump after error
   integer(ki4) :: i !< loop counter
   integer(ki4) :: j !< loop counter
@@ -100,6 +108,7 @@ module beq_m
   integer(ki4) :: l !< loop counter
   integer(ki4) :: ij !< loop counter
   integer(ki4) :: idum !< dummy integer
+  integer(ki4) :: idunit !< debug unit
   real(kr8) :: zdum !< dummy real
   real(kr8), save :: rsig    !< sign of  \f$ d \psi/dr \f$, value  \f$ \pm 1 \f$
   character(len=80) :: ibuff !< buffer for input/output
@@ -1297,8 +1306,8 @@ subroutine beq_init(self,numerics,fmesh)
   else
      call log_value("Read B from disk, rsig",rsig)
      ! convert to dpsidz,dpsidr from Br,Bz respectively
-     do j=1,self%mz
-        do i=1,self%mr
+     do j=1,self%mz+1
+        do i=1,self%mr+1
            workr2(i,j)=-workr2(i,j)*(self%psi%pos1(i)-self%n%rmove)
            workz2(i,j)=workz2(i,j)*(self%psi%pos1(i)-self%n%rmove)
         end do
@@ -1395,12 +1404,13 @@ subroutine beq_readv(self)
 
 end subroutine beq_readv
 !---------------------------------------------------------------------
-!> check field as mapped or 3-cpt
-subroutine beq_readcheck(self,infile)
+!> check field as mapped or 3-cpt and for extras
+subroutine beq_readcheck(self,infile,kextra)
 
   !! arguments
   type(beq_t), intent(out) :: self   !< object data structure
   character(*),intent(in) :: infile !< name of input file
+  integer(ki4), intent(out) :: kextra !< extra info extracted
 
   !! local
   character(*), parameter :: s_name='beq_readcheck' !< subroutine name
@@ -1441,7 +1451,9 @@ subroutine beq_readcheck(self,infile)
      read(nin,*,iostat=status) ifldspec
      call log_read_check(m_name,s_name,4,status)
   end if
-  self%n%fldspec=ifldspec
+
+  kextra=ifldspec/10
+  self%n%fldspec=ifldspec-10*kextra
 
   close(nin)
 
@@ -1575,7 +1587,7 @@ subroutine beq_readplus(self,infile)
 
   !! arguments
   type(beq_t), intent(out) :: self   !< object data structure
-  character(*),intent(in) :: infile !< name of input file
+  character(*), intent(in) :: infile !< name of input file
 
   !! local
   character(*), parameter :: s_name='beq_readplus' !< subroutine name
@@ -1718,10 +1730,56 @@ subroutine beq_readplus(self,infile)
   read(nin,*,iostat=status) self%n%vacfile
   call log_read_check(m_name,s_name,63,status)
 
+  if (iextra==2.OR.iextra==4) then
+     read(nin,*,iostat=status) ibuff
+     read(nin,*,iostat=status) self%rxpt
+     call log_read_check(m_name,s_name,64,status)
+     read(nin,*,iostat=status) ibuff
+     read(nin,*,iostat=status) self%zxpt
+     call log_read_check(m_name,s_name,65,status)
+     read(nin,*,iostat=status) ibuff
+     read(nin,*,iostat=status) self%psixpt
+     call log_read_check(m_name,s_name,66,status)
+     read(nin,*,iostat=status) ibuff
+     read(nin,*,iostat=status) self%zmin
+     call log_read_check(m_name,s_name,67,status)
+     read(nin,*,iostat=status) ibuff
+     read(nin,*,iostat=status) self%zmax
+     call log_read_check(m_name,s_name,68,status)
+     read(nin,*,iostat=status) ibuff
+     read(nin,*,iostat=status) self%mz
+     call log_read_check(m_name,s_name,69,status)
+     read(nin,*,iostat=status) ibuff
+     read(nin,*,iostat=status) self%dz
+     call log_read_check(m_name,s_name,70,status)
+     read(nin,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,71,status)
+     read(nin,*,iostat=status) self%nctrack
+     call log_read_check(m_name,s_name,72,status)
+     read(nin,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,73,status)
+     allocate(self%ctrackrz(self%nctrack,2), stat=status)
+     call log_alloc_check(m_name,s_name,74,status)
+     read(nin,*,iostat=status) ((self%ctrackrz(i,j),i=1,self%nctrack),j=1,2)
+     call log_read_check(m_name,s_name,75,status)
+     self%n%skylpsi=.TRUE.
+  else
+     self%n%skylpsi=.FALSE.
+     ! dummy definitions
+     self%rxpt=0
+     self%zxpt=0
+     self%psixpt=0
+     self%zmin=0
+     self%zmax=1
+     self%dz=1
+     self%mz=1
+  end if
 
   if (iextra==1) then
      self%n%duct=.TRUE.
      call fmesh_read(self%fmesh,infile,nin)
+  else
+     self%n%duct=.FALSE.
   end if
 
   call log_error(m_name,s_name,90,log_info,'beq read in from data file')
@@ -2439,17 +2497,14 @@ subroutine beq_writeplus(self,kout)
   !! arguments
   type(beq_t), intent(in) :: self   !< object data structure
   integer(ki4), intent(in) :: kout   !< output channel for object data structure
-  integer(ki4) :: ifldspec !< field as mapped or 3-cpt + extra info
-  integer(ki4) :: iextra !< extra info extracted
-
 
   !! local
   character(*), parameter :: s_name='beq_writeplus' !< subroutine name
+  integer(ki4) :: ifldspec !< field as mapped or 3-cpt + extra info
+  integer(ki4) :: iextra !< extra info extracted
 
-  ifldspec=self%n%fldspec
-  if (self%n%duct) ifldspec=ifldspec+10
   write(kout,*,iostat=status) 'fldspec'
-  write(kout,*,iostat=status) ifldspec
+  write(kout,*,iostat=status) self%n%fldspec
   call log_write_check(m_name,s_name,4,status)
 
   write(kout,*,iostat=status) 'mr'
@@ -2510,7 +2565,10 @@ subroutine beq_writeplus(self,kout)
   call spl2d_write( self%dpsidz,kout )
   write(kout,*,iostat=status) 'end of 2d spline'
 
-  fld_specn: select case (self%n%fldspec)
+  ifldspec=self%n%fldspec
+  iextra=ifldspec/10
+  ifldspec=self%n%fldspec-10*iextra
+  fld_specn: select case (ifldspec)
   case(3)
      write(kout,*,iostat=status) 'rispldr --- 2d spline'
      call spl2d_write( self%rispldr,kout )
@@ -2536,6 +2594,38 @@ subroutine beq_writeplus(self,kout)
   write(kout,*,iostat=status) self%n%vacfile
   call log_write_check(m_name,s_name,63,status)
 
+  if (self%n%skylpsi) then
+     write(kout,*,iostat=status) 'rxpt'
+     write(kout,*,iostat=status) self%rxpt
+     call log_write_check(m_name,s_name,64,status)
+     write(kout,*,iostat=status) 'zxpt'
+     write(kout,*,iostat=status) self%zxpt
+     call log_write_check(m_name,s_name,65,status)
+     write(kout,*,iostat=status) 'psixpt'
+     write(kout,*,iostat=status) self%psixpt
+     call log_write_check(m_name,s_name,66,status)
+     write(kout,*,iostat=status) 'zmin'
+     write(kout,*,iostat=status) self%zmin
+     call log_write_check(m_name,s_name,67,status)
+     write(kout,*,iostat=status) 'zmax'
+     write(kout,*,iostat=status) self%zmax
+     call log_write_check(m_name,s_name,68,status)
+     write(kout,*,iostat=status) 'mz'
+     write(kout,*,iostat=status) self%mz
+     call log_write_check(m_name,s_name,69,status)
+     write(kout,*,iostat=status) 'dz'
+     write(kout,*,iostat=status) self%dz
+     call log_write_check(m_name,s_name,70,status)
+     write(kout,*,iostat=status) 'nctrack'
+     call log_write_check(m_name,s_name,71,status)
+     write(kout,*,iostat=status) self%nctrack
+     call log_write_check(m_name,s_name,72,status)
+     write(kout,*,iostat=status) 'ctrackrz'
+     call log_write_check(m_name,s_name,73,status)
+     write(kout,*,iostat=status) ((self%ctrackrz(i,j),i=1,self%nctrack),j=1,2)
+     call log_write_check(m_name,s_name,74,status)
+  end if
+
   if (self%n%duct) then
      call fmesh_write(self%fmesh,kout)
   end if
@@ -2555,6 +2645,10 @@ subroutine beq_deleteplus(self)
   call spl2d_delete( self%psi )
   call spl2d_delete( self%dpsidr )
   call spl2d_delete( self%dpsidz )
+
+  if (self%n%skylpsi) then
+     deallocate( self%ctrackrz )
+  end if
 
 end subroutine beq_deleteplus
 !---------------------------------------------------------------------
@@ -2646,7 +2740,7 @@ subroutine beq_centre(self)
         end if
      end do
 
-     !! search in z
+     !! search in \f$ Z \f$
      ! change direction if necessary
      iz=igz+isz
      call spl2d_eval(self%psi,self%rmin+(ir-1)*self%dr,self%zmin+(iz-1)*self%dz,zpp)
@@ -2748,6 +2842,10 @@ subroutine beq_readcon(selfn,kin)
   integer(ki4) :: beq_mrip !< \f$ N \f$ number of ripple coils
   real(kr8) :: beq_irip !< unused parameter for ripple coils
   logical :: beq_duct !< flag whether working in duct coordinates
+  logical :: skylight_flux_limits !< flag whether any skylight(s) defined by flux limits
+  logical :: skylight_centre_line !< flag whether any skylight(s) defined by centre_line
+  integer(ki4) :: skylight_objects !< number of skylights defined geometrically
+  integer(ki4) :: skylight_debug !< level of output to help understand skylight production
   real(kr8) :: beq_arip !< \f$ a \f$ for ripple coils
   real(kr8) :: beq_psiref !< namelist \f$ \psi_X \f$
   real(kr8) :: beq_thetaref !< namelist \f$ \theta_X \f$
@@ -2783,6 +2881,10 @@ subroutine beq_readcon(selfn,kin)
  &beq_fscale,&
  &beq_mrip, beq_irip, beq_arip,&
  &beq_duct,&
+ &skylight_objects,&
+ &skylight_flux_limits,&
+ &skylight_centre_line,&
+ &skylight_debug,&
  &beq_psiref,&
  &beq_zetamin, beq_zetamax, beq_nzetap,&
  &skip_eqdsk_b,&
@@ -2824,6 +2926,10 @@ subroutine beq_readcon(selfn,kin)
   beq_mrip=0
   beq_irip=0.
   beq_duct=.FALSE.
+  skylight_objects=0
+  skylight_flux_limits=.FALSE.
+  skylight_centre_line=.FALSE.
+  skylight_debug=0
   beq_arip=0.
   beq_psiref=1
   beq_thetaref=0
@@ -2854,9 +2960,9 @@ subroutine beq_readcon(selfn,kin)
 
 
   !! check for valid data
- if(mzeta_vtk<=0) &
+  if(mzeta_vtk<=0) &
  &call log_error(m_name,s_name,2,error_fatal,'mzeta_vtk must be positive integer')
- if(mzeta_gnup<=0) &
+  if(mzeta_gnup<=0) &
  &call log_error(m_name,s_name,2,error_fatal,'mzeta_gnup must be positive integer')
   if(beq_cenopt<=0.OR.beq_cenopt>=5) &
  &call log_error(m_name,s_name,2,error_fatal,'beq_cenopt must be small positive integer')
@@ -2936,17 +3042,19 @@ subroutine beq_readcon(selfn,kin)
      beq_xzsta=z1
      beq_xzend=z2
   end if
+  if(skylight_objects<0) &
+ &call log_error(m_name,s_name,12,error_fatal,'skylight_objects must be non-negative integer')
   if(limiter_search==1) then
      z1=min(search_r_start,search_r_end)
      z2=max(search_r_start,search_r_end)
      if (abs(z1-z2)<1.e-3) &
- &   call log_error(m_name,s_name,10,error_fatal,'search box too small in R')
+ &   call log_error(m_name,s_name,20,error_fatal,'search box too small in R')
      search_r_start=z1
      search_r_end=z2
      z1=min(search_z_start,search_z_end)
      z2=max(search_z_start,search_z_end)
      if (abs(z1-z2)<1.e-3) &
- &   call log_error(m_name,s_name,10,error_fatal,'search box too small in Z')
+ &   call log_error(m_name,s_name,20,error_fatal,'search box too small in Z')
      search_z_start=z1
      search_z_end=z2
   end if
@@ -2970,6 +3078,10 @@ subroutine beq_readcon(selfn,kin)
   selfn%mrip=beq_mrip
   selfn%irip=beq_irip
   selfn%duct=beq_duct
+  selfn%skyladd=skylight_objects
+  selfn%skylpsi=skylight_flux_limits
+  selfn%skylcen=skylight_centre_line
+  selfn%skyldbg=skylight_debug
   selfn%arip=beq_arip
 
   selfn%delpsi=beq_delpsi
@@ -3041,6 +3153,8 @@ subroutine beq_readcon(selfn,kin)
   selfn%lkzsta=search_z_start
   selfn%lkzend=search_z_end
   selfn%vacfile=beq_vacuum_field_file
+
+  selfn%skyl=(selfn%skyladd>0).OR.selfn%skylpsi
 
 end subroutine beq_readcon
 !---------------------------------------------------------------------
@@ -3235,6 +3349,7 @@ subroutine beq_psix(self)
   integer(ki4) :: is3chnged    !< \f$ \psi_3 \f$ needs changing to meet new tolerance
   integer(ki4) :: ierr    !< error code returned by r-extremum
   integer(ki4) :: ixf    !< code describing X-point find
+  real(kr8) :: zsrm   !< extremal \f$ R \f$
 
   zsrmin=1.e+16
   zepsg=epsg*self%psinorm
@@ -3313,13 +3428,13 @@ subroutine beq_psix(self)
      ! step two, initialise for search
      zt3=zg1*zt1+zg2*zt2
      zeps=zepsr
-     call beq_rextremum(self,zsr1,zsr2,zt1,zpsi1,zeps,ierr)
+     call beq_rextremum(self,zsr1,zsr2,zt1,zpsi1,zsrm,zeps,ierr)
      !DEXT write(*,*) 'zsr1,zsr2,zt1,zpsi1,zeps,ierr',zsr1,zsr2,zt1,zpsi1,zeps,ierr !DEXT
      if (ierr/=0) call log_error(m_name,s_name,10+ierr,error_fatal,'no extremum found where expected')
-     call beq_rextremum(self,zsr1,zsr2,zt2,zpsi2,zeps,ierr)
+     call beq_rextremum(self,zsr1,zsr2,zt2,zpsi2,zsrm,zeps,ierr)
      !DEXT write(*,*) 'zsr1,zsr2,zt2,zpsi2,zeps,ierr',zsr1,zsr2,zt2,zpsi2,zeps,ierr !DEXT
      if (ierr/=0) call log_error(m_name,s_name,20+ierr,error_fatal,'no extremum found where expected')
-     call beq_rextremum(self,zsr1,zsr2,zt3,zpsi3,zeps,ierr)
+     call beq_rextremum(self,zsr1,zsr2,zt3,zpsi3,zsrm,zeps,ierr)
      !DEXT write(*,*) 'zsr1,zsr2,zt3,zpsi3,zeps,ierr',zsr1,zsr2,zt3,zpsi3,zeps,ierr !DEXT
      if (ierr/=0) call log_error(m_name,s_name,30+ierr,error_fatal,'no extremum found where expected')
      ! step three, converge to X-point in theta, searching for a MAXimum in theta if rsig<0
@@ -3327,7 +3442,7 @@ subroutine beq_psix(self)
         is3chnged=0
         zeps=max( zepsg , epsr*(abs(zpsi3-zpsi1)+abs(zpsi3-zpsi2)) )
         zt4=zg1*zt1+zg2*zt3
-        call beq_rextremum(self,zsr1,zsr2,zt4,zpsi4,zeps,ierr)
+        call beq_rextremum(self,zsr1,zsr2,zt4,zpsi4,zsrm,zeps,ierr)
         !DEXT write(*,*) 'zsr1,zsr2,zt4,zpsi4,zeps,ierr',zsr1,zsr2,zt4,zpsi4,zeps,ierr !DEXT
         if (ierr/=0) call log_error(m_name,s_name,40+ierr,error_fatal,'no extremum found where expected')
         if ((zpsi4-zpsi3)*rsig>0) then
@@ -3342,7 +3457,7 @@ subroutine beq_psix(self)
         end if
 
         zt5=zg1*zt2+zg2*zt3
-        call beq_rextremum(self,zsr1,zsr2,zt5,zpsi5,zeps,ierr)
+        call beq_rextremum(self,zsr1,zsr2,zt5,zpsi5,zsrm,zeps,ierr)
         !DEXT write(*,*) 'zsr1,zsr2,zt5,zpsi5,zeps,ierr',zsr1,zsr2,zt5,zpsi5,zeps,ierr !DEXT
         if (ierr/=0) call log_error(m_name,s_name,50+ierr,error_fatal,'no extremum found where expected')
         if ((zpsi5-zpsi3)*rsig>0) then
@@ -3357,7 +3472,7 @@ subroutine beq_psix(self)
         end if
         ! reevaluate psi3 with tighter tolerance
         if (is3chnged==0) then
-           call beq_rextremum(self,zsr1,zsr2,zt3,zpsi3,zeps,ierr)
+           call beq_rextremum(self,zsr1,zsr2,zt3,zpsi3,zsrm,zeps,ierr)
            !DEXT write(*,*) 'zsr1,zsr2,zt3,zpsi3,zeps,ierr',zsr1,zsr2,zt3,zpsi3,zeps,ierr !DEXT
            if (ierr/=0) call log_error(m_name,s_name,60+ierr,error_fatal,'no extremum found where expected')
         end if
@@ -3386,8 +3501,10 @@ subroutine beq_psix(self)
      call log_value("SMITER-GEOQ psi-xpt ",self%psixpt)
      call log_value("SMITER-GEOQ theta-xpt ",self%thetaxpt)
      call log_value("psixpt find code",ixf)
-     call log_value("SMITER-GEOQ R-xpt ",self%n%rcen+zsrxpt*cos(self%thetaxpt))
-     call log_value("SMITER-GEOQ Z-xpt ",self%n%zcen+zsrxpt*sin(self%thetaxpt))
+     self%rxpt=self%n%rcen+zsrxpt*cos(self%thetaxpt)
+     self%zxpt=self%n%zcen+zsrxpt*sin(self%thetaxpt)
+     call log_value("SMITER-GEOQ R-xpt ",self%rxpt)
+     call log_value("SMITER-GEOQ Z-xpt ",self%zxpt)
   end if
 
 end subroutine beq_psix
@@ -4031,9 +4148,9 @@ subroutine beq_rispld(self)
   allocate(workz2(self%mr+1,self%mz+1), stat=status)
   call log_alloc_check(m_name,s_name,2,status)
   ! evaluate R/I weighted derivatives
-  do j=1,self%mz
+  do j=1,self%mz+1
      zz=self%zmin+(j-1)*self%dz
-     do i=1,self%mr
+     do i=1,self%mr+1
         zr=self%rmin +(i-1)*self%dr
         call spl2d_evaln(self%dpsidr,zr,zz,1,zdpdr)
         call spl2d_evaln(self%dpsidz,zr,zz,2,zdpdz)
@@ -4221,6 +4338,293 @@ subroutine beq_ripple_calch1(self,posang,ktype)
 
 end subroutine beq_ripple_calch1
 !---------------------------------------------------------------------
+!> calculate complete track of psi extremum through plasma centre
+subroutine beq_ctrax(self)
+
+  !! arguments
+  type(beq_t), intent(inout) :: self   !< object data structure
+
+  !! local
+  character(*), parameter :: s_name='beq_ctrack1' !< subroutine name
+  real(kr8), dimension(:,:), allocatable :: ctrackrz !< central track
+  integer(ki4) :: nctrack !<  size of ctrackrz array
+
+  call beq_ctrackc(self,ctrackrz,nctrack,1)
+  call beq_ctrack1(self,ctrackrz,nctrack,1)
+  deallocate(ctrackrz)
+  call beq_ctrackc(self,ctrackrz,nctrack,2)
+  call beq_ctrack1(self,ctrackrz,nctrack,2)
+  deallocate(ctrackrz)
+
+end subroutine beq_ctrax
+!---------------------------------------------------------------------
+!> calculate track of psi extremum through plasma centre
+subroutine beq_ctrackc(self,ctrackrz,nctrack,ktyp)
+
+  !! arguments
+  type(beq_t), intent(inout) :: self   !< object data structure
+  real(kr8), dimension(:,:), allocatable, intent(out) :: ctrackrz !< central track
+  integer(ki4), intent(out) :: nctrack !<  bound for ctrackrz array
+  integer(ki4), intent(in) :: ktyp !<  lower or upper skylight type
+
+  !! local
+  character(*), parameter :: s_name='beq_ctrackc' !< subroutine name
+  real(kr8) :: zepsg    !< normalised value of \f$ \epsilon_g \f$ tolerance
+  integer(ki4) :: iwaydir !< ! direction of travel in \f$ Z \f$ (away from centre)
+  integer(ki4) :: im !< ! size of array in direction of travel in \f$ Z \f$
+  integer(ki4) :: igr !< \f$ R \f$ position index of global extremum
+  integer(ki4) :: igz !< \f$ Z \f$ position index of global extremum
+  integer(ki4) :: soutr=10 !< maximum number of outer searches
+  integer(ki4) :: sinr=10 !< maximum number of inner searches
+  integer(ki4) :: isr !< \f$ R \f$ search (increment) direction \f$ \pm 1 \f$
+  integer(ki4) :: isz !< \f$ Z \f$ search (increment) direction \f$ \pm 1 \f$
+  integer(ki4) :: ir !< current \f$ R \f$ position as index
+  integer(ki4) :: iz !< current \f$ Z \f$ position as index
+  real(kr8) :: zpp !< current value of \f$ \psi \f$
+  real(kr8) :: zpg !< value of \f$ \psi \f$ at global extremum
+  real(kr8) :: zt1    !< \f$ \theta_1 \f$ search angle
+  real(kr8) :: zsr1    !< minimum \f$ r \f$ bound for extremum
+  real(kr8) :: zsr2    !< maximum \f$ r \f$ bound for extremum
+  real(kr8) :: zrm    !< \f$ r \f$ at extremum
+  real(kr8) :: zpm    !< \f$ \psi \f$ at extremum
+  real(kr8) :: zr    !<   \f$ R(\psi_i,\theta_j) \f$
+  real(kr8) :: zz    !<   \f$ Z(\psi_i,\theta_j) \f$
+  integer(ki4) :: ierr    !< error code returned by r-extremum
+
+  ! direction of travel in \f$ Z \f$
+  iwaydir=2*ktyp-3
+  ! start  at centre
+  zr=self%n%rcen
+  zz=self%n%zcen
+  igr=1+(zr-self%rmin)/self%dr
+  igz=1+(zz-self%zmin)/self%dz
+
+  !! allocate track storage
+  im=(ktyp-1)*self%mz-iwaydir*igz
+  allocate(ctrackrz(im,2), stat=status)
+  call log_alloc_check(m_name,s_name,1,status)
+
+  zepsg=epsg*self%psinorm
+  ctrackrz(im,1)=zr
+  ctrackrz(im,2)=zz
+
+  iz=im
+  loop_over_z: do k=2,im
+     igz=igz+iwaydir
+     iz=iz-1
+     ! set initially positive search  directions for increasing psi
+     isr=1
+     isz=1
+
+     dosoutr: do j=1,soutr
+        ir=igr
+        call spl2d_eval(self%psi,self%rmin+(ir-1)*self%dr,self%zmin+(igz-1)*self%dz,zpg)
+
+        !! search in r
+        ! change direction if necessary
+        ir=igr+isr
+        call spl2d_eval(self%psi,self%rmin+(ir-1)*self%dr,self%zmin+(igz-1)*self%dz,zpp)
+        if ( (zpp-zpg)*rsig < 0 ) then
+           igr=ir
+           zpg=zpp
+        else
+           isr=-1
+           ir=igr
+        end if
+
+        do i=1,sinr
+           ir=ir+isr
+           call spl2d_eval(self%psi,self%rmin+(ir-1)*self%dr,self%zmin+(igz-1)*self%dz,zpp)
+           if ( (zpp-zpg)*rsig < 0 ) then
+              igr=ir
+              zpg=zpp
+           else
+              exit dosoutr
+           end if
+        end do
+
+     end do dosoutr
+
+     zt1=0
+     zsr1=self%rmin+(igr-2)*self%dr
+     zsr2=self%rmin+igr*self%dr
+     zz=self%zmin+(igz-1)*self%dz
+     call beq_rextremum(self,zsr1,zsr2,zt1,zpm,zrm,zepsg,ierr)
+     if (ierr/=0) then
+        call log_error(m_name,s_name,ierr,error_warning,'no extremum found where expected')
+        call log_value('line Z = ',zz)
+     else
+        zr=zrm
+     end if
+     ctrackrz(iz,1)=zr
+     ctrackrz(iz,2)=zz
+
+  end do loop_over_z
+
+  nctrack=im
+
+  !CDBG  idunit=799 !CDBG
+  !CDBG  !open(newunit=idunit, file='extr.gnu') !CDBG
+  !CDBG  write(idunit,'(A)') '# track of extremum through plasma centre' !CDBG
+  !CDBG  write(idunit,'(1P, 2(1X, G13.5))') (ctrackrz(k,1),ctrackrz(k,2),k=1,nctrack) !CDBG
+
+end subroutine beq_ctrackc
+!---------------------------------------------------------------------
+!> update of psi extremum through plasma centre
+subroutine beq_ctrack1(self,ptrack,kn,kcall)
+
+  !! arguments
+  type(beq_t), intent(inout) :: self   !< object data structure
+  real(kr8), dimension(:,:), allocatable, intent(in) :: ptrack !< central track
+  integer(ki4), intent(in) :: kn !<  bound for ptrack array
+  integer(ki4), intent(in) :: kcall !<  number of call
+
+  !! local
+  character(*), parameter :: s_name='beq_ctrack1' !< subroutine name
+  integer(ki4) :: jt !< ! loop variable
+
+  if (kcall==1) then
+     allocate(self%ctrackrz(self%mz,2), stat=status)
+     call log_alloc_check(m_name,s_name,1,status)
+     self%ctrackrz(1:kn,1:2)=ptrack
+     self%nctrack=kn
+  else
+     do jt=1,kn
+        self%ctrackrz(self%mz+1-jt,:)=ptrack(jt,:)
+     end do
+     self%nctrack=self%mz
+  end if
+
+end subroutine beq_ctrack1
+!---------------------------------------------------------------------
+!> return track of psi extremum through plasma centre
+subroutine beq_ctrack1r(self,ptrack,kn,ktyp)
+
+  !! arguments
+  type(beq_t), intent(in) :: self   !< object data structure
+  real(kr8), dimension(:,:), allocatable, intent(out) :: ptrack !< central track
+  integer(ki4), intent(out) :: kn !<  bound for ptrack array
+  integer(ki4), intent(in) :: ktyp !<  lower or upper skylight type
+
+  !! local
+  character(*), parameter :: s_name='beq_ctrack1r' !< subroutine name
+  integer(ki4) :: iwaydir !< ! direction of travel in \f$ Z \f$ (away from centre)
+  integer(ki4) :: igz !< \f$ Z \f$ position index of global extremum
+  integer(ki4) :: im !< ! size of array in direction of travel in \f$ Z \f$
+  integer(ki4) :: jt !< ! loop variable
+
+  ! direction of travel in \f$ Z \f$
+  iwaydir=2*ktyp-3
+  ! start  at centre
+  igz=1+(self%n%zcen-self%zmin)/self%dz
+
+  ! direction of travel in \f$ Z \f$
+  im=(ktyp-1)*self%mz-iwaydir*igz
+  if (ktyp==1) then
+     allocate(ptrack(im,2), stat=status)
+     call log_alloc_check(m_name,s_name,1,status)
+     ptrack=self%ctrackrz(1:im,:)
+  else
+     do jt=1,im
+        ptrack(jt,:)=self%ctrackrz(self%mz+1-jt,:)
+     end do
+  end if
+  kn=im
+
+end subroutine beq_ctrack1r
+!---------------------------------------------------------------------
+!> query position relative to track of psi extremum through plasma centre
+subroutine beq_ctrackcq(self,ctrackrz,nctrack,prz,pout)
+
+  !! arguments
+  type(beq_t), intent(inout) :: self   !< object data structure
+  real(kr8), dimension(:,:), allocatable, intent(in) :: ctrackrz !< central track
+  integer(ki4), intent(in) :: nctrack !<  bound for ctrackrz array
+  real(kr8), dimension(2), intent(in) :: prz    !<  Query point position \f$ (R,Z) \f$
+  real(kr8), intent(out) :: pout !<  point inside (negative, HFS) or outside (positive, LFS) track
+
+  !! local
+  character(*), parameter :: s_name='beq_ctrackcq' !< subroutine name
+  real(kr8) :: zr    !<  Query point \f$ R \f$
+  real(kr8) :: zz    !<  Query point \f$ Z \f$
+  integer(ki4) :: iz    !<  array entry in \f$ Z \f$ direction
+  real(kr8) :: remz    !<  remainder in \f$ Z \f$ direction
+  real(kr8) :: zrc    !<  Central \f$ R \f$ at specified \f$ Z \f$
+
+  zr=prz(1)
+  zz=prz(2)
+  iz=1+max(int((zz-self%zmin)/self%dz),0)
+  remz=zz-self%zmin-(iz-1)*self%dz
+  iz=min(iz,nctrack-1)
+  zrc=(1-remz)*ctrackrz(iz,1)+remz*ctrackrz(iz+1,1)
+
+  pout=zr-zrc
+
+end subroutine beq_ctrackcq
+!---------------------------------------------------------------------
+!> find \f$ (R, Z) \f$ position of \f$ \psi \f$ value on track through plasma centre
+subroutine beq_ctrackpt(self,ctrackrz,nctrack,prz,psi,ktyps)
+
+  !! arguments
+  type(beq_t), intent(inout) :: self   !< object data structure
+  real(kr8), dimension(:,:), allocatable, intent(in) :: ctrackrz !< central track
+  integer(ki4), intent(in) :: nctrack !<  bound for ctrackrz array
+  real(kr8), dimension(2), intent(out) :: prz    !<  Query point position \f$ (R,Z) \f$
+  real(kr8), intent(in) :: psi !<   \f$ \psi \f$ value
+  integer(ki4), intent(in) :: ktyps !<  lower (1) or upper (2) half of cross-section
+
+  !! local
+  character(*), parameter :: s_name='beq_ctrackpt' !< subroutine name
+  integer(ki4) :: idir !< ! direction of travel in \f$ Z \f$, (-1) in lower, (+1) in upper
+  real(kr8) :: zra    !<  Old value of \f$ R \f$
+  real(kr8) :: zza    !<  Old value of \f$ Z \f$
+  real(kr8) :: zr    !<  Query point \f$ R \f$
+  real(kr8) :: zz    !<  Query point \f$ Z \f$
+  integer(ki4) :: ista    !<  loop start at plasma centre
+  integer(ki4) :: iend    !<  loop end at flux array boundary
+  integer(ki4) :: iz    !<  array entry in \f$ Z \f$ direction
+  real(kr8) :: zpsia    !<  first value of \f$ \psi \f$
+  real(kr8) :: zpsib    !<  second value of \f$ \psi \f$
+
+  ! direction of travel in \f$ Z \f$
+  idir=2*ktyps-3
+  ! loop limits
+  ista=1+max(int((self%n%zcen-self%zmin)/self%dz),0)
+  iend=((1-idir)+(idir+1)*self%mz)/2
+
+  ! main search loop
+  zr=ctrackrz(ista,1)
+  zz=ctrackrz(ista,2)
+  call spl2d_eval(self%psi,zr,zz,zpsia)
+  do i=ista+idir,iend,idir
+     zra=zr
+     zza=zz
+     zr=ctrackrz(i,1)
+     zz=ctrackrz(i,2)
+     call spl2d_eval(self%psi,zr,zz,zpsib)
+     if ((zpsia-psi)*(zpsib-psi)<=0) exit
+     zpsia=zpsib
+  end do
+
+  if (i==iend) then
+     call log_error(m_name,s_name,1,error_warning,'no position found for flux')
+  end if
+
+  prz(1)=zra
+  prz(2)=zza
+
+end subroutine beq_ctrackpt
+!---------------------------------------------------------------------
+!> get unit number for beq writing
+subroutine beq_getunit(kunit)
+
+  !! arguments
+  integer(ki4), intent(out) :: kunit    !< log unit number
+
+  kunit=nin
+
+end subroutine beq_getunit
+!---------------------------------------------------------------------
 !> define ripple as for MAST
 function beq_ripple_h1(pr,pz,pzeta,kopt,km,pin,pa)
 
@@ -4332,7 +4736,7 @@ subroutine beq_ipsi(self)
 end subroutine beq_ipsi
 !---------------------------------------------------------------------
 !> calculate  extremal \f$ \psi \f$ in search direction
-subroutine beq_rextremum(self,psr1,psr2,ptheta,psim,peps,kerr)
+subroutine beq_rextremum(self,psr1,psr2,ptheta,psim,psrm,peps,kerr)
 
   !! arguments
   type(beq_t), intent(inout) :: self   !< object data structure
@@ -4340,6 +4744,7 @@ subroutine beq_rextremum(self,psr1,psr2,ptheta,psim,peps,kerr)
   real(kr8), intent(in) :: psr2   !< upper limiting value of \f$ r \f$
   real(kr8), intent(in) :: ptheta   !< search direction \f$ \theta \f$
   real(kr8), intent(out) :: psim   !< extremal \f$ \psi_m \f$
+  real(kr8), intent(out) :: psrm   !< extremal \f$ R \f$
   real(kr8), intent(in) :: peps   !< convergence tolerance
   integer(ki4), intent(out) :: kerr    !< return code (non-zero means trouble)
 
@@ -4413,6 +4818,7 @@ subroutine beq_rextremum(self,psr1,psr2,ptheta,psim,peps,kerr)
   end if
 
   psim=zpsi3
+  psrm=zsr3
 
 end subroutine beq_rextremum
 !---------------------------------------------------------------------
@@ -4423,7 +4829,7 @@ end subroutine beq_rextremum
 
 end function beq_rsig
 !---------------------------------------------------------------------
-!> set up rsig
+!> set up rsig, positive if psi increasing from centre
 subroutine beq_rsigset(self)
 
   type(beq_t), intent(inout) :: self   !< object data structure

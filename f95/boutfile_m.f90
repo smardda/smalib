@@ -15,14 +15,14 @@ module boutfile_m
 
 ! public subroutines
   public :: &
- &boutfile_init, &
- &boutfile_write, &
+ &boutfile_init, & !< find unit, open file and write header
+ &boutfile_write, & !< write data structure
+ &boutfile_getunit,  & !< get unit number
  &boutfile_close
-! public types
-  integer(ki4) :: nout !< output file unit
 
 ! private variables
   character(*), parameter :: m_name='boutfile_m' !< module name
+  integer(ki4), save :: nout=-1 !< output file unit
   integer(ki4) :: i !< loop counter
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
@@ -90,6 +90,16 @@ subroutine boutfile_write(beq,timestamp)
   !dbg     call beq_write(beq,nout)
 
 end  subroutine boutfile_write
+!---------------------------------------------------------------------
+!> get unit number for output
+subroutine boutfile_getunit(kunit)
+
+  !! arguments
+  integer(ki4), intent(out) :: kunit    !< log unit number
+
+  kunit=nout
+
+end subroutine boutfile_getunit
 !---------------------------------------------------------------------
 !> close output files
 subroutine boutfile_close

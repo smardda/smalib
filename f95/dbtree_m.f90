@@ -1676,7 +1676,7 @@ subroutine dbtree_writev(self,kchar,kclab,channel,geobjl)
      write(channel,'(''CELL_DATA '', i8)',iostat=status) inode
      call log_write_check(m_name,s_name,1,status)
      islen1=len_trim(kclab)
-     write(channel,'(''SCALARS '',A,'' float 1'')',iostat=status), kclab(1:islen1)
+     write(channel,'(''SCALARS '',A,'' float 1'')',iostat=status)  kclab(1:islen1)
      call log_write_check(m_name,s_name,2,status)
      write(channel,'(''LOOKUP_TABLE default'')',iostat=status)
      call log_write_check(m_name,s_name,3,status)

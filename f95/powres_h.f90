@@ -7,6 +7,7 @@ module powres_h
   use fmesh_h
   use beq_h
   use odes_h
+  use skyl_h
 
 
 ! public types
@@ -27,6 +28,7 @@ module powres_h
      type(posveclis_t) :: vecx !< list of Cartesian position vectors
      type(geobjlist_t) :: geobjl !< geobj list
      type(beq_t) :: beq !< beq (only part defined)
+     type(skyl_t) :: skyl !< skylight definition(s)
      integer(ki4)  :: npowe !< number of powelts (ie. level 1 triangles)
      integer(ki4)  :: npow !< number of entries in pow
      integer(ki4)  :: npows !< number of entries in pows (normally use npowe)

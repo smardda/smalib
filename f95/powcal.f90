@@ -12,6 +12,7 @@ program powcal_p
   use pcontrol_h
   use dcontrol_h
   use pcontrol_m
+  use dcontrol_m
   use fmesh_m
   use beq_m
   use beqan_h
@@ -50,6 +51,7 @@ program powcal_p
 
   use nrsolve_m
   use powelt_m
+  use skyl_h
   use powres_h
   use powcal_h
   use termplane_h
@@ -61,6 +63,7 @@ program powcal_p
   use odes_h
   use odes_m
   use stack_m
+  use skyl_m
 
   implicit none
 
@@ -77,12 +80,14 @@ program powcal_p
   type(date_time_t) :: timestamp !< timestamp of run
   type(date_time_t) :: timeold !< timestamp of preceding HDSGEN run
   character(len=80) :: fileroot !< reference name for all files output by run
+  character(len=256) :: vtkdesc !< descriptor line for vtk files
 
   integer(ki4):: nplot !< unit for vtk files
   integer(ki4):: nin=0 !< unit for other data
   integer(ki4):: ifldspec !< field specification
   real(kr8):: zivac !< value of I in field file
   real(kr8):: zfac !< ratio of I in different field files
+  integer(ki4) :: iextra=0 !< extra info in file
 !--------------------------------------------------------------------------
 !! initialise timing
 
@@ -123,7 +128,7 @@ program powcal_p
 
   call clock_start(3,'geoq_init time')
   ! get fldspec from file
-  call beq_readcheck(powcal%powres%beq,file%geoq)
+  call beq_readcheck(powcal%powres%beq,file%geoq,iextra)
   ifldspec=powcal%powres%beq%n%fldspec
   fld_specn: select case (ifldspec)
   case(1)
@@ -131,6 +136,7 @@ program powcal_p
   case default
   call beq_readplus(powcal%powres%beq,file%geoq)
   end select fld_specn
+  if (iextra==2) call skyl_read(powcal%powres%skyl,file%geoq)
   call pcontrol_fix(numerics,onumerics,ifldspec)
   call clock_stop(3)
 !--------------------------------------------------------------------------
@@ -215,7 +221,8 @@ program powcal_p
 !!plot cartesian power
   if(plot%powstatx) then
      call clock_start(10,'vfile_powstatx time')
-     call vfile_init(file%powstatx,'power in cartesian space',nplot)
+     call geobjlist_makehedline(powcal%powres%geobjl,'power in cartesian space',vtkdesc)
+     call vfile_init(file%powstatx,vtkdesc,nplot)
      call powcal_writev(powcal,'cartesian',nplot)
      call vfile_close
      call clock_stop(10)
@@ -224,7 +231,8 @@ program powcal_p
 !!plot cartesian power statistics
   if(plot%powx) then
      call clock_start(11,'vfile_powx time')
-     call vfile_init(file%powx,'power statistics in cartesians',nplot)
+     call geobjlist_makehedline(powcal%powres%geobjl,'power statistics in cartesians',vtkdesc)
+     call vfile_init(file%powx,vtkdesc,nplot)
      call powcal_writev(powcal,'allcartesian',nplot)
      call vfile_close
      call clock_stop(11)
@@ -234,7 +242,8 @@ program powcal_p
 ! only valid for 'msum','middle' option
   if(plot%wall) then
      call clock_start(12,'vfile_wall time')
-     call vfile_init(file%wall,'wall power in cartesians',nplot)
+     call geobjlist_makehedline(gshadl,'wall power in cartesians',vtkdesc)
+     call vfile_init(file%wall,vtkdesc,nplot)
      call powcal_xferpow(powcal,gshadl)
      call geobjlist_writev(gshadl,'geometry',nplot)
      call vfile_close

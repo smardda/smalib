@@ -72,12 +72,12 @@ subroutine smanal_read(self,file,numerics)
 
   !dbg write(*,*) numerics%namekey, numerics%namescal !dbg
   if (trim(adjustl(numerics%namekey))==trim(adjustl(numerics%namescal))) then
-  !! scalar is in first file, ie. Body or Surf
+     !! scalar is in first file, ie. Body or Surf
      self%nscal=self%nkey
      allocate(self%scal(self%nscal),stat=status)
      call log_alloc_check(m_name,s_name,1,status)
      self%scal=self%key
-   else
+  else
      !! scalar typically pow
      igeobjl%ngtype=2
      call geobjlist_read(igeobjl,file%vtk,iched)
@@ -100,6 +100,7 @@ subroutine smanal_rekey(self)
   character(*), parameter :: s_name='smanal_rekey' !< subroutine name
   real(kr8), dimension(3) :: zcentr !< average of centroids
   real(kr8) :: zrcen    !<   \f$ R_C \f$
+  real(kr8) :: zzcen    !<   \f$ Z_C \f$
   real(kr8) :: zr    !<   \f$ R \f$
   real(kr8) :: zx    !<   \f$ X \f$
   real(kr8) :: zy    !<   \f$ Y \f$
@@ -107,52 +108,69 @@ subroutine smanal_rekey(self)
   real(kr8) :: zangmin !< minimum angle
   real(kr8) :: zangmax !< maximum angle
   real(kr8) :: zbinsiz !< angle increment
-  integer(ki4) :: ikey  !< 
+  integer(ki4) :: ikey   !< local variable
   integer(ki4) :: indx !< local variable
   integer(ki4) :: iindict !< local variable
 
   iindict=self%ndict
-  zcentr=0
-  do i=1,iindict
-     zcentr(:)=zcentr(:)+self%centr(:,i)
-  end do
-  zcentr(:)=zcentr(:)/iindict
-  zrcen=sqrt( zcentr(1)**2+zcentr(2)**2 )
+
+  ! allow for user defined central values
+  if (.NOT.self%n%lurcen.OR..NOT.self%n%luzcen) then
+     ! find centroid unless user is setting both
+     zcentr=0
+     do i=1,iindict
+        zcentr(:)=zcentr(:)+self%centr(:,i)
+     end do
+     zcentr(:)=zcentr(:)/iindict
+  end if
+  if (self%n%lurcen) then
+     zrcen=self%n%urcen
+  else
+     zrcen=sqrt( zcentr(1)**2+zcentr(2)**2 )
+  end if
+  if (self%n%luzcen) then
+     zzcen=self%n%uzcen
+  else
+     zzcen=zcentr(3)
+  end if
+
+  call log_value('Nominal R-centre',zrcen)
+  call log_value('Nominal Z-centre',zzcen)
 
   self%inbin=iindict
   new_key: select case (self%n%newkey)
 
   case('null','angle','poloidal')
-  ! new sort key based on poloidal angle
-  allocate(self%bin(iindict), self%oldict(iindict), stat=status)
-  call log_alloc_check(m_name,s_name,1,status)
-  do i=1,iindict
-     zr=sqrt( self%centr(1,i)**2+self%centr(2,i)**2 )
-     zz=self%centr(3,i)-zcentr(3)
-     ! zang(i)=atan2(zz,zr-zrcen) might be expected, but to get branch-cut down below
-     self%bin(i)=atan2(zr-zrcen,zz)
-     !write(*,*) self%dict(i),self%bin(i),self%centr(:,i)
-  end do
-  self%oldict=self%dict
-  ! bin size
-  zangmin=minval(self%bin)
-  zangmax=maxval(self%bin)
-  zbinsiz=(zangmax-zangmin)/self%n%nbin
+     ! new sort key based on poloidal angle
+     allocate(self%bin(iindict), self%oldict(iindict), stat=status)
+     call log_alloc_check(m_name,s_name,1,status)
+     do i=1,iindict
+        zr=sqrt( self%centr(1,i)**2+self%centr(2,i)**2 )
+        zz=self%centr(3,i)-zzcen
+        ! zang(i)=atan2(zz,zr-zrcen) might be expected, but to get branch-cut down below
+        self%bin(i)=atan2(zr-zrcen,zz)
+        !write(*,*) self%dict(i),self%bin(i),self%centr(:,i)
+     end do
+     self%oldict=self%dict
+     ! bin size
+     zangmin=minval(self%bin)
+     zangmax=maxval(self%bin)
+     zbinsiz=(zangmax-zangmin)/self%n%nbin
 
   case('toroidal')
-  ! new sort key based on toroidal angle
-  allocate(self%bin(iindict), self%oldict(iindict), stat=status)
-  call log_alloc_check(m_name,s_name,1,status)
-  do i=1,iindict
-     zx=self%centr(1,i)
-     zy=self%centr(2,i)
-     self%bin(i)=atan2(zy,zx)
-  end do
-  self%oldict=self%dict
-  ! bin size
-  zangmin=minval(self%bin)
-  zangmax=maxval(self%bin)
-  zbinsiz=(zangmax-zangmin)/self%n%nbin
+     ! new sort key based on toroidal angle
+     allocate(self%bin(iindict), self%oldict(iindict), stat=status)
+     call log_alloc_check(m_name,s_name,1,status)
+     do i=1,iindict
+        zx=self%centr(1,i)
+        zy=self%centr(2,i)
+        self%bin(i)=atan2(zy,zx)
+     end do
+     self%oldict=self%dict
+     ! bin size
+     zangmin=minval(self%bin)
+     zangmax=maxval(self%bin)
+     zbinsiz=(zangmax-zangmin)/self%n%nbin
 
   end select new_key
 

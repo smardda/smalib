@@ -638,6 +638,8 @@ subroutine position_copylis(selfin,selfout,kopt)
   do j=1,selfout%np
      selfout%pos(j)%posvec=selfin%pos(j)%posvec
   end do
+  selfout%nparpos=selfin%nparpos
+  selfout%rparpos=selfin%rparpos
 
 end subroutine position_copylis
 !---------------------------------------------------------------------
@@ -921,6 +923,7 @@ subroutine position_tfmlis(self,tfmdata)
      zpos=position_tfm(self%pos(j),tfmdata)
      self%pos(j)=zpos
   end do
+  self%nparpos(4)=self%nparpos(4)+1
 
 end subroutine position_tfmlis
 !---------------------------------------------------------------------
@@ -941,6 +944,7 @@ subroutine position_invtfmlis(self,tfmdata)
      zpos=position_invtfm(self%pos(j),tfmdata)
      self%pos(j)=zpos
   end do
+  self%nparpos(4)=self%nparpos(4)-1
 
 end subroutine position_invtfmlis
 !---------------------------------------------------------------------
@@ -962,6 +966,7 @@ subroutine position_qtfmlis(self,qtfmdata)
      zpos=position_qtfm(self%pos(j),qtfmdata)
      self%pos(j)=zpos
   end do
+  self%nparpos(3)=self%nparpos(3)+1
 
 end subroutine position_qtfmlis
 !---------------------------------------------------------------------
@@ -983,6 +988,7 @@ subroutine position_invqtfmlis(self,qtfmdata)
      zpos=position_invqtfm(self%pos(j),qtfmdata)
      self%pos(j)=zpos
   end do
+  self%nparpos(3)=self%nparpos(3)-1
 
 end subroutine position_invqtfmlis
 

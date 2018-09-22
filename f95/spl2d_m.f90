@@ -120,6 +120,7 @@ subroutine spl2d_read(self,infile,kin)
 
 
   read(nin,*,iostat=status) ibuff
+  !write(*,*) ibuff
   read(nin,*,iostat=status) self%lunif
   if(status/=0) then
      call log_error(m_name,s_name,7,error_fatal,'Error reading object data')
