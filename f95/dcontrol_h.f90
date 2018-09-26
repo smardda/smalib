@@ -12,6 +12,7 @@ module dcontrol_h
      integer(ki4) :: npos !< number of positions
      integer(ki4) :: div !< number of divisions in rotate/translate (should be even)
      integer(ki4) :: ldiv !< number of divisions in straight line joining first and last $\f (r,z) \f$
+     integer(ki2par) :: descode !< description of surface
      integer(ki2par) :: csys !< coordinate system positive as posang (q.v.), unity for polars
      integer(ki2par) :: cunits !< units of system (-3 for mm)
      real(kr8) :: stang  !< starting angle for surface generation

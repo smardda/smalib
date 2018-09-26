@@ -197,7 +197,7 @@ program geoq_p
      call beq_bdryrb(geoq%beq)
      call beq_ipsi(geoq%beq)
      call beq_xilt(geoq%beq)
-     call geoq_skyl(geoq)
+     call geoq_objaddcon(geoq)
   case (3)
      call beq_centre(geoq%beq)
      call geoq_init(geoq)
@@ -205,7 +205,7 @@ program geoq_p
      call beq_ipsi(geoq%beq)
      call beq_rispld(geoq%beq)
      call beq_xilt(geoq%beq)
-     call geoq_skyl(geoq)
+     call geoq_objaddcon(geoq)
   case default
      call beq_centre(geoq%beq)
      call geoq_init(geoq)

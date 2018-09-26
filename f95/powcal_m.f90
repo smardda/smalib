@@ -538,7 +538,7 @@ subroutine powcal_readcon(selfn,kin)
   logical :: termination_planes !<  termination planes present
   logical :: more_profiles !<  use edgprofparameters
   logical :: power_in_pfr !<  if .TRUE., power in private flux region
-  logical :: use_skyl_pfr !<  if .TRUE., use skylights in private flux region
+  logical :: employ_skyl_pfr !<  if .TRUE., employ skylights in private flux region
   integer(ki4) :: analytic_launch_type !< analytic launch type
   integer(ki4) :: power_on_launch_geo !< power on launch geometry
   integer(ki4) :: power_on_shadow_geo !< power on shadow geometry
@@ -558,7 +558,7 @@ subroutine powcal_readcon(selfn,kin)
  &termination_planes, &
  &more_profiles, &
  &power_in_pfr, &
- &use_skyl_pfr, &
+ &employ_skyl_pfr, &
  &skylight, &
  &skylight_tolerance, &
  &analytic_launch_type, power_on_launch_geo, power_on_shadow_geo
@@ -582,7 +582,7 @@ subroutine powcal_readcon(selfn,kin)
   termination_planes=.FALSE.
   more_profiles=.FALSE.
   power_in_pfr=.TRUE.
-  use_skyl_pfr=.TRUE.
+  employ_skyl_pfr=.TRUE.
   skylight=.TRUE.
   ztola=1._kr8
   skylight_tolerance=ztola
@@ -656,7 +656,7 @@ subroutine powcal_readcon(selfn,kin)
   selfn%ltermplane=termination_planes
   selfn%ledgprof=more_profiles
   selfn%lpfpower=power_in_pfr
-  selfn%lskylpfr=use_skyl_pfr
+  selfn%lskylpfr=employ_skyl_pfr
   selfn%lskyl=skylight
   selfn%lflagtol=ANY(skylight_tolerance/=ztola)
   selfn%tolin=skylight_tolerance

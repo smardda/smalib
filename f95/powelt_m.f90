@@ -402,9 +402,9 @@ subroutine powelt_move(self,powcal,gshadl,btree)
 
   ! find element number
   inpow=powelt_addr(self,powcal%powres%npowe)
-  !  write(*,*) "inpow=",inpow
-  !  write(*,*) powcal%n%ntrack
-  !  write(*,*) powcal%n%trackno
+  write(*,*) "inpow=",inpow !dbgwr
+  !  write(*,*) powcal%n%ntrack !dbgwr
+  !  write(*,*) powcal%n%trackno !dbgwr
   ! check whether looking at small number of tracks
   if (powcal%n%ntrack>0) then
      ! is this element track in the test set
@@ -682,6 +682,7 @@ subroutine powelt_move0(self,powcal,gshadl,btree)
   integer(ki4), save :: firstcall  !< flag up first step of new trajectory
 
   inpow=powelt_addr(self,powcal%powres%npowe)
+  write(*,*) "inpow=",inpow !dbgwr
   ! check whether looking at small number of tracks
   if (powcal%n%ntrack>0) then
      ! is this element track in the test set
@@ -1111,6 +1112,7 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
   real(kr8) :: zskyl !<  \f$ \z \f$ value for skylight
 
   inpow=powelt_addr(self,powcal%powres%npowe)
+  write(*,*) "inpow=",inpow !dbgwr
   ! check whether looking at small number of tracks
   if (powcal%n%ntrack>0) then
      ! is this element track in the test set
@@ -1203,61 +1205,65 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
      ! default to shadowed
      powcal%powres%pow(inpow)=0
   end if
+  ! default number of active termplanes
+  interm=powcal%n%termp%ntermplane
   if (powcal%powres%beq%n%skylpsi) then
      if (.NOT.lpset) then
         call spl2d_eval(powcal%powres%beq%psi,zposd(1),zposd(2),zpsi)
-        linpfr= ( beq_rsig()*(powcal%powres%beq%psibdry-zpsi)>0 )
      end if
-     ! optionally skip skylight test if in private flux region
-     if (linpfr.AND..NOT.powcal%n%lskylpfr) go to 2
-     ityps=0
-     if (zposd(2)<powcal%powres%beq%zcenq) then
-        ! lower skylight active
-        if (powcal%powres%skyl%n%skyltyp<3) ityps=1
-     else
-        ! upper skylight only active
-        ityps=4-powcal%powres%skyl%n%skyltyp
-     end if
-     if (ityps==1.OR.ityps==2) then
-        zrz=(/zposd(1),zposd(2)/)
-        call beq_ctrackcq(powcal%powres%beq,powcal%powres%beq%ctrackrz,&
-        powcal%powres%beq%nctrack,zrz,distrack)
-        inou=2+sign(0.5_kr8,distrack) ! 1 if distrack<0, 2 if distrack>0
-        ! check within allowable range of psi
-        zlts=powcal%powres%skyl%psilts(1:2,inou,ityps)
-        if ( (zpsi-zlts(1))*(zpsi-zlts(2)) <= 0 ) then
-           itp=1+int((zpsi-zlts(1))/powcal%powres%skyl%psidelta(inou,ityps))
-           itp=min( itp, powcal%powres%skyl%dimbox(inou,ityps) )
-           if (inou==1) zskyl=powcal%powres%skyl%inboxz(itp,ityps)
-           if (inou==2) zskyl=powcal%powres%skyl%ouboxz(itp,ityps)
-           if(debug)write(800,*) "psi, Z values", zpsi, zskyl,zposd(2)
-           if (abs(zskyl-zposd(2))<powcal%powres%skyl%n%toli(2)) then
-              if (debug) then
-                 nskyl1=nskyl1+1
-                 write(800,*) "coincident skylight", nskyl1
-              end if
-              return
-           else
-              irid=3-2*ityps
-              if ((zposd(2)-zskyl)*irid>0) then
+     linpfr=( beq_rsig()*(powcal%powres%beq%psibdry-zpsi)>0 )
+     !! optionally skip flux skylight test if in private flux region
+     !if (linpfr.AND..NOT.powcal%n%lskylpfr) go to 2
+     ! always skip skylight test if in private flux region
+     if (.NOT.linpfr) then
+        ityps=0
+        if (zposd(2)<powcal%powres%beq%zcenq) then
+           ! lower skylight active
+           if (powcal%powres%skyl%n%skyltyp<3) ityps=1
+        else
+           ! upper skylight only active
+           ityps=4-powcal%powres%skyl%n%skyltyp
+        end if
+        if (ityps==1.OR.ityps==2) then
+           zrz=(/zposd(1),zposd(2)/)
+           call beq_ctrackcq(powcal%powres%beq,powcal%powres%beq%ctrackrz,&
+           powcal%powres%beq%nctrack,zrz,distrack)
+           inou=2+sign(0.5_kr8,distrack) ! 1 if distrack<0, 2 if distrack>0
+           ! check within allowable range of psi
+           zlts=powcal%powres%skyl%psilts(1:2,inou,ityps)
+           if ( (zpsi-zlts(1))*(zpsi-zlts(2)) <= 0 ) then
+              itp=1+int((zpsi-zlts(1))/powcal%powres%skyl%psidelta(inou,ityps))
+              itp=min( itp, powcal%powres%skyl%dimbox(inou,ityps) )
+              if (inou==1) zskyl=powcal%powres%skyl%inboxz(itp,ityps)
+              if (inou==2) zskyl=powcal%powres%skyl%ouboxz(itp,ityps)
+              if(debug)write(800,*) "psi, Z values", zpsi, zskyl,zposd(2)
+              if (abs(zskyl-zposd(2))<powcal%powres%skyl%n%toli(2)) then
                  if (debug) then
-                    nskyl2=nskyl2+1
-                    write(800,*) "above skylight", nskyl2
+                    nskyl1=nskyl1+1
+                    write(800,*) "coincident skylight", nskyl1
                  end if
                  return
+              else
+                 irid=3-2*ityps
+                 if ((zposd(2)-zskyl)*irid>0) then
+                    if (debug) then
+                       nskyl2=nskyl2+1
+                       write(800,*) "above skylight", nskyl2
+                    end if
+                    return
+                 end if
               end if
+              ! set dynamic termplane based on skylight
+              interm=powcal%n%termp%ntermplane+1
+              powcal%n%termp%termplane(interm,1)=zskyl
+              powcal%n%termp%termplanedir(interm,2)=irid
            end if
-           ! set dynamic termplane based on skylight
-           interm=powcal%n%termp%ntermplane+1
-           powcal%n%termp%ntermactive=interm
-           powcal%n%termp%termplane(interm,1)=zskyl
-           powcal%n%termp%termplanedir(interm,2)=irid
         end if
-     else
-        powcal%n%termp%ntermactive=powcal%n%termp%ntermplane
      end if
   end if
-2     continue
+  !2     continue
+  ! set number of active termplanes
+  powcal%n%termp%ntermactive=interm
   ! adjust sign of timestep
   powcal%odes%dt=sign(1._kr8,zpdotn)*powcal%odes%dt
   ! scaling factor no longer carries timestep sign
@@ -3209,7 +3215,7 @@ subroutine powelt_setpow(self,powcal,nobjhit,zm,inpow,gshadl)
      if (nobjhit==-1.OR.nobjhit==0) ihit=1
   end if
 
-  if (ihit>0)  then
+  if (ihit>0.OR. ihit==-10)  then
      ! really a collision
      calcn_type: select case (powcal%n%caltype)
      case('afws','local','msus','global')

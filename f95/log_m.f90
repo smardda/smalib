@@ -19,6 +19,7 @@ module log_m
   log_close     !< close log
 
   interface log_value
+   module procedure log_value_ki2
    module procedure log_value_ki4
    module procedure log_value_kr4
    module procedure log_value_kr8
@@ -237,6 +238,19 @@ subroutine log_close
 end subroutine log_close
 !---------------------------------------------------------------------
 !> log name=value
+subroutine log_value_ki2(varname,value,units)
+  !! arguments
+  character(*), intent(in) :: varname  !< variable name
+  integer(ki2par), intent(in) :: value    !< variable value
+  character(*), intent(in),optional :: units  !< units name
+
+  !!output
+  if(present(units)) then
+     write(nlog, '("Log  : ",a," = ",i10,1x,a)') varname,value,units
+  else
+     write(nlog, '("Log  : ",a," = ",i10)') varname,value
+  end if
+end subroutine log_value_ki2
 subroutine log_value_ki4(varname,value,units)
   !! arguments
   character(*), intent(in) :: varname  !< variable name

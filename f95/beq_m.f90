@@ -9,6 +9,7 @@ module beq_m
   use posang_h
   use position_m
   use log_m
+  use geobj_m
   use spl2d_m
   use spl3d_m
   use fmesh_m
@@ -2844,7 +2845,11 @@ subroutine beq_readcon(selfn,kin)
   logical :: beq_duct !< flag whether working in duct coordinates
   logical :: skylight_flux_limits !< flag whether any skylight(s) defined by flux limits
   logical :: skylight_centre_line !< flag whether any skylight(s) defined by centre_line
+  integer(ki4) :: absorber_objects !< number of absorbers defined geometrically
+  integer(ki4) :: invisible_objects !< number of invisible objects defined geometrically
   integer(ki4) :: skylight_objects !< number of skylights defined geometrically
+  integer(ki4) :: beancan_objects !< number of beancan surfaces defined geometrically
+  integer(ki4) :: cutout_objects !< number of cutouts defined geometrically
   integer(ki4) :: skylight_debug !< level of output to help understand skylight production
   real(kr8) :: beq_arip !< \f$ a \f$ for ripple coils
   real(kr8) :: beq_psiref !< namelist \f$ \psi_X \f$
@@ -2882,6 +2887,10 @@ subroutine beq_readcon(selfn,kin)
  &beq_mrip, beq_irip, beq_arip,&
  &beq_duct,&
  &skylight_objects,&
+ &absorber_objects,&
+ &invisible_objects,&
+ &beancan_objects,&
+ &cutout_objects,&
  &skylight_flux_limits,&
  &skylight_centre_line,&
  &skylight_debug,&
@@ -2926,7 +2935,11 @@ subroutine beq_readcon(selfn,kin)
   beq_mrip=0
   beq_irip=0.
   beq_duct=.FALSE.
+  absorber_objects=0
+  invisible_objects=0
   skylight_objects=0
+  beancan_objects=0
+  cutout_objects=0
   skylight_flux_limits=.FALSE.
   skylight_centre_line=.FALSE.
   skylight_debug=0
@@ -3042,8 +3055,16 @@ subroutine beq_readcon(selfn,kin)
      beq_xzsta=z1
      beq_xzend=z2
   end if
+  if(absorber_objects<0) &
+ &call log_error(m_name,s_name,12,error_fatal,'absorber_objects must be non-negative integer')
+  if(invisible_objects<0) &
+ &call log_error(m_name,s_name,13,error_fatal,'invisible_objects must be non-negative integer')
   if(skylight_objects<0) &
- &call log_error(m_name,s_name,12,error_fatal,'skylight_objects must be non-negative integer')
+ &call log_error(m_name,s_name,14,error_fatal,'skylight_objects must be non-negative integer')
+  if(beancan_objects<0) &
+ &call log_error(m_name,s_name,15,error_fatal,'beancan_objects must be non-negative integer')
+  if(cutout_objects<0) &
+ &call log_error(m_name,s_name,16,error_fatal,'cutout_objects must be non-negative integer')
   if(limiter_search==1) then
      z1=min(search_r_start,search_r_end)
      z2=max(search_r_start,search_r_end)
@@ -3078,7 +3099,12 @@ subroutine beq_readcon(selfn,kin)
   selfn%mrip=beq_mrip
   selfn%irip=beq_irip
   selfn%duct=beq_duct
-  selfn%skyladd=skylight_objects
+  selfn%objadd=0
+  selfn%objadd(GEOBJ_ABSORB)=absorber_objects
+  selfn%objadd(GEOBJ_INVISI)=invisible_objects
+  selfn%objadd(GEOBJ_SKYLIT)=skylight_objects
+  selfn%objadd(GEOBJ_ERRLOS)=beancan_objects
+  selfn%objadd(GEOBJ_CUTOUT)=cutout_objects
   selfn%skylpsi=skylight_flux_limits
   selfn%skylcen=skylight_centre_line
   selfn%skyldbg=skylight_debug
@@ -3154,7 +3180,7 @@ subroutine beq_readcon(selfn,kin)
   selfn%lkzend=search_z_end
   selfn%vacfile=beq_vacuum_field_file
 
-  selfn%skyl=(selfn%skyladd>0).OR.selfn%skylpsi
+  selfn%skyl=(selfn%objadd(GEOBJ_SKYLIT)>0).OR.selfn%skylpsi
 
 end subroutine beq_readcon
 !---------------------------------------------------------------------
@@ -4585,6 +4611,8 @@ subroutine beq_ctrackpt(self,ctrackrz,nctrack,prz,psi,ktyps)
   integer(ki4) :: iz    !<  array entry in \f$ Z \f$ direction
   real(kr8) :: zpsia    !<  first value of \f$ \psi \f$
   real(kr8) :: zpsib    !<  second value of \f$ \psi \f$
+  real(kr8) :: dpmin    !<  distance of point from target in \f$ \psi \f$ metric
+  real(kr8) :: dpminew    !<  distance of point from target in \f$ \psi \f$ metric
 
   ! direction of travel in \f$ Z \f$
   idir=2*ktyps-3
@@ -4596,17 +4624,21 @@ subroutine beq_ctrackpt(self,ctrackrz,nctrack,prz,psi,ktyps)
   zr=ctrackrz(ista,1)
   zz=ctrackrz(ista,2)
   call spl2d_eval(self%psi,zr,zz,zpsia)
+  dpmin=abs(zpsia-psi)
   do i=ista+idir,iend,idir
      zra=zr
      zza=zz
      zr=ctrackrz(i,1)
      zz=ctrackrz(i,2)
      call spl2d_eval(self%psi,zr,zz,zpsib)
-     if ((zpsia-psi)*(zpsib-psi)<=0) exit
+     !if ((zpsia-psi)*(zpsib-psi)<=0) exit
+     dpminew=abs(zpsib-psi)
+     if (dpminew>dpmin) exit
+     dpmin=dpminew
      zpsia=zpsib
   end do
 
-  if (i==iend) then
+  if (i==iend+idir) then
      call log_error(m_name,s_name,1,error_warning,'no position found for flux')
   end if
 
