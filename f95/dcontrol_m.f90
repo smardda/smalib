@@ -3,6 +3,7 @@ module dcontrol_m
   use const_kind_m
   use const_numphys_h
   use log_m
+  use geobj_m
   use dcontrol_h
 
   implicit none
@@ -312,6 +313,7 @@ subroutine dcontrol_readnum(numerics,kunit)
   !!local
   character(*), parameter :: s_name='dcontrol_readnum' !< subroutine name
 
+  character(len=80) :: description  !< surface interaction with particles
   character(len=80) :: transform_type  !< transform type
   real(kr8) :: start_angle !< start angle
   real(kr8) :: finish_angle !< finish angle
@@ -324,10 +326,12 @@ subroutine dcontrol_readnum(numerics,kunit)
   character(len=20) :: length_units  !< units, either me(tres) or mm
   real(kr4) :: angfac=1. !< angles default is radians
   real(kr4) :: lenfac=1. !< use to scale lengths to mm if input im metres
+  integer(ki2par) :: igcode   !< code for geometry
 
   !! transformation parameters
   namelist /datvtkparameters/ &
  &angle_units,&
+ &description,&
  &length_units,&
  &transform_type,&
  &start_angle, finish_angle, &
@@ -340,6 +344,7 @@ subroutine dcontrol_readnum(numerics,kunit)
   !! set default datvtk parameters
   !polars
   angle_units='degree'
+  description='absorb'
   length_units='mm'
   transform_type = 'rotate'
   start_angle = 0
@@ -356,7 +361,28 @@ subroutine dcontrol_readnum(numerics,kunit)
      print '("Fatal error reading datvtk parameters")'
      call log_getunit(ilog)
      write(ilog,nml=datvtkparameters)
-     call log_error(m_name,s_name,10,error_fatal,'Error reading datvtk parameters')
+     call log_error(m_name,s_name,9,error_fatal,'Error reading datvtk parameters')
+  end if
+
+  igcode=-99
+  surf_desc: select case (description(1:6))
+  case('absorb')
+     igcode=GEOBJ_ABSORB !  first wall (absorbing boundary)
+  case('invisi')
+     igcode=GEOBJ_INVISI !  transparent geometry, totally ignored
+  case('skylit')
+     igcode=GEOBJ_SKYLIT !  skylight
+  case('escape')
+     igcode=GEOBJ_ESCAPE !  escape boundary (loss)
+  case('errlos')
+     igcode=GEOBJ_ERRLOS !  beancan (error loss)
+  case('cutout')
+     igcode=GEOBJ_CUTOUT !  cutout (expected loss)
+  end select surf_desc
+  if(igcode==-99) then
+     call log_error(m_name,s_name,10,error_warning,'description not recognised')
+
+     igcode=GEOBJ_ABSORB
   end if
 
   !! check for valid data
@@ -374,10 +400,10 @@ subroutine dcontrol_readnum(numerics,kunit)
   end if
   !! set up factor for lengths
   if (length_units(1:2)=='me') then
-    lenfac=1000.
-    numerics%cunits=0
+     lenfac=1000.
+     numerics%cunits=0
   else
-    numerics%cunits=-3
+     numerics%cunits=-3
   end if
   ! positive integer parameter
   if(number_of_divisions<=0) then
@@ -390,6 +416,7 @@ subroutine dcontrol_readnum(numerics,kunit)
      call log_error(m_name,s_name,32,error_fatal,'number of line divisions must be positive')
   end if
 
+  numerics%descode=igcode
   numerics%tfm=transform_type
   numerics%stang=start_angle*angfac
   numerics%finang=finish_angle*angfac

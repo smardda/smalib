@@ -98,8 +98,8 @@ subroutine goutfile_write(geoq,timestamp)
 !! mark output file (should not have both duct and skylight)
   if (geoq%beq%n%duct) geoq%beq%n%fldspec=ifldspec+10
   if (geoq%beq%n%skylpsi) geoq%beq%n%fldspec=ifldspec+20
-  if (geoq%beq%n%skyladd>0) geoq%beq%n%fldspec=ifldspec+30
-  if (geoq%beq%n%skylpsi.AND.geoq%beq%n%skyladd>0) geoq%beq%n%fldspec=ifldspec+40
+  if (geoq%beq%n%objadd(GEOBJ_SKYLIT)>0) geoq%beq%n%fldspec=ifldspec+30
+  if (geoq%beq%n%skylpsi.AND.geoq%beq%n%objadd(GEOBJ_SKYLIT)>0) geoq%beq%n%fldspec=ifldspec+40
 
   !!write
   fld_specn: select case (ifldspec)

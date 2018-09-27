@@ -189,6 +189,7 @@ pcontrol_m.f90 : pcontrol_h.mod
 dcontrol_m.f90 : const_kind_m.mod
 dcontrol_m.f90 : const_numphys_h.mod
 dcontrol_m.f90 : log_m.mod
+dcontrol_m.f90 : geobj_m.mod
 dcontrol_m.f90 : dcontrol_h.mod
 fmesh_m.f90 : position_h.mod
 fmesh_m.f90 : fmesh_h.mod
@@ -204,6 +205,7 @@ beq_m.f90 : beqan_h.mod
 beq_m.f90 : posang_h.mod
 beq_m.f90 : position_m.mod
 beq_m.f90 : log_m.mod
+beq_m.f90 : geobj_m.mod
 beq_m.f90 : spl2d_m.mod
 beq_m.f90 : spl3d_m.mod
 beq_m.f90 : fmesh_m.mod

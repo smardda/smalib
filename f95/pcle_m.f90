@@ -56,6 +56,8 @@ subroutine pcle_movet(selfo,selfn,kstep,geol,btree,termp,kobj)
   character(*), parameter :: s_name='pcle_movet' !< subroutine name
   integer(ki2par) :: igcode   !< code for geometry
   real(kr8) :: zf1 !< fraction of path length
+  real(kr8) :: zf1t !< fraction of path length (numerator)
+  real(kr8) :: zf1b !< fraction of path length (denominator)
   real(kr8) :: zfmin !< smallest fraction of path length
   integer(ki4) :: idir !< coordinate direction
   integer(ki4) :: idirc !< coordinate direction to apply condition on coordinate
@@ -70,7 +72,7 @@ subroutine pcle_movet(selfo,selfn,kstep,geol,btree,termp,kobj)
   if (kobj>0) igcode=geobj_code_fn(geol%obj2(kobj)%typ)
   if (igcode>0) then
      kobj=GEOBJ_OFFSET-1-igcode
-     if (igcode==GEOBJ_SKYLIT) return
+     if (igcode>=GEOBJ_SKYLIT) return
   end if
 
   if (termp%ntermplane==0) return
@@ -87,10 +89,15 @@ subroutine pcle_movet(selfo,selfn,kstep,geol,btree,termp,kobj)
      case (0)
         ! terminate if goes past a plane
         if ((selfn%posvec(idir)-termp%termplane(jt,1))*idirs>0) then
-           zf1=(termp%termplane(jt,1)-selfo%posvec(idir))&
- &         /(selfn%posvec(idir)-selfo%posvec(idir))
-           if (zf1<=zfmin) then
-              zfmin=zf1
+           !rewritten to avoid occasional division by zero
+           !zf1=(termp%termplane(jt,1)-selfo%posvec(idir))&
+           !&         /(selfn%posvec(idir)-selfo%posvec(idir))
+           !if (zf1<=zfmin) then
+           !zfmin=zf1
+           zf1t=termp%termplane(jt,1)-selfo%posvec(idir)
+           zf1b=selfn%posvec(idir)-selfo%posvec(idir)
+           if (abs(zf1t)<=zfmin*abs(zf1b)) then
+              zfmin=zf1t/zf1b
               kobj=-2
               if (debug) then
                  if ( jt==termp%ntermactive ) write(801,*) 'termplane n'
@@ -100,9 +107,14 @@ subroutine pcle_movet(selfo,selfn,kstep,geol,btree,termp,kobj)
      case (1)
         ! terminate if intersects a plane, idirs irrelevant
         if ((selfn%posvec(idir)-termp%termplane(jt,1))*(selfo%posvec(idir)-termp%termplane(jt,1))<=0) then
-           zf1=(termp%termplane(jt,1)-selfo%posvec(idir))/(selfn%posvec(idir)-selfo%posvec(idir))
-           if (zf1<=zfmin) then
-              zfmin=zf1
+           !rewritten to avoid occasional division by zero
+           !zf1=(termp%termplane(jt,1)-selfo%posvec(idir))/(selfn%posvec(idir)-selfo%posvec(idir))
+           !if (zf1<=zfmin) then
+           !zfmin=zf1
+           zf1t=termp%termplane(jt,1)-selfo%posvec(idir)
+           zf1b=selfn%posvec(idir)-selfo%posvec(idir)
+           if (abs(zf1t)<=zfmin*abs(zf1b)) then
+              zfmin=zf1t/zf1b
               kobj=-2
            end if
         end if
@@ -129,9 +141,14 @@ subroutine pcle_movet(selfo,selfn,kstep,geol,btree,termp,kobj)
         ! terminate if intersects a plane, satisfying auxilliary condition
         if ((selfn%posvec(idirc)-termp%termplane(jt,2))*idircs>0) then
            if ((selfn%posvec(idir)-termp%termplane(jt,1))*(selfo%posvec(idir)-termp%termplane(jt,1))<=0) then
-              zf1=(termp%termplane(jt,1)-selfo%posvec(idir))/(selfn%posvec(idir)-selfo%posvec(idir))
-              if (zf1<=zfmin) then
-                 zfmin=zf1
+              !rewritten to avoid occasional division by zero
+              !zf1=(termp%termplane(jt,1)-selfo%posvec(idir))/(selfn%posvec(idir)-selfo%posvec(idir))
+              !if (zf1<=zfmin) then
+              !zfmin=zf1
+              zf1t=termp%termplane(jt,1)-selfo%posvec(idir)
+              zf1b=selfn%posvec(idir)-selfo%posvec(idir)
+              if (abs(zf1t)<=zfmin*abs(zf1b)) then
+                 zfmin=zf1t/zf1b
                  kobj=-2
               end if
            end if

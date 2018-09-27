@@ -45,10 +45,11 @@ module geobj_m
    !! 0. geometry
    !! 1. periodic boundary (high)
    !! 2. periodic boundary (low)
-   !! 3. terminating geometry, no termplane instructions
+   !! 3. transparent geometry, totally ignored
    !! 4. skylight
-   !! 5. transparent geometry, totally ignored
+   !! 5. terminating geometry, no termplane instructions
    !! 6. beancan
+   !! 7. cutout
    !! 32+ptr. termination plane
    !! 64+ptr. boundary interface
      integer(ki2) :: typ !< .
@@ -95,6 +96,7 @@ module geobj_m
   integer(ki2par),  parameter, public :: GEOBJ_SKYLIT=4!< Skylight
   integer(ki2par),  parameter, public :: GEOBJ_ESCAPE=5!< Escape boundary (Loss)
   integer(ki2par),  parameter, public :: GEOBJ_ERRLOS=6!< Beancan (Error Loss)
+  integer(ki2par),  parameter, public :: GEOBJ_CUTOUT=7!< Cutout (Intended Loss)
   integer(ki2par),  parameter, public :: GEOBJ_TERMPL=32!< Terminating plane, pointer to %termplane array
   integer(ki2par),  parameter, public :: GEOBJ_INTERF=64!< Boundary interface, pointer to boundary array TO BE DONE
   !> Offset between geometry and handling codes

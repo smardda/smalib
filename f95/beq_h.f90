@@ -137,8 +137,8 @@ module beq_h
      real(kr8) :: arip !< \f$ a \f$ for ripple coils
      logical :: leqok !< equilibrium helicity is ok, no need for override
      logical :: duct !< flag whether work in duct coordinates
+     integer(ki4), dimension(0:10) :: objadd !< number of objects of given description to add to geobjlist
      logical :: skyl !< flag whether skylight present
-     integer(ki4) :: skyladd !< number of skylights to add to geobjlist
      logical :: skylpsi !< flag whether flux limited skylight(s) present
      logical :: skylcen !< flag whether any skylight(s) defined by plasma centre line
      integer(ki4) :: skyldbg !< level of output to help understand skylight production

@@ -141,5 +141,8 @@ C     GIVEN ITS RELEVANT B-SPLINE COEFFS IN AJ(1),...,AJ(K-JDERIV).
    33       ILO = ILO - 1
    39 PVALUE = AJ(1)
 C
+C.DBG      IF (ABS(PVALUE)>1.E+10) THEN
+C.DBG         WRITE(*,*) 'BVALUE AT X, DERIV, LARGE VALUE = ',X,JDERIV,PVALUE
+C.DBG      END IF
    99                                   RETURN
       END

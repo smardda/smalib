@@ -35,7 +35,7 @@ module geoq_m
   geoq_beqscale,   & !< scale geobjlist according to beq data
   geoq_read,   & !< read (vtk)  geoq data structure
   geoq_init,   & !< initialise geometry+field quantities
-  geoq_skyl, & !< control addition of skylight(s) into model
+  geoq_objaddcon, & !< control addition of object(s) into model
   geoq_psilimiter,   & !< calculate limits of limiter object
   geoq_psisilh,   & !< calculate \f$ \psi \f$ of silhouette object
   geoq_dsilhcont,   & !< distance between silhouette and flux contour
@@ -43,10 +43,13 @@ module geoq_m
   geoq_writeg    !< write (gnuplot)  geoq data structure
 
   private :: &
+  geoq_skylspec, & !< special addition of skylight object(s) into model
   geoq_skyladd,   & !< skylight(s) into geobjlist for faster tracing
+  geoq_objadd,   & !< object(s) into geobjlist for faster tracing
   geoq_skylpsi, & !< skylight defined using flux values
   geoq_skylpsi1,   & !< assist set up of skylight based on point flux values
   geoq_skylpsi2,   & !< assist set up of skylight based on centroid flux values
+  geoq_skylcen, & !< skylight(s) defined using plasma centre line in PFR
   geoq_skylext !< skylight extent in flux terms
 
 
@@ -261,33 +264,71 @@ subroutine geoq_init(self)
 
 end subroutine geoq_init
 !---------------------------------------------------------------------
-!> control addition of skylight(s) into model
-subroutine geoq_skyl(self)
+!> control addition of objects into model
+subroutine geoq_objaddcon(self)
   !! arguments
   type(geoq_t), intent(inout) :: self !< geometrical objects and equilibrium data
 
   !! local
-  character(*), parameter :: s_name='geoq_skyl' !< subroutine name
+  character(*), parameter :: s_name='geoq_objaddcon' !< subroutine name
   integer(ki4) :: iin      !< local control file unit number
-  integer(ki4) :: jpla !<  number of skylight planes to add to geobjlist
+  type(dnumerics_t) :: numerics !< control numerics
+  integer(ki4) :: jpla !<  number of object planes to add to geobjlist
+  integer(ki2par) :: igcode !< integer scalar geometry code
   real(kr4) :: zetamin   !<  minimum \f$ \zeta \f$ of any point
   real(kr4) :: zetamax   !<  maximum \f$ \zeta \f$ of any point
 
-  if (self%beq%n%skyladd>0.OR.self%beq%n%skylcen) then
+  if (sum(self%beq%n%objadd)>0.OR.self%beq%n%skylcen) then
      ! find angular extent of geometry
      call geobjlist_angext(self%objl,zetamin,zetamax)
+     ! get unit for input
+     call bcontrol_getunit(iin)
   end if
 
-  ! skylights based on datvtkparameters input
-  if (self%beq%n%skyladd>0) then
-     call bcontrol_getunit(iin)
-     do jpla=1,self%beq%n%skyladd
-        call dcontrol_readnum(self%skyl%dn,iin)
-        self%skyl%dn%stang=zetamin
-        self%skyl%dn%finang=zetamax
-        call geoq_skyladd(self,jpla)
-     end do
-  end if
+  ! flux based skylight before add in more geometry
+  call geoq_skylspec(self,zetamin,zetamax)
+
+  ! objects based on datvtkparameters input
+  do j=1,size(self%beq%n%objadd)
+     igcode=j-1
+     desc_type: select case (igcode)
+     case(GEOBJ_ABSORB, GEOBJ_INVISI, GEOBJ_ERRLOS, GEOBJ_CUTOUT)
+        do jpla=1,self%beq%n%objadd(igcode)
+           call dcontrol_readnum(numerics,iin)
+           ! test
+           if (numerics%descode-igcode/=0) then
+              call log_error(m_name,s_name,1,error_warning,'Object description does not match')
+              call log_value("Requested description code",igcode)
+              call log_value("Found description code",numerics%descode)
+           end if
+           numerics%stang=zetamin
+           numerics%finang=zetamax
+           call geoq_objadd(self,numerics,igcode)
+           call dcontrol_delete(numerics)
+        end do
+     case(GEOBJ_SKYLIT)
+        do jpla=1,self%beq%n%objadd(igcode)
+           call dcontrol_readnum(self%skyl%dn,iin)
+           self%skyl%dn%stang=zetamin
+           self%skyl%dn%finang=zetamax
+           call geoq_skyladd(self,jpla)
+        end do
+     end select desc_type
+  end do
+
+end subroutine geoq_objaddcon
+!---------------------------------------------------------------------
+!> control special addition of skylight(s) into model
+subroutine geoq_skylspec(self,zetamin,zetamax)
+  !! arguments
+  type(geoq_t), intent(inout) :: self !< geometrical objects and equilibrium data
+  real(kr4), intent(in) :: zetamin   !<  minimum \f$ \zeta \f$ of any point
+  real(kr4), intent(in) :: zetamax   !<  maximum \f$ \zeta \f$ of any point
+
+  !! local
+  character(*), parameter :: s_name='geoq_skylspec' !< subroutine name
+  integer(ki4) :: iin      !< local control file unit number
+  integer(ki4) :: jpla !<  number of skylight planes to add to geobjlist
 
   if (self%beq%n%skylpsi.OR.self%beq%n%skylcen) then
      ! define plasma centre line
@@ -308,7 +349,27 @@ subroutine geoq_skyl(self)
      call geoq_skylcen(self)
   end if
 
-end subroutine geoq_skyl
+end subroutine geoq_skylspec
+!---------------------------------------------------------------------
+!> object(s) into geobjlist for faster tracing
+subroutine geoq_objadd(self,numerics,kgcode)
+  !! arguments
+  type(geoq_t), intent(inout) :: self !< geometrical objects and equilibrium data
+  type(dnumerics_t), intent(in) :: numerics !< control numerics
+  integer(ki2par), intent(in) :: kgcode !<  object description
+
+  !! local
+  character(*), parameter :: s_name='geoq_objadd' !< subroutine name
+  type(geobjlist_t) :: addobj !< skylight geobjlist
+  integer(ki4) :: iopt=0 !< option for cumulate (no weights)
+
+  call geobjlist_create3d(addobj,numerics,kgcode)
+
+  call geobjlist_cumulate(self%objl,addobj,1,1,iopt,-1_ki2par)
+
+  call geobjlist_delete(addobj)
+
+end subroutine geoq_objadd
 !---------------------------------------------------------------------
 !> skylight(s) into geobjlist for faster tracing
 subroutine geoq_skyladd(self,kpla)
@@ -324,8 +385,8 @@ subroutine geoq_skyladd(self,kpla)
 
   call geobjlist_create3d(skylobj,self%skyl%dn,GEOBJ_SKYLIT)
   if (self%beq%n%skyldbg>0) then
-    iunit=8+kpla
-    call geobjlist_writev(skylobj,'geometry',self%skyl%ndskyl(iunit))
+     iunit=8+kpla
+     call geobjlist_writev(skylobj,'geometry',self%skyl%ndskyl(iunit))
   end if
 
   call geobjlist_cumulate(self%objl,skylobj,1,1,iopt,-1_ki2par)
@@ -419,7 +480,7 @@ subroutine geoq_skylpsi(self)
 
 end subroutine geoq_skylpsi
 !---------------------------------------------------------------------
-!> skylight(s) defined using plasma centre line
+!> skylight(s) defined using plasma centre line in PFR
 subroutine geoq_skylcen(self)
   !! arguments
   type(geoq_t), intent(inout) :: self !< geometrical objects and equilibrium data
