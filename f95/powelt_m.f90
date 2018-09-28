@@ -82,7 +82,7 @@ module powelt_m
   integer(ki4) :: l !< loop counter
   integer(ki4) :: ij !< loop counter
   integer(ki4) :: idum !< dummy integer
-  logical, parameter :: debug=.TRUE. !< logical flag for debugging
+  logical, parameter :: debug=.FALSE. !< logical flag for debugging
   integer(ki4) :: ilevel   !< refinement level for address
   integer(ki4) :: iinlevel   !< number of subelements at refinement level
   integer(ki4) :: inpow   !< address of element
@@ -402,7 +402,7 @@ subroutine powelt_move(self,powcal,gshadl,btree)
 
   ! find element number
   inpow=powelt_addr(self,powcal%powres%npowe)
-  write(*,*) "inpow=",inpow !dbgwr
+  !dbgwr write(*,*) "inpow=",inpow !dbgwr
   !  write(*,*) powcal%n%ntrack !dbgwr
   !  write(*,*) powcal%n%trackno !dbgwr
   ! check whether looking at small number of tracks
@@ -682,7 +682,7 @@ subroutine powelt_move0(self,powcal,gshadl,btree)
   integer(ki4), save :: firstcall  !< flag up first step of new trajectory
 
   inpow=powelt_addr(self,powcal%powres%npowe)
-  write(*,*) "inpow=",inpow !dbgwr
+  !dbgwr write(*,*) "inpow=",inpow !dbgwr
   ! check whether looking at small number of tracks
   if (powcal%n%ntrack>0) then
      ! is this element track in the test set
@@ -1112,7 +1112,7 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
   real(kr8) :: zskyl !<  \f$ \z \f$ value for skylight
 
   inpow=powelt_addr(self,powcal%powres%npowe)
-  write(*,*) "inpow=",inpow !dbgwr
+  !dbgwr write(*,*) "inpow=",inpow !dbgwr
   ! check whether looking at small number of tracks
   if (powcal%n%ntrack>0) then
      ! is this element track in the test set

@@ -37,7 +37,7 @@ module pcle_m
   integer(ki4) :: hitobj !< geobj hit
   integer(ki4) :: inls !< number of entries in list
   integer(ki2) :: ileaf !< leaf test
-  logical, parameter :: debug=.TRUE. !< logical flag for debugging
+  logical, parameter :: debug=.FALSE. !< logical flag for debugging
 
   contains
 !---------------------------------------------------------------------

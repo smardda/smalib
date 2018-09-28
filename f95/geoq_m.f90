@@ -763,8 +763,8 @@ subroutine geoq_skylpsi1(self,ctrackrz,nctrack,kndbox,plt,pdelta,ktyps,kcall)
      end do
      call gfile_rwrite(work1a(1),self%skyl%ouboxz(1,kcall),kndbox(2),&
  &   'Outer skylight Z vs flux',self%skyl%ndskyl(7))
+     deallocate(work1,work1a)
   end if
-  deallocate(work1,work1a)
 
 end subroutine geoq_skylpsi1
 !---------------------------------------------------------------------
@@ -868,8 +868,8 @@ subroutine geoq_skylpsi2(self,ctrackrz,nctrack,kndbox,plt,pdelta,ktyps,kcall)
      end do
      call gfile_rwrite(work1a(1),self%skyl%ouboxz(1,kcall),kndbox(2),&
  &   'Outer skylight Z vs flux',self%skyl%ndskyl(7))
+     deallocate(work1,work1a)
   end if
-  deallocate(work1,work1a)
 
 end subroutine geoq_skylpsi2
 !---------------------------------------------------------------------
