@@ -12,7 +12,8 @@ module dcontrol_m
 ! public subroutines
   public :: &
  &dcontrol_init, & !< open input control data file
- &dcontrol_close, & !< close input control data file
+ &dcontrol_closex, & !< close input control data file and  unit
+ &dcontrol_close, & !< close input control data file, keep unit number
  &dcontrol_read, & !< read data for this run
  &dcontrol_readnum, & !< read only dnumerics data
  &dcontrol_getunit,  & !< get unit number
@@ -62,7 +63,26 @@ subroutine dcontrol_init(fileroot)
 
 end  subroutine dcontrol_init
 !---------------------------------------------------------------------
-!> close input control data file
+!> close input control data file and flag by setting unit number negative
+subroutine dcontrol_closex
+
+  !! local
+  character(*), parameter :: s_name='dcontrol_closex' !< subroutine name
+
+  !! close file unit
+  close(unit=nin,iostat=status)
+  if(status/=0)then
+     !! error closing file
+     print '("Fatal error: Unable to close file unit, ",i5)',nin
+     call log_error(m_name,s_name,1,error_fatal,'Cannot close data file')
+     stop
+  end if
+
+  nin=-2
+
+end  subroutine dcontrol_closex
+!---------------------------------------------------------------------
+!> close input control data file, keep unit number
 subroutine dcontrol_close
 
   !! local
@@ -76,8 +96,6 @@ subroutine dcontrol_close
      call log_error(m_name,s_name,1,error_fatal,'Cannot close data file')
      stop
   end if
-
-  nin=-2
 
 end  subroutine dcontrol_close
 !---------------------------------------------------------------------
@@ -148,7 +166,7 @@ subroutine dcontrol_read(file,numerics,plot)
      end if
      filedata=.TRUE.
   end if
-  call log_value("datvtk data file, r_input_file",trim(file%zfile))
+  call log_value("datvtk data file, z_input_file",trim(file%zfile))
   if(file%zfile/='null') then
      inquire(file=z_input_file,exist=filefound)
      if(.not.filefound) then
@@ -177,7 +195,7 @@ subroutine dcontrol_read(file,numerics,plot)
 
   !---------------------------------------------------------------------
   !! transformation parameters
-  call dcontrol_readnum(numerics,nin)
+  call dcontrol_readnum(numerics,nin,filedata)
 
   !---------------------------------------------------------------------
   !! set default plot selections
@@ -206,9 +224,9 @@ subroutine dcontrol_read(file,numerics,plot)
   !---------------------------------------------------------------------
   !! read silhouette files
   if (filedata) then
-     !! ignore definition from readnum call
-     deallocate(numerics%r,numerics%z,stat=status)
-     call log_alloc_check(m_name,s_name,39,status)
+     !!! ignore definition from readnum call
+     !deallocate(numerics%r,numerics%z,stat=status)
+     !call log_alloc_check(m_name,s_name,39,status)
 
      if (rz_input_file=='null') then
         call log_value("r input file",trim(r_input_file))
@@ -304,11 +322,12 @@ subroutine dcontrol_read(file,numerics,plot)
 end  subroutine dcontrol_read
 !---------------------------------------------------------------------
 !< read only dnumerics data
-subroutine dcontrol_readnum(numerics,kunit)
+subroutine dcontrol_readnum(numerics,kunit,filedata)
 
   !! arguments
   type(dnumerics_t), intent(out) :: numerics !< control numerics
   integer(ki4), intent(in)  :: kunit     !< file unit number
+  logical, intent(in) :: filedata !< data file specifies geometry
 
   !!local
   character(*), parameter :: s_name='dcontrol_readnum' !< subroutine name
@@ -412,9 +431,6 @@ subroutine dcontrol_readnum(numerics,kunit)
   if(coordinate_system/=1) then
      call log_error(m_name,s_name,31,error_fatal,'coordinate system must be positive, unity for polars')
   end if
-  if(line_divisions<=0) then
-     call log_error(m_name,s_name,32,error_fatal,'number of line divisions must be positive')
-  end if
 
   numerics%descode=igcode
   numerics%tfm=transform_type
@@ -426,7 +442,13 @@ subroutine dcontrol_readnum(numerics,kunit)
   numerics%csys=coordinate_system
   numerics%ldiv=line_divisions
 
+  if (.NOT.filedata) then
+  ! line defined by namelist, check here and set up
+  if(line_divisions<=0) then
+     call log_error(m_name,s_name,32,error_fatal,'number of line divisions must be positive')
+  end if
   call misc_line2d(numerics%r,numerics%z,numerics%stpos,numerics%finpos,numerics%ldiv)
+  end if
 
   numerics%npos=numerics%ldiv+1
 

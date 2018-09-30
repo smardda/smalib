@@ -112,7 +112,7 @@ program geoq_p
   call clock_start(2,'bcontrol_init time')
   call bcontrol_init(fileroot)
   call bcontrol_read(file,numerics,geoq%skyl%n,plot)
-  !! note bcontrol unit left open 
+!! note bcontrol unit left open
   if (numerics%duct) then
      call fmesh_init(file%fmesh,ninfm)
      call fmesh_readcon(fmesh)
@@ -164,9 +164,11 @@ program geoq_p
      call gfile_init(trim(file%gnu)//'_dZ','dpsi/dZ sample in R-Z space',nprint)
      call spl2d_writeg(geoq%beq%dpsidz,'sampl',nprint)
      call gfile_close
-     call gfile_init(trim(file%gnu)//'_cart','all in cartesian',nprint)
-     call beq_writeg(geoq%beq,'allcartesian',nprint)
-     call gfile_close
+     if (geoq%beq%n%vacfile=='null') then
+        call gfile_init(trim(file%gnu)//'_cart','all in cartesian',nprint)
+        call beq_writeg(geoq%beq,'allcartesian',nprint)
+        call gfile_close
+     end if
      call clock_stop(18)
   end if
 
@@ -404,7 +406,7 @@ program geoq_p
      if (numerics%skylpsi) call skyl_delete(geoq%skyl)
      if (geoq%beq%n%skyldbg>0) call skyl_delete(geoq%skyl,1)
   end if
-  call bcontrol_close()
+  call bcontrol_closex()
 
   call clock_stop(1)
   call clock_summary

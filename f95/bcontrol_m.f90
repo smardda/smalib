@@ -17,7 +17,7 @@ module bcontrol_m
 ! public subroutines
   public :: &
  &bcontrol_init, & !< open input control data file
- &bcontrol_close, & !< close input control data file
+ &bcontrol_closex, & !< close input control data file and flag
  &bcontrol_getunit,  & !< get unit number
  &bcontrol_read
 
@@ -136,11 +136,11 @@ subroutine bcontrol_init(fileroot)
 
 end  subroutine bcontrol_init
 !---------------------------------------------------------------------
-!> close input control data file
-subroutine bcontrol_close
+!> close input control data file and flag
+subroutine bcontrol_closex
 
   !! local
-  character(*), parameter :: s_name='bcontrol_close' !< subroutine name
+  character(*), parameter :: s_name='bcontrol_closex' !< subroutine name
 
   !! close file unit
   close(unit=nin,iostat=status)
@@ -152,7 +152,7 @@ subroutine bcontrol_close
   end if
   nin=-2
 
-end  subroutine bcontrol_close
+end  subroutine bcontrol_closex
 !---------------------------------------------------------------------
 !> get unit number of input
 subroutine bcontrol_getunit(kunit)
