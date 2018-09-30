@@ -294,7 +294,7 @@ subroutine geoq_objaddcon(self)
      desc_type: select case (igcode)
      case(GEOBJ_ABSORB, GEOBJ_INVISI, GEOBJ_ERRLOS, GEOBJ_CUTOUT)
         do jpla=1,self%beq%n%objadd(igcode)
-           call dcontrol_readnum(numerics,iin)
+           call dcontrol_readnum(numerics,iin,.FALSE.)
            ! test
            if (numerics%descode-igcode/=0) then
               call log_error(m_name,s_name,1,error_warning,'Object description does not match')
@@ -308,7 +308,7 @@ subroutine geoq_objaddcon(self)
         end do
      case(GEOBJ_SKYLIT)
         do jpla=1,self%beq%n%objadd(igcode)
-           call dcontrol_readnum(self%skyl%dn,iin)
+           call dcontrol_readnum(self%skyl%dn,iin,.FALSE.)
            self%skyl%dn%stang=zetamin
            self%skyl%dn%finang=zetamax
            call geoq_skyladd(self,jpla)
