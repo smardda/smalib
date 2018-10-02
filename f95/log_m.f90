@@ -160,8 +160,9 @@ subroutine log_alloc_check(modname,subname,point,status)
 
   if(status/=0)then
      call log_error(modname,subname,point,error_fatal,'allocation failed')
+       !DBG else !DBG
+       !DBG write(*,*) trim(modname), trim(subname), point, 'allocation OK' !DBG
   end if
-
 
 end subroutine log_alloc_check
 !---------------------------------------------------------------------

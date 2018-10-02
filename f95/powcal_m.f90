@@ -857,7 +857,12 @@ subroutine powcal_writev(self,kchar,kplot)
      allocate(workpos(self%powres%geobjl%np), stat=status)
      call log_alloc_check(m_name,s_name,21,status)
      workpos=self%powres%geobjl%posl%pos
-     self%powres%geobjl%posl%pos=self%powres%vecx%pos
+     ! have to explicitly code as loop
+     ! self%powres%geobjl%posl%pos=self%powres%vecx%pos
+     ! to avoid ifort 12.0.0 segfault
+     do l=1,self%powres%geobjl%np
+     self%powres%geobjl%posl%pos(l)=self%powres%vecx%pos(l)
+     end do
      ! rearrange nodl, keep copy of structure in work and ing
      ! reset number of objects to be output according to refine_level statistics input
      self%powres%geobjl%ng=ing*powelt_table(self%n%nlevel,2)/powelt_table(infilelevel,2)
@@ -879,17 +884,31 @@ subroutine powcal_writev(self,kchar,kplot)
      ! replace R-Z-xi positions with Cartesian
      allocate(workpos(self%powres%geobjl%np), stat=status)
      call log_alloc_check(m_name,s_name,40,status)
+       !DBG write(*,*) "np=",self%powres%geobjl%np !DBG
+       !DBG write(*,*) "vecx size=",size(self%powres%vecx%pos) !DBG
+       !DBG write(*,*) "geobjl size=",size(self%powres%geobjl%posl%pos) !DBG
      workpos=self%powres%geobjl%posl%pos
-     self%powres%geobjl%posl%pos=self%powres%vecx%pos
+       !DBG write(*,*) '01' !DBG
+     ! have to explicitly code as loop
+     ! self%powres%geobjl%posl%pos=self%powres%vecx%pos
+     ! to avoid ifort 12.0.0 segfault
+     do l=1,self%powres%geobjl%np
+     self%powres%geobjl%posl%pos(l)=self%powres%vecx%pos(l)
+     end do
+       !DBG write(*,*) '02' !DBG
      ! reset number of objects to be output according to refine_level input
      self%powres%geobjl%ng=ing*powelt_table(self%n%nlevel,2)/powelt_table(infilelevel,2)
+       !DBG write(*,*) '03' !DBG
      if (infilelevel>self%n%nlevel) then
+       !DBG write(*,*) '04' !DBG
+       !DBG write(*,*) infilelevel,self%n%nlevel !DBG
         allocate(work(3*self%powres%geobjl%ng), stat=status)
         call log_alloc_check(m_name,s_name,41,status)
         work=self%powres%geobjl%nodl(1:3*self%powres%geobjl%ng)
         call geobjlist_nodlmv(self%powres%geobjl,infilelevel,self%n%nlevel,self%powres%npowe)
      end if
      call geobjlist_writev(self%powres%geobjl,'geometry',kplot)
+       !DBG write(*,*) '05' !DBG
      allocate(rwork(self%powres%geobjl%ng), stat=status)
      call log_alloc_check(m_name,s_name,42,status)
      rwork=abs(self%powres%pow(:self%powres%geobjl%ng))

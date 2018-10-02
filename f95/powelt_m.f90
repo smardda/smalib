@@ -1090,7 +1090,7 @@ subroutine powelt_move1(self,powcal,gshadl,btree)
   real(kr8) :: zdt !< time increment \f$ \Delta t \f$
   type(posvecl_t) :: zpos1   !< one position data
   type(posvecl_t) :: zpos2   !< one position data
-  type(posveclis_t) :: rposl   !< list of position data
+  type(posveclis_t), save :: rposl   !< list of position data
   real(kr4) :: phylenpath !< physical length of path
   logical :: lpset   !< true if flux at fieldline start-point has been set
   logical :: linpfr   !< true if fieldline start-point in private flux region
