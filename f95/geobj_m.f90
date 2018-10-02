@@ -52,7 +52,7 @@ module geobj_m
    !! 7. cutout
    !! 32+ptr. termination plane
    !! 64+ptr. boundary interface
-     integer(ki2) :: typ !< .
+     integer(ki2) :: typ !< -
   end type geobj2_t
 
   type, public :: geobj_t
@@ -101,7 +101,7 @@ module geobj_m
   integer(ki2par),  parameter, public :: GEOBJ_INTERF=64!< Boundary interface, pointer to boundary array TO BE DONE
   !> Offset between geometry and handling codes
   !!  Plan is to remove use of nobjhit codes -1 and -2 so this can be set to zero
-  integer(ki2par),  parameter, public :: GEOBJ_OFFSET=-2!< .
+  integer(ki2par),  parameter, public :: GEOBJ_OFFSET=-2!< -
 ! private types
 
 ! private variables

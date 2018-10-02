@@ -30,6 +30,7 @@ module vfile_m
   character(*), parameter :: m_name='vfile_m' !< module name
   character(len=80) :: ibuf1 !< buffer for input/output
   character(len=80) :: ibuf2 !< buffer for input/output
+  character(len=80) :: icfile !< file name
   integer(ki4) :: i !< loop counter
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
@@ -37,6 +38,8 @@ module vfile_m
   integer(ki4) :: nin  !< file unit for input
   integer(ki4) :: nplot  !< file unit for output
   integer(ki4) :: status  !< status flag
+  character(len=7) :: cwrite !< write status of file
+  logical :: filefound !< true if file exists
   logical :: iltest !< logical flag
 
   contains
@@ -63,7 +66,21 @@ subroutine vfile_init(fplot,descriptor,kplot)
      end if
   end do
 
-  open(unit=kplot,file=trim(fplot)//'.vtk')
+  ! stop under user control if write-protected file already exists
+  icfile=trim(fplot)//'.vtk'
+  inquire(file=trim(icfile),exist=filefound,write=cwrite)
+  !DBG write(*,*) 'cwrite=',cwrite !DBG
+  if (filefound) then
+     call log_value("vtk data file ",icfile)
+     call log_error(m_name,s_name,1,error_warning,'File already exists and may be write protected')
+  end if
+  open(unit=kplot,file=icfile,iostat=status)
+  if(status/=0)then
+     !! error opening file
+     call log_error(m_name,s_name,2,error_fatal,'Error opening vtk data file')
+  else
+     call log_error(m_name,s_name,2,log_info,'vtk data file opened')
+  end if
 
   !! write vtk header
   write(kplot,'(''# vtk DataFile Version 2.0'')')

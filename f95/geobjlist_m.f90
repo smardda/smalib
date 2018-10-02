@@ -107,7 +107,7 @@ module geobjlist_m
   integer(ki4) :: istatus   !< inner status variable
   !> integer parameter array
   !! dimension at least self%numnparam+self%posl%numnparpos (2+4)
-  integer(ki2par), dimension(6) :: ipara   !< .
+  integer(ki2par), dimension(6) :: ipara   !< -
   character(len=256) :: vtkdesc !< descriptor line for vtk files
   integer(ki4) :: inumnparam   !< number of descriptors in legacy vtk file 2nd line
 
