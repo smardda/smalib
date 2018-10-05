@@ -15,7 +15,9 @@ module dcontrol_m
  &dcontrol_closex, & !< close input control data file and  unit
  &dcontrol_close, & !< close input control data file, keep unit number
  &dcontrol_read, & !< read data for this run
- &dcontrol_readnum, & !< read only dnumerics data
+ &dcontrol_readnum, & !< read dnumerics namelist data
+ &dcontrol_readprogfiles, & !< read progfiles namelist data
+ &dcontrol_readatfile, &! < read dnumerics datafile
  &dcontrol_getunit,  & !< get unit number
  &dcontrol_delete !< delete object
 
@@ -112,10 +114,6 @@ subroutine dcontrol_read(file,numerics,plot)
   logical, parameter :: noplotnml=.TRUE. !< shut off plot namelist read
   logical :: filefound !< true if file exists
 
-  character(len=80) :: r_input_file  !< position coordinate 1 data input file
-  character(len=80) :: z_input_file !< position coordinate 2 data input file
-  character(len=80) :: rz_input_file  !< position coordinate 1 & 2 data input file
-
   logical :: filedata !< data file specifies geometry
 
   logical :: plot_vtk !< vtk plot selector
@@ -125,76 +123,27 @@ subroutine dcontrol_read(file,numerics,plot)
   real(kr8), dimension(3) :: zz    !<   \f$ Z \f$
   real(kr4) :: lenfac=1. !< length scale factor default is m
 
-  !! file names
-  namelist /progfiles/ &
- &r_input_file, &
- &z_input_file, &
- &rz_input_file
-
   !! plot selection parameters
   namelist /plotselections/ &
  &plot_vtk, &
  &plot_gnu
 
   !---------------------------------------------------------------------
-  !! read input file names
-  filedata=.FALSE.
-  r_input_file='null'
-  z_input_file='null'
-  rz_input_file='null'
-  read(nin,nml=progfiles,iostat=status)
-  if(status/=0) then
-     print '("Fatal error reading input filenames")'
-     call log_getunit(ilog)
-     write(ilog,nml=progfiles)
-     call log_error(m_name,s_name,1,error_fatal,'Error reading input filenames')
-  end if
-
-  file%rfile = r_input_file
-  file%zfile = z_input_file
-  file%rzfile = rz_input_file
-
-  !!check files exist
-
-  call log_value("datvtk data file, r_input_file",trim(file%rfile))
-  if(file%rfile/='null') then
-     inquire(file=r_input_file,exist=filefound)
-     if(.not.filefound) then
-        !! error opening file
-        print '("Fatal error: Unable to find datvtk data file, ",a)',r_input_file
-        call log_error(m_name,s_name,2,error_fatal,'datvtk data file not found')
-     end if
-     filedata=.TRUE.
-  end if
-  call log_value("datvtk data file, z_input_file",trim(file%zfile))
-  if(file%zfile/='null') then
-     inquire(file=z_input_file,exist=filefound)
-     if(.not.filefound) then
-        !! error opening file
-        print '("Fatal error: Unable to find datvtk data file, ",a)',z_input_file
-        call log_error(m_name,s_name,3,error_fatal,'datvtk data file not found')
-     end if
-     filedata=.TRUE.
-  end if
-  if(file%rzfile/='null') then
-     inquire(file=rz_input_file,exist=filefound)
-     if(.not.filefound) then
-        !! error opening file
-        print '("Fatal error: Unable to find datvtk data file, ",a)',rz_input_file
-        call log_error(m_name,s_name,4,error_fatal,'datvtk data file not found')
-     end if
-     filedata=.TRUE.
-  end if
-
+  !! prologue
   !! create output file names from root
-
   !!vtk file
   file%vtk = trim(root)//"_vtk"
   !!gnu file roots
   file%gnu = trim(root)//"_gnu"
 
   !---------------------------------------------------------------------
-  !! transformation parameters
+  !!  read namelist containing input file names
+  call dcontrol_readprogfiles(file,nin)
+
+  !---------------------------------------------------------------------
+  !! read transformation parameters in numerics namelist
+  !! may change flag whether there is additional data to be read from file
+  filedata=.TRUE.
   call dcontrol_readnum(numerics,nin,filedata)
 
   !---------------------------------------------------------------------
@@ -222,76 +171,13 @@ subroutine dcontrol_read(file,numerics,plot)
   call dcontrol_close
 
   !---------------------------------------------------------------------
-  !! read silhouette files
+  !! read silhouette files and process
   if (filedata) then
-     !!! ignore definition from readnum call
-     !deallocate(numerics%r,numerics%z,stat=status)
-     !call log_alloc_check(m_name,s_name,39,status)
+     
+     ! read
+     call dcontrol_readatfile(file,numerics)
 
-     if (rz_input_file=='null') then
-        call log_value("r input file",trim(r_input_file))
-        open(unit=nin,file=r_input_file,status='OLD',iostat=status)
-        call log_open_check(m_name,s_name,40,status)
-
-        i=0
-        do
-           read(nin,*,iostat=status) zdum
-           if(status/=0) exit
-           i=i+1
-        end do
-        allocate(numerics%r(i),numerics%z(i),stat=status)
-        call log_alloc_check(m_name,s_name,41,status)
-        numerics%npos=i
-
-        !! read into store values
-        rewind(nin,iostat=status)
-        call log_read_check(m_name,s_name,42,status)
-        do j=1,i
-           read(nin,*,iostat=status) numerics%r(j)
-           call log_read_check(m_name,s_name,43,status)
-        end do
-        call log_value("number of values read from r input file",i)
-
-        call dcontrol_close
-
-        call log_value("z input file",trim(z_input_file))
-        open(unit=nin,file=z_input_file,status='OLD',iostat=status)
-        call log_open_check(m_name,s_name,44,status)
-
-        i=0
-        !! read into store values
-        do j=1,numerics%npos
-           i=i+1
-           read(nin,*,iostat=status) numerics%z(j)
-           call log_read_check(m_name,s_name,46,status)
-        end do
-        call log_value("number of values read from z input file",i)
-
-     else
-        call log_value("rz input file",trim(rz_input_file))
-        open(unit=nin,file=rz_input_file,status='OLD',iostat=status)
-        call log_open_check(m_name,s_name,50,status)
-
-        i=0
-        do
-           read(nin,*,iostat=status) zdum, zdum
-           if(status/=0) exit
-           i=i+1
-        end do
-        allocate(numerics%r(i),numerics%z(i),stat=status)
-        call log_alloc_check(m_name,s_name,51,status)
-        numerics%npos=i
-
-        !! read into store values
-        rewind(nin,iostat=status)
-        call log_read_check(m_name,s_name,52,status)
-        do j=1,i
-           read(nin,*,iostat=status) numerics%r(j),numerics%z(j)
-           call log_read_check(m_name,s_name,53,status)
-        end do
-        call log_value("number of values read from rz input file",i)
-     end if
-
+     ! process
      if (numerics%ldiv>numerics%npos+1) then
         !! replace with uniformly divided line between (r(1),z(1)) and (r(npos),z(npos))
         zr(1)=numerics%r(1)
@@ -321,18 +207,19 @@ subroutine dcontrol_read(file,numerics,plot)
 
 end  subroutine dcontrol_read
 !---------------------------------------------------------------------
-!< read only dnumerics data
-subroutine dcontrol_readnum(numerics,kunit,filedata)
+!> read only dnumerics data
+subroutine dcontrol_readnum(numerics,kunit,klfile)
 
   !! arguments
   type(dnumerics_t), intent(out) :: numerics !< control numerics
   integer(ki4), intent(in)  :: kunit     !< file unit number
-  logical, intent(in) :: filedata !< data file specifies geometry
+  logical, intent(inout) :: klfile !< data file specifies geometry
 
   !!local
   character(*), parameter :: s_name='dcontrol_readnum' !< subroutine name
 
   character(len=80) :: description  !< surface interaction with particles
+  logical :: filedata  !< data file specifies geometry
   character(len=80) :: transform_type  !< transform type
   real(kr8) :: start_angle !< start angle
   real(kr8) :: finish_angle !< finish angle
@@ -351,6 +238,7 @@ subroutine dcontrol_readnum(numerics,kunit,filedata)
   namelist /datvtkparameters/ &
  &angle_units,&
  &description,&
+ &filedata,&
  &length_units,&
  &transform_type,&
  &start_angle, finish_angle, &
@@ -364,6 +252,7 @@ subroutine dcontrol_readnum(numerics,kunit,filedata)
   !polars
   angle_units='degree'
   description='absorb'
+  filedata=klfile
   length_units='mm'
   transform_type = 'rotate'
   start_angle = 0
@@ -443,16 +332,167 @@ subroutine dcontrol_readnum(numerics,kunit,filedata)
   numerics%ldiv=line_divisions
 
   if (.NOT.filedata) then
-  ! line defined by namelist, check here and set up
-  if(line_divisions<=0) then
-     call log_error(m_name,s_name,32,error_fatal,'number of line divisions must be positive')
-  end if
-  call misc_line2d(numerics%r,numerics%z,numerics%stpos,numerics%finpos,numerics%ldiv)
+     ! line defined by namelist, check here and set up
+     if(line_divisions<=0) then
+        call log_error(m_name,s_name,32,error_fatal,'number of line divisions must be positive')
+     end if
+     call misc_line2d(numerics%r,numerics%z,numerics%stpos,numerics%finpos,numerics%ldiv)
   end if
 
   numerics%npos=numerics%ldiv+1
+  klfile=filedata
 
 end  subroutine dcontrol_readnum
+!---------------------------------------------------------------------
+!> read progfiles namelist data
+subroutine dcontrol_readprogfiles(file,kunit)
+
+  !! arguments
+  type(dfiles_t), intent(out) :: file !< file names
+  integer(ki4), intent(in)  :: kunit     !< file unit number
+
+  !!local
+  character(*), parameter :: s_name='dcontrol_readprogfiles' !< subroutine name
+  logical :: filefound !< true if file exists
+
+  character(len=80) :: r_input_file  !< position coordinate 1 data input file
+  character(len=80) :: z_input_file !< position coordinate 2 data input file
+  character(len=80) :: rz_input_file  !< position coordinate 1 & 2 data input file
+
+  !! file names
+  namelist /progfiles/ &
+ &r_input_file, &
+ &z_input_file, &
+ &rz_input_file
+
+  !---------------------------------------------------------------------
+  !! read input file names
+  r_input_file='null'
+  z_input_file='null'
+  rz_input_file='null'
+  read(kunit,nml=progfiles,iostat=status)
+  if(status/=0) then
+     print '("Fatal error reading input filenames")'
+     call log_getunit(ilog)
+     write(ilog,nml=progfiles)
+     call log_error(m_name,s_name,1,error_fatal,'Error reading input filenames')
+  end if
+
+  file%rfile = r_input_file
+  file%zfile = z_input_file
+  file%rzfile = rz_input_file
+
+  !!check files exist
+
+  call log_value("datvtk data file, r_input_file",trim(file%rfile))
+  if(file%rfile/='null') then
+     inquire(file=r_input_file,exist=filefound)
+     if(.not.filefound) then
+        !! error opening file
+        print '("Fatal error: Unable to find datvtk data file, ",a)',r_input_file
+        call log_error(m_name,s_name,2,error_fatal,'datvtk data file not found')
+     end if
+  end if
+  call log_value("datvtk data file, z_input_file",trim(file%zfile))
+  if(file%zfile/='null') then
+     inquire(file=z_input_file,exist=filefound)
+     if(.not.filefound) then
+        !! error opening file
+        print '("Fatal error: Unable to find datvtk data file, ",a)',z_input_file
+        call log_error(m_name,s_name,3,error_fatal,'datvtk data file not found')
+     end if
+  end if
+  if(file%rzfile/='null') then
+     inquire(file=rz_input_file,exist=filefound)
+     if(.not.filefound) then
+        !! error opening file
+        print '("Fatal error: Unable to find datvtk data file, ",a)',rz_input_file
+        call log_error(m_name,s_name,4,error_fatal,'datvtk data file not found')
+     end if
+  end if
+
+end  subroutine dcontrol_readprogfiles
+!---------------------------------------------------------------------
+!> read dnumerics datafile
+subroutine dcontrol_readatfile(file,numerics)
+
+  !! arguments
+  type(dfiles_t), intent(inout) :: file !< file names
+  type(dnumerics_t), intent(inout) :: numerics !< control numerics
+
+  !!local
+  character(*), parameter :: s_name='dcontrol_readatfile' !< subroutine name
+  integer(ki4)  :: ninrz     !< file unit number
+
+  if (file%rzfile=='null') then
+     call log_value("r input file",trim(file%rfile))
+     open(newunit=ninrz,file=file%rfile,status='OLD',iostat=status)
+     call log_open_check(m_name,s_name,10,status)
+
+     i=0
+     do
+        read(ninrz,*,iostat=status) zdum
+        if(status/=0) exit
+        i=i+1
+     end do
+     allocate(numerics%r(i),numerics%z(i),stat=status)
+     call log_alloc_check(m_name,s_name,11,status)
+     numerics%npos=i
+
+     !! read into store values
+     rewind(ninrz,iostat=status)
+     call log_read_check(m_name,s_name,12,status)
+     do j=1,i
+        read(ninrz,*,iostat=status) numerics%r(j)
+        call log_read_check(m_name,s_name,13,status)
+     end do
+     call log_value("number of values read from r input file",i)
+
+     close(unit=ninrz)
+
+     call log_value("z input file",trim(file%zfile))
+     open(newunit=ninrz,file=file%zfile,status='OLD',iostat=status)
+     call log_open_check(m_name,s_name,14,status)
+
+     i=0
+     !! read into store values
+     do j=1,numerics%npos
+        i=i+1
+        read(ninrz,*,iostat=status) numerics%z(j)
+        call log_read_check(m_name,s_name,16,status)
+     end do
+     call log_value("number of values read from z input file",i)
+
+  else
+
+     call log_value("rz input file",trim(file%rzfile))
+     open(newunit=ninrz,file=file%rzfile,status='OLD',iostat=status)
+     call log_open_check(m_name,s_name,20,status)
+
+     i=0
+     do
+        read(ninrz,*,iostat=status) zdum, zdum
+        if(status/=0) exit
+        i=i+1
+     end do
+     allocate(numerics%r(i),numerics%z(i),stat=status)
+     call log_alloc_check(m_name,s_name,21,status)
+     numerics%npos=i
+
+     !! read into store values
+     rewind(ninrz,iostat=status)
+     call log_read_check(m_name,s_name,22,status)
+     do j=1,i
+        read(ninrz,*,iostat=status) numerics%r(j),numerics%z(j)
+        call log_read_check(m_name,s_name,23,status)
+     end do
+     call log_value("number of values read from rz input file",i)
+
+  end if
+
+  close(unit=ninrz)
+
+end  subroutine dcontrol_readatfile
 !---------------------------------------------------------------------
 !> get unit number of input
 subroutine dcontrol_getunit(kunit)

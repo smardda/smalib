@@ -272,11 +272,15 @@ subroutine geoq_objaddcon(self)
   !! local
   character(*), parameter :: s_name='geoq_objaddcon' !< subroutine name
   integer(ki4) :: iin      !< local control file unit number
+  type(dfiles_t) :: file !< file names specifying \f$ (R,Z) \f$ geometry
   type(dnumerics_t) :: numerics !< control numerics
   integer(ki4) :: jpla !<  number of object planes to add to geobjlist
   integer(ki2par) :: igcode !< integer scalar geometry code
   real(kr4) :: zetamin   !<  minimum \f$ \zeta \f$ of any point
   real(kr4) :: zetamax   !<  maximum \f$ \zeta \f$ of any point
+  logical :: filedata !< data file specifies geometry
+
+  filedata=.FALSE.
 
   if (sum(self%beq%n%objadd)>0.OR.self%beq%n%skylcen) then
      ! find angular extent of geometry
@@ -294,12 +298,16 @@ subroutine geoq_objaddcon(self)
      desc_type: select case (igcode)
      case(GEOBJ_ABSORB, GEOBJ_INVISI, GEOBJ_ERRLOS, GEOBJ_CUTOUT)
         do jpla=1,self%beq%n%objadd(igcode)
-           call dcontrol_readnum(numerics,iin,.FALSE.)
+           call dcontrol_readnum(numerics,iin,filedata)
            ! test
            if (numerics%descode-igcode/=0) then
               call log_error(m_name,s_name,1,error_warning,'Object description does not match')
               call log_value("Requested description code",igcode)
               call log_value("Found description code",numerics%descode)
+           end if
+           if (filedata) then
+              call dcontrol_readprogfiles(file,iin)
+              call dcontrol_readatfile(file,numerics)
            end if
            numerics%stang=zetamin
            numerics%finang=zetamax
@@ -308,7 +316,11 @@ subroutine geoq_objaddcon(self)
         end do
      case(GEOBJ_SKYLIT)
         do jpla=1,self%beq%n%objadd(igcode)
-           call dcontrol_readnum(self%skyl%dn,iin,.FALSE.)
+           call dcontrol_readnum(self%skyl%dn,iin,filedata)
+           if (filedata) then
+              call dcontrol_readprogfiles(file,iin)
+              call dcontrol_readatfile(file,numerics)
+           end if
            self%skyl%dn%stang=zetamin
            self%skyl%dn%finang=zetamax
            call geoq_skyladd(self,jpla)
