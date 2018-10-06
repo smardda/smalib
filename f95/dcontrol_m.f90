@@ -17,7 +17,8 @@ module dcontrol_m
  &dcontrol_read, & !< read data for this run
  &dcontrol_readnum, & !< read dnumerics namelist data
  &dcontrol_readprogfiles, & !< read progfiles namelist data
- &dcontrol_readatfile, &! < read dnumerics datafile
+ &dcontrol_readatfile, & ! < read dnumerics datafile
+ &dcontrol_lines2d, & !< wrapper for misc_lines2d
  &dcontrol_getunit,  & !< get unit number
  &dcontrol_delete !< delete object
 
@@ -173,10 +174,11 @@ subroutine dcontrol_read(file,numerics,plot)
   !---------------------------------------------------------------------
   !! read silhouette files and process
   if (filedata) then
-     
+
      ! read
      call dcontrol_readatfile(file,numerics)
 
+     !dbg write(*,*) numerics%r,numerics%z,numerics%npos,numerics%ldiv
      ! process
      if (numerics%ldiv>numerics%npos+1) then
         !! replace with uniformly divided line between (r(1),z(1)) and (r(npos),z(npos))
@@ -188,7 +190,11 @@ subroutine dcontrol_read(file,numerics,plot)
         call misc_line2d(numerics%r,numerics%z,zr,zz,numerics%ldiv)
         numerics%npos=numerics%ldiv+1
         call log_error(m_name,s_name,1,error_warning,'r/z/rz data replaced with straight line')
+     else
+        !! divide up each segment of line
+        call misc_lines2d(numerics%r,numerics%z,numerics%npos,numerics%ldiv)
      end if
+     !dbg write(*,*) numerics%r,numerics%z,numerics%npos,numerics%ldiv
 
      !! scale if required
      if (numerics%cunits==0) then
@@ -494,6 +500,17 @@ subroutine dcontrol_readatfile(file,numerics)
 
 end  subroutine dcontrol_readatfile
 !---------------------------------------------------------------------
+!> wrapper for misc_lines2d
+subroutine dcontrol_lines2d(numerics)
+  !! arguments
+  type(dnumerics_t), intent(inout) :: numerics !< module object
+  !! local
+  character(*), parameter :: s_name='dcontrol_lines2d' !< subroutine name
+
+  call misc_lines2d(numerics%r,numerics%z,numerics%npos,numerics%ldiv)
+
+end subroutine dcontrol_lines2d
+!---------------------------------------------------------------------
 !> get unit number of input
 subroutine dcontrol_getunit(kunit)
 
@@ -565,5 +582,59 @@ subroutine misc_line2d(rpos,zpos,stpos,finpos,ldiv)
   end do
 
 end subroutine misc_line2d
+
+subroutine misc_lines2d(rpos,zpos,npos,ldiv,div)
+
+  !! arguments
+  real(kr8), dimension(:), allocatable, intent(inout) :: rpos !< positions in 1 coordinate
+  real(kr8), dimension(:), allocatable, intent(inout) :: zpos !< positions in 2 coordinate
+  integer(ki4), intent(inout)  :: npos !< number of entries in rpos and zpos arrays
+  integer(ki4), intent(in) :: ldiv !< number of divisions in straight line joining each position in rpos and zpos
+  real(kr8), intent(in), optional :: div !< approx size of division in straight line joining each position in rpos and zpos (INERT)
+
+  !! local
+  character(*), parameter :: s_name='misc_lines2d' !< subroutine name
+  real(kr8), dimension(:), allocatable :: rposn !< new positions in 1 coordinate
+  real(kr8), dimension(:), allocatable :: zposn !< new positions in 2 coordinate
+  integer(ki4) :: iposn !< number of positions in output array
+  real(kr8) :: zr1 !< value of \f$ R \f$
+  real(kr8) :: zr2 !< value of \f$ R \f$
+  real(kr8) :: zz1 !< value of \f$ Z \f$
+  real(kr8) :: zz2 !< value of \f$ Z \f$
+  real(kr8) :: zdelr !< value of \f$ \Delta R \f$
+  real(kr8) :: zdelz !< value of \f$ \Delta Z \f$
+
+  iposn=(npos-1)*(ldiv+1)+1
+  allocate(rposn(iposn),zposn(iposn),stat=status)
+  call log_alloc_check(m_name,s_name,1,status)
+  !! uniformly divided line between each input point (as polars (R,Z) )
+  i=0
+  zr1=rpos(1)
+  zz1=zpos(1)
+  do l=2,npos
+     zr2=rpos(l)
+     zz2=zpos(l)
+     zdelr=(zr2-zr1)/ldiv
+     zdelz=(zz2-zz1)/ldiv
+     do j=1,ldiv+1
+        i=i+1
+        rposn(i)=zr1+(j-1)*zdelr
+        zposn(i)=zz1+(j-1)*zdelz
+     end do
+     zr1=zr2
+     zz1=zz2
+  end do
+  rposn(iposn)=rpos(npos)
+  zposn(iposn)=zpos(npos)
+  ! now move  back to subroutine arguments
+  deallocate(rpos,zpos)
+  allocate(rpos(iposn),zpos(iposn),stat=status)
+  call log_alloc_check(m_name,s_name,2,status)
+  rpos=rposn
+  zpos=zposn
+  npos=iposn
+  deallocate(rposn,zposn)
+
+end subroutine misc_lines2d
 
 end module dcontrol_m

@@ -308,6 +308,7 @@ subroutine geoq_objaddcon(self)
            if (filedata) then
               call dcontrol_readprogfiles(file,iin)
               call dcontrol_readatfile(file,numerics)
+              call dcontrol_lines2d(numerics)
            end if
            numerics%stang=zetamin
            numerics%finang=zetamax
@@ -320,6 +321,7 @@ subroutine geoq_objaddcon(self)
            if (filedata) then
               call dcontrol_readprogfiles(file,iin)
               call dcontrol_readatfile(file,numerics)
+              call dcontrol_lines2d(numerics)
            end if
            self%skyl%dn%stang=zetamin
            self%skyl%dn%finang=zetamax
