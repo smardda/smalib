@@ -317,7 +317,7 @@ subroutine edgprof_factors(self,rbdry,bpbdry,btotbdry,psign)
   case('eich')
      zrblfac=zrbfac/self%lmid
      self%slfac=self%sigma/(2*self%lmid)
-     self%rblfac=2*const_pid*zrblfac*psign
+     self%rblfac=2*const_pid*zrblfac*((-1.)*psign)
      self%fpfac=(self%f/2)*self%ploss*zrblfac
 
   case('samples')
@@ -339,6 +339,8 @@ subroutine edgprof_factors(self,rbdry,bpbdry,btotbdry,psign)
      self%fpfac=self%f*self%ploss*zrbfac/self%fint
 
   end select formula_chosen
+
+  !dbg write(*,*) "psign",psign,zrblfac,self%slfac,self%rblfac,self%fpfac
 
 end subroutine edgprof_factors
 !---------------------------------------------------------------------
