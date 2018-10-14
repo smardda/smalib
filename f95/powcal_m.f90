@@ -685,7 +685,7 @@ subroutine powcal_move(self,gshadl,btree)
   character(*), parameter :: s_name='powcal_move' !< subroutine name
   type(powelt_t) :: zelt   !< power element
 
-  ! check for axisymmetric
+  ! check for axisymmetric !mpi1!
   if (self%powres%beq%n%vacfile=='null') then
      if (self%powres%beq%n%mrip/=0) then
         ! not axisymmetric

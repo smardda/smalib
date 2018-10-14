@@ -60,7 +60,7 @@ subroutine log_init(fileroot,timestamp)
   logical :: unitused !< flag to test unit is available
   integer(ki4) :: ilen  !< length of string
 
-  !! initialise counters
+  !! initialise counters !mpi5!
   errorno=0
   seriouserrors=0
 
@@ -75,7 +75,7 @@ subroutine log_init(fileroot,timestamp)
   ! and reset file root
   fileroot=logfile(1:ilen)
 
-  !! get file unit
+  !! get file unit !mpi6!
   do i=99,1,-1
      inquire(i,opened=unitused)
      if(.not.unitused)then
@@ -105,7 +105,7 @@ subroutine log_error(modname,subname,point,severity,errormessage)
   integer(ki4), intent(in) :: severity !< error severity
   character(*), intent(in) :: errormessage  !< error message
 
-  !! local
+  !! local !mpir!
 
   if(severity<log_info) then
      errorno=errorno+1
@@ -227,7 +227,7 @@ end subroutine log_getunit
 !> close log file
 subroutine log_close
 
-  !! arguments
+  !! arguments !mpir!
 
   write(nlog, '(//,a,/,a)') ' Error Summary ',' ------------- '
   write(nlog, '(a,i7)') ' total number of errors   = ',errorno
@@ -245,7 +245,7 @@ subroutine log_value_ki2(varname,value,units)
   integer(ki2par), intent(in) :: value    !< variable value
   character(*), intent(in),optional :: units  !< units name
 
-  !!output
+  !! output !mpir!
   if(present(units)) then
      write(nlog, '("Log  : ",a," = ",i10,1x,a)') varname,value,units
   else
@@ -258,7 +258,7 @@ subroutine log_value_ki4(varname,value,units)
   integer(ki4), intent(in) :: value    !< variable value
   character(*), intent(in),optional :: units  !< units name
 
-  !!output
+  !! output !mpir!
   if(present(units)) then
      write(nlog, '("Log  : ",a," = ",i10,1x,a)') varname,value,units
   else
@@ -270,7 +270,7 @@ subroutine log_value_kr4(varname,value,units)
   character(*), intent(in) :: varname  !< variable name
   real(ki4), intent(in) :: value    !< variable value
   character(*), intent(in), optional :: units  !< units name
-  !!output
+  !! output !mpir!
   if(present(units)) then
      write(nlog, '("Log  : ",a32,"  = ",g12.5,1x,a)') varname,value,units
   else
@@ -282,7 +282,7 @@ subroutine log_value_kr8(varname,value,units)
   character(*), intent(in) :: varname  !< variable name
   real(ki8), intent(in) :: value    !< variable value
   character(*), intent(in),optional :: units  !< units name
-  !!output
+  !! output !mpir!
 
   if(present(units)) then
      write(nlog, '("Log  : ",a32,"  = ",1pe15.8,2x,a)') varname,value,units
@@ -294,14 +294,14 @@ subroutine log_value_kl(varname,value)
   !! arguments
   character(*), intent(in) :: varname  !< variable name
   logical, intent(in) :: value    !< variable value
-  !!output
+  !! output !mpir!
   write(nlog, '("Log  : ",a," = ",l2)') varname,value
 end subroutine log_value_kl
 subroutine log_value_char(varname,value)
   !! arguments
   character(*), intent(in) :: varname  !< variable name
   character(*), intent(in) :: value    !< variable value
-  !!output
+  !! output !mpir!
   write(nlog, '("Log  : ",a," = ",a)') varname,value
 end subroutine log_value_char
 
