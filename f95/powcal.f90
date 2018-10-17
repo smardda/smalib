@@ -4,6 +4,7 @@ program powcal_p
   use const_numphys_h
   use date_time_m
   use log_m
+  use misc_m
   use clock_m
   use position_h
   use fmesh_h
@@ -82,8 +83,8 @@ program powcal_p
   character(len=80) :: fileroot !< reference name for all files output by run
   character(len=256) :: vtkdesc !< descriptor line for vtk files
 
-  integer(ki4):: nplot !< unit for vtk files
-  integer(ki4):: nin=0 !< unit for other data
+  integer:: nplot !< unit for vtk files
+  integer:: nin=0 !< unit for other data
   integer(ki4):: ifldspec !< field specification
   real(kr8):: zivac !< value of I in field file
   real(kr8):: zfac !< ratio of I in different field files
@@ -127,14 +128,14 @@ program powcal_p
 !! beq part data output by geoq
 
   call clock_start(3,'geoq_init time')
-  ! get fldspec from file
+! get fldspec from file
   call beq_readcheck(powcal%powres%beq,file%geoq,iextra)
   ifldspec=powcal%powres%beq%n%fldspec
   fld_specn: select case (ifldspec)
   case(1)
-  call beq_readpart(powcal%powres%beq,file%geoq)
+     call beq_readpart(powcal%powres%beq,file%geoq)
   case default
-  call beq_readplus(powcal%powres%beq,file%geoq)
+     call beq_readplus(powcal%powres%beq,file%geoq)
   end select fld_specn
   if (iextra==2) call skyl_read(powcal%powres%skyl,file%geoq)
   call pcontrol_fix(numerics,onumerics,ifldspec)

@@ -2,6 +2,7 @@ module goutfile_m
 
   use const_kind_m
   use log_m
+  use misc_m
   use const_numphys_h
   use dcontrol_h
   use bcontrol_m
@@ -32,7 +33,7 @@ module goutfile_m
 
 ! private variables
   character(*), parameter :: m_name='goutfile_m' !< module name
-  integer(ki4), save :: nout=-1 !< output file unit
+  integer, save :: nout=-1 !< output file unit
   integer(ki4) :: i !< loop counter
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
@@ -55,16 +56,10 @@ subroutine goutfile_init(file,timestamp)
 
   !! local
   character(*), parameter :: s_name='goutfile_init' !< subroutine name
-  logical :: unitused !< flag to test unit is available
+  !! logical :: unitused !< flag to test unit is available
+  !! get file do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then nout=i exit end if end do
 
-  do i=99,1,-1
-     inquire(i,opened=unitused)
-     if(.not.unitused)then
-        nout=i
-        exit
-     end if
-  end do
-
+  call misc_getfileunit(nout)
   open(unit=nout,file=trim(file%geoqout),status='new',form='FORMATTED',iostat=status)
   if(status/=0)then
      !! error opening file
@@ -95,7 +90,7 @@ subroutine goutfile_write(geoq,timestamp)
   !iextra=ifldspec/10
   !ifldspec=ifldspec-10*iextra
   ifldspec=mod(geoq%beq%n%fldspec,10)
-!! mark output file (should not have both duct and skylight)
+  !! mark output file (should not have both duct and skylight)
   if (geoq%beq%n%duct) geoq%beq%n%fldspec=ifldspec+10
   if (geoq%beq%n%skylpsi) geoq%beq%n%fldspec=ifldspec+20
   if (geoq%beq%n%objadd(GEOBJ_SKYLIT)>0) geoq%beq%n%fldspec=ifldspec+30
@@ -119,7 +114,7 @@ end  subroutine goutfile_write
 subroutine goutfile_getunit(kunit)
 
   !! arguments
-  integer(ki4), intent(out) :: kunit    !< log unit number
+  integer, intent(out) :: kunit    !< log unit number
 
   kunit=nout
 

@@ -99,8 +99,8 @@ module geobj_m
   integer(ki2par),  parameter, public :: GEOBJ_CUTOUT=7!< Cutout (Intended Loss)
   integer(ki2par),  parameter, public :: GEOBJ_TERMPL=32!< Terminating plane, pointer to %termplane array
   integer(ki2par),  parameter, public :: GEOBJ_INTERF=64!< Boundary interface, pointer to boundary array TO BE DONE
-  !> Offset between geometry and handling codes
-  !!  Plan is to remove use of nobjhit codes -1 and -2 so this can be set to zero
+!> Offset between geometry and handling codes
+!!  Plan is to remove use of nobjhit codes -1 and -2 so this can be set to zero
   integer(ki2par),  parameter, public :: GEOBJ_OFFSET=-2!< -
 ! private types
 
@@ -122,7 +122,7 @@ subroutine geobj_readv(self,k,kin)
   !! arguments
   type(geobj_t), intent(out) :: self   !< geobj data
   integer(ki4), intent(in) :: k   !< part of geobj data
-  integer(ki4), intent(in) :: kin   !< input channel for geobj data
+  integer, intent(in) :: kin   !< input channel for geobj data
 
 
   !! local
@@ -148,7 +148,7 @@ subroutine geobj_writev(self,k,kout)
   !! arguments
   type(geobj_t), intent(in) :: self   !< geobj data
   integer(ki4), intent(in) :: k   !< part of geobj data
-  integer(ki4), intent(in) :: kout   !< output channel for geobj data
+  integer, intent(in) :: kout   !< output channel for geobj data
 
 
   !! local
@@ -176,7 +176,7 @@ subroutine geobj_writestl(self,posl,nodl,k,kout)
   type(posveclis_t), intent(in) :: posl   !< list of positions
   integer(ki4), dimension(*), intent(in) :: nodl   !< list of nodes
   integer(ki4), intent(in) :: k   !< part of geobj data (inert, but keep for consistency)
-  integer(ki4), intent(in) :: kout   !< output channel for geobj data
+  integer, intent(in) :: kout   !< output channel for geobj data
 
   !! local
   character(*), parameter :: s_name='geobj_writestl' !< subroutine name

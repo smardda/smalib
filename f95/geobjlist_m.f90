@@ -2,6 +2,7 @@ module geobjlist_m
 
   use const_kind_m
   use log_m
+  use misc_m
   use const_numphys_h
   use position_h
   use bods_h
@@ -85,7 +86,7 @@ module geobjlist_m
   character(len=80) :: ibuf2 !< buffer for input/output
   character(len=132) :: bigbuf !<big buffer for input/output
   integer   :: status   !< error status
-  integer(ki4), save :: nin   !< input channel for geobj data
+  integer, save :: nin   !< input channel for geobj data
   integer(ki4) :: i !< loop counter
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
@@ -104,9 +105,9 @@ module geobjlist_m
   integer(ki4) :: idum !< dummy integer
   integer(ki4), dimension(:), allocatable :: iwork !< integer work array
   logical :: iltest !< logical flag
-  integer(ki4) :: istatus   !< inner status variable
-  !> integer parameter array
-  !! dimension at least self%numnparam+self%posl%numnparpos (2+4)
+  integer :: istatus   !< inner status variable
+!> integer parameter array
+!! dimension at least self%numnparam+self%posl%numnparpos (2+4)
   integer(ki2par), dimension(6) :: ipara   !< -
   character(len=256) :: vtkdesc !< descriptor line for vtk files
   integer(ki4) :: inumnparam   !< number of descriptors in legacy vtk file 2nd line
@@ -200,11 +201,11 @@ subroutine geobjlist_read(self,infile,kched,kin)
   type(geobjlist_t), intent(inout) :: self !< geobj list data
   character(*),intent(in) :: infile !< name of input file
   character(len=80),intent(out), optional :: kched !< field file header
-  integer(ki4), intent(inout), optional :: kin   !< input channel for object data structure
+  integer, intent(inout), optional :: kin   !< input channel for object data structure
 
   !! local
   character(*), parameter :: s_name='geobjlist_read' !< subroutine name
-  logical :: unitused !< flag to test unit is available
+  !! logical :: unitused !< flag to test unit is available
   logical :: ilnumb !< local variable
   integer(ki4) :: innd !< position of first entry for object in nodl
   integer(ki4) :: inobj !< local variable
@@ -230,17 +231,10 @@ subroutine geobjlist_read(self,infile,kched,kin)
      nin=kin
      rewind(nin)
   else
-     !! get file unit
-     do i=99,1,-1
-        inquire(i,opened=unitused)
-        if(.not.unitused)then
-           nin=i
-           exit
-        end if
-     end do
-     if (present(kin)) kin=nin
+     !! get file unit do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then nin=i exit end if end do
 
      !! open file
+     call misc_getfileunit(nin)
      open(unit=nin,file=infile,status='OLD',form='FORMATTED',iostat=status)
      if(status/=0)then
         !! error opening file
@@ -249,6 +243,7 @@ subroutine geobjlist_read(self,infile,kched,kin)
      else
         call log_error(m_name,s_name,2,log_info,'geometrical object  data file opened')
      end if
+     if (present(kin)) kin=nin
   end if
 
   !! first set of reads to determine format of position vectors
@@ -768,7 +763,7 @@ subroutine geobjlist_writev(self,kchar,kplot)
   !! arguments
   type(geobjlist_t), intent(in) :: self !< geobj list data
   character(*), intent(in) :: kchar  !< case
-  integer(ki4), intent(in) :: kplot   !< output channel for vis. data
+  integer, intent(in) :: kplot   !< output channel for vis. data
 
   !! local
   character(*), parameter :: s_name='geobjlist_writev' !< subroutine name
@@ -913,7 +908,7 @@ subroutine geobjlist_writestl(self,kchar,kplot)
   !! arguments
   type(geobjlist_t), intent(in) :: self !< geobj list data
   character(*), intent(in) :: kchar  !< case
-  integer(ki4), intent(in) :: kplot   !< output channel for stl data
+  integer, intent(in) :: kplot   !< output channel for stl data
 
   !! local
   character(*), parameter :: s_name='geobjlist_writestl' !< subroutine name
@@ -2315,7 +2310,7 @@ end subroutine geobjlist_mbin
 subroutine geobjlist_dread(self,kread)
   !! arguments
   type(geobjlist_t), intent(out) :: self   !< geobj list data
-  integer(ki4), intent(inout) :: kread   !< input channel for dat file
+  integer, intent(inout) :: kread   !< input channel for dat file
   !integer(ki4), intent(in), optional :: kopt   !< options
 
   !! local
@@ -3006,10 +3001,10 @@ subroutine geobjlist_create3d(self,numerics,kgcode)
 
   call log_error(m_name,s_name,70,log_info,'geobjlist created')
 
-!SKDBG idum=820 !SKDBG
-!SKDBG call geobjlist_makehedline(self,'skylight',vtkdesc) !SKDBG
-!SKDBG call vfile_init('skyl',vtkdesc,idum) !SKDBG
-!SKDBG call geobjlist_writev(self,'geometry',idum) !SKDBG
+  !SKDBG idum=820 !SKDBG
+  !SKDBG call geobjlist_makehedline(self,'skylight',vtkdesc) !SKDBG
+  !SKDBG call vfile_init('skyl',vtkdesc,idum) !SKDBG
+  !SKDBG call geobjlist_writev(self,'geometry',idum) !SKDBG
 
 end subroutine geobjlist_create3d
 !---------------------------------------------------------------------
@@ -4137,34 +4132,34 @@ subroutine geobjlist_makehedline(self,kclabel,descriptor)
   ! transform the position vectors before ultimate output.
   posveclis : select case (iclabel(1:iclen))
   case('all','frzzeta')
-  ipara(4)=2
+     ipara(4)=2
   case('frzxi')
-  ipara(4)=3
+     ipara(4)=3
   case('fxyz')
-  ipara(3)=0
+     ipara(3)=0
   case('hds lowest','hds dbtree')
-  ! hdsgen , fldiff
-  ! dequantised HDS  in mapped coordinates
-  ipara(1:2)=(/1,0/)
-  ipara(5)=0
+     ! hdsgen , fldiff
+     ! dequantised HDS  in mapped coordinates
+     ipara(1:2)=(/1,0/)
+     ipara(5)=0
   case('hds quantised')
-  ! quantised HDS  in mapped coordinates
-  ipara(1:2)=(/1,0/)
+     ! quantised HDS  in mapped coordinates
+     ipara(1:2)=(/1,0/)
   case('density on hds', 'scalars on hds')
-  ! dequantised Cartesian HDS (m) (n)nucode
-  ipara=(/1,0,0,0,0,0/)
+     ! dequantised Cartesian HDS (m) (n)nucode
+     ipara=(/1,0,0,0,0,0/)
   case default
-  !case('assigned geobj', 'unassigned geobj', 'all geoptq', 'density geobj')
-  !! no special mapping on output
-  !! quantised, mapped coordinates, either flux or cylindricals
-  !case('allcart','all end points')
-  !! no special mapping on output
-  !! Cartesian mm
-  !case('all end points', 'hds current on geometry', 'hds power on geometry')
-  !case('hds power on geometry', 'hds power on mapped geometry') ! fldiff
-  !! no special mapping on output
-  !case('power','power statistics')
-  !! no special mapping on output
+     !case('assigned geobj', 'unassigned geobj', 'all geoptq', 'density geobj')
+     !! no special mapping on output
+     !! quantised, mapped coordinates, either flux or cylindricals
+     !case('allcart','all end points')
+     !! no special mapping on output
+     !! Cartesian mm
+     !case('all end points', 'hds current on geometry', 'hds power on geometry')
+     !case('hds power on geometry', 'hds power on mapped geometry') ! fldiff
+     !! no special mapping on output
+     !case('power','power statistics')
+     !! no special mapping on output
   end select posveclis
 
   write(descriptor,'(a30,1x,a18,i3,9(1x,i4))') iclabel(1:30),'Number_Parameters=', &

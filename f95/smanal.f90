@@ -6,6 +6,7 @@ program smanal_p
   use scontrol_m
   use date_time_m
   use log_m
+  use misc_m
   use clock_m
   use position_m
   use geobj_m
@@ -57,9 +58,9 @@ program smanal_p
   character(len=256) :: vtkdesc !< descriptor line for vtk files
 
   integer(ki4):: iopt !< option
-  integer(ki4):: nin !< unit for vtk files
-  integer(ki4):: nplot !< unit for vtk file output
-  integer(ki4):: nprint !< unit for gnu file output
+  integer:: nin !< unit for vtk files
+  integer:: nplot !< unit for vtk file output
+  integer:: nprint !< unit for gnu file output
 
 !--------------------------------------------------------------------------
 !! initialise timing

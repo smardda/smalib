@@ -52,7 +52,7 @@ module powres_h
      logical  :: flinends    !< gnuplot switch for field line ends
      logical  :: flinptz    !< plot switch for field line following in \f$ (\psi,\theta,\zeta) \f$
      logical  :: flinm    !< plot switch for field line following in \f$ (\psi,\theta,\zeta) \f$
-     integer(ki4)  :: nflends !< gnuplot file unit for field line ends
+     integer  :: nflends !< gnuplot file unit for field line ends
   end type powres_t
 
 end module powres_h

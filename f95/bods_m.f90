@@ -42,7 +42,7 @@ module bods_m
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
   integer(ki4) :: l !< loop counter
-  integer(ki4) :: status  !< status flag
+  integer :: status  !< status flag
   logical :: iltest !< logical flag
   character(len=256) :: vtkdesc !< descriptor line for vtk files
 
@@ -191,7 +191,7 @@ subroutine bods_write(self,geobjl,fileroot,kctyp,kcname,kheader)
   integer(ki4)  :: innodsmall !< number of nodal data in small geobjlist
   integer(ki4)  :: iostart!< end points of object list if bods' objects contiguous
   integer(ki4)  :: ioend !< end points of object list if bods' objects contiguous
-  integer(ki4) :: iplot   !< output channel for bods list data
+  integer :: iplot   !< output channel for bods list data
   integer(ki4) :: innd !< position of first entry for object in nodl
   integer(ki4) :: iobj !< local variable
   integer(ki4) :: inumpts !< length of object in nodl array

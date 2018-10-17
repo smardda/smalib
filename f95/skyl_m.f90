@@ -1,6 +1,7 @@
 module skyl_m
 
   use log_m
+  use misc_m
   use dcontrol_h
   use const_numphys_h
   use const_kind_m
@@ -32,9 +33,9 @@ module skyl_m
 
 ! private variables
   character(*), parameter :: m_name='skyl_m' !< module name
-  integer(ki4)  :: status   !< error status
-  integer(ki4), save  :: ninso=5     !< control file unit number
-  integer(ki4), save  :: noutso=6      !< output file unit number
+  integer  :: status   !< error status
+  integer, save  :: ninso=5     !< control file unit number
+  integer, save  :: noutso=6      !< output file unit number
   character(len=80), dimension(10), save :: dbgfile !< debug file names
   character(len=80), save :: controlfile !< control file name
   character(len=80), save :: outputfile !< output file name
@@ -43,7 +44,7 @@ module skyl_m
   integer(ki4) :: k !< loop counter
   integer(ki4) :: l !< loop counter
   integer(ki4) :: ij !< loop counter
-  integer(ki4)  :: ilog      !< for namelist dump after error
+  integer  :: ilog      !< for namelist dump after error
   character(len=80) :: ibuff !< buffer for input/output
   character(len=256) :: vtkdesc !< descriptor line for vtk files
   real(kr8), dimension(:), allocatable :: work1 !< 1D work array
@@ -55,29 +56,23 @@ subroutine skyl_initfile(file,channel)
 
   !! arguments
   character(*), intent(in) :: file !< file name
-  integer(ki4), intent(out),optional :: channel   !< input channel for object data structure
+  integer, intent(out),optional :: channel   !< input channel for object data structure
   !! local
   character(*), parameter :: s_name='skyl_initfile' !< subroutine name
-  logical :: unitused !< flag to test unit is available
+  !! logical :: unitused !< flag to test unit is available
 
   if (trim(file)=='null') then
      call log_error(m_name,s_name,1,log_info,'null filename ignored')
      return
   end if
 
-  !! get file unit
-  do i=99,1,-1
-     inquire(i,opened=unitused)
-     if(.not.unitused)then
-        ninso=i
-        if (present(channel)) channel=i
-        exit
-     end if
-  end do
+  !! get file unit do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then
+  !! ninso=i if (present(channel)) channel=i exit end if end do
 
   !! open file
   controlfile=trim(file)
   call log_value("Control data file",trim(controlfile))
+  call misc_getfileunit(ninso)
   open(unit=ninso,file=controlfile,status='OLD',iostat=status)
   if(status/=0)then
      !! error opening file
@@ -85,6 +80,7 @@ subroutine skyl_initfile(file,channel)
      call log_error(m_name,s_name,2,error_fatal,'Cannot open control data file')
      stop
   end if
+  if (present(channel)) channel=ninso
 
 end subroutine skyl_initfile
 !---------------------------------------------------------------------
@@ -144,7 +140,8 @@ subroutine skyl_init(self,beq,geobjl,fileroot)
      dbgfile(9)=trim(fileroot)//"_skyl1"
      dbgfile(10)=trim(fileroot)//"_skyl2"
      do j=1,7
-        open(newunit=self%ndskyl(j), file=dbgfile(j),form='FORMATTED',iostat=status)
+        call misc_getfileunit(self%ndskyl(j))
+        open(unit=self%ndskyl(j), file=dbgfile(j),form='FORMATTED',iostat=status)
         if(status/=0)then
            !! error opening file
            call log_error(m_name,s_name,j,error_fatal,'Error opening skyl debug file')
@@ -153,8 +150,8 @@ subroutine skyl_init(self,beq,geobjl,fileroot)
         end if
      end do
      do j=8,10
-     call geobjlist_makehedline(geobjl,'skylight debug',vtkdesc)
-     call vfile_init(dbgfile(j),vtkdesc,self%ndskyl(j))
+        call geobjlist_makehedline(geobjl,'skylight debug',vtkdesc)
+        call vfile_init(dbgfile(j),vtkdesc,self%ndskyl(j))
      end do
   else
      self%ndskyln=0
@@ -164,11 +161,11 @@ subroutine skyl_init(self,beq,geobjl,fileroot)
 end subroutine skyl_init
 !---------------------------------------------------------------------
 !> read data from file
-subroutine skyl_readcon(selfn,channel)
+subroutine skyl_readcon(selfn,kin)
 
   !! arguments
   type(sknumerics_t), intent(out) :: selfn !< type which data will be assigned to
-  integer(ki4), intent(in),optional :: channel   !< input channel for object data structure
+  integer, intent(in),optional :: kin   !< input channel for object data structure
 
   !! local
   character(*), parameter :: s_name='skyl_readcon' !< subroutine name
@@ -233,9 +230,9 @@ subroutine skyl_readcon(selfn,channel)
   skylight_control=0
   skylight_upper=.FALSE.
 
-  if(present(channel).AND.channel/=0) then
+  if(present(kin).AND.kin/=0) then
      !! assume unit already open and reading infile
-     ninso=channel
+     ninso=kin
   end if
 
   !!read skyl parameters
@@ -544,7 +541,7 @@ subroutine skyl_read(self, infile)
 
   !! local
   character(*), parameter :: s_name='skyl_read' !< subroutine name
-  integer(ki4) :: iread   !< output channel for skyl data structure
+  integer :: iread   !< output channel for skyl data structure
   integer(ki4), dimension(2) :: indbox   !<  extents of box arrays
   integer(ki4) :: ibdim !<  second dimension of boxr,z arrays
 
@@ -616,21 +613,21 @@ subroutine skyl_read(self, infile)
 end subroutine skyl_read
 !---------------------------------------------------------------------
 !> write skyl data
-subroutine skyl_write(self,channel)
+subroutine skyl_write(self,kout)
 
   !! arguments
   type(skyl_t), intent(in) :: self   !< skyl data structure
-  integer(ki4), intent(in), optional :: channel   !< output channel for skyl data structure
+  integer, intent(in), optional :: kout   !< output channel for skyl data structure
 
   !! local
   character(*), parameter :: s_name='skyl_write' !< subroutine name
-  integer(ki4) :: iout   !< output channel for skyl data structure
+  integer :: iout   !< output channel for skyl data structure
   integer(ki4), dimension(2) :: indbox   !<  extents of box arrays
   integer(ki4) :: ibdim !<  second dimension of boxr,z arrays
 
   !! sort out unit
-  if(present(channel)) then
-     iout=channel
+  if(present(kout)) then
+     iout=kout
   else
      iout=noutso
   end if
@@ -691,11 +688,11 @@ subroutine skyl_delete(self,ndebug)
 
   !! arguments
   type(skyl_t), intent(inout) :: self !< module object
-  integer(ki4), intent(in), optional :: ndebug   !< debug channels to close
+  integer, intent(in), optional :: ndebug   !< debug channels to close
 
   !! local
   character(*), parameter :: s_name='skyl_delete' !< subroutine name
-  integer(ki4) :: idebug   !< debug channels to close
+  integer :: idebug   !< debug channels to close
 
   idebug=0
   if (present(ndebug)) idebug=ndebug

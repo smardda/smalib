@@ -65,7 +65,7 @@ module geoq_m
   character(len=80) :: ibuf1 !< buffer for input/output
   character(len=80) :: ibuf2 !< buffer for input/output
   integer   :: status   !< error status
-  integer(ki4) :: nin   !< input channel for geobj data
+  integer :: nin   !< input channel for geobj data
   integer(ki4) :: i !< loop counter
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
@@ -271,7 +271,7 @@ subroutine geoq_objaddcon(self)
 
   !! local
   character(*), parameter :: s_name='geoq_objaddcon' !< subroutine name
-  integer(ki4) :: iin      !< local control file unit number
+  integer :: iin      !< local control file unit number
   type(dfiles_t) :: file !< file names specifying \f$ (R,Z) \f$ geometry
   type(dnumerics_t) :: numerics !< control numerics
   integer(ki4) :: jpla !<  number of object planes to add to geobjlist
@@ -341,7 +341,7 @@ subroutine geoq_skylspec(self,zetamin,zetamax)
 
   !! local
   character(*), parameter :: s_name='geoq_skylspec' !< subroutine name
-  integer(ki4) :: iin      !< local control file unit number
+  integer :: iin      !< local control file unit number
   integer(ki4) :: jpla !<  number of skylight planes to add to geobjlist
 
   if (self%beq%n%skylpsi.OR.self%beq%n%skylcen) then
@@ -394,7 +394,7 @@ subroutine geoq_skyladd(self,kpla)
   !! local
   character(*), parameter :: s_name='geoq_skyladd' !< subroutine name
   type(geobjlist_t) :: skylobj !< skylight geobjlist
-  integer(ki4) :: iunit      !< local debug file unit number
+  integer :: iunit      !< local debug file unit number
   integer(ki4) :: iopt=0 !< option for cumulate (no weights)
 
   call geobjlist_create3d(skylobj,self%skyl%dn,GEOBJ_SKYLIT)
@@ -1235,7 +1235,7 @@ subroutine geoq_writev(self,kchar,kplot)
   !! arguments
   type(geoq_t), intent(inout) :: self !< geometrical objects and equilibrium data
   character(*), intent(in) :: kchar  !< case
-  integer(ki4) :: kplot   !< output channel for vis. data
+  integer :: kplot   !< output channel for vis. data
 
 
   !! local
@@ -1551,7 +1551,7 @@ subroutine geoq_writeg(self,kchar,kout,kopt)
   !! arguments
   type(geoq_t), intent(inout) :: self !< geometrical objects and equilibrium data
   character(*), intent(in) :: kchar  !< case
-  integer(ki4), intent(in) :: kout   !< output channel for gnuplot data
+  integer, intent(in) :: kout   !< output channel for gnuplot data
   !> which points plotted
   !! 0=original geometry, 1=geometry and extra, 2=extra geometry only
   integer(ki4), intent(in) :: kopt   !< .

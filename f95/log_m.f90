@@ -42,7 +42,7 @@ module log_m
   character(*), dimension(0:5), parameter :: errorname = & !< type of "error"
  &(/'Fatal  ','Serious','Warning', 'Info   ', 'Debug  ','Info   '/)
   character(128) :: logfile !< name of error logging file
-  integer(ki4) :: nlog    !< error logging unit number
+  integer :: nlog    !< error logging unit number
   integer(ki4) :: i       !< loop counter
   integer(ki4) :: errorno       !<  number of error messages
   integer(ki4) :: seriouserrors !< number of serious errors
@@ -69,7 +69,7 @@ subroutine log_init(fileroot,timestamp)
   ! strip ctl from end of name
   ilen=len_trim(fileroot)
   if (ilen>4) then
-    if (fileroot(ilen-3:ilen)=='.ctl') ilen=ilen-4
+     if (fileroot(ilen-3:ilen)=='.ctl') ilen=ilen-4
   end if
   logfile=fileroot(1:ilen)//'.log'
   ! and reset file root
@@ -83,8 +83,9 @@ subroutine log_init(fileroot,timestamp)
         exit
      end if
   end do
+  !! using this implies circular module dependency
+  !! call misc_getfileunit(nlog)
 
-  !! open file
   open(unit=nlog,file=logfile,status='REPLACE')
 
   !! write initial header
@@ -160,8 +161,8 @@ subroutine log_alloc_check(modname,subname,point,status)
 
   if(status/=0)then
      call log_error(modname,subname,point,error_fatal,'allocation failed')
-       !DBG else !DBG
-       !DBG write(*,*) trim(modname), trim(subname), point, 'allocation OK' !DBG
+     !DBG else !DBG
+     !DBG write(*,*) trim(modname), trim(subname), point, 'allocation OK' !DBG
   end if
 
 end subroutine log_alloc_check
@@ -218,7 +219,7 @@ end subroutine log_write_check
 subroutine log_getunit(kunit)
 
   !! arguments
-  integer(ki4), intent(out) :: kunit    !< log unit number
+  integer, intent(out) :: kunit    !< log unit number
 
   kunit=nlog
 
