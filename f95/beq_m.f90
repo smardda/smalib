@@ -9,6 +9,7 @@ module beq_m
   use posang_h
   use position_m
   use log_m
+  use misc_m
   use geobj_m
   use spl2d_m
   use spl3d_m
@@ -101,15 +102,15 @@ module beq_m
   real(kr8), parameter :: epsg=1.e-6 !< tolerance for searches
   real(kr8), parameter :: epsr=0.01 !< relative tolerance for searches
   integer   :: status   !< error status
-  integer(ki4), save :: nin=-1   !< input channel for beq data
-  integer(ki4)  :: ilog      !< for namelist dump after error
+  integer, save :: nin=-1   !< input channel for beq data
+  integer  :: ilog      !< for namelist dump after error
   integer(ki4) :: i !< loop counter
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
   integer(ki4) :: l !< loop counter
   integer(ki4) :: ij !< loop counter
   integer(ki4) :: idum !< dummy integer
-  integer(ki4) :: idunit !< debug unit
+  integer :: idunit !< debug unit
   real(kr8) :: zdum !< dummy real
   real(kr8), save :: rsig    !< sign of  \f$ d \psi/dr \f$, value  \f$ \pm 1 \f$
   character(len=80) :: ibuff !< buffer for input/output
@@ -127,18 +128,12 @@ subroutine beq_read(self,infile)
 
   !! local
   character(*), parameter :: s_name='beq_read' !< subroutine name
-  logical :: unitused !< flag to test unit is available
+  !! logical :: unitused !< flag to test unit is available
 
-  !! get file unit
-  do i=99,1,-1
-     inquire(i,opened=unitused)
-     if(.not.unitused)then
-        nin=i
-        exit
-     end if
-  end do
+  !! get file unit do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then nin=i exit end if end do
 
   !! open file
+  call misc_getfileunit(nin)
   open(unit=nin,file=infile,status='OLD',form='FORMATTED',iostat=status)
   if(status/=0)then
      !! error opening file
@@ -363,10 +358,10 @@ subroutine beq_readequil(self,infile,numerics)
   character(len=15) :: cfmtdh !< fixed format for header
   character(len=15) :: cfmtd !< fixed format for header
   logical, parameter :: debug=.TRUE. !< flag for e16.9 output
-  logical :: unitused !< flag to test unit is available
+  !! logical :: unitused !< flag to test unit is available
   logical :: needfixup=.FALSE. !< flag special SMITER fix up
-  integer(ki4) :: istatus   !< inner status variable
-  integer(ki4) :: iin   !< input channel for object data structure
+  integer :: istatus   !< inner status variable
+  integer :: iin   !< input channel for object data structure
   integer(ki4) :: nw  !< EFIT number of grid points in R-direction
   integer(ki4) :: nh  !< EFIT number of grid points in Z-direction
   integer(ki4) :: ilen   !< length of string in buffer
@@ -399,18 +394,12 @@ subroutine beq_readequil(self,infile,numerics)
   integer(ki4) :: nbbbs  !< EFIT number of points describing boundary
   integer(ki4) :: limitr  !< EFIT number of points describing limitr
   integer(ki4) :: ncoil  !< EFIT number of points describing one of five coils
-  integer(ki4) :: igunit  !< Unit for output of boundary data from eqdsk
+  integer :: igunit  !< unit for output of boundary data from eqdsk
 
   iffiesta=numerics%fiesta
-  !! get file unit
-  do i=99,1,-1
-     inquire(i,opened=unitused)
-     if(.not.unitused)then
-        iin=i
-        exit
-     end if
-  end do
+  !! get file unit do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then iin=i exit end if end do
 
+  call misc_getfileunit(iin)
   open(unit=iin, file=infile,status='OLD',form='FORMATTED',iostat=status)
   call log_open_check(m_name,s_name,1,status)
 
@@ -853,8 +842,8 @@ subroutine beq_readequ(self,infile,numerics)
   !! local
   character(*), parameter :: s_name='beq_readequ' !< subroutine name
   character(8), parameter :: cfmt1='(5f17.8)'
-  logical :: unitused !< flag to test unit is available
-  integer(ki4) :: iin   !< input channel for object data structure
+  !! logical :: unitused !< flag to test unit is available
+  integer :: iin   !< input channel for object data structure
   integer(ki4) :: jm  !< FIESTA number of grid points in R-direction
   integer(ki4) :: km  !< FIESTA number of grid points in Z-direction
   real(kr8) :: btf !< FIESTA vacuum toroidal field at r=rtf
@@ -862,15 +851,9 @@ subroutine beq_readequ(self,infile,numerics)
   real(kr8) :: psib !< FIESTA poloidal flux at the boundary (Wb/rad)
   real(kr8) :: psic !< madeup poloidal flux at the plasma centre (Wb/rad), to force on-axis minimum/maximum
 
-  !! get file unit
-  do i=99,1,-1
-     inquire(i,opened=unitused)
-     if(.not.unitused)then
-        iin=i
-        exit
-     end if
-  end do
+  !! get file unit do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then iin=i exit end if end do
 
+  call misc_getfileunit(iin)
   open(unit=iin, file=infile,status='OLD',form='FORMATTED',iostat=status)
   !!eof or error
   if (status/=0) then
@@ -1415,19 +1398,13 @@ subroutine beq_readcheck(self,infile,kextra)
 
   !! local
   character(*), parameter :: s_name='beq_readcheck' !< subroutine name
-  logical :: unitused !< flag to test unit is available
+  !! logical :: unitused !< flag to test unit is available
   integer(ki4) :: ifldspec !< field spec
 
-  !! get file unit
-  do i=99,1,-1
-     inquire(i,opened=unitused)
-     if(.not.unitused)then
-        nin=i
-        exit
-     end if
-  end do
+  !! get file unit do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then nin=i exit end if end do
 
   !! open file
+  call misc_getfileunit(nin)
   open(unit=nin,file=infile,status='OLD',form='FORMATTED',iostat=status)
   if(status/=0)then
      !! error opening file
@@ -1469,18 +1446,12 @@ subroutine beq_readpart(self,infile)
 
   !! local
   character(*), parameter :: s_name='beq_readpart' !< subroutine name
-  logical :: unitused !< flag to test unit is available
+  !! logical :: unitused !< flag to test unit is available
 
-  !! get file unit
-  do i=99,1,-1
-     inquire(i,opened=unitused)
-     if(.not.unitused)then
-        nin=i
-        exit
-     end if
-  end do
+  !! get file unit do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then nin=i exit end if end do
 
   !! open file
+  call misc_getfileunit(nin)
   open(unit=nin,file=infile,status='OLD',form='FORMATTED',iostat=status)
   if(status/=0)then
      !! error opening file
@@ -1592,20 +1563,14 @@ subroutine beq_readplus(self,infile)
 
   !! local
   character(*), parameter :: s_name='beq_readplus' !< subroutine name
-  logical :: unitused !< flag to test unit is available
+  !! logical :: unitused !< flag to test unit is available
   integer(ki4) :: ifldspec !< field as mapped or 3-cpt + extra info
   integer(ki4) :: iextra !< extra info extracted
 
-  !! get file unit
-  do i=99,1,-1
-     inquire(i,opened=unitused)
-     if(.not.unitused)then
-        nin=i
-        exit
-     end if
-  end do
+  !! get file unit do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then nin=i exit end if end do
 
   !! open file
+  call misc_getfileunit(nin)
   open(unit=nin,file=infile,status='OLD',form='FORMATTED',iostat=status)
   if(status/=0)then
      !! error opening file
@@ -1793,7 +1758,7 @@ subroutine beq_writeg(self,kchar,kout)
   !! arguments
   type(beq_t), intent(inout) :: self   !< object data structure
   character(*), intent(in) :: kchar  !< case
-  integer(ki4), intent(in) :: kout   !< output channel for object data structure
+  integer, intent(in) :: kout   !< output channel for object data structure
 
   !! local
   character(*), parameter :: s_name='beq_writeg' !< subroutine name
@@ -1863,7 +1828,7 @@ subroutine beq_writen(self,kchar,kfield)
   !! arguments
   type(beq_t), intent(inout) :: self   !< object data structure
   character(*), intent(in) :: kchar  !< case
-  integer(ki4) :: kfield   !< output channel for nucode data
+  integer :: kfield   !< output channel for nucode data
 
   !! local
   character(*), parameter :: s_name='beq_writen' !< subroutine name
@@ -1941,7 +1906,7 @@ subroutine beq_writev(self,kchar,kplot)
   !! arguments
   type(beq_t), intent(inout) :: self   !< object data structure
   character(*), intent(in) :: kchar  !< case
-  integer(ki4) :: kplot   !< output channel for vis. data
+  integer :: kplot   !< output channel for vis. data
 
   !! local
   character(*), parameter :: s_name='beq_writev' !< subroutine name
@@ -2197,7 +2162,7 @@ subroutine beq_write(self,kout)
 
   !! arguments
   type(beq_t), intent(in) :: self   !< object data structure
-  integer(ki4), intent(in) :: kout   !< output channel for object data structure
+  integer, intent(in) :: kout   !< output channel for object data structure
 
 
   !! local
@@ -2406,7 +2371,7 @@ subroutine beq_writepart(self,kout)
 
   !! arguments
   type(beq_t), intent(in) :: self   !< object data structure
-  integer(ki4), intent(in) :: kout   !< output channel for object data structure
+  integer, intent(in) :: kout   !< output channel for object data structure
 
 
   !! local
@@ -2497,7 +2462,7 @@ subroutine beq_writeplus(self,kout)
 
   !! arguments
   type(beq_t), intent(in) :: self   !< object data structure
-  integer(ki4), intent(in) :: kout   !< output channel for object data structure
+  integer, intent(in) :: kout   !< output channel for object data structure
 
   !! local
   character(*), parameter :: s_name='beq_writeplus' !< subroutine name
@@ -2806,7 +2771,7 @@ subroutine beq_readcon(selfn,kin)
 
   !! arguments
   type(bnumerics_t), intent(out) :: selfn   !< object control data structure
-  integer(ki4), intent(in) :: kin   !< input channel for object data structure
+  integer, intent(in) :: kin   !< input channel for object data structure
 
 
   !! local
@@ -4490,7 +4455,8 @@ subroutine beq_ctrackc(self,ctrackrz,nctrack,ktyp)
   nctrack=im
 
   !CDBG  idunit=799 !CDBG
-  !CDBG  !open(newunit=idunit, file='extr.gnu') !CDBG
+  !CDBG  !open(newunit=idunit)
+  !CDBG  !open(unit=idunit, file='extr.gnu') !CDBG
   !CDBG  write(idunit,'(A)') '# track of extremum through plasma centre' !CDBG
   !CDBG  write(idunit,'(1P, 2(1X, G13.5))') (ctrackrz(k,1),ctrackrz(k,2),k=1,nctrack) !CDBG
 
@@ -4651,7 +4617,7 @@ end subroutine beq_ctrackpt
 subroutine beq_getunit(kunit)
 
   !! arguments
-  integer(ki4), intent(out) :: kunit    !< log unit number
+  integer, intent(out) :: kunit    !< log unit number
 
   kunit=nin
 

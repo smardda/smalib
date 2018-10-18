@@ -3,6 +3,7 @@ module dcontrol_m
   use const_kind_m
   use const_numphys_h
   use log_m
+  use misc_m
   use geobj_m
   use dcontrol_h
 
@@ -23,15 +24,12 @@ module dcontrol_m
  &dcontrol_delete !< delete object
 
 ! private subroutines
-  private :: &
- &misc_getfileunit, & !< find new file unit (replace with newunit=)
- &misc_line2d  !< sample 2-D straight line between end-points
 
 ! private variables
   character(*), parameter :: m_name='dcontrol_m' !< module name
-  integer(ki4)  :: status   !< error status
-  integer(ki4), save  :: nin      !< control file unit number
-  integer(ki4)  :: ilog      !< for namelist dump after error
+  integer  :: status   !< error status
+  integer, save  :: nin      !< control file unit number
+  integer  :: ilog      !< for namelist dump after error
   integer(ki4) :: i !< loop counter
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
@@ -218,7 +216,7 @@ subroutine dcontrol_readnum(numerics,kunit,klfile)
 
   !! arguments
   type(dnumerics_t), intent(out) :: numerics !< control numerics
-  integer(ki4), intent(in)  :: kunit     !< file unit number
+  integer, intent(in)  :: kunit     !< file unit number
   logical, intent(inout) :: klfile !< data file specifies geometry
 
   !!local
@@ -335,17 +333,18 @@ subroutine dcontrol_readnum(numerics,kunit,klfile)
   numerics%finpos=finish_position*lenfac
   numerics%div=2*((number_of_divisions+1)/2)
   numerics%csys=coordinate_system
-  numerics%ldiv=line_divisions
 
   if (.NOT.filedata) then
      ! line defined by namelist, check here and set up
      if(line_divisions<=0) then
         call log_error(m_name,s_name,32,error_fatal,'number of line divisions must be positive')
      end if
-     call misc_line2d(numerics%r,numerics%z,numerics%stpos,numerics%finpos,numerics%ldiv)
+     call misc_line2d(numerics%r,numerics%z,numerics%stpos,numerics%finpos,line_divisions)
   end if
 
-  numerics%npos=numerics%ldiv+1
+  numerics%ldiv=line_divisions
+  !! next will be overwritten when there is dat file input
+  numerics%npos=line_divisions+1
   klfile=filedata
 
 end  subroutine dcontrol_readnum
@@ -355,7 +354,7 @@ subroutine dcontrol_readprogfiles(file,kunit)
 
   !! arguments
   type(dfiles_t), intent(out) :: file !< file names
-  integer(ki4), intent(in)  :: kunit     !< file unit number
+  integer, intent(in)  :: kunit     !< file unit number
 
   !!local
   character(*), parameter :: s_name='dcontrol_readprogfiles' !< subroutine name
@@ -428,11 +427,12 @@ subroutine dcontrol_readatfile(file,numerics)
 
   !!local
   character(*), parameter :: s_name='dcontrol_readatfile' !< subroutine name
-  integer(ki4)  :: ninrz     !< file unit number
+  integer  :: ninrz     !< file unit number
 
   if (file%rzfile=='null') then
      call log_value("r input file",trim(file%rfile))
-     open(newunit=ninrz,file=file%rfile,status='OLD',iostat=status)
+     call misc_getfileunit(ninrz)
+     open(unit=ninrz,file=file%rfile,status='OLD',iostat=status)
      call log_open_check(m_name,s_name,10,status)
 
      i=0
@@ -441,6 +441,7 @@ subroutine dcontrol_readatfile(file,numerics)
         if(status/=0) exit
         i=i+1
      end do
+     if (i<=1) call log_error(m_name,s_name,1,error_fatal,'Insufficient data in file')
      allocate(numerics%r(i),numerics%z(i),stat=status)
      call log_alloc_check(m_name,s_name,11,status)
      numerics%npos=i
@@ -457,7 +458,8 @@ subroutine dcontrol_readatfile(file,numerics)
      close(unit=ninrz)
 
      call log_value("z input file",trim(file%zfile))
-     open(newunit=ninrz,file=file%zfile,status='OLD',iostat=status)
+     call misc_getfileunit(ninrz)
+     open(unit=ninrz,file=file%zfile,status='OLD',iostat=status)
      call log_open_check(m_name,s_name,14,status)
 
      i=0
@@ -472,7 +474,8 @@ subroutine dcontrol_readatfile(file,numerics)
   else
 
      call log_value("rz input file",trim(file%rzfile))
-     open(newunit=ninrz,file=file%rzfile,status='OLD',iostat=status)
+     call misc_getfileunit(ninrz)
+     open(unit=ninrz,file=file%rzfile,status='OLD',iostat=status)
      call log_open_check(m_name,s_name,20,status)
 
      i=0
@@ -481,6 +484,7 @@ subroutine dcontrol_readatfile(file,numerics)
         if(status/=0) exit
         i=i+1
      end do
+     if (i<=1) call log_error(m_name,s_name,2,error_fatal,'Insufficient data in file')
      allocate(numerics%r(i),numerics%z(i),stat=status)
      call log_alloc_check(m_name,s_name,21,status)
      numerics%npos=i
@@ -515,7 +519,7 @@ end subroutine dcontrol_lines2d
 subroutine dcontrol_getunit(kunit)
 
   !! arguments
-  integer(ki4), intent(out) :: kunit    !< log unit number
+  integer, intent(out) :: kunit    !< log unit number
 
   kunit=nin
 
@@ -533,108 +537,4 @@ subroutine dcontrol_delete(numerics)
 
 end subroutine dcontrol_delete
 !---------------------------------------------------------------------
-
-subroutine misc_getfileunit(kunit)
-  integer(ki4), intent(out) :: kunit !< file unit
-
-  integer(ki4) :: i !< loop counter
-  logical :: unitused !< flag to test unit is available
-  !! get file unit
-  do i=99,1,-1
-     inquire(i,opened=unitused)
-     if(.not.unitused)then
-        kunit=i
-        exit
-     end if
-  end do
-end subroutine misc_getfileunit
-
-subroutine misc_line2d(rpos,zpos,stpos,finpos,ldiv)
-
-  !! arguments
-  real(kr8), dimension(:), allocatable, intent(out) :: rpos !< positions in 1 coordinate
-  real(kr8), dimension(:), allocatable, intent(out) :: zpos !< positions in 2 coordinate
-  real(kr8), dimension(3) :: stpos !< start position
-  real(kr8), dimension(3) :: finpos !< finish position
-  integer(ki4) :: ldiv !< number of divisions in straight line joining start and finish positions
-
-  !! local
-  character(*), parameter :: s_name='misc_line2d' !< subroutine name
-  real(kr8) :: zr1 !< value of \f$ R \f$
-  real(kr8) :: zr2 !< value of \f$ R \f$
-  real(kr8) :: zz1 !< value of \f$ Z \f$
-  real(kr8) :: zz2 !< value of \f$ Z \f$
-  real(kr8) :: zdelr !< value of \f$ \Delta R \f$
-  real(kr8) :: zdelz !< value of \f$ \Delta Z \f$
-
-  !! uniformly divided line between stpos and finpos (as polars (R,Z) )
-  zr1=stpos(1)
-  zr2=finpos(1)
-  zz1=stpos(2)
-  zz2=finpos(2)
-  allocate(rpos(ldiv+1),zpos(ldiv+1),stat=status)
-  call log_alloc_check(m_name,s_name,51,status)
-  zdelr=(zr2-zr1)/ldiv
-  zdelz=(zz2-zz1)/ldiv
-  do j=1,ldiv+1
-     rpos(j)=zr1+(j-1)*zdelr
-     zpos(j)=zz1+(j-1)*zdelz
-  end do
-
-end subroutine misc_line2d
-
-subroutine misc_lines2d(rpos,zpos,npos,ldiv,div)
-
-  !! arguments
-  real(kr8), dimension(:), allocatable, intent(inout) :: rpos !< positions in 1 coordinate
-  real(kr8), dimension(:), allocatable, intent(inout) :: zpos !< positions in 2 coordinate
-  integer(ki4), intent(inout)  :: npos !< number of entries in rpos and zpos arrays
-  integer(ki4), intent(in) :: ldiv !< number of divisions in straight line joining each position in rpos and zpos
-  real(kr8), intent(in), optional :: div !< approx size of division in straight line joining each position in rpos and zpos (INERT)
-
-  !! local
-  character(*), parameter :: s_name='misc_lines2d' !< subroutine name
-  real(kr8), dimension(:), allocatable :: rposn !< new positions in 1 coordinate
-  real(kr8), dimension(:), allocatable :: zposn !< new positions in 2 coordinate
-  integer(ki4) :: iposn !< number of positions in output array
-  real(kr8) :: zr1 !< value of \f$ R \f$
-  real(kr8) :: zr2 !< value of \f$ R \f$
-  real(kr8) :: zz1 !< value of \f$ Z \f$
-  real(kr8) :: zz2 !< value of \f$ Z \f$
-  real(kr8) :: zdelr !< value of \f$ \Delta R \f$
-  real(kr8) :: zdelz !< value of \f$ \Delta Z \f$
-
-  iposn=(npos-1)*(ldiv+1)+1
-  allocate(rposn(iposn),zposn(iposn),stat=status)
-  call log_alloc_check(m_name,s_name,1,status)
-  !! uniformly divided line between each input point (as polars (R,Z) )
-  i=0
-  zr1=rpos(1)
-  zz1=zpos(1)
-  do l=2,npos
-     zr2=rpos(l)
-     zz2=zpos(l)
-     zdelr=(zr2-zr1)/ldiv
-     zdelz=(zz2-zz1)/ldiv
-     do j=1,ldiv+1
-        i=i+1
-        rposn(i)=zr1+(j-1)*zdelr
-        zposn(i)=zz1+(j-1)*zdelz
-     end do
-     zr1=zr2
-     zz1=zz2
-  end do
-  rposn(iposn)=rpos(npos)
-  zposn(iposn)=zpos(npos)
-  ! now move  back to subroutine arguments
-  deallocate(rpos,zpos)
-  allocate(rpos(iposn),zpos(iposn),stat=status)
-  call log_alloc_check(m_name,s_name,2,status)
-  rpos=rposn
-  zpos=zposn
-  npos=iposn
-  deallocate(rposn,zposn)
-
-end subroutine misc_lines2d
-
 end module dcontrol_m

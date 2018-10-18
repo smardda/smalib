@@ -13,6 +13,7 @@ date_time_m.f90 \
 control_h.f90 \
 dcontrol_h.f90 \
 log_m.f90 \
+misc_m.f90 \
 clock_m.f90 \
 spl2d_m.f90 \
 spl3d_m.f90 \
@@ -79,6 +80,7 @@ datvtk.f90 : date_time_m.mod
 datvtk.f90 : control_h.mod
 datvtk.f90 : dcontrol_h.mod
 datvtk.f90 : log_m.mod
+datvtk.f90 : misc_m.mod
 datvtk.f90 : clock_m.mod
 datvtk.f90 : spl2d_m.mod
 datvtk.f90 : spl3d_m.mod
@@ -116,17 +118,22 @@ control_h.f90 : position_h.mod
 dcontrol_h.f90 : const_kind_m.mod
 log_m.f90 : const_kind_m.mod
 log_m.f90 : date_time_m.mod
+misc_m.f90 : const_kind_m.mod
+misc_m.f90 : const_numphys_h.mod
+misc_m.f90 : log_m.mod
 clock_m.f90 : const_kind_m.mod
 clock_m.f90 : date_time_m.mod
 clock_m.f90 : log_m.mod
 spl2d_m.f90 : const_kind_m.mod
 spl2d_m.f90 : const_numphys_h.mod
 spl2d_m.f90 : log_m.mod
+spl2d_m.f90 : misc_m.mod
 spl2d_m.f90 : position_h.mod
 spl2d_m.f90 : position_m.mod
 spl3d_m.f90 : const_kind_m.mod
 spl3d_m.f90 : const_numphys_h.mod
 spl3d_m.f90 : log_m.mod
+spl3d_m.f90 : misc_m.mod
 spl3d_m.f90 : position_h.mod
 spl3d_m.f90 : position_m.mod
 spl3d_m.f90 : spl2d_m.mod
@@ -152,6 +159,7 @@ geobjlist_h.f90 : position_h.mod
 geobjlist_h.f90 : geobj_m.mod
 position_m.f90 : const_kind_m.mod
 position_m.f90 : log_m.mod
+position_m.f90 : misc_m.mod
 position_m.f90 : position_h.mod
 li_m.f90 : const_kind_m.mod
 li_m.f90 : log_m.mod
@@ -173,6 +181,7 @@ dbtree_m.f90 : li_m.mod
 dbtree_m.f90 : ld_m.mod
 dbtree_m.f90 : dbtree_h.mod
 dbtree_m.f90 : log_m.mod
+dbtree_m.f90 : misc_m.mod
 dbtree_m.f90 : position_h.mod
 dbtree_m.f90 : geobjlist_h.mod
 dbtree_m.f90 : position_m.mod
@@ -193,11 +202,13 @@ geobj_m.f90 : position_m.mod
 query_m.f90 : const_kind_m.mod
 query_m.f90 : const_numphys_h.mod
 query_m.f90 : log_m.mod
+query_m.f90 : misc_m.mod
 query_m.f90 : control_h.mod
 query_m.f90 : position_h.mod
 query_m.f90 : position_m.mod
 geobjlist_m.f90 : const_kind_m.mod
 geobjlist_m.f90 : log_m.mod
+geobjlist_m.f90 : misc_m.mod
 geobjlist_m.f90 : const_numphys_h.mod
 geobjlist_m.f90 : position_h.mod
 geobjlist_m.f90 : bods_h.mod
@@ -227,19 +238,24 @@ indict_m.f90 : log_m.mod
 dcontrol_m.f90 : const_kind_m.mod
 dcontrol_m.f90 : const_numphys_h.mod
 dcontrol_m.f90 : log_m.mod
+dcontrol_m.f90 : misc_m.mod
+dcontrol_m.f90 : geobj_m.mod
 dcontrol_m.f90 : dcontrol_h.mod
 vcontrol_h.f90 : const_kind_m.mod
 vcontrol_h.f90 : position_h.mod
 vfile_m.f90 : const_kind_m.mod
 vfile_m.f90 : log_m.mod
+vfile_m.f90 : misc_m.mod
 gfile_m.f90 : const_kind_m.mod
 gfile_m.f90 : log_m.mod
+gfile_m.f90 : misc_m.mod
 datline_h.f90 : const_kind_m.mod
 datline_m.f90 : const_kind_m.mod
 datline_m.f90 : log_m.mod
 datline_m.f90 : datline_h.mod
 dfile_m.f90 : const_kind_m.mod
 dfile_m.f90 : log_m.mod
+dfile_m.f90 : misc_m.mod
 dfile_m.f90 : datline_h.mod
 dfile_m.f90 : datline_m.mod
 bods_h.f90 : const_kind_m.mod
@@ -264,6 +280,7 @@ bods_m.f90 : vfile_m.mod
 bods_m.f90 : geobjlist_m.mod
 stlfile_m.f90 : const_kind_m.mod
 stlfile_m.f90 : log_m.mod
+stlfile_m.f90 : misc_m.mod
 stack_m.f90 : const_kind_m.mod
 stack_m.f90 : const_numphys_h.mod
 stack_m.f90 : log_m.mod

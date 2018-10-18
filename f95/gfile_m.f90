@@ -2,6 +2,7 @@ module gfile_m
 
   use const_kind_m
   use log_m
+  use misc_m
 
   implicit none
   private
@@ -20,8 +21,8 @@ module gfile_m
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
   character(*), parameter :: m_name='gfile_m' !< module name
-  integer(ki4) :: nprint  !< file unit for output
-  integer(ki4) :: status  !< status flag
+  integer :: nprint  !< file unit for output
+  integer :: status  !< status flag
 
   contains
 
@@ -32,22 +33,15 @@ subroutine gfile_init(fprint,descriptor,kprint)
   !! arguments
   character(len=*), intent(in) :: fprint !< file name root
   character(len=*), intent(in) :: descriptor !< dataset descriptor
-  integer(ki4), intent(inout) :: kprint   !< unit number
+  integer, intent(inout) :: kprint   !< unit number
 
   !! local
   character(*), parameter :: s_name='gfile_init' !< subroutine name
-  logical :: unitused !< flag to test unit is available
+  !! logical :: unitused !< flag to test unit is available
 
-  !! open file
+  !! open file do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then kprint=i exit end if end do
 
-  do i=99,1,-1
-     inquire(i,opened=unitused)
-     if(.not.unitused)then
-        kprint=i
-        exit
-     end if
-  end do
-
+  call misc_getfileunit(kprint)
   open(unit=kprint,file=trim(fprint)//'.gnu')
 
   !! write gnuplot header
@@ -67,16 +61,16 @@ subroutine gfile_iwrite(xout,yout,nout,descriptor,channel)
   integer(ki4), dimension(nout), intent(in) :: yout !< vertical axis values
   integer(ki4), intent(in) :: nout   !< number of entries in xout and yout
   character(len=*), intent(in) :: descriptor !< dataset descriptor
-  integer(ki4), intent(in), optional :: channel   !< output channel for object data structure
+  integer, intent(in), optional :: channel   !< output channel for object data structure
 
   !! local
   character(*), parameter :: s_name='gfile_iwrite' !< subroutine name
-  integer(ki4) :: iprint !< unit number used
+  integer :: iprint !< unit number used
 
   if (present(channel)) then
-  iprint=channel
+     iprint=channel
   else
-  iprint=nprint
+     iprint=nprint
   end if
 
   write(iprint,'(''#'',a)',iostat=status) descriptor
@@ -94,16 +88,16 @@ subroutine gfile_rwrite(xout,yout,nout,descriptor,channel)
   real(kr8), dimension(nout), intent(in) :: yout !< vertical axis values
   integer(ki4), intent(in) :: nout   !< number of entries in xout and yout
   character(len=*), intent(in) :: descriptor !< dataset descriptor
-  integer(ki4), intent(in), optional :: channel   !< output channel for object data structure
+  integer, intent(in), optional :: channel   !< output channel for object data structure
 
   !! local
   character(*), parameter :: s_name='gfile_rwrite' !< subroutine name
-  integer(ki4) :: iprint !< unit number used
+  integer :: iprint !< unit number used
 
   if (present(channel)) then
-  iprint=channel
+     iprint=channel
   else
-  iprint=nprint
+     iprint=nprint
   end if
 
   write(iprint,'(''#'',a)',iostat=status) descriptor

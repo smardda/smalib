@@ -54,8 +54,8 @@ module powcal_m
   integer(ki4) :: level=1   !< refinement level, dynamic if inlevel>1
   integer(ki4) :: inlevel=1   !< number of subelements at refinement level
   integer(ki4) :: imlevel=1   !< number of subelements at previous refinement level +1
-  integer(ki4) :: nin   !< input channel for geobj data
-  integer(ki4)  :: ilog      !< for namelist dump after error
+  integer :: nin   !< input channel for geobj data
+  integer  :: ilog      !< for namelist dump after error
   integer(ki4) :: i !< loop counter
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
@@ -519,7 +519,7 @@ subroutine powcal_readcon(selfn,kin)
 
   !! arguments
   type(pnumerics_t), intent(out) :: selfn   !< object control data structure
-  integer(ki4), intent(in) :: kin   !< input channel for object data structure
+  integer, intent(in) :: kin   !< input channel for object data structure
 
 
   !! local
@@ -807,7 +807,7 @@ subroutine powcal_writev(self,kchar,kplot)
   !! arguments
   type(powcal_t), intent(inout) :: self   !< powcal data structure
   character(*), intent(in) :: kchar !< case
-  integer(ki4), intent(inout) :: kplot   !< output channel for vis. data
+  integer, intent(inout) :: kplot   !< output channel for vis. data
 
   !! local
   character(*), parameter :: s_name='powcal_writev' !< subroutine name
@@ -861,7 +861,7 @@ subroutine powcal_writev(self,kchar,kplot)
      ! self%powres%geobjl%posl%pos=self%powres%vecx%pos
      ! to avoid ifort 12.0.0 segfault
      do l=1,self%powres%geobjl%np
-     self%powres%geobjl%posl%pos(l)=self%powres%vecx%pos(l)
+        self%powres%geobjl%posl%pos(l)=self%powres%vecx%pos(l)
      end do
      ! rearrange nodl, keep copy of structure in work and ing
      ! reset number of objects to be output according to refine_level statistics input
@@ -884,31 +884,31 @@ subroutine powcal_writev(self,kchar,kplot)
      ! replace R-Z-xi positions with Cartesian
      allocate(workpos(self%powres%geobjl%np), stat=status)
      call log_alloc_check(m_name,s_name,40,status)
-       !DBG write(*,*) "np=",self%powres%geobjl%np !DBG
-       !DBG write(*,*) "vecx size=",size(self%powres%vecx%pos) !DBG
-       !DBG write(*,*) "geobjl size=",size(self%powres%geobjl%posl%pos) !DBG
+     !DBG write(*,*) "np=",self%powres%geobjl%np !DBG
+     !DBG write(*,*) "vecx size=",size(self%powres%vecx%pos) !DBG
+     !DBG write(*,*) "geobjl size=",size(self%powres%geobjl%posl%pos) !DBG
      workpos=self%powres%geobjl%posl%pos
-       !DBG write(*,*) '01' !DBG
+     !DBG write(*,*) '01' !DBG
      ! have to explicitly code as loop
      ! self%powres%geobjl%posl%pos=self%powres%vecx%pos
      ! to avoid ifort 12.0.0 segfault
      do l=1,self%powres%geobjl%np
-     self%powres%geobjl%posl%pos(l)=self%powres%vecx%pos(l)
+        self%powres%geobjl%posl%pos(l)=self%powres%vecx%pos(l)
      end do
-       !DBG write(*,*) '02' !DBG
+     !DBG write(*,*) '02' !DBG
      ! reset number of objects to be output according to refine_level input
      self%powres%geobjl%ng=ing*powelt_table(self%n%nlevel,2)/powelt_table(infilelevel,2)
-       !DBG write(*,*) '03' !DBG
+     !DBG write(*,*) '03' !DBG
      if (infilelevel>self%n%nlevel) then
-       !DBG write(*,*) '04' !DBG
-       !DBG write(*,*) infilelevel,self%n%nlevel !DBG
+        !DBG write(*,*) '04' !DBG
+        !DBG write(*,*) infilelevel,self%n%nlevel !DBG
         allocate(work(3*self%powres%geobjl%ng), stat=status)
         call log_alloc_check(m_name,s_name,41,status)
         work=self%powres%geobjl%nodl(1:3*self%powres%geobjl%ng)
         call geobjlist_nodlmv(self%powres%geobjl,infilelevel,self%n%nlevel,self%powres%npowe)
      end if
      call geobjlist_writev(self%powres%geobjl,'geometry',kplot)
-       !DBG write(*,*) '05' !DBG
+     !DBG write(*,*) '05' !DBG
      allocate(rwork(self%powres%geobjl%ng), stat=status)
      call log_alloc_check(m_name,s_name,42,status)
      rwork=abs(self%powres%pow(:self%powres%geobjl%ng))
@@ -979,7 +979,7 @@ subroutine powcal_write(self,kout)
 
   !! arguments
   type(powcal_t), intent(in) :: self   !< powcal data structure
-  integer(ki4), intent(in) :: kout   !< output channel for powcal data structure
+  integer, intent(in) :: kout   !< output channel for powcal data structure
 
   !! local
   character(*), parameter :: s_name='powcal_write' !< subroutine name

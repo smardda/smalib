@@ -8,6 +8,7 @@ program hdsgen_p
   use date_time_m
   use control_m
   use log_m
+  use misc_m
   use clock_m
   use position_m
   use geobj_m
@@ -54,8 +55,8 @@ program hdsgen_p
   character(len=80) :: fileroot !< reference name for all files output by run
   character(len=256) :: vtkdesc !< descriptor line for vtk files
 
-  integer(ki4):: nplot !< unit for vfiles
-  integer(ki4):: nouth !< unit for hdsfiles
+  integer:: nplot !< unit for vfiles
+  integer:: nouth !< unit for hdsfiles
 
 !--------------------------------------------------------------------------
 !! initialise timing

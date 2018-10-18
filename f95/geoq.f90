@@ -6,6 +6,7 @@ program geoq_p
   use control_h
   use dcontrol_h
   use log_m
+  use misc_m
   use clock_m
   use position_h
   use fmesh_h
@@ -68,12 +69,12 @@ program geoq_p
   character(len=256) :: vtkdesc !< descriptor line for vtk files
   character(len=80) :: mapfld !< field output in geoqm file
 
-  integer(ki4):: nplot !< unit for vtk files
-  integer(ki4):: nprint !< unit for gnuplot files
-  integer(ki4):: nin=0 !< unit for other data
-  integer(ki4):: iunit=0 !< unit for other beq output data
-  integer(ki4):: nana=0 !< unit for analytic field data
-  integer(ki4):: ninfm=0 !< unit for field mesh data
+  integer:: nplot !< unit for vtk files
+  integer:: nprint !< unit for gnuplot files
+  integer:: nin=0 !< unit for other data
+  integer:: iunit=0 !< unit for other beq output data
+  integer:: nana=0 !< unit for analytic field data
+  integer:: ninfm=0 !< unit for field mesh data
   integer(ki4):: ifldspec !< field specification
   real(kr8):: zivac !< value of I in field file
   character(len=80) :: ibuf !< character workspace

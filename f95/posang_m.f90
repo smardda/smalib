@@ -307,7 +307,7 @@ subroutine posang_invcartfm(self,tfmdata,kunits)
 
 end subroutine posang_invcartfm
 !---------------------------------------------------------------------
-!> convert units of position only 
+!> convert units of position only
 subroutine posang_units(self,kunits)
 
   !! arguments
@@ -394,7 +394,7 @@ subroutine posang_writev(self,kplot,kopt)
 
   !! arguments
   type(posang_t), intent(in) :: self   !< posang data
-  integer(ki4), intent(in) :: kplot   !< output channel for posang data
+  integer, intent(in) :: kplot   !< output channel for posang data
   integer(ki4), intent(in), optional :: kopt   !< select vector if=2
 
 

@@ -14,6 +14,7 @@ mcontrol_h.f90 \
 dcontrol_h.f90 \
 apb_h.f90 \
 log_m.f90 \
+misc_m.f90 \
 clock_m.f90 \
 position_h.f90 \
 fmesh_h.f90 \
@@ -51,6 +52,8 @@ clean:
 distclean: clean
 	rm -f $(PROG) 
 
+txt:
+	cat Makefile.$(PROG) $(SOURCES) > $(PROG).txt
 
 .PHONY : clean distclean
 
@@ -61,6 +64,7 @@ magtfm.f90 : mcontrol_h.mod
 magtfm.f90 : dcontrol_h.mod
 magtfm.f90 : apb_h.mod
 magtfm.f90 : log_m.mod
+magtfm.f90 : misc_m.mod
 magtfm.f90 : clock_m.mod
 magtfm.f90 : position_h.mod
 magtfm.f90 : fmesh_h.mod
@@ -81,6 +85,9 @@ dcontrol_h.f90 : const_kind_m.mod
 apb_h.f90 : const_kind_m.mod
 log_m.f90 : const_kind_m.mod
 log_m.f90 : date_time_m.mod
+misc_m.f90 : const_kind_m.mod
+misc_m.f90 : const_numphys_h.mod
+misc_m.f90 : log_m.mod
 clock_m.f90 : const_kind_m.mod
 clock_m.f90 : date_time_m.mod
 clock_m.f90 : log_m.mod
@@ -103,32 +110,39 @@ posang_m.f90 : beq_h.mod
 posang_m.f90 : spl2d_m.mod
 apb_m.f90 : const_kind_m.mod
 apb_m.f90 : log_m.mod
+apb_m.f90 : misc_m.mod
 apb_m.f90 : mcontrol_h.mod
 apb_m.f90 : mcontrol_m.mod
 apb_m.f90 : date_time_m.mod
 apb_m.f90 : apb_h.mod
 gfile_m.f90 : const_kind_m.mod
 gfile_m.f90 : log_m.mod
+gfile_m.f90 : misc_m.mod
 spl3d_m.f90 : const_kind_m.mod
 spl3d_m.f90 : const_numphys_h.mod
 spl3d_m.f90 : log_m.mod
+spl3d_m.f90 : misc_m.mod
 spl3d_m.f90 : position_h.mod
 spl3d_m.f90 : position_m.mod
 spl3d_m.f90 : spl2d_m.mod
 spl2d_m.f90 : const_kind_m.mod
 spl2d_m.f90 : const_numphys_h.mod
 spl2d_m.f90 : log_m.mod
+spl2d_m.f90 : misc_m.mod
 spl2d_m.f90 : position_h.mod
 spl2d_m.f90 : position_m.mod
 position_m.f90 : const_kind_m.mod
 position_m.f90 : log_m.mod
+position_m.f90 : misc_m.mod
 position_m.f90 : position_h.mod
 mcontrol_m.f90 : const_kind_m.mod
 mcontrol_m.f90 : log_m.mod
+mcontrol_m.f90 : misc_m.mod
 mcontrol_m.f90 : position_h.mod
 mcontrol_m.f90 : mcontrol_h.mod
 mcontrol_m.f90 : position_m.mod
 moutfile_m.f90 : const_kind_m.mod
 moutfile_m.f90 : log_m.mod
+moutfile_m.f90 : misc_m.mod
 moutfile_m.f90 : mcontrol_h.mod
 moutfile_m.f90 : date_time_m.mod

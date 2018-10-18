@@ -13,6 +13,7 @@ date_time_m.f90 \
 control_h.f90 \
 dcontrol_h.f90 \
 log_m.f90 \
+misc_m.f90 \
 clock_m.f90 \
 position_h.f90 \
 fmesh_h.f90 \
@@ -90,6 +91,7 @@ geoq.f90 : date_time_m.mod
 geoq.f90 : control_h.mod
 geoq.f90 : dcontrol_h.mod
 geoq.f90 : log_m.mod
+geoq.f90 : misc_m.mod
 geoq.f90 : clock_m.mod
 geoq.f90 : position_h.mod
 geoq.f90 : fmesh_h.mod
@@ -138,6 +140,9 @@ control_h.f90 : position_h.mod
 dcontrol_h.f90 : const_kind_m.mod
 log_m.f90 : const_kind_m.mod
 log_m.f90 : date_time_m.mod
+misc_m.f90 : const_kind_m.mod
+misc_m.f90 : const_numphys_h.mod
+misc_m.f90 : log_m.mod
 clock_m.f90 : const_kind_m.mod
 clock_m.f90 : date_time_m.mod
 clock_m.f90 : log_m.mod
@@ -153,6 +158,7 @@ beqan_h.f90 : const_numphys_h.mod
 posang_h.f90 : const_kind_m.mod
 bcontrol_m.f90 : const_kind_m.mod
 bcontrol_m.f90 : log_m.mod
+bcontrol_m.f90 : misc_m.mod
 bcontrol_m.f90 : position_h.mod
 bcontrol_m.f90 : skyl_h.mod
 bcontrol_m.f90 : dcontrol_h.mod
@@ -167,17 +173,20 @@ mcontrol_h.f90 : const_kind_m.mod
 mcontrol_h.f90 : position_h.mod
 mcontrol_m.f90 : const_kind_m.mod
 mcontrol_m.f90 : log_m.mod
+mcontrol_m.f90 : misc_m.mod
 mcontrol_m.f90 : position_h.mod
 mcontrol_m.f90 : mcontrol_h.mod
 mcontrol_m.f90 : position_m.mod
 dcontrol_m.f90 : const_kind_m.mod
 dcontrol_m.f90 : const_numphys_h.mod
 dcontrol_m.f90 : log_m.mod
+dcontrol_m.f90 : misc_m.mod
 dcontrol_m.f90 : geobj_m.mod
 dcontrol_m.f90 : dcontrol_h.mod
 skyl_h.f90 : const_kind_m.mod
 skyl_h.f90 : dcontrol_h.mod
 skyl_m.f90 : log_m.mod
+skyl_m.f90 : misc_m.mod
 skyl_m.f90 : dcontrol_h.mod
 skyl_m.f90 : const_numphys_h.mod
 skyl_m.f90 : const_kind_m.mod
@@ -199,6 +208,7 @@ beq_m.f90 : beqan_h.mod
 beq_m.f90 : posang_h.mod
 beq_m.f90 : position_m.mod
 beq_m.f90 : log_m.mod
+beq_m.f90 : misc_m.mod
 beq_m.f90 : geobj_m.mod
 beq_m.f90 : spl2d_m.mod
 beq_m.f90 : spl3d_m.mod
@@ -208,6 +218,7 @@ beq_m.f90 : beqan_m.mod
 beq_m.f90 : gfile_m.mod
 beqan_m.f90 : beqan_h.mod
 beqan_m.f90 : log_m.mod
+beqan_m.f90 : misc_m.mod
 beqan_m.f90 : const_kind_m.mod
 posang_m.f90 : const_kind_m.mod
 posang_m.f90 : const_numphys_h.mod
@@ -224,10 +235,12 @@ geobjlist_h.f90 : position_h.mod
 geobjlist_h.f90 : geobj_m.mod
 position_m.f90 : const_kind_m.mod
 position_m.f90 : log_m.mod
+position_m.f90 : misc_m.mod
 position_m.f90 : position_h.mod
 fmesh_m.f90 : position_h.mod
 fmesh_m.f90 : fmesh_h.mod
 fmesh_m.f90 : log_m.mod
+fmesh_m.f90 : misc_m.mod
 fmesh_m.f90 : const_kind_m.mod
 fmesh_m.f90 : position_m.mod
 ls_m.f90 : const_kind_m.mod
@@ -258,6 +271,7 @@ dbtree_m.f90 : li_m.mod
 dbtree_m.f90 : ld_m.mod
 dbtree_m.f90 : dbtree_h.mod
 dbtree_m.f90 : log_m.mod
+dbtree_m.f90 : misc_m.mod
 dbtree_m.f90 : position_h.mod
 dbtree_m.f90 : geobjlist_h.mod
 dbtree_m.f90 : position_m.mod
@@ -273,6 +287,7 @@ stack_m.f90 : log_m.mod
 query_m.f90 : const_kind_m.mod
 query_m.f90 : const_numphys_h.mod
 query_m.f90 : log_m.mod
+query_m.f90 : misc_m.mod
 query_m.f90 : control_h.mod
 query_m.f90 : position_h.mod
 query_m.f90 : position_m.mod
@@ -285,6 +300,7 @@ indict_m.f90 : const_numphys_h.mod
 indict_m.f90 : log_m.mod
 geobjlist_m.f90 : const_kind_m.mod
 geobjlist_m.f90 : log_m.mod
+geobjlist_m.f90 : misc_m.mod
 geobjlist_m.f90 : const_numphys_h.mod
 geobjlist_m.f90 : position_h.mod
 geobjlist_m.f90 : bods_h.mod
@@ -336,16 +352,19 @@ geoq_m.f90 : geoq_h.mod
 spl2d_m.f90 : const_kind_m.mod
 spl2d_m.f90 : const_numphys_h.mod
 spl2d_m.f90 : log_m.mod
+spl2d_m.f90 : misc_m.mod
 spl2d_m.f90 : position_h.mod
 spl2d_m.f90 : position_m.mod
 spl3d_m.f90 : const_kind_m.mod
 spl3d_m.f90 : const_numphys_h.mod
 spl3d_m.f90 : log_m.mod
+spl3d_m.f90 : misc_m.mod
 spl3d_m.f90 : position_h.mod
 spl3d_m.f90 : position_m.mod
 spl3d_m.f90 : spl2d_m.mod
 goutfile_m.f90 : const_kind_m.mod
 goutfile_m.f90 : log_m.mod
+goutfile_m.f90 : misc_m.mod
 goutfile_m.f90 : const_numphys_h.mod
 goutfile_m.f90 : dcontrol_h.mod
 goutfile_m.f90 : bcontrol_m.mod
@@ -365,14 +384,18 @@ goutfile_m.f90 : dcontrol_m.mod
 goutfile_m.f90 : skyl_m.mod
 moutfile_m.f90 : const_kind_m.mod
 moutfile_m.f90 : log_m.mod
+moutfile_m.f90 : misc_m.mod
 moutfile_m.f90 : mcontrol_h.mod
 moutfile_m.f90 : date_time_m.mod
 vfile_m.f90 : const_kind_m.mod
 vfile_m.f90 : log_m.mod
+vfile_m.f90 : misc_m.mod
 gfile_m.f90 : const_kind_m.mod
 gfile_m.f90 : log_m.mod
+gfile_m.f90 : misc_m.mod
 dfile_m.f90 : const_kind_m.mod
 dfile_m.f90 : log_m.mod
+dfile_m.f90 : misc_m.mod
 dfile_m.f90 : datline_h.mod
 dfile_m.f90 : datline_m.mod
 geoq_h.f90 : const_kind_m.mod

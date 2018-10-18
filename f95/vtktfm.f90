@@ -7,6 +7,7 @@ program vtktfm_p
   use vcontrol_h
   use dcontrol_h
   use log_m
+  use misc_m
   use clock_m
   use position_h
   use fmesh_h
@@ -58,8 +59,8 @@ program vtktfm_p
 
   type(bods_t) :: bods !< type bods for geometrical objects
   integer(ki4), dimension(:), allocatable :: ibods !< array of more bodies for geometrical objects
-  integer(ki4):: nplot !< unit for vtk files
-  integer(ki4):: nin !< unit for other data
+  integer:: nplot !< unit for vtk files
+  integer:: nin !< unit for other data
   integer(ki4):: cpstart !< start number of copies
   integer(ki4):: nscal !< number of scalars (body identifiers)
   integer(ki4):: iopt=1 !< option for bodies

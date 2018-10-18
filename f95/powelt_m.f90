@@ -75,7 +75,7 @@ module powelt_m
   real(kr8), dimension(:), allocatable :: work1 !< 1D work array
   type(posveclis_t) :: wposl   !< list of position data
   integer   :: status   !< error status
-  integer(ki4) :: nplot   !< output channel for powelt data
+  integer :: nplot   !< output channel for powelt data
   integer(ki4) :: i !< loop counter
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
@@ -3144,7 +3144,7 @@ subroutine powelt_write(self,kout)
 
   !! arguments
   type(powelt_t), intent(in) :: self   !< object data structure
-  integer(ki4), intent(in) :: kout   !< input channel for object data structure
+  integer, intent(in) :: kout   !< input channel for object data structure
 
 
   !! local
@@ -3160,7 +3160,7 @@ subroutine powelt_writev(self,kplot)
 
   !! arguments
   type(powelt_t), intent(in) :: self   !< object data structure
-  integer(ki4), intent(in) :: kplot   !< input channel for object data structure
+  integer, intent(in) :: kplot   !< input channel for object data structure
 
   !! local
   character(*), parameter :: s_name='powelt_writev' !< subroutine name

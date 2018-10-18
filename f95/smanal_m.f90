@@ -1,6 +1,7 @@
 module smanal_m
 
   use log_m
+  use misc_m
   use const_numphys_h
   use const_kind_m
   use smanal_h
@@ -29,10 +30,10 @@ module smanal_m
 
 ! private variables
   character(*), parameter :: m_name='smanal_m' !< module name
-  integer(ki4)  :: status   !< error status
-  integer(ki4), save  :: ninsm=0     !< geometry file unit number
-  integer(ki4), save  :: ninscal=0     !< scalx file unit number
-  integer(ki4), save  :: noutsm=0      !< output file unit number
+  integer  :: status   !< error status
+  integer, save  :: ninsm=0     !< geometry file unit number
+  integer, save  :: ninscal=0     !< scalx file unit number
+  integer, save  :: noutsm=0      !< output file unit number
   character(len=80), save :: controlfile !< control file name
   character(len=80), save :: outputfile !< output file name
   integer(ki4) :: i !< loop counter
@@ -300,25 +301,18 @@ subroutine smanal_initwrite(fileroot,channel)
 
   !! arguments
   character(*), intent(in) :: fileroot !< file root
-  integer(ki4), intent(out),optional :: channel   !< output channel for object data structure
+  integer, intent(out),optional :: channel   !< output channel for object data structure
   !! local
   character(*), parameter :: s_name='smanal_initwrite' !< subroutine name
-  logical :: unitused !< flag to test unit is available
   character(len=80) :: outputfile !< output file name
-
-  !! get file unit
-  do i=99,1,-1
-     inquire(i,opened=unitused)
-     if(.not.unitused)then
-        if (present(channel)) channel=i
-        exit
-     end if
-  end do
-  noutsm=i
+  !! logical :: unitused !< flag to test unit is available
+  !! get file unit do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then
+  !! if (present(channel)) channel=i exit end if end do noutsm=i
 
   !! open file
   outputfile=trim(fileroot)//"_smanal.out"
   call log_value("Control data file",trim(outputfile))
+  call misc_getfileunit(noutsm)
   open(unit=noutsm,file=outputfile,status='NEW',iostat=status)
   if(status/=0)then
      open(unit=noutsm,file=outputfile,status='REPLACE',iostat=status)
@@ -329,6 +323,7 @@ subroutine smanal_initwrite(fileroot,channel)
      call log_error(m_name,s_name,1,error_fatal,'Cannot open output data file')
      stop
   end if
+  if (present(channel)) channel=noutsm
 
 end subroutine smanal_initwrite
 !---------------------------------------------------------------------
@@ -337,12 +332,12 @@ subroutine smanal_write(self,channel)
 
   !! arguments
   type(smanal_t), intent(in) :: self   !< smanal data structure
-  integer(ki4), intent(in), optional :: channel   !< output channel for smanal data structure
+  integer, intent(in), optional :: channel   !< output channel for smanal data structure
 
   !! local
   character(*), parameter :: s_name='smanal_write' !< subroutine name
   integer(ki4) :: inewkey   !< value of new key
-  integer(ki4) :: iout   !< output channel for smanal data structure
+  integer :: iout   !< output channel for smanal data structure
 
   !! sort out unit
   if(present(channel)) then
@@ -405,7 +400,7 @@ subroutine smanal_writeg(self,select,channel)
   !! arguments
   type(smanal_t), intent(in) :: self   !< object data structure
   character(*), intent(in) :: select  !< case
-  integer(ki4), intent(in), optional :: channel   !< output channel for smanal data structure
+  integer, intent(in), optional :: channel   !< output channel for smanal data structure
 
   !! local
   character(*), parameter :: s_name='smanal_writeg' !< subroutine name
@@ -502,11 +497,11 @@ subroutine smanal_writev(self,select,channel)
   !! arguments
   type(smanal_t), intent(in) :: self   !< object data structure
   character(*), intent(in) :: select  !< case
-  integer(ki4), intent(in) :: channel   !< output channel for smanal data structure
+  integer, intent(in) :: channel   !< output channel for smanal data structure
 
   !! local
   character(*), parameter :: s_name='smanal_writev' !< subroutine name
-  integer(ki4) :: iout   !< output channel for smanal data structure
+  integer :: iout   !< output channel for smanal data structure
   integer(ki4) :: imaxstat   !< number of outputs for smanal data structure
   integer(ki4) :: ikey !< local variable
   integer(ki4) :: indx !< local variable

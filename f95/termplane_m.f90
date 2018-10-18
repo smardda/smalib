@@ -20,7 +20,7 @@ module termplane_m
 ! private variables
   character(*), parameter :: m_name='termplane_m' !< module name
   integer   :: status   !< error status
-  integer(ki4)  :: ilog      !< for namelist dump after error
+  integer  :: ilog      !< for namelist dump after error
   integer(ki4) :: i !< loop counter
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
@@ -39,7 +39,7 @@ subroutine termplane_readcon(self,kin)
 
   !! arguments
   type(termplane_t), intent(out) :: self   !< termination planes numeric controls
-  integer(ki4) :: kin !< input unit number
+  integer :: kin !< input unit number
 
   !! local
   character(*), parameter :: s_name='termplane_readcon' !< subroutine name

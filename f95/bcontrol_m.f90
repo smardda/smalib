@@ -2,6 +2,7 @@ module bcontrol_m
 
   use const_kind_m
   use log_m
+  use misc_m
   use position_h
   use skyl_h
   use dcontrol_h
@@ -89,9 +90,9 @@ module bcontrol_m
 
 ! private variables
   character(*), parameter :: m_name='bcontrol_m' !< module name
-  integer(ki4)  :: status   !< error status
-  integer(ki4), save  :: nin=-1      !< control file unit number
-  integer(ki4)  :: ilog      !< for namelist dump after error
+  integer  :: status   !< error status
+  integer, save  :: nin=-1      !< control file unit number
+  integer  :: ilog      !< for namelist dump after error
   logical :: iltest !< logical flag
   integer(ki4) :: i !< loop counter
   integer(ki4) :: j !< loop counter
@@ -109,23 +110,17 @@ subroutine bcontrol_init(fileroot)
   character(*), intent(in) :: fileroot !< file root
   !! local
   character(*), parameter :: s_name='bcontrol_init' !< subroutine name
-  logical :: unitused !< flag to test unit is available
+  !! logical :: unitused !< flag to test unit is available
   character(len=80) :: controlfile !< control file name
 
 
-  !! get file unit
-  do i=99,1,-1
-     inquire(i,opened=unitused)
-     if(.not.unitused)then
-        nin=i
-        exit
-     end if
-  end do
+  !! get file unit do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then nin=i exit end if end do
 
   !! open file
   controlfile=trim(fileroot)//".ctl"
   root=fileroot
   call log_value("Control data file",trim(controlfile))
+  call misc_getfileunit(nin)
   open(unit=nin,file=controlfile,status='OLD',iostat=status)
   if(status/=0)then
      !! error opening file
@@ -158,7 +153,7 @@ end  subroutine bcontrol_closex
 subroutine bcontrol_getunit(kunit)
 
   !! arguments
-  integer(ki4), intent(out) :: kunit    !< log unit number
+  integer, intent(out) :: kunit    !< log unit number
 
   kunit=nin
 
@@ -319,11 +314,11 @@ subroutine bcontrol_read(file,numerics,sknumerics,plot)
   if ( mesh_input_file/='null') then
      call log_error(m_name,s_name,22,error_warning,'Mesh input filename is not null')
      inquire(file=mesh_input_file,exist=filefound)
-  if(.not.filefound) then
-     !! error opening file
-     print '("Fatal error: Unable to find field mesh data file, ",a)',mesh_input_file
-     call log_error(m_name,s_name,22,error_fatal,'Mesh field data file not found')
-  end if
+     if(.not.filefound) then
+        !! error opening file
+        print '("Fatal error: Unable to find field mesh data file, ",a)',mesh_input_file
+        call log_error(m_name,s_name,22,error_fatal,'Mesh field data file not found')
+     end if
   end if
 
   !! create output file names from root

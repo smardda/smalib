@@ -6,6 +6,7 @@ program datvtk_p
   use control_h
   use dcontrol_h
   use log_m
+  use misc_m
   use clock_m
   use spl2d_m
   use spl3d_m
@@ -58,9 +59,9 @@ program datvtk_p
   character(len=80),save :: iched !< vtk field file descriptor
 
   type(bods_t) :: bods !< type of bods for geometrical objects
-  integer(ki4):: nplot !< unit for vtk files
-  integer(ki4):: nread !< unit for dat files
-  integer(ki4):: nin !< unit for other data
+  integer:: nplot !< unit for vtk files
+  integer:: nread !< unit for dat files
+  integer:: nin !< unit for other data
   integer(ki4):: i !< loop variable
   integer(ki4):: j !< loop variable
   integer(ki4) :: islen   !< length of input field filename
