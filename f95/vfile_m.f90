@@ -653,8 +653,11 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt,kcdata)
   if(ilfound) then
      !! skip LOOKUP table default
      read(nin,fmt='(a)',iostat=status) ibuf1
+     !dbgw write(*,*) kp, ibuf1 !dbgw
      !! read data
      read(nin,*,iostat=status) (kself(j),j=1,kp)
+     !dbgw inquire(unit=nin,name=ibuf1) !dbgw
+     !dbgw write(*,*) 'file details ',nin, ibuf1 !dbgw
      call log_read_check(m_name,s_name,10,status)
      print '("number of scalars read = ",i10)',kp
      call log_value("number of scalars read ",kp)

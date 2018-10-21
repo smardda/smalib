@@ -1574,7 +1574,7 @@ subroutine geobjlist_paneltfm(self,bods,numerics)
   type(posang_t) :: zposang !< local variable
   integer(ki4) :: ibod   !< body identifier
   integer(ki4) :: ibod1  !< body identifier
-  !dbgw  integer(ki4) :: iibod  !< body identifier !dbgw
+  !dbgw integer(ki4) :: iibod  !< body identifier !dbgw
   integer(ki4) :: ipan   !< panel identifier
   integer(ki4) :: inbod   !< number of bodies
   integer(ki4) :: inpan   !< number of panels
@@ -1646,18 +1646,21 @@ subroutine geobjlist_paneltfm(self,bods,numerics)
   !BP   !      write(*,*) 'ibodpan',ibodpan
 
   !! loop over objects to get panel centroids (if needed)
-  !dbgw  write(*,*) 'inpan=', inpan !dbgw
+  !dbgw write(*,*) 'inpan=', inpan !dbgw
   do j=1,self%ng
      !w write(*,*)'j=',j !w
      ibod=bods%list(j)
      ! object may have no associated body
      if (ibod==0) cycle
-     !dbgw     iibod=ibod !dbgw
+        !dbgw iibod=ibod !dbgw
      if (bods%nindx>0) ibod=bods%indx(ibod)
-     !dbgw     write(110,*) j,iibod,ibod !dbgw
+        !dbgw write(110,*) j,iibod,ibod !dbgw
      !BP      !w    ipan=ibodpan(ibod)
      ipan=indict2(inpan,numerics%panbod,ibod)
      if (ipan==0) then
+        !dbgw write(110,*) bods%indx !dbgw
+        !dbgw write(110,*) bods%list !dbgw
+        !dbgw write(110,*) inpan,numerics%panbod !dbgw
         print '("Fatal error in list of panel_bodies ")'
         print '("Check number of copies - and try again")'
         call log_error(m_name,s_name,9,error_fatal,'No matching object')
@@ -1811,9 +1814,9 @@ subroutine geobjlist_paneltfm(self,bods,numerics)
      ibod=bods%list(j)
      ! object may have no associated body
      if (ibod==0) cycle
-     !dbgw     iibod=ibod !dbgw
+        !dbgw iibod=ibod !dbgw
      if (bods%nindx>0) ibod=bods%indx(ibod)
-     !dbgw     write(110,*) j,iibod,ibod !dbgw
+        !dbgw write(110,*) j,iibod,ibod !dbgw
      !BP      !w    ipan=ibodpan(ibod)
      ipan=indict2(inpan,numerics%panbod,ibod)
      if (ipan==0) then

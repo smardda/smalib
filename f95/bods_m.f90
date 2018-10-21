@@ -365,7 +365,7 @@ subroutine bods_cumulate2(self,self2,geobjl,nfile,start,copy,kcall)
            flbod=self%list(j)
            self%nindx=self%nindx+1
            if (self%nindx<=self%maxindx) then
-              self%indx(self%nindx)=self%maxbodsf+1
+              self%indx(self%nindx)=100+1
            else
               call log_error(m_name,s_name,3,error_fatal,'Bods index overflow, increase  max_bods_in_file')
            end if
@@ -383,9 +383,10 @@ subroutine bods_cumulate2(self,self2,geobjl,nfile,start,copy,kcall)
               flbod=self2(j)
               self%nindx=self%nindx+1
               if (self%nindx<=self%maxindx) then
-                 self%indx(self%nindx)=self%maxbodsf*nfile+k
+                 self%indx(self%nindx)=nfile*100+k
               else
-                 call log_error(m_name,s_name,4,error_fatal,'Bods index overflow, increase  max_bods_in_file')
+                 call log_value('Bods index ', self%maxindx)
+                 call log_error(m_name,s_name,4,error_fatal,'Bods index overflow, increase  max_bods_index')
               end if
            end if
            iwork(i)=self%nindx
