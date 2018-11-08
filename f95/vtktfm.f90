@@ -121,6 +121,7 @@ program vtktfm_p
 ! read data OK, but may still suppress
         if (numerics%same) then
            call bods_initlist(bods,geobjl,numerics%nvalue) !W
+           numerics%npans=1
         end if
      else if (4<=iopt.AND.iopt<=9) then
 ! no body data in file, fix up
