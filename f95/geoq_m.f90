@@ -325,7 +325,7 @@ subroutine geoq_objaddcon(self)
            end if
            self%skyl%dn%stang=zetamin
            self%skyl%dn%finang=zetamax
-           call geoq_skyladd(self,jpla)
+           call geoq_skyladd(self,jpla,GEOBJ_SKYLIT)
         end do
      end select desc_type
   end do
@@ -386,10 +386,11 @@ subroutine geoq_objadd(self,numerics,kgcode)
 end subroutine geoq_objadd
 !---------------------------------------------------------------------
 !> skylight(s) into geobjlist for faster tracing
-subroutine geoq_skyladd(self,kpla)
+subroutine geoq_skyladd(self,kpla,kgcode)
   !! arguments
   type(geoq_t), intent(inout) :: self !< geometrical objects and equilibrium data
   integer(ki4), intent(in) :: kpla !<  number of skylight plane to add to geobjlist
+  integer(ki2par), intent(in) :: kgcode !<  object description
 
   !! local
   character(*), parameter :: s_name='geoq_skyladd' !< subroutine name
@@ -397,7 +398,7 @@ subroutine geoq_skyladd(self,kpla)
   integer :: iunit      !< local debug file unit number
   integer(ki4) :: iopt=0 !< option for cumulate (no weights)
 
-  call geobjlist_create3d(skylobj,self%skyl%dn,GEOBJ_SKYLIT)
+  call geobjlist_create3d(skylobj,self%skyl%dn,kgcode)
   if (self%beq%n%skyldbg>0) then
      iunit=8+kpla
      call geobjlist_writev(skylobj,'geometry',self%skyl%ndskyl(iunit))
@@ -536,7 +537,7 @@ subroutine geoq_skylcen(self)
  &   zrz,self%beq%psibdry,ityps)
      call skyl_dnumerics(self%skyl,self%beq%ctrackrz,self%beq%nctrack,&
  &   zrz(2),ityps,idoub)
-     call geoq_skyladd(self,0)
+     call geoq_skyladd(self,0,self%beq%n%clinecode)
   end do
 
 end subroutine geoq_skylcen

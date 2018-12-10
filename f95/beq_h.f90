@@ -142,6 +142,7 @@ module beq_h
      logical :: skylpsi !< flag whether flux limited skylight(s) present
      logical :: skylcen !< flag whether any skylight(s) defined by plasma centre line
      integer(ki4) :: skyldbg !< level of output to help understand skylight production
+     integer(ki2par) :: clinecode !< type code assigned to centre line
   end type bnumerics_t
 
 !> data structure describing equilibrium field

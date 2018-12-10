@@ -187,6 +187,11 @@ program geoq_p
      call clock_start(5,'gfile_gnu time')
      call skyl_init(geoq%skyl,geoq%beq,geoq%objl,fileroot)
      call clock_stop(5)
+  else
+     ! deactivate flux skylight, enables skylparameters namelist to be present,
+     ! but no skylights defined
+     geoq%beq%n%skylpsi=.FALSE.
+     geoq%beq%n%skyldbg=0
   end if
 !--------------------------------------------------------------------------
 !! do the main work
