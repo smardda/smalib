@@ -286,7 +286,7 @@ subroutine skyl_readcon(selfn,kin)
      if (lfail) call log_error(m_name,s_name,21,error_fatal,'invalid R extent sampling window')
   end if
   if (set_z_extent) then
-     lfail=(z_extent_min-z_extent_max>=0.OR.z_extent_min<=0)
+     lfail=(z_extent_min-z_extent_max>=0)
      if (lfail) call log_error(m_name,s_name,22,error_fatal,'invalid Z extent sampling window')
   end if
 
