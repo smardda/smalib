@@ -286,7 +286,7 @@ subroutine skyl_readcon(selfn,kin)
      if (lfail) call log_error(m_name,s_name,21,error_fatal,'invalid R extent sampling window')
   end if
   if (set_z_extent) then
-     lfail=(z_extent_min-z_extent_max>=0.OR.z_extent_min<=0)
+     lfail=(z_extent_min-z_extent_max>=0)
      if (lfail) call log_error(m_name,s_name,22,error_fatal,'invalid Z extent sampling window')
   end if
 
@@ -430,6 +430,7 @@ subroutine skyl_fixup2(self,ktyps,kcall,kontrol)
   integer(ki4) :: ij !< object array index
   integer(ki4) :: ijm !< object array index
   integer(ki4) :: ijp !< object array index
+  integer(ki4) :: iend !< object array index
 
   ! direction of travel in Z (negative of idir used elsewhere)
   irid=-(2*ktyps-3)
@@ -445,12 +446,14 @@ subroutine skyl_fixup2(self,ktyps,kcall,kontrol)
   self%ouboxz=irid*self%ouboxz
   !! inner
   work1(1)=irid*self%inboxz(1,kcall)
-  do i=2,self%dimbox(1,kcall)
+  iend=self%dimbox(1,kcall)
+  do i=2,iend-1
      ij=i
      ijm=ij-1
      ijp=min( ij+1,self%dimbox(1,kcall) )
      work1(ij)=irid*max( self%inboxz(ijm,kcall),self%inboxz(ij,kcall),self%inboxz(ijp,kcall) )
   end do
+  work1(iend)=irid*self%inboxz(iend,kcall)
   self%inboxz(:,kcall)=irid*work1
   deallocate(work1)
 
@@ -458,12 +461,14 @@ subroutine skyl_fixup2(self,ktyps,kcall,kontrol)
   call log_alloc_check(m_name,s_name,12,status)
   !! outer
   work1(1)=irid*self%ouboxz(1,kcall)
-  do i=2,self%dimbox(2,kcall)
+  iend=self%dimbox(2,kcall)
+  do i=2,iend-1
      ij=i
      ijm=ij-1
      ijp=min( ij+1,self%dimbox(2,kcall) )
      work1(ij)=irid*max( self%ouboxz(ijm,kcall),self%ouboxz(ij,kcall),self%ouboxz(ijp,kcall) )
   end do
+  work1(iend)=irid*self%ouboxz(iend,kcall)
   self%ouboxz(:,kcall)=irid*work1
   deallocate(work1)
 

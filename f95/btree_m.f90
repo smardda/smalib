@@ -1078,7 +1078,7 @@ subroutine btree_dia(self)
   !! local
   character(*), parameter :: s_name='btree_dia' !< subroutine name
   integer(ki2) :: iexmin !< minimum exten value
-  integer(ki2) :: idescent !< binary depth (or descent) actually used
+  integer(ki2) :: iboxsiz !< boxsize actually used
   integer(ki4) :: inleaf  !<  count number of leaves
   integer(ki4) :: inentry  !<  count number of entries
   integer(ki4) :: itlist  !<  local list type
@@ -1088,19 +1088,19 @@ subroutine btree_dia(self)
   write(ilog,*) ' tree type ', self%nttype
   write(ilog,*) ' split at top of tree ', self%nxyz
   write(ilog,*) ' type of tree algorithm ', self%nttalg
-  write(ilog,*) ' size of tree pointer array or numerics%nsize ', &
+  write(ilog,'(a,i12,a,i12,a)') ' size of tree pointer array or numerics%nsize ', &
  &self%nt,' used out of  ',size(self%pter,2), ' (btree_size)'
-  write(ilog,*) ' size of extents array or numerics%nsizee ', &
+  write(ilog,'(a,i12,a,i12,a)') ' size of extents array or numerics%nsizee ', &
  &self%nexten,' used out of ',size(self%exten,2), ' (btree_sizee)'
+  write(ilog,*) '  tree depth ', self%ndepth
   iexmin=minval( self%exten(1:3,1) )
   !dbg  write(*,*) ' 1 ', self%exten(1:3,1)  !dbg
   do jl=2,self%nexten
      iexmin=min( iexmin, minval( self%exten(1:3,jl) ) )
      !dbg     write(*,*) jl, self%exten(1:3,jl)  !dbg
   end do
-  idescent=self%ndepth-iexmin
-  write(ilog,*) ' descent of tree ', &
- &idescent, ' used out of ', self%ndepth, ' (log_2(quantising number))'
+  iboxsiz=2**iexmin
+  write(ilog,*) '  smallest box size ', iboxsiz
   ! count leaves and entries
   inleaf=0
   !! loop over all tree entries
@@ -1115,7 +1115,7 @@ subroutine btree_dia(self)
   list_type: select case (itlist)
   case(0)
      write(ilog,*) 'list type  ls'
-     write(ilog,*) ' number of entries in list array numerics%nsizel ', &
+     write(ilog,'(a,i12,a,i12,a)') ' number of entries in list array numerics%nsizel ', &
  &   self%objectls%nlist,' used out of ',size(self%objectls%list,1), ' (btree_sizel)'
   case(1)
      write(ilog,*) 'list type  li'
