@@ -537,7 +537,7 @@ subroutine geoq_skylcen(self)
  &   zrz,self%beq%psibdry,ityps)
      call skyl_dnumerics(self%skyl,self%beq%ctrackrz,self%beq%nctrack,&
  &   zrz(2),ityps,idoub)
-     call geoq_skyladd(self,0,self%beq%n%clinecode)
+     call geoq_skyladd(self,0,self%beq%n%ctrackcode)
   end do
 
 end subroutine geoq_skylcen

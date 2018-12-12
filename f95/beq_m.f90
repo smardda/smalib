@@ -3148,9 +3148,9 @@ subroutine beq_readcon(selfn,kin)
   selfn%vacfile=beq_vacuum_field_file
 
   selfn%skylcen=skylight_centre_line.OR.centre_line_cutout
-  selfn%clinecode=GEOBJ_SKYLIT
+  selfn%ctrackcode=GEOBJ_SKYLIT
   if (centre_line_cutout) then
-    selfn%clinecode=GEOBJ_CUTOUT
+    selfn%ctrackcode=GEOBJ_CUTOUT
   end if
 
   selfn%skyl=(selfn%objadd(GEOBJ_SKYLIT)>0).OR.selfn%skylpsi
