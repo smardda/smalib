@@ -317,15 +317,17 @@ subroutine geoq_objaddcon(self)
         end do
      case(GEOBJ_SKYLIT)
         do jpla=1,self%beq%n%objadd(igcode)
-           call dcontrol_readnum(self%skyl%dn,iin,filedata)
+           call dcontrol_readnum(numerics,iin,filedata)
            if (filedata) then
               call dcontrol_readprogfiles(file,iin)
               call dcontrol_readatfile(file,numerics)
               call dcontrol_lines2d(numerics)
            end if
-           self%skyl%dn%stang=zetamin
-           self%skyl%dn%finang=zetamax
+           numerics%stang=zetamin
+           numerics%finang=zetamax
+           self%skyl%dn=numerics
            call geoq_skyladd(self,jpla,GEOBJ_SKYLIT)
+           call dcontrol_delete(numerics)
         end do
      end select desc_type
   end do

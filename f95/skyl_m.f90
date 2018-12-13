@@ -726,13 +726,12 @@ subroutine skyl_write(self,kout)
 end subroutine skyl_write
 !---------------------------------------------------------------------
 !> write gnu skyl data structure
-subroutine skyl_writeg(self,kchar,kout,kopt)
+subroutine skyl_writeg(self,kchar,kout)
 
   !! arguments
   type(skyl_t), intent(inout) :: self !< object
   character(*), intent(in) :: kchar  !< case
   integer, intent(in) :: kout   !< output channel for gnuplot data
-  integer(ki4), intent(in), optional :: kopt   !<  not used
 
   !! local
   character(*), parameter :: s_name='skyl_writeg' !< subroutine name
@@ -741,15 +740,15 @@ subroutine skyl_writeg(self,kchar,kout,kopt)
   case('lower')
      ! positions in R-Z space
      do j=1,self%nprovis1
-        write(kout,'(1x,i9,'//cfmt2v,iostat=status) &
- &      j,self%provis1(1,j),self%provis1(2,j)
+        write(kout,'(1x,'//cfmt2v,iostat=status) &
+ &      1000*self%provis1(1,j),1000*self%provis1(2,j)
         call log_write_check(m_name,s_name,1,status)
      end do
   case('upper')
      ! positions in R-Z space
      do j=1,self%nprovis2
-        write(kout,'(1x,i9,'//cfmt2v,iostat=status) &
- &      j,self%provis2(1,j),self%provis2(2,j)
+        write(kout,'(1x,'//cfmt2v,iostat=status) &
+ &      1000*self%provis2(1,j),1000*self%provis2(2,j)
         call log_write_check(m_name,s_name,2,status)
      end do
   end select plot_type

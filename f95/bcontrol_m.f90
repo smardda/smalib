@@ -475,7 +475,7 @@ subroutine bcontrol_read(file,numerics,sknumerics,plot)
   if (iltest) then
      call skyl_readcon(sknumerics,nin)
      call skyl_fixupn(sknumerics,plot%skylprovis)
-     numerics%skyl=(sknumerics%skyltyp>0)
+     numerics%skyl=(sknumerics%skyltyp>0.OR.numerics%skyldbg>0)
   end if
 
 end  subroutine bcontrol_read

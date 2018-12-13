@@ -3153,7 +3153,8 @@ subroutine beq_readcon(selfn,kin)
     selfn%ctrackcode=GEOBJ_CUTOUT
   end if
 
-  selfn%skyl=(selfn%objadd(GEOBJ_SKYLIT)>0).OR.selfn%skylpsi
+  selfn%skyl=(selfn%objadd(GEOBJ_SKYLIT)>0)&
+ &.OR.selfn%skylpsi.OR.(selfn%skyldbg>0)
 
 end subroutine beq_readcon
 !---------------------------------------------------------------------

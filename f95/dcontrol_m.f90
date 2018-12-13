@@ -636,7 +636,8 @@ subroutine dcontrol_delete(numerics)
   !! local
   character(*), parameter :: s_name='dcontrol_delete' !< subroutine name
 
-  deallocate(numerics%r,numerics%z)
+
+  if (allocated(numerics%r)) deallocate(numerics%r,numerics%z)
 
 end subroutine dcontrol_delete
 !---------------------------------------------------------------------

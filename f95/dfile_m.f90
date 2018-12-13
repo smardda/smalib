@@ -25,7 +25,7 @@ module dfile_m
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
   integer(ki4) :: l !< loop counter
-  integer :: nread  !< file unit for read
+  integer, save :: nunit  !< file unit for read/write
   integer :: status  !< status flag
   logical :: iltest !< logical flag
 
@@ -61,17 +61,17 @@ subroutine dfile_init(fileroot,kunit,kwrite)
      call log_error(m_name,s_name,2,log_info,'dat file opened')
   end if
 
-  nread=kunit
+  nunit=kunit
 
 end subroutine dfile_init
 !---------------------------------------------------------------------
-!> close dat plot file on unit nread
+!> close dat plot file on unit nunit
 subroutine dfile_close
 
   !! local
   character(*), parameter :: s_name='dfile_close' !< subroutine name
 
-  close(nread,iostat=status)
+  close(nunit,iostat=status)
   if(status/=0)then
      !! error closing file
      call log_error(m_name,s_name,1,error_fatal,'Error closing dat file')

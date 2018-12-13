@@ -266,14 +266,14 @@ program geoq_p
   if(any(plot%skylprovis)) then
      call clock_start(9,'gfile_gnum time')
      if(plot%skylprovis(1)) then
-     call gfile_init(trim(file%skylprovis)//'_lower','provisional lower skylight in R-Z space',nprint)
+     call dfile_init(trim(file%skylprovis)//'_lower',nprint,1)
      call skyl_writeg(geoq%skyl,'lower',nprint)
-     call gfile_close
+     call dfile_close
      end if
      if(plot%skylprovis(2)) then
-     call gfile_init(trim(file%skylprovis)//'_upper','provisional upper skylight in R-Z space',nprint)
+     call dfile_init(trim(file%skylprovis)//'_upper',nprint,1)
      call skyl_writeg(geoq%skyl,'upper',nprint)
-     call gfile_close
+     call dfile_close
      end if
      call clock_stop(9)
   end if
