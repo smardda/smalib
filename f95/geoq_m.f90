@@ -535,8 +535,8 @@ subroutine geoq_skylcen(self)
      idoub=idoub+1
      call beq_ctrackpt(self%beq,self%beq%ctrackrz,self%beq%nctrack,&
  &   zrz,self%beq%psibdry,ityps)
-     call skyl_dnumerics(self%skyl,self%beq%ctrackrz,self%beq%nctrack,&
- &   zrz(2),ityps,idoub)
+     call dcontrol_ctrack(self%skyl%dn,self%beq%ctrackrz,self%beq%nctrack,&
+ &   zrz(2),self%skyl%n%div,ityps,idoub)
      call geoq_skyladd(self,0,self%beq%n%ctrackcode)
   end do
 
@@ -757,6 +757,7 @@ subroutine geoq_skylpsi1(self,ctrackrz,nctrack,kndbox,plt,pdelta,ktyps,kcall)
 
   call skyl_fixup1(self%skyl,ktyps,kcall,self%skyl%n%control)
   call skyl_fixup2(self%skyl,ktyps,kcall,self%skyl%n%control)
+  call skyl_provis(self%skyl,kcall)
 
   if (self%beq%n%skyldbg>0) then
      call gfile_rwrite(self%skyl%inboxr(1,kcall),self%skyl%inboxz(1,kcall),kndbox(1),&
@@ -862,6 +863,7 @@ subroutine geoq_skylpsi2(self,ctrackrz,nctrack,kndbox,plt,pdelta,ktyps,kcall)
 
   call skyl_fixup1(self%skyl,ktyps,kcall,self%skyl%n%control)
   call skyl_fixup2(self%skyl,ktyps,kcall,self%skyl%n%control)
+  call skyl_provis(self%skyl,kcall)
 
   if (self%beq%n%skyldbg>0) then
      call gfile_rwrite(self%skyl%inboxr(1,kcall),self%skyl%inboxz(1,kcall),kndbox(1),&

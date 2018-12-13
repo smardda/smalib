@@ -18,6 +18,8 @@ module dcontrol_m
  &dcontrol_read, & !< read data for this run
  &dcontrol_readnum, & !< read dnumerics namelist data
  &dcontrol_readprogfiles, & !< read progfiles namelist data
+ &dcontrol_ctrack, & !< dnumerics from central track (for input to geobjlist_create)
+ &dcontrol_skyl, & !< dnumerics from skylight object
  &dcontrol_readatfile, & ! < read dnumerics datafile
  &dcontrol_lines2d, & !< wrapper for misc_lines2d
  &dcontrol_getunit,  & !< get unit number
@@ -417,6 +419,107 @@ subroutine dcontrol_readprogfiles(file,kunit)
   end if
 
 end  subroutine dcontrol_readprogfiles
+!---------------------------------------------------------------------
+!> dnumerics from central track (for input to geobjlist_create)
+subroutine dcontrol_ctrack(self,ptrack,kn,posz,kndiv,ktyps,kcall)
+
+  !! arguments
+  type(dnumerics_t), intent(inout) :: self !< module numerics object
+  real(kr8), dimension(:,:), allocatable, intent(in) :: ptrack !< central track
+  integer(ki4), intent(in) :: kn !<  bound for ptrack array
+  real(kr8), intent(in) :: posz  !< \f$ Z \f$ at point nearest plasma centre
+  integer(ki4), intent(in) :: kndiv !<  number of toroidal divisions
+  integer(ki4), intent(in) :: ktyps !<  lower (1) or upper (2) skylight type
+  integer(ki4), intent(inout) :: kcall !<  number of call
+
+  !! local
+  character(*), parameter :: s_name='dcontrol_ctrack' !< subroutine name
+  integer(ki4) :: is !< numerics array index
+  integer(ki4) :: ij !< object array index
+
+  ! find extent of central array between X-point and domain boundary
+  is=0
+  if (ktyps==1) then
+     do i=1,kn
+        if (ptrack(i,2)>posz) exit
+        is=is+1
+     end do
+  else
+     do i=kn,1,-1
+        if (ptrack(i,2)<posz) exit
+        is=is+1
+     end do
+  end if
+  self%npos=is
+  if (is>0) then
+     ! allocate numerics arrays
+     allocate(self%r(self%npos),self%z(self%npos),stat=status)
+     call log_alloc_check(m_name,s_name,1,status)
+  else
+     ! no centreline
+     return
+  end if
+  ! fill numerics arrays appropriately
+  if (ktyps==1) then
+     do i=1,self%npos
+        self%r(i)=ptrack(i,1)
+        self%z(i)=ptrack(i,2)
+     end do
+  else
+     ij=kn-self%npos
+     do i=1,self%npos
+        ij=ij+1
+        self%r(i)=ptrack(ij,1)
+        self%z(i)=ptrack(ij,2)
+     end do
+  end if
+  ! units to mm and misc settings
+  self%r=1000*self%r
+  self%z=1000*self%z
+  self%cunits=-3
+  self%csys=1
+  !
+  self%div=kndiv
+  self%tfm='rotate'
+
+  !CDBG write(825,'(1P, 2(1X, G13.5))') (self%r(k),self%z(k),k=1,self%npos) !CDBG
+
+end subroutine dcontrol_ctrack
+!---------------------------------------------------------------------
+!> dnumerics from skylight object
+subroutine dcontrol_skyl(self,knrz,rz,zetamin,zetamax,kndiv)
+
+  !! arguments
+  type(dnumerics_t), intent(out) :: self !< module object
+  integer(ki4), intent(in) :: knrz !<  size of rz array
+  real(kr8), dimension(2,knrz),intent(in) :: rz   !<  rz array
+  real(kr8), intent(in) :: zetamin   !<  minimum \f$ \zeta \f$ of any point
+  real(kr8), intent(in) :: zetamax   !<  maximum \f$ \zeta \f$ of any point
+  integer(ki4), intent(in) :: kndiv !<  number of toroidal divisions
+
+  !! local
+  character(*), parameter :: s_name='dcontrol_skyl' !< subroutine name
+
+  allocate(self%r(knrz),self%z(knrz),stat=status)
+  call log_alloc_check(m_name,s_name,1,status)
+
+  self%r=rz(1,:)
+  self%z=rz(2,:)
+  self%stang=zetamin
+  self%finang=zetamax
+  self%div=kndiv
+  ! units to mm and misc settings
+  self%r=1000*self%r
+  self%z=1000*self%z
+  self%cunits=-3
+  self%csys=1
+  !
+  self%npos=knrz
+  self%tfm='rotate'
+
+  !CDBG write(835,'(1P, 2(1X, G13.5))') (self%r(k),self%z(k),k=1,self%npos) !CDBG
+
+end subroutine dcontrol_skyl
 !---------------------------------------------------------------------
 !> read dnumerics datafile
 subroutine dcontrol_readatfile(file,numerics)

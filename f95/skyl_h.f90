@@ -53,6 +53,7 @@ module skyl_h
    !! second entry=1, force inner \f$ Z(\psi) \f$ monotone
    !! third entry=1, force outer \f$ Z(\psi) \f$ monotone
      integer(ki4), dimension(3) :: control !< -
+     logical, dimension(2) :: lprovis !< provisional skylight output required, entry 1=>lower, 2=>upper
   end type sknumerics_t
 
 ! type which defines/instantiates the object
@@ -73,6 +74,11 @@ module skyl_h
      real(kr8), dimension(:,:), allocatable :: ouboxz !< outer \f$ \psi \f$-box limit in \f$ Z \f$
    !> dimensions (1) of inboxr/z, (2) of ouboxr/z
      integer(ki4), dimension(2,2) :: dimbox !< -
+     real(kr8) :: eps !< smallest distinguished lengthscale of geometry
+     integer(ki4) :: nprovis1 !< lower provisional skylight dimension
+     real(kr8), dimension(:,:), allocatable :: provis1 !< lower provisional skylight
+     integer(ki4) :: nprovis2 !< upper provisional skylight dimension
+     real(kr8), dimension(:,:), allocatable :: provis2 !< upper provisional skylight
      type(sknumerics_t) :: n !< control parameters
      type(dnumerics_t) :: dn !< control parameters from dnumerics
      integer(ki4), dimension(:), allocatable :: ntest !< test

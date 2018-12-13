@@ -23,11 +23,13 @@ module skyl_m
   skyl_initfile,  & !< open file
   skyl_init,  & !< initialise object
   skyl_readcon,  & !< read data from file
+  skyl_fixupn, & !< fixup skyl numerics data structure
   skyl_fixup1, & !< fix up for skylight, replace missing data
   skyl_fixup2, & !< fix up for skylight, running 3-point extremum
-  skyl_dnumerics, & !< dnumerics (input to geobjlist_create) from object
+  skyl_provis, &  !< produce one array for each skylight, compressing and sorting in/oubox
   skyl_read, &  !< read in object
   skyl_write, &  !< write out object
+  skyl_writeg, & !< write gnu skyl data structure
   skyl_delete, & !< delete object
   skyl_close !< close file
 
@@ -48,6 +50,7 @@ module skyl_m
   character(len=80) :: ibuff !< buffer for input/output
   character(len=256) :: vtkdesc !< descriptor line for vtk files
   real(kr8), dimension(:), allocatable :: work1 !< 1D work array
+  real(kr8), dimension(:,:), allocatable :: work2 !< 2D work array
 
   contains
 !---------------------------------------------------------------------
@@ -106,6 +109,8 @@ subroutine skyl_init(self,beq,geobjl,fileroot)
   rmax=beq%rmax
   zmin=beq%zmin
   zmax=beq%zmax
+
+  self%eps=min( const_epsbdry*(rmax-rmin), const_epsbdry*(zmax-zmin) )
 
   if ( .NOT.self%n%lrext.OR.(self%n%rextmax-self%n%rextmin)<const_epsbdry*(rmax-rmin) ) then
      self%n%rextmin=rmin
@@ -305,6 +310,7 @@ subroutine skyl_readcon(selfn,kin)
   else
      if (skylight_upper) selfn%skyltyp=3
   end if
+  !! check consistency
   if (selfn%skyltyp==0) then
      call log_error(m_name,s_name,25,error_warning,'neither upper nor lower skylight specified')
   end if
@@ -326,6 +332,30 @@ subroutine skyl_readcon(selfn,kin)
   selfn%control=skylight_control
 
 end  subroutine skyl_readcon
+!---------------------------------------------------------------------
+!> fixup skyl numerics data structure
+     subroutine skyl_fixupn(selfn,klplot)
+
+  !! arguments
+  type(sknumerics_t), intent(inout) :: selfn !< object
+  logical, dimension(2), intent(in) :: klplot   !< request for provisional skylight
+
+  !! local
+  character(*), parameter :: s_name='skyl_fixupn' !< subroutine name
+
+! lower skylight
+     if (klplot(1).AND..NOT.selfn%skyltyp<=2) then
+        call log_error(m_name,s_name,1,error_warning,'Provisional lower skylight requested but lower_skylight not set')
+     end if
+! upper skylight
+     if (klplot(2).AND..NOT.selfn%skyltyp>=2) then
+        call log_error(m_name,s_name,2,error_warning,'Provisional upper skylight requested but upper_skylight not set')
+     end if
+
+     selfn%lprovis(1)=klplot(1).AND.selfn%skyltyp<=2
+     selfn%lprovis(2)=klplot(2).AND.selfn%skyltyp>=2
+
+end subroutine skyl_fixupn
 !---------------------------------------------------------------------
 !> fix up for skylight, replace missing data
 subroutine skyl_fixup1(self,ktyps,kcall,kontrol)
@@ -427,7 +457,6 @@ subroutine skyl_fixup2(self,ktyps,kcall,kontrol)
   !! local
   character(*), parameter :: s_name='skyl_fixup2' !< subroutine name
   integer(ki4) :: irid !< ! direction of travel in \f$ Z \f$ (+1) in lower, (-1) in upper
-  integer(ki4) :: ij !< object array index
   integer(ki4) :: ijm !< object array index
   integer(ki4) :: ijp !< object array index
   integer(ki4) :: iend !< object array index
@@ -437,11 +466,11 @@ subroutine skyl_fixup2(self,ktyps,kcall,kontrol)
 
   ! allocate work1 array
   allocate(work1(self%dimbox(1,kcall)), stat=status)
-  call log_alloc_check(m_name,s_name,12,status)
+  call log_alloc_check(m_name,s_name,1,status)
 
   ! fix up for upper (code for lower, then multiply by irid)
   ! thus find maximum z in lower, minimum in upper
-  ! NB trust first (nearest centre) entry
+  ! NB trust first (nearest centre) entry and last
   self%inboxz=irid*self%inboxz
   self%ouboxz=irid*self%ouboxz
   !! inner
@@ -458,7 +487,7 @@ subroutine skyl_fixup2(self,ktyps,kcall,kontrol)
   deallocate(work1)
 
   allocate(work1(self%dimbox(2,kcall)), stat=status)
-  call log_alloc_check(m_name,s_name,12,status)
+  call log_alloc_check(m_name,s_name,2,status)
   !! outer
   work1(1)=irid*self%ouboxz(1,kcall)
   iend=self%dimbox(2,kcall)
@@ -474,68 +503,76 @@ subroutine skyl_fixup2(self,ktyps,kcall,kontrol)
 
 end subroutine skyl_fixup2
 !---------------------------------------------------------------------
-!> dnumerics (input to geobjlist_create) from object
-subroutine skyl_dnumerics(self,ptrack,kn,posz,ktyps,kcall)
+!> produce one array for each skylight, compressing and sorting in/oubox
+subroutine skyl_provis(self,kcall)
 
   !! arguments
   type(skyl_t), intent(inout) :: self !< module object
-  real(kr8), dimension(:,:), allocatable, intent(in) :: ptrack !< central track
-  integer(ki4), intent(in) :: kn !<  bound for ptrack array
-  real(kr8), intent(in) :: posz  !< \f$ Z \f$ at point nearest plasma centre
-  integer(ki4), intent(in) :: ktyps !<  lower (1) or upper (2) skylight type
-  integer(ki4), intent(inout) :: kcall !<  number of call
-
+  integer(ki4), intent(in) :: kcall !<  number of call
   !! local
-  character(*), parameter :: s_name='skyl_dnumerics' !< subroutine name
-  integer(ki4) :: is !< dn array index
-  integer(ki4) :: ij !< object array index
+  character(*), parameter :: s_name='skyl_provis' !< subroutine name
+  integer(ki4) :: iw !< object array index
+  integer(ki4) :: im !< object array previous index
+  integer(ki4) :: iend !< object array extent
 
-  ! find extent of central array between X-point and domain boundary
-  is=0
-  if (ktyps==1) then
-     do i=1,kn
-        if (ptrack(i,2)>posz) exit
-        is=is+1
-     end do
-  else
-     do i=kn,1,-1
-        if (ptrack(i,2)<posz) exit
-        is=is+1
-     end do
-  end if
-  self%dn%npos=is
-  if (is>0) then
-     ! allocate dn arrays
-     allocate(self%dn%r(self%dn%npos),self%dn%z(self%dn%npos),stat=status)
-     call log_alloc_check(m_name,s_name,1,status)
-  else
-     ! no centreline
-     return
-  end if
-  ! fill dn arrays appropriately
-  if (ktyps==1) then
-     do i=1,self%dn%npos
-        self%dn%r(i)=ptrack(i,1)
-        self%dn%z(i)=ptrack(i,2)
-     end do
-  else
-     ij=kn-self%dn%npos
-     do i=1,self%dn%npos
-        ij=ij+1
-        self%dn%r(i)=ptrack(ij,1)
-        self%dn%z(i)=ptrack(ij,2)
-     end do
-  end if
-  ! units to mm and misc settings
-  self%dn%r=1000*self%dn%r
-  self%dn%z=1000*self%dn%z
-  !
-  self%dn%div=self%n%div
-  self%dn%tfm='rotate'
+  ! check needed
+  if (.NOT.self%n%lprovis(kcall)) return
 
-  !CDBG write(825,'(1P, 2(1X, G13.5))') (self%dn%r(k),self%dn%z(k),k=1,self%dn%npos) !CDBG
+  ! allocate work2 array
+  allocate(work2(self%dimbox(1,kcall)+self%dimbox(2,kcall),2), stat=status)
+  call log_alloc_check(m_name,s_name,1,status)
 
-end subroutine skyl_dnumerics
+  !! inner, in reverse order
+  iw=1
+  iend=self%dimbox(1,kcall)
+  work2(iw,1)=self%inboxr(iend,kcall)
+  work2(iw,2)=self%inboxz(iend,kcall)
+  do i=iend,2,-1
+     im=i-1
+     if ( (abs(self%inboxr(i,kcall)-self%inboxr(im,kcall))> self%eps) .OR. &
+     (abs(self%inboxz(i,kcall)-self%inboxz(im,kcall))> self%eps) ) then
+     iw=iw+1
+     work2(iw,1)=self%inboxr(i,kcall)
+     work2(iw,2)=self%inboxz(i,kcall)
+  end if
+  end do
+  !! outer
+  iw=iw+1
+  work2(iw,1)=self%ouboxr(1,kcall)
+  work2(iw,2)=self%ouboxz(1,kcall)
+  iend=self%dimbox(2,kcall)
+  do i=2,iend
+     im=i-1
+     if ( (abs(self%ouboxr(i,kcall)-self%ouboxr(im,kcall))> self%eps) .OR. &
+     (abs(self%ouboxz(i,kcall)-self%ouboxz(im,kcall))> self%eps) ) then
+     iw=iw+1
+     work2(iw,1)=self%ouboxr(i,kcall)
+     work2(iw,2)=self%ouboxz(i,kcall)
+  end if
+  end do
+
+  !! sort in increasing R order not a good idea
+  ! call dsort(work2(1,1), work2(1,2), iw, 2)
+
+  if (kcall==1) then
+  ! allocate provisN array and assign
+  allocate(self%provis1(2,iw), stat=status)
+  call log_alloc_check(m_name,s_name,10,status)
+  do l=1,2
+  self%provis1(l,:)=work2(1:iw,l)
+  end do
+  self%nprovis1=iw
+  else
+  allocate(self%provis2(2,iw), stat=status)
+  call log_alloc_check(m_name,s_name,11,status)
+  do l=1,2
+  self%provis2(l,:)=work2(1:iw,l)
+  end do
+  self%nprovis2=iw
+  end if
+  deallocate(work2)
+
+end subroutine skyl_provis
 !---------------------------------------------------------------------
 !> read skyl data
 subroutine skyl_read(self, infile)
@@ -687,6 +724,37 @@ subroutine skyl_write(self,kout)
   call log_write_check(m_name,s_name,37,status)
 
 end subroutine skyl_write
+!---------------------------------------------------------------------
+!> write gnu skyl data structure
+subroutine skyl_writeg(self,kchar,kout,kopt)
+
+  !! arguments
+  type(skyl_t), intent(inout) :: self !< object
+  character(*), intent(in) :: kchar  !< case
+  integer, intent(in) :: kout   !< output channel for gnuplot data
+  integer(ki4), intent(in), optional :: kopt   !<  not used
+
+  !! local
+  character(*), parameter :: s_name='skyl_writeg' !< subroutine name
+
+  plot_type: select case (kchar)
+  case('lower')
+     ! positions in R-Z space
+     do j=1,self%nprovis1
+        write(kout,'(1x,i9,'//cfmt2v,iostat=status) &
+ &      j,self%provis1(1,j),self%provis1(2,j)
+        call log_write_check(m_name,s_name,1,status)
+     end do
+  case('upper')
+     ! positions in R-Z space
+     do j=1,self%nprovis2
+        write(kout,'(1x,i9,'//cfmt2v,iostat=status) &
+ &      j,self%provis2(1,j),self%provis2(2,j)
+        call log_write_check(m_name,s_name,2,status)
+     end do
+  end select plot_type
+
+end subroutine skyl_writeg
 !---------------------------------------------------------------------
 !> delete object
 subroutine skyl_delete(self,ndebug)
