@@ -3150,7 +3150,7 @@ subroutine beq_readcon(selfn,kin)
   selfn%skylcen=skylight_centre_line.OR.centre_line_cutout
   selfn%ctrackcode=GEOBJ_SKYLIT
   if (centre_line_cutout) then
-    selfn%ctrackcode=GEOBJ_CUTOUT
+     selfn%ctrackcode=GEOBJ_CUTOUT
   end if
 
   selfn%skyl=(selfn%objadd(GEOBJ_SKYLIT)>0)&

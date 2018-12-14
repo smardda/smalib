@@ -819,6 +819,7 @@ subroutine geoq_skylpsi2(self,ctrackrz,nctrack,kndbox,plt,pdelta,ktyps,kcall)
   irid=-(2*ktyps-3)
 
   ! complete initialisation
+  ! note that r value remains at infinity to flag whether z value changed
   self%skyl%inboxz(:,kcall)=(2-ktyps)*self%skyl%n%zextmin+(ktyps-1)*self%skyl%n%zextmax
   self%skyl%ouboxz(:,kcall)=(2-ktyps)*self%skyl%n%zextmin+(ktyps-1)*self%skyl%n%zextmax
 

@@ -188,8 +188,8 @@ program geoq_p
      call skyl_init(geoq%skyl,geoq%beq,geoq%objl,fileroot)
      call clock_stop(5)
   else
-     ! deactivate flux skylight, enables skylparameters namelist to be present,
-     ! but no skylights defined
+! deactivate flux skylight, enables skylparameters namelist to be present,
+! but no skylights defined
      geoq%beq%n%skylpsi=.FALSE.
      geoq%beq%n%skyldbg=0
   end if
@@ -266,14 +266,14 @@ program geoq_p
   if(any(plot%skylprovis)) then
      call clock_start(9,'gfile_gnum time')
      if(plot%skylprovis(1)) then
-     call dfile_init(trim(file%skylprovis)//'_lower',nprint,1)
-     call skyl_writeg(geoq%skyl,'lower',nprint)
-     call dfile_close
+        call dfile_init(trim(file%skylprovis)//'_lower',nprint,1)
+        call skyl_writeg(geoq%skyl,'lower',nprint)
+        call dfile_close
      end if
      if(plot%skylprovis(2)) then
-     call dfile_init(trim(file%skylprovis)//'_upper',nprint,1)
-     call skyl_writeg(geoq%skyl,'upper',nprint)
-     call dfile_close
+        call dfile_init(trim(file%skylprovis)//'_upper',nprint,1)
+        call skyl_writeg(geoq%skyl,'upper',nprint)
+        call dfile_close
      end if
      call clock_stop(9)
   end if

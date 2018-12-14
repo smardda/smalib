@@ -26,7 +26,7 @@ module skyl_m
   skyl_fixupn, & !< fixup skyl numerics data structure
   skyl_fixup1, & !< fix up for skylight, replace missing data
   skyl_fixup2, & !< fix up for skylight, running 3-point extremum
-  skyl_provis, &  !< produce one array for each skylight, compressing and sorting in/oubox
+  skyl_provis, &  !< produce one array for each skylight by compressing in/ouboxrz
   skyl_read, &  !< read in object
   skyl_write, &  !< write out object
   skyl_writeg, & !< write gnu skyl data structure
@@ -334,7 +334,7 @@ subroutine skyl_readcon(selfn,kin)
 end  subroutine skyl_readcon
 !---------------------------------------------------------------------
 !> fixup skyl numerics data structure
-     subroutine skyl_fixupn(selfn,klplot)
+subroutine skyl_fixupn(selfn,klplot)
 
   !! arguments
   type(sknumerics_t), intent(inout) :: selfn !< object
@@ -343,17 +343,17 @@ end  subroutine skyl_readcon
   !! local
   character(*), parameter :: s_name='skyl_fixupn' !< subroutine name
 
-! lower skylight
-     if (klplot(1).AND..NOT.selfn%skyltyp<=2) then
-        call log_error(m_name,s_name,1,error_warning,'Provisional lower skylight requested but lower_skylight not set')
-     end if
-! upper skylight
-     if (klplot(2).AND..NOT.selfn%skyltyp>=2) then
-        call log_error(m_name,s_name,2,error_warning,'Provisional upper skylight requested but upper_skylight not set')
-     end if
+  ! lower skylight
+  if (klplot(1).AND..NOT.selfn%skyltyp<=2) then
+     call log_error(m_name,s_name,1,error_warning,'Provisional lower skylight requested but lower_skylight not set')
+  end if
+  ! upper skylight
+  if (klplot(2).AND..NOT.selfn%skyltyp>=2) then
+     call log_error(m_name,s_name,2,error_warning,'Provisional upper skylight requested but upper_skylight not set')
+  end if
 
-     selfn%lprovis(1)=klplot(1).AND.selfn%skyltyp<=2
-     selfn%lprovis(2)=klplot(2).AND.selfn%skyltyp>=2
+  selfn%lprovis(1)=klplot(1).AND.selfn%skyltyp<=2
+  selfn%lprovis(2)=klplot(2).AND.selfn%skyltyp>=2
 
 end subroutine skyl_fixupn
 !---------------------------------------------------------------------
@@ -503,7 +503,7 @@ subroutine skyl_fixup2(self,ktyps,kcall,kontrol)
 
 end subroutine skyl_fixup2
 !---------------------------------------------------------------------
-!> produce one array for each skylight, compressing and sorting in/oubox
+!> produce one array for each skylight by compressing in/oubox
 subroutine skyl_provis(self,kcall)
 
   !! arguments
@@ -514,6 +514,8 @@ subroutine skyl_provis(self,kcall)
   integer(ki4) :: iw !< object array index
   integer(ki4) :: im !< object array previous index
   integer(ki4) :: iend !< object array extent
+  real(kr8) :: delr !< difference in value of \f$ R \f$ of adjacent points
+  real(kr8) :: delz !< difference in value of \f$ Z \f$ of adjacent points
 
   ! check needed
   if (.NOT.self%n%lprovis(kcall)) return
@@ -529,12 +531,13 @@ subroutine skyl_provis(self,kcall)
   work2(iw,2)=self%inboxz(iend,kcall)
   do i=iend,2,-1
      im=i-1
-     if ( (abs(self%inboxr(i,kcall)-self%inboxr(im,kcall))> self%eps) .OR. &
-     (abs(self%inboxz(i,kcall)-self%inboxz(im,kcall))> self%eps) ) then
-     iw=iw+1
-     work2(iw,1)=self%inboxr(i,kcall)
-     work2(iw,2)=self%inboxz(i,kcall)
-  end if
+     delr=self%inboxr(i,kcall)-self%inboxr(im,kcall)
+     delz=self%inboxz(i,kcall)-self%inboxz(im,kcall)
+     if ( abs(delr)>self%eps .OR. abs(delz)>self%eps ) then
+        iw=iw+1
+        work2(iw,1)=self%inboxr(i,kcall)
+        work2(iw,2)=self%inboxz(i,kcall)
+     end if
   end do
   !! outer
   iw=iw+1
@@ -543,32 +546,33 @@ subroutine skyl_provis(self,kcall)
   iend=self%dimbox(2,kcall)
   do i=2,iend
      im=i-1
-     if ( (abs(self%ouboxr(i,kcall)-self%ouboxr(im,kcall))> self%eps) .OR. &
-     (abs(self%ouboxz(i,kcall)-self%ouboxz(im,kcall))> self%eps) ) then
-     iw=iw+1
-     work2(iw,1)=self%ouboxr(i,kcall)
-     work2(iw,2)=self%ouboxz(i,kcall)
-  end if
+     delr=self%ouboxr(i,kcall)-self%ouboxr(im,kcall)
+     delz=elf%ouboxz(i,kcall)-self%ouboxz(im,kcall)
+     if ( abs(delr)>self%eps .OR. abs(delz)>self%eps ) then
+        iw=iw+1
+        work2(iw,1)=self%ouboxr(i,kcall)
+        work2(iw,2)=self%ouboxz(i,kcall)
+     end if
   end do
 
   !! sort in increasing R order not a good idea
   ! call dsort(work2(1,1), work2(1,2), iw, 2)
 
   if (kcall==1) then
-  ! allocate provisN array and assign
-  allocate(self%provis1(2,iw), stat=status)
-  call log_alloc_check(m_name,s_name,10,status)
-  do l=1,2
-  self%provis1(l,:)=work2(1:iw,l)
-  end do
-  self%nprovis1=iw
+     ! allocate provisN array and assign
+     allocate(self%provis1(2,iw), stat=status)
+     call log_alloc_check(m_name,s_name,10,status)
+     do l=1,2
+        self%provis1(l,:)=work2(1:iw,l)
+     end do
+     self%nprovis1=iw
   else
-  allocate(self%provis2(2,iw), stat=status)
-  call log_alloc_check(m_name,s_name,11,status)
-  do l=1,2
-  self%provis2(l,:)=work2(1:iw,l)
-  end do
-  self%nprovis2=iw
+     allocate(self%provis2(2,iw), stat=status)
+     call log_alloc_check(m_name,s_name,11,status)
+     do l=1,2
+        self%provis2(l,:)=work2(1:iw,l)
+     end do
+     self%nprovis2=iw
   end if
   deallocate(work2)
 

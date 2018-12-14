@@ -55,7 +55,7 @@ module bcontrol_m
      character(len=80)  :: geoqfldxyz   !< \f$ \bf{B} \f$ in Cartesians on Cartesian grid
      character(len=80)  :: eqbdry   !< file containing boundary points from eqdsk
      character(len=80)  :: eqltr   !< file containing limiter points from eqdsk
-     character(len=80)  :: skylprovis   !< provisional skylight 
+     character(len=80)  :: skylprovis   !< provisional skylight
      character(len=80)  :: fmesh   !< define special mesh on input file name
   end type bfiles_t
 
