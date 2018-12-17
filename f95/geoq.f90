@@ -67,6 +67,7 @@ program geoq_p
   character(len=80) :: fileroot !< reference name for all files output by run
   character(len=80) :: fileq !< equil file name
   character(len=256) :: vtkdesc !< descriptor line for vtk files
+  character(len=256) :: datdesc !< descriptor line for gnu dat files
   character(len=80) :: mapfld !< field output in geoqm file
 
   integer:: nplot !< unit for vtk files
@@ -266,12 +267,14 @@ program geoq_p
   if(any(plot%skylprovis)) then
      call clock_start(9,'gfile_gnum time')
      if(plot%skylprovis(1)) then
-        call dfile_init(trim(file%skylprovis)//'_lower',nprint,1)
+        call dcontrol_makehedline(geoq%skyl%dn,'#dnumerics',datdesc)
+        call dfile_initdatfile(trim(file%skylprovis)//'_lower',datdesc,nprint)
         call skyl_writeg(geoq%skyl,'lower',nprint)
         call dfile_close
      end if
      if(plot%skylprovis(2)) then
-        call dfile_init(trim(file%skylprovis)//'_upper',nprint,1)
+        call dcontrol_makehedline(geoq%skyl%dn,'#dnumerics',datdesc)
+        call dfile_initdatfile(trim(file%skylprovis)//'_upper',datdesc,nprint)
         call skyl_writeg(geoq%skyl,'upper',nprint)
         call dfile_close
      end if
@@ -404,7 +407,7 @@ program geoq_p
 !! field format for beams calculation
   if(plot%geoqfldxyz) then
      call clock_start(28,'vfile_geoqfldxyz time')
-     call dfile_init(file%geoqfldxyz,nplot,1)
+     call dfile_initdatfile(file%geoqfldxyz,'null',nplot)
      ibuf=geoq%beq%n%vacfile
      call beq_writen(geoq%beq,'regular',nplot)
      geoq%beq%n%vacfile=ibuf

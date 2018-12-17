@@ -547,7 +547,7 @@ subroutine skyl_provis(self,kcall)
   do i=2,iend
      im=i-1
      delr=self%ouboxr(i,kcall)-self%ouboxr(im,kcall)
-     delz=elf%ouboxz(i,kcall)-self%ouboxz(im,kcall)
+     delz=self%ouboxz(i,kcall)-self%ouboxz(im,kcall)
      if ( abs(delr)>self%eps .OR. abs(delz)>self%eps ) then
         iw=iw+1
         work2(iw,1)=self%ouboxr(i,kcall)

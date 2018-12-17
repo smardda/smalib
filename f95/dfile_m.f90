@@ -12,6 +12,7 @@ module dfile_m
 ! public subroutines
   public :: &
  &dfile_init, & !< initialise dat file
+ &dfile_initdatfile, & !< open new unit and insert gnu dat header line
  &dfile_close !< close dat file
 
 ! public types
@@ -64,6 +65,33 @@ subroutine dfile_init(fileroot,kunit,kwrite)
   nunit=kunit
 
 end subroutine dfile_init
+!---------------------------------------------------------------------
+!> open new unit and insert gnu dat header line
+subroutine dfile_initdatfile(fprint,descriptor,kunit)
+
+  !! arguments
+  character(len=*), intent(in) :: fprint !< file name root
+  character(len=*), intent(in) :: descriptor !< dataset descriptor
+  integer, intent(inout) :: kunit   !< unit number
+
+  !! local
+  character(*), parameter :: s_name='dfile_initdatfile' !< subroutine name
+
+  call misc_getfileunit(kunit)
+  open(unit=kunit,file=trim(fprint)//'.dat')
+
+  !! write header (or not)
+  if (descriptor(1:1)=='#') then
+     write(kunit,'(a)') descriptor
+  else if (descriptor(1:4)=='null') then
+     continue
+  else
+     write(kunit,'(''# '',a)') descriptor
+  end if
+
+  nunit=kunit
+
+end subroutine dfile_initdatfile
 !---------------------------------------------------------------------
 !> close dat plot file on unit nunit
 subroutine dfile_close

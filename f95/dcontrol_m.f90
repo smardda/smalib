@@ -20,6 +20,8 @@ module dcontrol_m
  &dcontrol_readprogfiles, & !< read progfiles namelist data
  &dcontrol_ctrack, & !< dnumerics from central track (for input to geobjlist_create)
  &dcontrol_skyl, & !< dnumerics from skylight object
+ &dcontrol_makehedline, & !<  construct header line of gnu dat file
+ &dcontrol_readhedline, & !<  read first (header) line of gnu dat file
  &dcontrol_readatfile, & ! < read dnumerics datafile
  &dcontrol_lines2d, & !< wrapper for misc_lines2d
  &dcontrol_getunit,  & !< get unit number
@@ -30,6 +32,7 @@ module dcontrol_m
 ! private variables
   character(*), parameter :: m_name='dcontrol_m' !< module name
   integer  :: status   !< error status
+  integer :: istatus  !<  status flag
   integer, save  :: nin      !< control file unit number
   integer  :: ilog      !< for namelist dump after error
   integer(ki4) :: i !< loop counter
@@ -37,7 +40,14 @@ module dcontrol_m
   integer(ki4) :: k !< loop counter
   integer(ki4) :: l !< loop counter
   real(kr8) :: zdum !< dummy real
+  character(len=80) :: ibuf2 !< buffer for input/output
   character(len=80) :: root !< file root
+  character(len=132) :: ibuf !< buffer for input/output
+!> integer parameter array
+!! dimension at least geobjlist%numnparam+geobjlist%posl%numnparpos (2+4)
+  integer(ki2par), dimension(6) :: ipara   !< - 
+  character(len=256) :: datdesc !< descriptor line for gnu dat files
+  integer(ki4) :: inumnparam   !< number of descriptors in array
 
   contains
 !---------------------------------------------------------------------
@@ -521,12 +531,106 @@ subroutine dcontrol_skyl(self,knrz,rz,zetamin,zetamax,kndiv)
 
 end subroutine dcontrol_skyl
 !---------------------------------------------------------------------
+!>  construct header line of gnu dat file
+subroutine dcontrol_makehedline(self,kclabel,descriptor)
+  !! arguments
+  type(dnumerics_t), intent(in) :: self !< geobj list data
+  character(len=*), intent(in) :: kclabel !< label at start of line
+  character(len=*), intent(out) :: descriptor !< dataset descriptor
+
+  !! local
+  character(*), parameter :: s_name='dcontrol_makehedline' !< subroutine name
+  character(len=80) :: iclabel !< tidied label at start of line
+  integer(ki4) :: iclen !< real length of label
+
+  iclabel=repeat('-',80)
+  inumnparam=6
+
+  iclen=min(len_trim(adjustl(kclabel)),80)
+  iclabel(1:iclen)=trim(adjustl(kclabel))
+
+  ! option for specials depending on kclabel.
+  posveclis : select case (iclabel(1:iclen))
+  case('#dnumerics')
+     ipara(1)=1
+     ipara(2)=self%descode
+     ipara(3)=self%cunits
+     ipara(4)=self%csys
+     ipara(5)=0
+     ipara(6)=0
+  case default
+     ! dequantised polars (m) 
+     ipara=(/1,0,0,1,0,0/)
+  end select posveclis
+
+  write(descriptor,'(a30,1x,a18,i3,9(1x,i4))') iclabel(1:30),'Number_Parameters=', &
+ &inumnparam,(ipara(l),l=1,inumnparam)
+
+end subroutine dcontrol_makehedline
+!---------------------------------------------------------------------
+!>  read first (header) line of gnu dat file
+subroutine dcontrol_readhedline(self,descriptor,kclabel)
+  !! arguments
+  type(dnumerics_t), intent(inout) :: self !< geobj list data
+  character(len=*), intent(in) :: descriptor !< line
+  character(len=*), intent(out) :: kclabel !< tidied up label at start of line
+
+  !! local
+  character(*), parameter :: s_name='dcontrol_readhedline' !< subroutine name
+  character(len=30) :: iclabel !< input label at start of line
+  character(len=17) :: icpar !< label before equals sign (not returned)
+  integer(ki4) :: ieq !< position of equals in string
+  integer(ki4) :: iieq !< position of another or same equals in string
+  integer(ki4) :: isubstr !< start of substring in string
+  integer(ki4) :: ii   !< number of nparpos descriptors
+  integer(ki4) :: iclen !< real length of label
+
+  !! look for keys embedded in line if "=" present
+  ieq=index(descriptor,'=')
+  if (ieq/=0) then
+     isubstr=index(descriptor,'Number_Parameters=')
+     if (isubstr/=0) then
+        ibuf2=descriptor(isubstr:)
+        iieq=index(ibuf2,'=')
+        read(ibuf2(iieq+1:),'(I3)',iostat=istatus,end=1) inumnparam
+        if(istatus/=0) call log_error(m_name,s_name,1,error_warning,'Error reading inumparam')
+        read(ibuf2(iieq+4:),'(9(1x,i4))',iostat=istatus,end=1) (ipara(l),l=1,inumnparam)
+        if(istatus/=0) call log_error(m_name,s_name,2,error_warning,'Error reading first line parameters')
+self%descode=ipara(2)
+self%cunits=ipara(3)
+self%csys=ipara(4)
+     end if
+  else
+     return
+  end if
+
+  read(descriptor,'(A30,1X,A17)',iostat=istatus,end=1) iclabel,icpar
+  if(istatus/=0) call log_error(m_name,s_name,4,error_warning,'Error reading labels')
+
+  !! strip trailing '-'
+  do l=30,1,-1
+     if (iclabel(l:l)=='-') then
+        iclabel(l:l)=' '
+     else
+        exit
+     end if
+  end do
+  iclen=len_trim(adjustl(iclabel))
+  kclabel(1:iclen)=trim(adjustl(iclabel))
+  return
+
+1     continue
+  call log_error(m_name,s_name,10,error_warning,'Unexpected end of buffer')
+
+end subroutine dcontrol_readhedline
+!---------------------------------------------------------------------
 !> read dnumerics datafile
 subroutine dcontrol_readatfile(file,numerics)
 
   !! arguments
   type(dfiles_t), intent(inout) :: file !< file names
   type(dnumerics_t), intent(inout) :: numerics !< control numerics
+  character(len=80) :: iclabel !< tidied label at start of header line
 
   !!local
   character(*), parameter :: s_name='dcontrol_readatfile' !< subroutine name
@@ -538,6 +642,15 @@ subroutine dcontrol_readatfile(file,numerics)
      open(unit=ninrz,file=file%rfile,status='OLD',iostat=status)
      call log_open_check(m_name,s_name,10,status)
 
+     ! check for gnu dat header line and read if present
+     read(ninrz,*,iostat=status) ibuf
+     if (ibuf(1:1)=='#') then
+        call dcontrol_readhedline(numerics,datdesc,iclabel)
+     else
+        rewind(ninrz,iostat=status)
+        call log_read_check(m_name,s_name,11,status)
+     end if
+
      i=0
      do
         read(ninrz,*,iostat=status) zdum
@@ -546,15 +659,15 @@ subroutine dcontrol_readatfile(file,numerics)
      end do
      if (i<=1) call log_error(m_name,s_name,1,error_fatal,'Insufficient data in file')
      allocate(numerics%r(i),numerics%z(i),stat=status)
-     call log_alloc_check(m_name,s_name,11,status)
+     call log_alloc_check(m_name,s_name,12,status)
      numerics%npos=i
 
      !! read into store values
      rewind(ninrz,iostat=status)
-     call log_read_check(m_name,s_name,12,status)
+     call log_read_check(m_name,s_name,13,status)
      do j=1,i
         read(ninrz,*,iostat=status) numerics%r(j)
-        call log_read_check(m_name,s_name,13,status)
+        call log_read_check(m_name,s_name,14,status)
      end do
      call log_value("number of values read from r input file",i)
 
@@ -563,14 +676,23 @@ subroutine dcontrol_readatfile(file,numerics)
      call log_value("z input file",trim(file%zfile))
      call misc_getfileunit(ninrz)
      open(unit=ninrz,file=file%zfile,status='OLD',iostat=status)
-     call log_open_check(m_name,s_name,14,status)
+     call log_open_check(m_name,s_name,15,status)
+
+     ! check for gnu dat header line and read if present
+     read(ninrz,*,iostat=status) ibuf
+     if (ibuf(1:1)=='#') then
+        call dcontrol_readhedline(numerics,datdesc,iclabel)
+     else
+        rewind(ninrz,iostat=status)
+        call log_read_check(m_name,s_name,16,status)
+     end if
 
      i=0
      !! read into store values
      do j=1,numerics%npos
         i=i+1
         read(ninrz,*,iostat=status) numerics%z(j)
-        call log_read_check(m_name,s_name,16,status)
+        call log_read_check(m_name,s_name,17,status)
      end do
      call log_value("number of values read from z input file",i)
 
@@ -581,6 +703,15 @@ subroutine dcontrol_readatfile(file,numerics)
      open(unit=ninrz,file=file%rzfile,status='OLD',iostat=status)
      call log_open_check(m_name,s_name,20,status)
 
+     ! check for gnu dat header line and read if present
+     read(ninrz,*,iostat=status) ibuf
+     if (ibuf(1:1)=='#') then
+        call dcontrol_readhedline(numerics,datdesc,iclabel)
+     else
+        rewind(ninrz,iostat=status)
+        call log_read_check(m_name,s_name,21,status)
+     end if
+
      i=0
      do
         read(ninrz,*,iostat=status) zdum, zdum
@@ -589,15 +720,15 @@ subroutine dcontrol_readatfile(file,numerics)
      end do
      if (i<=1) call log_error(m_name,s_name,2,error_fatal,'Insufficient data in file')
      allocate(numerics%r(i),numerics%z(i),stat=status)
-     call log_alloc_check(m_name,s_name,21,status)
+     call log_alloc_check(m_name,s_name,22,status)
      numerics%npos=i
 
      !! read into store values
      rewind(ninrz,iostat=status)
-     call log_read_check(m_name,s_name,22,status)
+     call log_read_check(m_name,s_name,23,status)
      do j=1,i
         read(ninrz,*,iostat=status) numerics%r(j),numerics%z(j)
-        call log_read_check(m_name,s_name,23,status)
+        call log_read_check(m_name,s_name,24,status)
      end do
      call log_value("number of values read from rz input file",i)
 

@@ -2901,7 +2901,8 @@ subroutine geobjlist_create3d(self,numerics,kgcode)
         zpos1%posvec(2)=numerics%z(i)
         zpos1%posvec(3)=zeta
         zposang%pos=zpos1%posvec
-        zposang%opt=1 ; zposang%units=0
+        !zposang%opt=1 ; zposang%units=0
+        zposang%opt=numerics%csys ; zposang%units=numerics%cunits
         call posang_tfm(zposang,0)
         self%posl%pos(ip)%posvec=zposang%pos
      end do
@@ -2931,7 +2932,7 @@ subroutine geobjlist_create3d(self,numerics,kgcode)
            zpos1%posvec(2)=numerics%z(i)
            zpos1%posvec(3)=zeta
            zposang%pos=zpos1%posvec
-           zposang%opt=1 ; zposang%units=0
+           zposang%opt=numerics%csys ; zposang%units=numerics%cunits
            call posang_tfm(zposang,0)
            self%posl%pos(ip)%posvec=zposang%pos
         end do
