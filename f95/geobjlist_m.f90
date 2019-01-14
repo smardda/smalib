@@ -3005,6 +3005,7 @@ subroutine geobjlist_create3d(self,numerics,kgcode)
 
   ! units of mm
   self%posl%nparpos(1)=-3
+  self%posl%nparpos(2)=numerics%csys
 
   print '("number of geobj created = ",i10)',self%ng
   call log_value("number of geobj created ",self%ng)
