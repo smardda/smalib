@@ -2908,7 +2908,7 @@ subroutine geobjlist_create3d(self,numerics,kgcode)
         call posang_tfm(zposang,-3)
         self%posl%pos(ip)%posvec=zposang%pos
      end do
-     zdisp=(numerics%stpos-numerics%finpos)/m
+     zdisp=(numerics%finpos-numerics%stpos)/m
      zpos1%posvec(1)=zdisp(1)
      zpos1%posvec(2)=zdisp(2)
      zpos1%posvec(3)=zdisp(3)

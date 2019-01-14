@@ -26,7 +26,6 @@ li_m.f90 \
 ld_m.f90 \
 dbtree_h.f90 \
 dbtree_m.f90 \
-mtest_m.f90 \
 termplane_h.f90 \
 pcle_h.f90 \
 pcle_m.f90 \
@@ -95,7 +94,6 @@ hdsgen.f90 : li_m.mod
 hdsgen.f90 : ld_m.mod
 hdsgen.f90 : dbtree_h.mod
 hdsgen.f90 : dbtree_m.mod
-hdsgen.f90 : mtest_m.mod
 hdsgen.f90 : termplane_h.mod
 hdsgen.f90 : pcle_h.mod
 hdsgen.f90 : pcle_m.mod
@@ -179,12 +177,6 @@ dbtree_m.f90 : position_h.mod
 dbtree_m.f90 : geobjlist_h.mod
 dbtree_m.f90 : position_m.mod
 dbtree_m.f90 : geobj_m.mod
-mtest_m.f90 : const_kind_m.mod
-mtest_m.f90 : const_numphys_h.mod
-mtest_m.f90 : log_m.mod
-mtest_m.f90 : control_h.mod
-mtest_m.f90 : position_h.mod
-mtest_m.f90 : position_m.mod
 termplane_h.f90 : const_kind_m.mod
 pcle_h.f90 : const_kind_m.mod
 pcle_m.f90 : const_kind_m.mod
