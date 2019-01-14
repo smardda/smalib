@@ -17,6 +17,8 @@ program vtktfm_p
   use spl2d_m
   use spl3d_m
 
+  use pcle_h
+  use pcle_m
   use geobjlist_h
   use position_m
   use ls_m

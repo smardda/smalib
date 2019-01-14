@@ -96,11 +96,13 @@ subroutine beqan_readcon(self,kin)
   integer(ki4) :: nh !< number of grid points in Z-direction
 
   !! equil parameters
-  namelist /equilparameters/ equilibrium_formula, BPhi, Psi0, R1, R2, Rm, Zm, &
+  namelist /equilparameters/ &
+ &equilibrium_formula, BPhi, Psi0, R1, R2, Rm, Zm, &
  &general_real_parameters, number_of_real_parameters, &
  &general_integer_parameters, number_of_integer_parameters
 
-  namelist /meshparameters/ rmin, rmax, nw, zmin, zmax, nh
+  namelist /meshparameters/ &
+ &rmin, rmax, nw, zmin, zmax, nh
 
   !! set default equil parameters
   equilibrium_formula='solovev'

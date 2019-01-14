@@ -20,7 +20,7 @@ module geobj_m
   geobj_normal, &  !< calculate normal to geobj
   geobj_area, &  !< calculate area of geobj
   geobj_nodes, &  !< return geobj nodal values
-  geobj_centre, &  !< calculate barycentre of geobj
+  geobj_centre, &  !< calculate barycentre or centroid of geobj
   geobj_sample, & !< calculate sample point of geobj
   geobj_entry_table_fn, &  !< return number of entries in geobj_entry_table
   geobj_type_fn, &  !< extract last 8 bits in geobj_entry_table

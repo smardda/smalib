@@ -65,7 +65,7 @@ subroutine vfile_init(fplot,descriptor,kplot)
   !DBG write(*,*) 'cwrite=',cwrite !DBG
   if (filefound) then
      call log_value("vtk data file ",icfile)
-     call log_error(m_name,s_name,1,error_warning,'File already exists and may be write protected')
+     call log_error(m_name,s_name,1,error_warning,'File already exists and might not be overwritten')
   end if
   call misc_getfileunit(kplot)
   open(unit=kplot,file=icfile,iostat=status)
@@ -105,15 +105,16 @@ subroutine vfile_rscalarread(self,kp,infile,kcname,kin,kopt)
   !! logical :: unitused !< flag to test unit is available
   integer :: ierror   !<  whether error is to be fatal or not
   integer(ki4) :: insca   !< number of scalars
+  character(80) :: icname !< name of required vector field
+  integer(ki4) :: iclen   !< length of required scalar field name
   character(80) :: sname !< name of scalar
   integer(ki4) :: islen   !< length of scalar field name
-  integer(ki4) :: islen2   !< length of required scalar field name
 
   logical :: isnumb !< local variable
   external isnumb
 
-  ibuf1=adjustl(kcname)
-  islen2=max(2,scan(ibuf1,' '))-1
+  icname=adjustl(kcname)
+  iclen=max(2,scan(icname,' '))-1
   if(kopt>0) then
      ierror=error_warning
      !! assume unit already open and reading infile
@@ -189,7 +190,7 @@ subroutine vfile_rscalarread(self,kp,infile,kcname,kin,kopt)
            ibuf1=adjustl(ibuf2(8:))
            islen=max(2,scan(ibuf1,' '))-1
            sname=ibuf1(:islen)
-           if (sname(:islen)==kcname(:islen2)) then
+           if (sname(:islen)==icname(:iclen)) then
               call log_value("Scalar field found ",sname)
               exit
            else
@@ -238,16 +239,17 @@ subroutine vfile_rvectorread(self,kp,kadim,infile,kcname,kin,kopt)
   !! logical :: unitused !< flag to test unit is available
   integer :: ierror   !<  whether error is to be fatal or not
   integer(ki4) :: insca   !< number of vectors
+  character(80) :: icname !< name of required vector field
+  integer(ki4) :: iclen   !< length of required vector field name
   character(80) :: sname !< name of vector
   integer(ki4) :: islen   !< length of vector field name
-  integer(ki4) :: islen2   !< length of required vector field name
 
   logical :: isnumb !< local variable
   external isnumb
 
   kadim=0
-  ibuf1=adjustl(kcname)
-  islen2=max(2,scan(ibuf1,' '))-1
+  icname=adjustl(kcname)
+  iclen=max(2,scan(icname,' '))-1
   if(kopt>0) then
      ierror=error_warning
      !! assume unit already open and reading infile
@@ -332,7 +334,7 @@ subroutine vfile_rvectorread(self,kp,kadim,infile,kcname,kin,kopt)
            ibuf1=adjustl(ibuf2(8:))
            islen=max(2,scan(ibuf1,' '))-1
            sname=ibuf1(:islen)
-           if (sname(:islen)==kcname(:islen2)) then
+           if (sname(:islen)==icname(:iclen)) then
               call log_value("Vector field found ",sname)
               exit
            else
@@ -378,15 +380,16 @@ subroutine vfile_dscalarread(self,kp,infile,kcname,kin,kopt)
   !! logical :: unitused !< flag to test unit is available
   integer :: ierror   !<  whether error is to be fatal or not
   integer(ki4) :: insca   !< number of scalars
+  character(80) :: icname !< name of required vector field
+  integer(ki4) :: iclen   !< length of required scalar field name
   character(80) :: sname !< name of scalar
   integer(ki4) :: islen   !< length of scalar field name
-  integer(ki4) :: islen2   !< length of required scalar field name
 
   logical :: isnumb !< local variable
   external isnumb
 
-  ibuf1=adjustl(kcname)
-  islen2=max(2,scan(ibuf1,' '))-1
+  icname=adjustl(kcname)
+  iclen=max(2,scan(icname,' '))-1
   if(kopt>0) then
      ierror=error_warning
      !! assume unit already open and reading infile
@@ -462,7 +465,7 @@ subroutine vfile_dscalarread(self,kp,infile,kcname,kin,kopt)
            ibuf1=adjustl(ibuf2(8:))
            islen=max(2,scan(ibuf1,' '))-1
            sname=ibuf1(:islen)
-           if (sname(:islen)==kcname(:islen2)) then
+           if (sname(:islen)==icname(:iclen)) then
               call log_value("Scalar field found ",sname)
               exit
            else
@@ -511,9 +514,10 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt,kcdata)
   !! logical :: unitused !< flag to test unit is available
   integer :: ierror   !<  whether error is to be fatal or not
   integer(ki4) :: insca   !< number of scalars
+  character(80) :: icname !< name of required vector field
+  integer(ki4) :: iclen   !< length of required scalar field name
   character(80) :: sname !< name of scalar
   integer(ki4) :: islen   !< length of scalar field name
-  integer(ki4) :: islen2   !< length of required scalar field name
   logical :: ilfound !< flag whether field name found
   logical :: ilpointd !< point data is acceptable
   logical :: ilcelld !< cell data is acceptable
@@ -521,8 +525,8 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt,kcdata)
   logical :: isnumb !< local variable
   external isnumb
 
-  ibuf1=adjustl(kcname)
-  islen2=max(2,scan(ibuf1,' '))-1
+  icname=adjustl(kcname)
+  iclen=max(2,scan(icname,' '))-1
   if(kopt>0) then
      ierror=error_warning
      !! assume unit already open and reading infile
@@ -614,7 +618,7 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt,kcdata)
            ibuf1=adjustl(ibuf2(8:))
            islen=max(2,scan(ibuf1,' '))-1
            sname=ibuf1(:islen)
-           if (sname(:islen)==kcname(:islen2)) then
+           if (sname(:islen)==icname(:iclen)) then
               call log_value("Scalar field found ",sname)
               ilfound=.TRUE.
               exit
@@ -690,18 +694,19 @@ subroutine vfile_rfieldread(self,kp,infile,kcname,kin,kopt)
   integer :: ierror   !<  whether error is to be fatal or not
   integer(ki4) :: insca   !< number of scalars in array
   integer(ki4) :: infld   !< number of scalar arrays
+  character(80) :: icname !< name of required vector field
+  integer(ki4) :: iclen   !< length of required scalar array name
   character(80) :: sname !< name of scalar
   integer(ki4) :: inlastbl   !< position of last blank in buffer
   integer(ki4) :: islen   !< length of scalar array name
-  integer(ki4) :: islen2   !< length of required scalar array name
   integer(ki4) :: ilen   !< length of line string
 
   logical :: ilok !< flag whether named array found
   logical :: isnumb !< local variable
   external isnumb
 
-  ibuf1=adjustl(kcname)
-  islen2=max(2,scan(ibuf1,' '))-1
+  icname=adjustl(kcname)
+  iclen=max(2,scan(icname,' '))-1
   if(kopt>0) then
      ierror=error_warning
      !! assume unit already open and reading infile
@@ -811,7 +816,7 @@ subroutine vfile_rfieldread(self,kp,infile,kcname,kin,kopt)
      call log_read_check(m_name,s_name,7,status)
      islen=max(2,scan(ibuf1,' '))-1
      sname=ibuf1(:islen)
-     if (sname(:islen)==kcname(:islen2)) then
+     if (sname(:islen)==icname(:iclen)) then
         call log_value("Scalar array found ",sname)
         ilok=.TRUE.
         exit
@@ -1116,30 +1121,5 @@ subroutine vfile_skiptolabel(infile,kclabel,kin)
   call log_value("Successfully found label ",kclabel)
 
 end subroutine vfile_skiptolabel
-
-subroutine misc_countnos(bigbuf,kfmt)
-  character(len=*),intent(in) :: bigbuf !< buffer for input
-  integer(ki4), intent(out) :: kfmt !< format of buffer - number of 3-vectors
-  character(len=132) :: ibuf !< buffer for input/output
-  integer(ki4) :: ilen !< length of string
-  integer(ki4) :: iblan !< number of bank substrings
-  integer(ki4) :: isw !< switch on if last character was not blank
-  integer(ki4) :: ji !< loop variable
-  iblan=0
-  ibuf=adjustl(bigbuf)
-  ilen=len_trim(ibuf)
-  isw=1
-  do ji=1,ilen
-     if (ibuf(ji:ji)==' ') then
-        if (isw/=0) then
-           iblan=iblan+1
-           isw=0
-        end if
-     else
-        isw=1
-     end if
-  end do
-  kfmt=(iblan+1)/3
-end subroutine misc_countnos
 
 end module vfile_m

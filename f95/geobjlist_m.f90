@@ -139,6 +139,8 @@ subroutine geobjlist_init(self,vtkfile,numerics)
   self%nquant=numerics%nquante
   self%tfmdata=numerics%position_coord_tfm
   self%quantfm=numerics%geobj_coord_tfm
+  self%coordbb=numerics%coordbb
+  self%binbb=numerics%binbb
   self%ngunassigned=0
   self%nwset=0
 
@@ -2903,7 +2905,7 @@ subroutine geobjlist_create3d(self,numerics,kgcode)
         zposang%pos=zpos1%posvec
         !zposang%opt=1 ; zposang%units=0
         zposang%opt=numerics%csys ; zposang%units=numerics%cunits
-        call posang_tfm(zposang,0)
+        call posang_tfm(zposang,-3)
         self%posl%pos(ip)%posvec=zposang%pos
      end do
      zdisp=(numerics%stpos-numerics%finpos)/m
@@ -2916,7 +2918,7 @@ subroutine geobjlist_create3d(self,numerics,kgcode)
         do i=1,n
            ip=ip+1
            ipp=ipp+1
-           self%posl%pos(ipp)%posvec=self%posl%pos(ip)%posvec+zpos1%posvec
+           self%posl%pos(ipp)%posvec=self%posl%pos(ip)%posvec+(j-1)*zpos1%posvec
         end do
      end do
 
@@ -2932,8 +2934,9 @@ subroutine geobjlist_create3d(self,numerics,kgcode)
            zpos1%posvec(2)=numerics%z(i)
            zpos1%posvec(3)=zeta
            zposang%pos=zpos1%posvec
+           !zposang%opt=1 ; zposang%units=0
            zposang%opt=numerics%csys ; zposang%units=numerics%cunits
-           call posang_tfm(zposang,0)
+           call posang_tfm(zposang,-3)
            self%posl%pos(ip)%posvec=zposang%pos
         end do
         zeta=zeta+delzeta
@@ -2999,6 +3002,9 @@ subroutine geobjlist_create3d(self,numerics,kgcode)
   do j=1,self%ng
      self%obj2(j)%typ=VTK_TRIANGLE+kgcode*GEOBJ_POW
   end do
+
+  ! units of mm
+  self%posl%nparpos(1)=-3
 
   print '("number of geobj created = ",i10)',self%ng
   call log_value("number of geobj created ",self%ng)
@@ -4192,30 +4198,5 @@ function indict2(ndim,dict,word)
      end do
   end do
 end function indict2
-
-subroutine misc_countnos(bigbuf,kfmt)
-  character(len=*),intent(in) :: bigbuf !< buffer for input
-  integer(ki4), intent(out) :: kfmt !< format of buffer - number of 3-vectors
-  character(len=132) :: ibuf !< buffer for input/output
-  integer(ki4) :: ilen !< length of string
-  integer(ki4) :: iblan !< number of blank substrings
-  integer(ki4) :: isw !< switch on if last character was not blank
-  integer(ki4) :: ji !< loop variable
-  iblan=0
-  ibuf=adjustl(bigbuf)
-  ilen=len_trim(ibuf)
-  isw=1
-  do ji=1,ilen
-     if (ibuf(ji:ji)==' ') then
-        if (isw/=0) then
-           iblan=iblan+1
-           isw=0
-        end if
-     else
-        isw=1
-     end if
-  end do
-  kfmt=(iblan+1)/3
-end subroutine misc_countnos
 
 end module geobjlist_m

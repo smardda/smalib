@@ -21,6 +21,7 @@ module geobjlist_h
      integer(ki4)  :: nsampl !< no of geobjs in sample
      integer(ki2)  :: nquant !< estimated then actual quantising number (log)
      integer(ki4)  :: minobj !< minimum number of geobj in a bin
+     character(len=30) :: hed !< label at start of line
      integer(ki2par)  :: numnparam=2 !< number of entries in nparam
    !> Integer parameter(s) of vtk file header
    !! Array index entries give
@@ -30,8 +31,8 @@ module geobjlist_h
      integer(ki2par), dimension(2)  :: nparam =(/1,0/) !< .
      integer(ki2par)  :: numrparam=1 !< number of entries in rparam
      real(kr4), dimension(1) :: rparam=(/0._kr4/) !< real parameter(s) from file header (NOT USED)
-     real(kr4), dimension(3,2) :: coordbb !< bb of geobj coord
-     real(kr4), dimension(3,2) :: binbb !< bb for geobj binning
+     real(kr4), dimension(3,2) :: coordbb !< bounding box of geobj coord
+     real(kr4), dimension(3,2) :: binbb !< bounding box for geobj binning
      real(kr4) :: tolerance !< max distance from face
      real(kr4) :: minmaxtolerance !< min max distance from face
      integer(ki4) :: nbdcub=0 !< number of extra bounding cubes

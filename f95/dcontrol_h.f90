@@ -19,6 +19,9 @@ module dcontrol_h
      integer(ki2par) :: cunits !< units of system (-3 for mm)
      real(kr8) :: stang  !< starting angle for surface generation
      real(kr8) :: finang  !< finishing angle for surface generation
+     integer(ki4) :: endgle !< use smallest or largest angle depending on sign
+     real(kr8) :: minang  !< smallest angle in geometry
+     real(kr8) :: maxang  !< largest angle in geometry
      real(kr8), dimension(3) :: stpos !< starting position for surface generation
      real(kr8), dimension(3) :: finpos !< finishing position for surface generation
   end type dnumerics_t

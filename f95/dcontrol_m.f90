@@ -45,7 +45,7 @@ module dcontrol_m
   character(len=132) :: ibuf !< buffer for input/output
 !> integer parameter array
 !! dimension at least geobjlist%numnparam+geobjlist%posl%numnparpos (2+4)
-  integer(ki2par), dimension(6) :: ipara   !< - 
+  integer(ki2par), dimension(6) :: ipara   !< -
   character(len=256) :: datdesc !< descriptor line for gnu dat files
   integer(ki4) :: inumnparam   !< number of descriptors in array
 
@@ -122,7 +122,7 @@ subroutine dcontrol_read(file,numerics,plot)
 
   !!local
   character(*), parameter :: s_name='dcontrol_read' !< subroutine name
-  logical, parameter :: noplotnml=.TRUE. !< shut off plot namelist read
+  logical, parameter :: readplotnml=.TRUE. !< if .FALSE., shut off plot namelist read
   logical :: filefound !< true if file exists
 
   logical :: filedata !< data file specifies geometry
@@ -162,7 +162,7 @@ subroutine dcontrol_read(file,numerics,plot)
   plot_vtk = .false.
   plot_gnu = .false.
 
-  if (noplotnml) then
+  if (readplotnml) then
      !!read plot selections
      read(nin,nml=plotselections,iostat=status)
      if(status/=0) then
@@ -243,6 +243,7 @@ subroutine dcontrol_readnum(numerics,kunit,klfile)
   real(kr8), dimension(3) :: finish_position !< finish position
   integer(ki4) :: number_of_divisions !< number of divisions
   integer(ki4) :: coordinate_system !< coordinate system positive as posang (q.v.), unity for polars
+  integer(ki4) :: end_angle !< +-1, use largest/smallest angle in geometry
   integer(ki4) :: line_divisions !< number of divisions
   character(len=20) :: angle_units  !< units, either radian(s) or degree(s)
   character(len=20) :: length_units  !< units, either me(tres) or mm
@@ -261,6 +262,7 @@ subroutine dcontrol_readnum(numerics,kunit,klfile)
  &start_position, finish_position, &
  &number_of_divisions,&
  &coordinate_system,&
+ &end_angle,&
  &line_divisions
 
   !---------------------------------------------------------------------
@@ -278,6 +280,7 @@ subroutine dcontrol_readnum(numerics,kunit,klfile)
   line_divisions = 0
   number_of_divisions = 10
   coordinate_system = 1
+  end_angle = 0
 
   !!read datvtk parameters
   read(kunit,nml=datvtkparameters,iostat=status)
@@ -336,6 +339,9 @@ subroutine dcontrol_readnum(numerics,kunit,klfile)
   if(coordinate_system/=1) then
      call log_error(m_name,s_name,31,error_fatal,'coordinate system must be positive, unity for polars')
   end if
+  if(abs(end_angle)>1) then
+     call log_error(m_name,s_name,32,error_fatal,'end angle must not exceed unit in absolute value')
+  end if
 
   numerics%descode=igcode
   numerics%tfm=transform_type
@@ -345,11 +351,14 @@ subroutine dcontrol_readnum(numerics,kunit,klfile)
   numerics%finpos=finish_position*lenfac
   numerics%div=2*((number_of_divisions+1)/2)
   numerics%csys=coordinate_system
+  numerics%endgle=end_angle
+  numerics%minang=numerics%stang
+  numerics%maxang=numerics%finang
 
   if (.NOT.filedata) then
      ! line defined by namelist, check here and set up
      if(line_divisions<=0) then
-        call log_error(m_name,s_name,32,error_fatal,'number of line divisions must be positive')
+        call log_error(m_name,s_name,33,error_fatal,'number of line divisions must be positive')
      end if
      call misc_line2d(numerics%r,numerics%z,numerics%stpos,numerics%finpos,line_divisions)
   end if
@@ -517,6 +526,8 @@ subroutine dcontrol_skyl(self,knrz,rz,zetamin,zetamax,kndiv)
   self%z=rz(2,:)
   self%stang=zetamin
   self%finang=zetamax
+  self%minang=self%stang
+  self%maxang=self%finang
   self%div=kndiv
   ! units to mm and misc settings
   self%r=1000*self%r
@@ -559,7 +570,7 @@ subroutine dcontrol_makehedline(self,kclabel,descriptor)
      ipara(5)=0
      ipara(6)=0
   case default
-     ! dequantised polars (m) 
+     ! dequantised polars (m)
      ipara=(/1,0,0,1,0,0/)
   end select posveclis
 
@@ -596,9 +607,9 @@ subroutine dcontrol_readhedline(self,descriptor,kclabel)
         if(istatus/=0) call log_error(m_name,s_name,1,error_warning,'Error reading inumparam')
         read(ibuf2(iieq+4:),'(9(1x,i4))',iostat=istatus,end=1) (ipara(l),l=1,inumnparam)
         if(istatus/=0) call log_error(m_name,s_name,2,error_warning,'Error reading first line parameters')
-self%descode=ipara(2)
-self%cunits=ipara(3)
-self%csys=ipara(4)
+        self%descode=ipara(2)
+        self%cunits=ipara(3)
+        self%csys=ipara(4)
      end if
   else
      return

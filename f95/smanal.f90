@@ -102,9 +102,9 @@ program smanal_p
   call clock_stop(2)
 
 !--------------------------------------------------------------------------
-!! initialise geobjl data from powcal output file
+!! initialise smanal data
 
-  call clock_start(3,'geobjlist_init time')
+  call clock_start(3,'smanal_init time')
   call smanal_read(smanal,file,numerics)
   call clock_stop(3)
 

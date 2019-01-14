@@ -317,15 +317,17 @@ subroutine hdsfile_read(geobjl,numerics,btree)
         end if
 
      else if (ichar=='BOUBO') then
-        read(nouth,*,iostat=status)  geobjl%coordbb
-        !write(*,*) 'geobjl%coordbb',geobjl%coordbb
+        read(nouth,*,iostat=status)  numerics%coordbb
+        !write(*,*) 'numerics%coordbb',numerics%coordbb
         if(status/=0) then
            call log_error(m_name,s_name,40,error_fatal,'Error reading coordbb ')
         end if
-        read(nouth,*,iostat=status)  geobjl%binbb
+        read(nouth,*,iostat=status)  numerics%binbb
         if(status/=0) then
            call log_error(m_name,s_name,41,error_fatal,'Error reading binbb ')
         end if
+        geobjl%coordbb=numerics%coordbb
+        geobjl%binbb=numerics%binbb
      end if
 
   end do

@@ -13,7 +13,9 @@ module misc_m
  &misc_close, &  !< close file with error handling
  &misc_line2d, &  !< sample 2-D straight line between end-points
  &misc_lines2d, &  !< sample 2-D straight lines between end-points
- &misc_anglevec !< return angle in degrees between two vectors
+ &misc_anglevec, & !< return angle in degrees between two vectors
+ &misc_fsuffixget, & !< get file suffix as lower case string
+ &misc_countnos
 
 ! public types
 
@@ -140,28 +142,28 @@ subroutine misc_lines2d(rpos,zpos,npos,ldiv,div)
   !! nothing to do if no subdivisions
   if (ldiv==0) return
 
-  iposn=(npos-1)*(ldiv+1)+1
+  iposn=(npos-1)*ldiv+1
   allocate(rposn(iposn),zposn(iposn),stat=status)
   call log_alloc_check(m_name,s_name,1,status)
   !! uniformly divided line between each input point (as polars (R,Z) )
-  i=0
+  i=1
   zr1=rpos(1)
   zz1=zpos(1)
+  rposn(1)=zr1
+  zposn(1)=zz1
   do l=2,npos
      zr2=rpos(l)
      zz2=zpos(l)
      zdelr=(zr2-zr1)/ldiv
      zdelz=(zz2-zz1)/ldiv
-     do j=1,ldiv+1
+     do j=1,ldiv
         i=i+1
-        rposn(i)=zr1+(j-1)*zdelr
-        zposn(i)=zz1+(j-1)*zdelz
+        rposn(i)=zr1+j*zdelr
+        zposn(i)=zz1+j*zdelz
      end do
      zr1=zr2
      zz1=zz2
   end do
-  rposn(iposn)=rpos(npos)
-  zposn(iposn)=zpos(npos)
   ! now move  back to subroutine arguments
   deallocate(rpos,zpos)
   allocate(rpos(iposn),zpos(iposn),stat=status)
@@ -202,5 +204,58 @@ function misc_anglevec(pa,pb)
   !print *, misc_anglevec !print
   return
 end function misc_anglevec
+!---------------------------------------------------------------------
+!> get file suffix as lower case string
+subroutine misc_fsuffixget(filename,filesuffix,kerr)
+  !! arguments
+  character(*), intent(in) :: filename !< file name
+  character(*), intent(out) :: filesuffix !< file suffix
+  integer(ki4), intent(out)  :: kerr !< return status
+
+  !! local
+  integer(ki4) :: indot !< position of dot in filename
+  integer(ki4) :: ilenf !< length of input string
+  integer(ki4) :: ilent !< length of suffix string
+  character(len=80) :: icsuf  !< file suffix local variable
+
+  ilenf=len_trim(filename)
+  indot=index(filename,'.',.TRUE.)
+  if (indot>=ilenf) then
+     kerr=error_warning
+     filesuffix='xxx'
+  else
+     kerr=0
+     icsuf=filename(indot+1:ilenf)
+     ilent=len_trim(icsuf)
+     call lowor(icsuf,1,ilent)
+     filesuffix=icsuf
+  end if
+
+end subroutine misc_fsuffixget
+!---------------------------------------------------------------------
+subroutine misc_countnos(bigbuf,kfmt)
+  character(len=*),intent(in) :: bigbuf !< buffer for input
+  integer(ki4), intent(out) :: kfmt !< format of buffer - number of 3-vectors
+  character(len=132) :: ibuf !< buffer for input/output
+  integer(ki4) :: ilen !< length of string
+  integer(ki4) :: iblan !< number of blank substrings
+  integer(ki4) :: isw !< switch on if last character was not blank
+  integer(ki4) :: ji !< loop variable
+  iblan=0
+  ibuf=adjustl(bigbuf)
+  ilen=len_trim(ibuf)
+  isw=1
+  do ji=1,ilen
+     if (ibuf(ji:ji)==' ') then
+        if (isw/=0) then
+           iblan=iblan+1
+           isw=0
+        end if
+     else
+        isw=1
+     end if
+  end do
+  kfmt=(iblan+1)/3
+end subroutine misc_countnos
 
 end module misc_m

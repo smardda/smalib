@@ -32,6 +32,8 @@ module control_h
      real(kr4) :: dolen   !< outer cube separation from inner
      type(quantfm_t) :: geobj_coord_tfm !< geobj \f$ x \f$ to mesh units scaling
      type(tfmdata_t) :: position_coord_tfm !< position \f$ x \f$ to \f$ x \f$ scaling
+     real(kr4), dimension(3,2) :: coordbb !< bounding box of geobj coord
+     real(kr4), dimension(3,2) :: binbb !< bounding box for geobj binning
   end type numerics_t
 
 ! public types
@@ -87,10 +89,10 @@ module control_h
      logical :: hdsm   !< vtk plot of hds
      logical :: hdsbin     !< DUPLICATE vtk plot of HDS bbs
      logical :: hdsq   !< vtk plot of hds in mapped quantised coords
-     logical :: geobj   !< DUPLICATE vtk plot of geobj
-     logical :: geobjq   !< vtk plot of geobjq
+     logical :: geobj   !< vtk plot of geobj
+     logical :: geobjq   !< vtk plot of geobjq quantised
      logical :: lostgeobj  !< vtk plot file of unassigned geobj
-     logical :: allgeobj  !< vtk plot file of all geobj
+     logical :: allgeobj  !< DUPLICATE vtk plot file of all geobj
      logical :: allgeobjq  !< DUPLICATE vtk plot file of all geobj quantised
      logical :: geoptq  !< vtk plot file of all geobj in mapped quantised coords
      logical :: densitygeobj  !< vtk plot file of density geobj
