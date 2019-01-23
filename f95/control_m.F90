@@ -2,6 +2,7 @@ module control_m
 
   use const_kind_m
   use log_m
+  use misc_m
   use position_h
   use control_h
   use position_m
@@ -21,9 +22,9 @@ module control_m
 
 ! private variables
   character(*), parameter :: m_name='control_m' !< module name
-  integer(ki4)  :: status   !< error status
-  integer(ki4)  :: nin      !< control file unit number
-  integer(ki4)  :: ilog      !< for namelist dump after error
+  integer  :: status   !< error status
+  integer  :: nin      !< control file unit number
+  integer  :: ilog      !< for namelist dump after error
   integer(ki4)  :: i!< loop counter
   integer(ki4)  :: j        !< loop counter
   character(len=80) :: root !< file root
@@ -39,23 +40,17 @@ subroutine control_init(fileroot)
   character(*), intent(in) :: fileroot !< file root
   !! local
   character(*), parameter :: s_name='control_init' !< subroutine name
-  logical :: unitused !< flag to test unit is available
+  !! logical :: unitused !< flag to test unit is available
   character(len=80) :: controlfile !< control file name
 
 
-  !! get file unit
-  do i=99,1,-1
-     inquire(i,opened=unitused)
-     if(.not.unitused)then
-        nin=i
-        exit
-     end if
-  end do
+  !! get file unit do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then nin=i exit end if end do
 
   !! open file
   controlfile=trim(fileroot)//".ctl"
   root=fileroot
   call log_value("Control data file",trim(controlfile))
+  call misc_getfileunit(nin)
   open(unit=nin,file=controlfile,status='OLD',iostat=status)
   if(status/=0)then
      !! error opening file
@@ -306,12 +301,12 @@ subroutine control_read(file,numerics,plot)
   plot%geoptq     = plot_geoptq
   plot%densitygeobj     = plot_densitygeobj
   if (plot_hds) then
-  plot%hdsm = plot_hds
-  call log_error(m_name,s_name,20,error_warning,'Obsolete plot selection feature activated')
+     plot%hdsm = plot_hds
+     call log_error(m_name,s_name,20,error_warning,'Obsolete plot selection feature activated')
   end if
   if (plot_geobj) then
-  plot%geobjq = plot_geobj
-  call log_error(m_name,s_name,21,error_warning,'Obsolete plot selection feature activated')
+     plot%geobjq = plot_geobj
+     call log_error(m_name,s_name,21,error_warning,'Obsolete plot selection feature activated')
   end if
 
 end  subroutine control_read
@@ -678,7 +673,7 @@ subroutine control_mread(file,numerics,plot)
 
   !! arguments
   type(files_t), intent(out) :: file !< file names
-  type(numerics_t), intent(inout) :: numerics !< input numerical parameters
+  type(mtnumerics_t), intent(inout) :: numerics !< input numerical parameters
   type(plots_t), intent(out) :: plot !< vtk plot selectors
 
   !!local
@@ -687,10 +682,16 @@ subroutine control_mread(file,numerics,plot)
   character(len=80) :: hds_input_file  !< hds data input file
   character(len=80) :: query_input_file  !< qry data input file
   logical :: filefound !< true of file exists
-  logical :: plot_move_positions !< vtk plot selector
-  logical :: plot_points !< vtk plot selector
+  logical :: plot_move_positions !<  DUPLICATE vtk plot selector
+  logical :: plot_moves !< vtk plot selector
+  logical :: plot_movesq !< vtk plot selector
+  logical :: plot_geopt !< vtk plot selector
+  logical :: plot_geoptq !< vtk plot selector
+  logical :: plot_geobjq !< vtk plot selector
+  logical :: plot_points !<  DUPLICATE vtk plot selector
   logical :: plot_allgeobj !< vtk plot selector
   logical :: plot_hdsbins !< DUPLICATE vtk plot selector
+  logical :: plot_hdsm !< vtk plot selector
   logical :: plot_hdsq !< vtk plot selector
 
   integer(ki4) :: geometrical_type !< type of geometry
@@ -700,6 +701,13 @@ subroutine control_mread(file,numerics,plot)
   integer(ki4) :: quantising_number !< local variable
   integer(ki4) :: no_geobj_records !< local variable
   integer(ki4) :: margin_type !< local variable
+  !> vtk test file content
+  !! 0. Default, alternate start and end points
+  !! 1. Alternate start points and velocity values
+  !! 2. Velocity field is separate VECTORS field_name
+  integer(ki4) :: query_file_content !< .
+  real(kr8) :: nominal_dt !< nominal timestep if velocity in vtk test file
+  character(len=80) :: field_name !< actual name of velocity vector field in vtk test file
 
   !! file names
   namelist /inputfiles/ &
@@ -707,8 +715,7 @@ subroutine control_mread(file,numerics,plot)
  &hds_input_file, &
  &query_input_file
 
-
-  !! numerical parameters aka hdsgenparameters
+  !! numerical parameters = hdsgenparameters + mtest specials
   namelist /numericalparameters/ &
  &geometrical_type, &
  &min_tolerance, &
@@ -716,14 +723,23 @@ subroutine control_mread(file,numerics,plot)
  &quantising_number, &
  &no_geobj_records, &
  &margin_type, &
- &type_geobj_coord_scaling
+ &type_geobj_coord_scaling, &
+ &query_file_content, &
+ &nominal_dt, &
+ &field_name
 
   !! plot selection parameters
   namelist /plotselections/ &
  &plot_move_positions, &
+ &plot_moves, &
+ &plot_movesq, &
+ &plot_geopt, &
+ &plot_geoptq, &
+ &plot_geobjq, &
  &plot_points, &
  &plot_allgeobj, &
  &plot_hdsbins, &
+ &plot_hdsm, &
  &plot_hdsq
 
   !! read input file names
@@ -764,6 +780,8 @@ subroutine control_mread(file,numerics,plot)
      print '("Fatal error: Unable to find query data file, ",a)',query_input_file
      call log_error(m_name,s_name,4,error_fatal,'Mesh data file not found')
   end if
+  ! get suffix
+  call misc_fsuffixget(file%qrydata,numerics%qfilesuf,status)
 
   !! set default numerical parameters
   geometrical_type = 1
@@ -773,6 +791,9 @@ subroutine control_mread(file,numerics,plot)
   no_geobj_records = 0
   margin_type = 0
   type_geobj_coord_scaling=2  ! allows for offset
+  query_file_content=0  ! default, alternate positions
+  nominal_dt=1.
+  field_name='Vel'
 
   !!read numerical parameters
   read(nin,nml=numericalparameters,iostat=status)
@@ -797,18 +818,29 @@ subroutine control_mread(file,numerics,plot)
   if(quantising_number<32) &
  &call log_error(m_name,s_name,10,error_fatal,'quantising_number must be > 31')
 
-  call control_quantise(numerics,quantising_number,type_geobj_coord_scaling)
+  call control_quantise(numerics%n,quantising_number,type_geobj_coord_scaling)
 
   if(type_geobj_coord_scaling<0) &
  &call log_error(m_name,s_name,11,error_fatal,'type_geobj_coord_scaling must be positive')
+  if(query_file_content<0.OR.query_file_content>2) &
+ &call log_error(m_name,s_name,12,error_fatal,'query_file_content must be small non-negative')
+  if(query_file_content>0) then
+     if(nominal_dt<0) &
+ &   call log_error(m_name,s_name,14,error_fatal,'nominal_dt must be non-negative')
+  end if
 
   !! store values
-  numerics%geomtype = geometrical_type
-  numerics%ngeobj  = no_geobj_records
-  numerics%mintolerance = min_tolerance
-  numerics%mtype  = margin_type
-  numerics%maxtolerance = max_tolerance
-  numerics%geobj_coord_tfm%nqtfm=type_geobj_coord_scaling
+  numerics%n%geomtype = geometrical_type
+  numerics%n%ngeobj  = no_geobj_records
+  numerics%n%mintolerance = min_tolerance
+  numerics%n%mtype  = margin_type
+  numerics%n%maxtolerance = max_tolerance
+  numerics%n%geobj_coord_tfm%nqtfm=type_geobj_coord_scaling
+  numerics%vcontent=query_file_content
+  numerics%mdt=nominal_dt
+  numerics%fldnam=field_name
+  ! including file suffix
+  call misc_fsuffixget(file%qrydata,numerics%qfilesuf,status)
 
   !! create output file names from root
 
@@ -824,19 +856,25 @@ subroutine control_mread(file,numerics,plot)
   end if
 
   !!vtk file roots
-  file%mov     =trim(root)//"_mov"
+  file%mov     =trim(root)//"_movx"
   file%movq     =trim(root)//"_movq"
-  file%allgeobj  =trim(root)//"_allgeobj"
+  file%geobjq  =trim(root)//"_geobjq"
   file%hdsv  =trim(root)//"_hdsv"
   file%hdsm  =trim(root)//"_hdsm"
-  file%pts     =trim(root)//"_pts"
-  file%ptsq     =trim(root)//"_ptsq"
+  file%pts     =trim(root)//"_geopt"
+  file%ptsq     =trim(root)//"_geoptq"
 
   !! set default plot selections
   plot_move_positions = .false.
+  plot_moves = .true.
+  plot_movesq = .false.
+  plot_geopt = .true.
+  plot_geoptq = .false.
+  plot_geobjq = .false.
   plot_points = .false.
   plot_allgeobj = .false.
   plot_hdsbins = .false.
+  plot_hdsm = .false.
   plot_hdsq = .false.
 
   !!read plot selections
@@ -849,11 +887,30 @@ subroutine control_mread(file,numerics,plot)
   end if
 
   !! store values
-  plot%movq   = plot_move_positions
-  plot%allgeobj    = plot_allgeobj
-  plot%hdsbin    = plot_hdsbins
+  plot%mov   = plot_moves
+  plot%pts    = plot_geopt
+  plot%hdsm    = plot_hdsm
   plot%hdsq    = plot_hdsq
-  plot%ptsq    = plot_points
+
+  if (plot_hdsbins) then
+     plot%hdsm = plot_hdsbins
+     call log_error(m_name,s_name,10,error_warning,'Obsolete plot selection feature activated')
+  end if
+  plot%movq = plot_movesq
+  if (plot_move_positions) then
+     plot%movq = plot_move_positions
+     call log_error(m_name,s_name,11,error_warning,'Obsolete plot selection feature activated')
+  end if
+  plot%ptsq = plot_geoptq
+  if (plot_points) then
+     plot%ptsq = plot_points
+     call log_error(m_name,s_name,12,error_warning,'Obsolete plot selection feature activated')
+  end if
+  plot%geobjq = plot_geobjq
+  if (plot_allgeobj) then
+     plot%geobjq = plot_allgeobj
+     call log_error(m_name,s_name,14,error_warning,'Obsolete plot selection feature activated')
+  end if
 
 end  subroutine control_mread
 
@@ -961,6 +1018,11 @@ subroutine control_btree(numerics,kin)
   numerics%nxyz=tree_nxyz
   numerics%hxyz=tree_hxyz
 
+  !! give these a (zero and/or identity) value to improve reproducibility
+  numerics%coordbb=0.
+  numerics%binbb=0.
+  call position_unitfmq(numerics%geobj_coord_tfm)
+
 end subroutine control_btree
 
 subroutine control_quantise(numerics,kquante,kqtfm)
@@ -998,6 +1060,5 @@ subroutine control_quantise(numerics,kquante,kqtfm)
   numerics%nquante  = iquante
 
 end subroutine control_quantise
-
 
 end module control_m

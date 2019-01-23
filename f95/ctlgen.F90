@@ -1,11 +1,9 @@
 program ctlgen
 
-#ifdef WITH_MPI
-  use mpi
-#endif
   use const_kind_m
   use date_time_m
   use log_m
+  use misc_m
   use ccontrol_m
 
   character(len=2) :: arg1 !< 1st argument
@@ -15,12 +13,6 @@ program ctlgen
   character(len=80) :: code !< first code input file intended for
   character(len=80) :: coden !< other code input file intended for
   integer   :: inarg   !< number of command arguments
-#ifdef WITH_MPI
-  integer error, rank
-  call MPI_Init ( error )
-  call MPI_Comm_rank(MPI_COMM_WORLD, rank, error)
-  if (rank .eq. 0) then
-#endif
 !--------------------------------------------------------------------------
 !! use arguments
   inarg=command_argument_count()
@@ -52,15 +44,12 @@ program ctlgen
 !! do the work
   target_code: select case(code)
   case('vtktfm')
-  call ccontrol_readctlin(coden)
+     call ccontrol_readctlin(coden)
 
-  call ccontrol_writectl
+     call ccontrol_writectl
   end select target_code
 
   print *, 'ctlgen completed successfully'
   call log_close
-#ifdef WITH_MPI
-  end if
-  call MPI_Finalize ( error )
-#endif
+
 end program ctlgen

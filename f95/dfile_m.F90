@@ -2,6 +2,7 @@ module dfile_m
 
   use const_kind_m
   use log_m
+  use misc_m
   use datline_h
   use datline_m
 
@@ -11,6 +12,7 @@ module dfile_m
 ! public subroutines
   public :: &
  &dfile_init, & !< initialise dat file
+ &dfile_initdatfile, & !< open new unit and insert gnu dat header line
  &dfile_close !< close dat file
 
 ! public types
@@ -24,8 +26,8 @@ module dfile_m
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
   integer(ki4) :: l !< loop counter
-  integer(ki4) :: nread  !< file unit for read
-  integer(ki4) :: status  !< status flag
+  integer, save :: nunit  !< file unit for read/write
+  integer :: status  !< status flag
   logical :: iltest !< logical flag
 
   contains
@@ -35,28 +37,22 @@ subroutine dfile_init(fileroot,kunit,kwrite)
 
   !! arguments
   character(len=*), intent(in) :: fileroot !< file name root
-  integer(ki4), intent(inout) :: kunit   !< unit number
+  integer, intent(inout) :: kunit   !< unit number
   integer(ki4), intent(in), optional :: kwrite   !< if unity, open for writing
 
   !! local
   character(*), parameter :: s_name='dfile_init' !< subroutine name
-  logical :: unitused !< flag to test unit is available
+  !! logical :: unitused !< flag to test unit is available
 
-  !! open file
-
-  do i=99,1,-1
-     inquire(i,opened=unitused)
-     if(.not.unitused)then
-        kunit=i
-        exit
-     end if
-  end do
+  !! open file do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then kunit=i exit end if end do
 
   !! open file
   if(present(kwrite).AND.kwrite/=0) then
-  open(unit=kunit,file=trim(fileroot)//'.dat',status='NEW',iostat=status)
+     call misc_getfileunit(kunit)
+     open(unit=kunit,file=trim(fileroot)//'.dat',status='NEW',iostat=status)
   else
-  open(unit=kunit,file=trim(fileroot)//'.dat',status='OLD',form='FORMATTED',iostat=status)
+     call misc_getfileunit(kunit)
+     open(unit=kunit,file=trim(fileroot)//'.dat',status='OLD',form='FORMATTED',iostat=status)
   end if
 
   if(status/=0)then
@@ -66,17 +62,44 @@ subroutine dfile_init(fileroot,kunit,kwrite)
      call log_error(m_name,s_name,2,log_info,'dat file opened')
   end if
 
-  nread=kunit
+  nunit=kunit
 
 end subroutine dfile_init
 !---------------------------------------------------------------------
-!> close dat plot file on unit nread
+!> open new unit and insert gnu dat header line
+subroutine dfile_initdatfile(fprint,descriptor,kunit)
+
+  !! arguments
+  character(len=*), intent(in) :: fprint !< file name root
+  character(len=*), intent(in) :: descriptor !< dataset descriptor
+  integer, intent(inout) :: kunit   !< unit number
+
+  !! local
+  character(*), parameter :: s_name='dfile_initdatfile' !< subroutine name
+
+  call misc_getfileunit(kunit)
+  open(unit=kunit,file=trim(fprint)//'.dat')
+
+  !! write header (or not)
+  if (descriptor(1:1)=='#') then
+     write(kunit,'(a)') descriptor
+  else if (descriptor(1:4)=='null') then
+     continue
+  else
+     write(kunit,'(''# '',a)') descriptor
+  end if
+
+  nunit=kunit
+
+end subroutine dfile_initdatfile
+!---------------------------------------------------------------------
+!> close dat plot file on unit nunit
 subroutine dfile_close
 
   !! local
   character(*), parameter :: s_name='dfile_close' !< subroutine name
 
-  close(nread,iostat=status)
+  close(nunit,iostat=status)
   if(status/=0)then
      !! error closing file
      call log_error(m_name,s_name,1,error_fatal,'Error closing dat file')

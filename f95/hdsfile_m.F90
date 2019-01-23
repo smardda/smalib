@@ -3,6 +3,7 @@ module hdsfile_m
   use const_kind_m
   use date_time_m
   use log_m
+  use misc_m
   use control_h
   use btree_m
   use geobjlist_h
@@ -25,8 +26,8 @@ module hdsfile_m
   integer(ki4) :: i !< loop counter
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
-  integer(ki4) :: nouth  !< file unit for output
-  integer(ki4) :: status  !< status flag
+  integer :: nouth  !< file unit for output
+  integer :: status  !< status flag
 
   contains
 
@@ -36,22 +37,15 @@ subroutine hdsfile_init(fouth,timestamp,kouth)
   !! arguments
   character(len=*), intent(in) :: fouth !< file name root
   type(date_time_t), intent(in) :: timestamp !< timestamp of run
-  integer(ki4), intent(inout) :: kouth   !< unit number
+  integer, intent(inout) :: kouth   !< unit number
 
   !! local
   character(*), parameter :: s_name='hdsfile_init' !< subroutine name
-  logical :: unitused !< flag to test unit is available
+  !! logical :: unitused !< flag to test unit is available
 
-  !! open file
+  !! open file do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then kouth=i exit end if end do
 
-  do i=99,1,-1
-     inquire(i,opened=unitused)
-     if(.not.unitused)then
-        kouth=i
-        exit
-     end if
-  end do
-
+  call misc_getfileunit(kouth)
   open(unit=kouth,file=trim(fouth)//'.hds')
 
   !! write HDS header
@@ -73,18 +67,11 @@ subroutine hdsfile_dinit(infile,timestamp)
 
   !! local
   character(*), parameter :: s_name='hdsfile_dinit' !< subroutine name
-  logical :: unitused !< flag to test unit is available
+  !! logical :: unitused !< flag to test unit is available
 
-  !! open file
+  !! open file do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then nouth=i exit end if end do
 
-  do i=99,1,-1
-     inquire(i,opened=unitused)
-     if(.not.unitused)then
-        nouth=i
-        exit
-     end if
-  end do
-
+  call misc_getfileunit(nouth)
   open(unit=nouth,file=infile)
 
   !! read HDS header and rewind
@@ -330,15 +317,17 @@ subroutine hdsfile_read(geobjl,numerics,btree)
         end if
 
      else if (ichar=='BOUBO') then
-        read(nouth,*,iostat=status)  geobjl%coordbb
-        !write(*,*) 'geobjl%coordbb',geobjl%coordbb
+        read(nouth,*,iostat=status)  numerics%coordbb
+        !write(*,*) 'numerics%coordbb',numerics%coordbb
         if(status/=0) then
            call log_error(m_name,s_name,40,error_fatal,'Error reading coordbb ')
         end if
-        read(nouth,*,iostat=status)  geobjl%binbb
+        read(nouth,*,iostat=status)  numerics%binbb
         if(status/=0) then
            call log_error(m_name,s_name,41,error_fatal,'Error reading binbb ')
         end if
+        geobjl%coordbb=numerics%coordbb
+        geobjl%binbb=numerics%binbb
      end if
 
   end do

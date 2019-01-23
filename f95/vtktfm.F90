@@ -1,8 +1,5 @@
 program vtktfm_p
 
-#ifdef WITH_MPI
-  use mpi
-#endif
   use const_kind_m
   use const_numphys_h
   use date_time_m
@@ -10,6 +7,7 @@ program vtktfm_p
   use vcontrol_h
   use dcontrol_h
   use log_m
+  use misc_m
   use clock_m
   use position_h
   use fmesh_h
@@ -19,6 +17,8 @@ program vtktfm_p
   use spl2d_m
   use spl3d_m
 
+  use pcle_h
+  use pcle_m
   use geobjlist_h
   use position_m
   use ls_m
@@ -57,22 +57,17 @@ program vtktfm_p
   type(date_time_t) :: timestamp !< timestamp of run
   character(len=80) :: fileroot !< reference name for all files output by run
   character(len=80),save :: iched !< vtk field file descriptor
+  character(len=256) :: vtkdesc !< descriptor line for vtk files
 
   type(bods_t) :: bods !< type bods for geometrical objects
   integer(ki4), dimension(:), allocatable :: ibods !< array of more bodies for geometrical objects
-  integer(ki4):: nplot !< unit for vtk files
-  integer(ki4):: nin !< unit for other data
+  integer:: nplot !< unit for vtk files
+  integer:: nin !< unit for other data
   integer(ki4):: cpstart !< start number of copies
   integer(ki4):: nscal !< number of scalars (body identifiers)
   integer(ki4):: iopt=1 !< option for bodies
   integer(ki4):: icall !< call number for bods_cumulate2
   integer(ki4):: j !< loop variable
-#ifdef WITH_MPI
-  integer error, rank
-  call MPI_Init ( error )
-  call MPI_Comm_rank(MPI_COMM_WORLD, rank, error)
-  if (rank .eq. 0) then
-#endif
 !dbgw  integer(ki4):: ii !< loop variable !dbgw
 !dbgw  integer(ki4):: ij !< loop variable !dbgw
 !--------------------------------------------------------------------------
@@ -128,6 +123,7 @@ program vtktfm_p
 ! read data OK, but may still suppress
         if (numerics%same) then
            call bods_initlist(bods,geobjl,numerics%nvalue) !W
+           numerics%npans=1
         end if
      else if (4<=iopt.AND.iopt<=9) then
 ! no body data in file, fix up
@@ -148,10 +144,11 @@ program vtktfm_p
         icall=j-1
         igeobjl%ngtype=2
         call geobjlist_read(igeobjl,file%vtkdata(j),iched)
+        iopt=1
         nin=0
         call vfile_iscalarread(ibods,nscal,file%vtkdata(j),numerics%name,nin,iopt) !W
 !dbgw     write(*,*) 'second',(geobjl%nodl(ij),ij=1,20)  !dbgw
-        call geobjlist_cumulate(geobjl,igeobjl,cpstart,file%vtkcopies(j),iopt)
+        call geobjlist_cumulate(geobjl,igeobjl,cpstart,file%vtkcopies(j),iopt,0_ki2par)
         call bods_cumulate2(bods,ibods,igeobjl,j,cpstart,file%vtkcopies(j),icall)
         cpstart=1
         call geobjlist_delete(igeobjl)
@@ -167,7 +164,7 @@ program vtktfm_p
         igeobjl%ngtype=2
         call geobjlist_read(igeobjl,file%vtkdata(j),iched)
 !dbgw     write(*,*) 'third',(geobjl%nodl(ij),ij=1,20)  !dbgw
-        call geobjlist_cumulate(geobjl,igeobjl,cpstart,file%vtkcopies(j),iopt)
+        call geobjlist_cumulate(geobjl,igeobjl,cpstart,file%vtkcopies(j),iopt,0_ki2par)
         call bods_cumulate(bods,igeobjl,j,cpstart,file%vtkcopies(j),0)
         cpstart=1
         call geobjlist_delete(igeobjl)
@@ -181,7 +178,7 @@ program vtktfm_p
   call clock_start(6,'position transform time')
 !     line below needed for debugging version to run
 !  write(*,*) 'this output helps gfortran sometimes',(geobjl%nodl(j),j=1,2)
-!dbgw     write(*,*) 'fourth',((numerics%panbod(ii,ij),ii=1,2),ij=1,9)  !dbgw
+!     write(*,*) 'fourth',((numerics%panbod(ii,ij),ii=1,2),ij=1,9)  !dbgW
   if (numerics%paneltfm) then
 !dbgw write(*,*) 'caling paneltfm' !dbgw
      call geobjlist_paneltfm(geobjl,bods,numerics)
@@ -194,11 +191,12 @@ program vtktfm_p
 !! output file(s)
 
   call clock_start(30,'outfile_init time')
-  if (numerics%split) then
+  if (numerics%split.OR.numerics%extract) then
 ! write out as separate files
      call bods_write(bods,geobjl,fileroot,'none',numerics%name,1)
   else
-     call vfile_init(file%vtkout,iched,nplot)
+     call geobjlist_makehedline(geobjl,iched,vtkdesc)
+     call vfile_init(file%vtkout,vtkdesc,nplot)
 !dbgw     write(*,*) 'iched=',iched  !dbgw
      call geobjlist_writev(geobjl,'geometry',nplot)
      call vfile_iscalarwrite(bods%list,bods%nbod,numerics%name,'CELL',nplot,1)
@@ -216,8 +214,5 @@ program vtktfm_p
   call log_close
   call clock_delete
 !--------------------------------------------------------------------------
-#ifdef WITH_MPI
-  end if
-  call MPI_Finalize ( error )
-#endif
+
 end program vtktfm_p

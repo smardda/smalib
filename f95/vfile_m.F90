@@ -2,6 +2,7 @@ module vfile_m
 
   use const_kind_m
   use log_m
+  use misc_m
 
   implicit none
   private
@@ -30,13 +31,16 @@ module vfile_m
   character(*), parameter :: m_name='vfile_m' !< module name
   character(len=80) :: ibuf1 !< buffer for input/output
   character(len=80) :: ibuf2 !< buffer for input/output
+  character(len=80) :: icfile !< file name
   integer(ki4) :: i !< loop counter
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
   integer(ki4) :: l !< loop counter
-  integer(ki4) :: nin  !< file unit for input
-  integer(ki4) :: nplot  !< file unit for output
-  integer(ki4) :: status  !< status flag
+  integer, save :: nin  !< file unit for input
+  integer, save :: nplot  !< file unit for output
+  integer :: status  !< status flag
+  character(len=7) :: cwrite !< write status of file
+  logical :: filefound !< true if file exists
   logical :: iltest !< logical flag
 
   contains
@@ -47,23 +51,30 @@ subroutine vfile_init(fplot,descriptor,kplot)
   !! arguments
   character(len=*), intent(in) :: fplot !< file name root
   character(len=*), intent(in) :: descriptor !< dataset descriptor
-  integer(ki4), intent(inout) :: kplot   !< unit number
+  integer, intent(inout) :: kplot   !< unit number
 
   !! local
   character(*), parameter :: s_name='vfile_init' !< subroutine name
-  logical :: unitused !< flag to test unit is available
+  !! logical :: unitused !< flag to test unit is available
 
-  !! open file
+  !! open file do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then kplot=i exit end if end do
 
-  do i=99,1,-1
-     inquire(i,opened=unitused)
-     if(.not.unitused)then
-        kplot=i
-        exit
-     end if
-  end do
-
-  open(unit=kplot,file=trim(fplot)//'.vtk')
+  ! stop under user control if write-protected file already exists
+  icfile=trim(fplot)//'.vtk'
+  inquire(file=trim(icfile),exist=filefound,write=cwrite)
+  !DBG write(*,*) 'cwrite=',cwrite !DBG
+  if (filefound) then
+     call log_value("vtk data file ",icfile)
+     call log_error(m_name,s_name,1,error_warning,'File already exists and might not be overwritten')
+  end if
+  call misc_getfileunit(kplot)
+  open(unit=kplot,file=icfile,iostat=status)
+  if(status/=0)then
+     !! error opening file
+     call log_error(m_name,s_name,2,error_fatal,'Error opening vtk data file')
+  else
+     call log_error(m_name,s_name,2,log_info,'vtk data file opened')
+  end if
 
   !! write vtk header
   write(kplot,'(''# vtk DataFile Version 2.0'')')
@@ -72,6 +83,7 @@ subroutine vfile_init(fplot,descriptor,kplot)
   write(kplot,'(''           '')')
 
   nplot=kplot
+  !DBGwrite(*,*) 'nplot=',nplot !DBG
 
 end subroutine vfile_init
 !---------------------------------------------------------------------
@@ -82,7 +94,7 @@ subroutine vfile_rscalarread(self,kp,infile,kcname,kin,kopt)
   integer(ki4), intent(inout) :: kp   !< size of scalar list data
   character(*),intent(in) :: infile !< name of input file
   character(*),intent(in) :: kcname !< name of field required
-  integer(ki4), intent(inout) :: kin   !< input channel for scalar list data
+  integer, intent(inout) :: kin   !< input channel for scalar list data
   !> if positive on input, assume unit open and do not terminate execution if
   !! data is missing, return positive code if trouble, else zero
   !! if zero on input, missing data is a fatal error
@@ -90,18 +102,19 @@ subroutine vfile_rscalarread(self,kp,infile,kcname,kin,kopt)
 
   !! local
   character(*), parameter :: s_name='vfile_rscalarread' !< subroutine name
-  logical :: unitused !< flag to test unit is available
+  !! logical :: unitused !< flag to test unit is available
   integer :: ierror   !<  whether error is to be fatal or not
   integer(ki4) :: insca   !< number of scalars
+  character(80) :: icname !< name of required vector field
+  integer(ki4) :: iclen   !< length of required scalar field name
   character(80) :: sname !< name of scalar
   integer(ki4) :: islen   !< length of scalar field name
-  integer(ki4) :: islen2   !< length of required scalar field name
 
   logical :: isnumb !< local variable
   external isnumb
 
-  ibuf1=adjustl(kcname)
-  islen2=max(2,scan(ibuf1,' '))-1
+  icname=adjustl(kcname)
+  iclen=max(2,scan(icname,' '))-1
   if(kopt>0) then
      ierror=error_warning
      !! assume unit already open and reading infile
@@ -117,17 +130,10 @@ subroutine vfile_rscalarread(self,kp,infile,kcname,kin,kopt)
      nin=kin
   else
      ierror=error_fatal
-     !! get file unit
-     do i=99,1,-1
-        inquire(i,opened=unitused)
-        if(.not.unitused)then
-           kin=i
-           exit
-        end if
-     end do
-     nin=kin
+     !! get file unit do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then kin=i exit end if end do nin=kin
 
      !! open file
+     call misc_getfileunit(nin)
      open(unit=nin,file=infile,status='OLD',form='FORMATTED',iostat=status)
      if(status/=0)then
         !! error opening file
@@ -135,6 +141,7 @@ subroutine vfile_rscalarread(self,kp,infile,kcname,kin,kopt)
      else
         call log_error(m_name,s_name,2,log_info,'Scalar list data file opened')
      end if
+     kin=nin
 
   end if
 
@@ -183,7 +190,7 @@ subroutine vfile_rscalarread(self,kp,infile,kcname,kin,kopt)
            ibuf1=adjustl(ibuf2(8:))
            islen=max(2,scan(ibuf1,' '))-1
            sname=ibuf1(:islen)
-           if (sname(:islen)==kcname(:islen2)) then
+           if (sname(:islen)==icname(:iclen)) then
               call log_value("Scalar field found ",sname)
               exit
            else
@@ -221,7 +228,7 @@ subroutine vfile_rvectorread(self,kp,kadim,infile,kcname,kin,kopt)
   integer(ki4), dimension(3), intent(out) :: kadim   !< dimensions of vector list data
   character(*),intent(in) :: infile !< name of input file
   character(*),intent(in) :: kcname !< name of field required
-  integer(ki4), intent(inout) :: kin   !< input channel for vector list data
+  integer, intent(inout) :: kin   !< input channel for vector list data
   !> if positive on input, assume unit open and do not terminate execution if
   !! data is missing, return positive code if trouble, else zero
   !! if zero on input, missing data is a fatal error
@@ -229,19 +236,20 @@ subroutine vfile_rvectorread(self,kp,kadim,infile,kcname,kin,kopt)
 
   !! local
   character(*), parameter :: s_name='vfile_rvectorread' !< subroutine name
-  logical :: unitused !< flag to test unit is available
+  !! logical :: unitused !< flag to test unit is available
   integer :: ierror   !<  whether error is to be fatal or not
   integer(ki4) :: insca   !< number of vectors
+  character(80) :: icname !< name of required vector field
+  integer(ki4) :: iclen   !< length of required vector field name
   character(80) :: sname !< name of vector
   integer(ki4) :: islen   !< length of vector field name
-  integer(ki4) :: islen2   !< length of required vector field name
 
   logical :: isnumb !< local variable
   external isnumb
 
   kadim=0
-  ibuf1=adjustl(kcname)
-  islen2=max(2,scan(ibuf1,' '))-1
+  icname=adjustl(kcname)
+  iclen=max(2,scan(icname,' '))-1
   if(kopt>0) then
      ierror=error_warning
      !! assume unit already open and reading infile
@@ -257,17 +265,10 @@ subroutine vfile_rvectorread(self,kp,kadim,infile,kcname,kin,kopt)
      nin=kin
   else
      ierror=error_fatal
-     !! get file unit
-     do i=99,1,-1
-        inquire(i,opened=unitused)
-        if(.not.unitused)then
-           kin=i
-           exit
-        end if
-     end do
-     nin=kin
+     !! get file unit do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then kin=i exit end if end do nin=kin
 
      !! open file
+     call misc_getfileunit(nin)
      open(unit=nin,file=infile,status='OLD',form='FORMATTED',iostat=status)
      if(status/=0)then
         !! error opening file
@@ -275,6 +276,7 @@ subroutine vfile_rvectorread(self,kp,kadim,infile,kcname,kin,kopt)
      else
         call log_error(m_name,s_name,2,log_info,'Vector list data file opened')
      end if
+     kin=nin
 
   end if
 
@@ -332,7 +334,7 @@ subroutine vfile_rvectorread(self,kp,kadim,infile,kcname,kin,kopt)
            ibuf1=adjustl(ibuf2(8:))
            islen=max(2,scan(ibuf1,' '))-1
            sname=ibuf1(:islen)
-           if (sname(:islen)==kcname(:islen2)) then
+           if (sname(:islen)==icname(:iclen)) then
               call log_value("Vector field found ",sname)
               exit
            else
@@ -367,7 +369,7 @@ subroutine vfile_dscalarread(self,kp,infile,kcname,kin,kopt)
   integer(ki4), intent(inout) :: kp   !< size of scalar list data
   character(*),intent(in) :: infile !< name of input file
   character(*),intent(in) :: kcname !< name of field required
-  integer(ki4), intent(inout) :: kin   !< input channel for scalar list data
+  integer, intent(inout) :: kin   !< input channel for scalar list data
   !> if positive on input, assume unit open and do not terminate execution if
   !! data is missing, return positive code if trouble, else zero
   !! if zero on input, missing data is a fatal error
@@ -375,18 +377,19 @@ subroutine vfile_dscalarread(self,kp,infile,kcname,kin,kopt)
 
   !! local
   character(*), parameter :: s_name='vfile_dscalarread' !< subroutine name
-  logical :: unitused !< flag to test unit is available
+  !! logical :: unitused !< flag to test unit is available
   integer :: ierror   !<  whether error is to be fatal or not
   integer(ki4) :: insca   !< number of scalars
+  character(80) :: icname !< name of required vector field
+  integer(ki4) :: iclen   !< length of required scalar field name
   character(80) :: sname !< name of scalar
   integer(ki4) :: islen   !< length of scalar field name
-  integer(ki4) :: islen2   !< length of required scalar field name
 
   logical :: isnumb !< local variable
   external isnumb
 
-  ibuf1=adjustl(kcname)
-  islen2=max(2,scan(ibuf1,' '))-1
+  icname=adjustl(kcname)
+  iclen=max(2,scan(icname,' '))-1
   if(kopt>0) then
      ierror=error_warning
      !! assume unit already open and reading infile
@@ -402,17 +405,10 @@ subroutine vfile_dscalarread(self,kp,infile,kcname,kin,kopt)
      nin=kin
   else
      ierror=error_fatal
-     !! get file unit
-     do i=99,1,-1
-        inquire(i,opened=unitused)
-        if(.not.unitused)then
-           kin=i
-           exit
-        end if
-     end do
-     nin=kin
+     !! get file unit do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then kin=i exit end if end do nin=kin
 
      !! open file
+     call misc_getfileunit(nin)
      open(unit=nin,file=infile,status='OLD',form='FORMATTED',iostat=status)
      if(status/=0)then
         !! error opening file
@@ -420,6 +416,7 @@ subroutine vfile_dscalarread(self,kp,infile,kcname,kin,kopt)
      else
         call log_error(m_name,s_name,2,log_info,'Scalar list data file opened')
      end if
+     kin=nin
 
   end if
 
@@ -468,7 +465,7 @@ subroutine vfile_dscalarread(self,kp,infile,kcname,kin,kopt)
            ibuf1=adjustl(ibuf2(8:))
            islen=max(2,scan(ibuf1,' '))-1
            sname=ibuf1(:islen)
-           if (sname(:islen)==kcname(:islen2)) then
+           if (sname(:islen)==icname(:iclen)) then
               call log_value("Scalar field found ",sname)
               exit
            else
@@ -499,33 +496,37 @@ subroutine vfile_dscalarread(self,kp,infile,kcname,kin,kopt)
 end subroutine vfile_dscalarread
 !---------------------------------------------------------------------
 !> read vtk integer scalars
-subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt)
+subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt,kcdata)
   !! arguments
   integer(ki4), dimension(:), allocatable, intent(inout) :: kself !< integer scalar list data
   integer(ki4), intent(inout) :: kp   !< size of scalar list data
   character(*),intent(in) :: infile !< name of input file
   character(*),intent(in) :: kcname !< name of field required
-  integer(ki4), intent(inout) :: kin   !< input channel for scalar list data
+  integer, intent(inout) :: kin   !< input channel for scalar list data
   !> if positive on input, assume unit open and do not terminate execution if
   !! data is missing, return positive code if trouble, else zero
   !! if zero on input, missing data is a fatal error
   integer(ki4), intent(inout) :: kopt   !< .
+  character(*),intent(in), optional :: kcdata !< nonblank, must match POINT_ or CELL_ DATA
 
   !! local
   character(*), parameter :: s_name='vfile_iscalarread' !< subroutine name
-  logical :: unitused !< flag to test unit is available
+  !! logical :: unitused !< flag to test unit is available
   integer :: ierror   !<  whether error is to be fatal or not
   integer(ki4) :: insca   !< number of scalars
+  character(80) :: icname !< name of required vector field
+  integer(ki4) :: iclen   !< length of required scalar field name
   character(80) :: sname !< name of scalar
   integer(ki4) :: islen   !< length of scalar field name
-  integer(ki4) :: islen2   !< length of required scalar field name
   logical :: ilfound !< flag whether field name found
+  logical :: ilpointd !< point data is acceptable
+  logical :: ilcelld !< cell data is acceptable
 
   logical :: isnumb !< local variable
   external isnumb
 
-  ibuf1=adjustl(kcname)
-  islen2=max(2,scan(ibuf1,' '))-1
+  icname=adjustl(kcname)
+  iclen=max(2,scan(icname,' '))-1
   if(kopt>0) then
      ierror=error_warning
      !! assume unit already open and reading infile
@@ -541,17 +542,10 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt)
      nin=kin
   else
      ierror=error_fatal
-     !! get file unit
-     do i=99,1,-1
-        inquire(i,opened=unitused)
-        if(.not.unitused)then
-           kin=i
-           exit
-        end if
-     end do
-     nin=kin
+     !! get file unit do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then kin=i exit end if end do nin=kin
 
      !! open file
+     call misc_getfileunit(nin)
      open(unit=nin,file=infile,status='OLD',form='FORMATTED',iostat=status)
      if(status/=0)then
         !! error opening file
@@ -559,10 +553,22 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt)
      else
         call log_error(m_name,s_name,2,log_info,'Scalar list data file opened')
      end if
+     kin=nin
 
   end if
 
-  !! File unit now sorted, get to where point data begin
+  ilpointd=.TRUE.
+  ilcelld=.TRUE.
+  if (present(kcdata)) then
+     ! to avoid optional arg, replace with if (kcdata(1)==' ')
+     ilpointd=(kcdata(1:5)=='POINT')
+     ilcelld=(kcdata(1:4)=='CELL')
+     if ( .NOT.(ilpointd.OR.ilcelld) ) then
+        call log_error(m_name,s_name,3,error_warning,'Neither point nor cell data requested')
+     end if
+  end if
+
+  !! File unit now sorted, get to where point/cell data begin
   !! read local header information
   do
      read(nin,fmt='(a)',iostat=status) ibuf1
@@ -575,17 +581,21 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt)
      else
         ibuf2=adjustl(ibuf1)
         if(ibuf2(1:10)=='POINT_DATA') then
-           iltest=isnumb(ibuf2,insca,11)
-           kp=insca
-           exit
+           if (ilpointd) then
+              iltest=isnumb(ibuf2,insca,11)
+              kp=insca
+              exit
+           end if
         else if(ibuf2(1:8)=='POLYGONS') then
            iltest=isnumb(ibuf2,insca,9)
            kp=insca
            exit
         else if(ibuf2(1:9)=='CELL_DATA') then
-           iltest=isnumb(ibuf2,insca,10)
-           kp=insca
-           exit
+           if (ilcelld) then
+              iltest=isnumb(ibuf2,insca,10)
+              kp=insca
+              exit
+           end if
         end if
      end if
   end do
@@ -608,7 +618,7 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt)
            ibuf1=adjustl(ibuf2(8:))
            islen=max(2,scan(ibuf1,' '))-1
            sname=ibuf1(:islen)
-           if (sname(:islen)==kcname(:islen2)) then
+           if (sname(:islen)==icname(:iclen)) then
               call log_value("Scalar field found ",sname)
               ilfound=.TRUE.
               exit
@@ -647,8 +657,11 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt)
   if(ilfound) then
      !! skip LOOKUP table default
      read(nin,fmt='(a)',iostat=status) ibuf1
+     !dbgw write(*,*) kp, ibuf1 !dbgw
      !! read data
      read(nin,*,iostat=status) (kself(j),j=1,kp)
+     !dbgw inquire(unit=nin,name=ibuf1) !dbgw
+     !dbgw write(*,*) 'file details ',nin, ibuf1 !dbgw
      call log_read_check(m_name,s_name,10,status)
      print '("number of scalars read = ",i10)',kp
      call log_value("number of scalars read ",kp)
@@ -668,7 +681,7 @@ subroutine vfile_rfieldread(self,kp,infile,kcname,kin,kopt)
   integer(ki4), intent(inout) :: kp   !< size of scalar data
   character(*),intent(in) :: infile !< name of input file
   character(*),intent(in) :: kcname !< name of scalar array required
-  integer(ki4), intent(inout) :: kin   !< input channel for field data
+  integer, intent(inout) :: kin   !< input channel for field data
   !> if unity on input, assume unit open and do not terminate execution if
   !! data is missing, return positive code if trouble, else zero
   !! kopt=2, assume at start point of field
@@ -677,22 +690,23 @@ subroutine vfile_rfieldread(self,kp,infile,kcname,kin,kopt)
 
   !! local
   character(*), parameter :: s_name='vfile_rfieldread' !< subroutine name
-  logical :: unitused !< flag to test unit is available
+  !! logical :: unitused !< flag to test unit is available
   integer :: ierror   !<  whether error is to be fatal or not
   integer(ki4) :: insca   !< number of scalars in array
   integer(ki4) :: infld   !< number of scalar arrays
+  character(80) :: icname !< name of required vector field
+  integer(ki4) :: iclen   !< length of required scalar array name
   character(80) :: sname !< name of scalar
   integer(ki4) :: inlastbl   !< position of last blank in buffer
   integer(ki4) :: islen   !< length of scalar array name
-  integer(ki4) :: islen2   !< length of required scalar array name
   integer(ki4) :: ilen   !< length of line string
 
   logical :: ilok !< flag whether named array found
   logical :: isnumb !< local variable
   external isnumb
 
-  ibuf1=adjustl(kcname)
-  islen2=max(2,scan(ibuf1,' '))-1
+  icname=adjustl(kcname)
+  iclen=max(2,scan(icname,' '))-1
   if(kopt>0) then
      ierror=error_warning
      !! assume unit already open and reading infile
@@ -708,17 +722,10 @@ subroutine vfile_rfieldread(self,kp,infile,kcname,kin,kopt)
      nin=kin
   else
      ierror=error_fatal
-     !! get file unit
-     do i=99,1,-1
-        inquire(i,opened=unitused)
-        if(.not.unitused)then
-           kin=i
-           exit
-        end if
-     end do
-     nin=kin
+     !! get file unit do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then kin=i exit end if end do nin=kin
 
      !! open file
+     call misc_getfileunit(nin)
      open(unit=nin,file=infile,status='OLD',form='FORMATTED',iostat=status)
      if(status/=0)then
         !! error opening file
@@ -726,6 +733,7 @@ subroutine vfile_rfieldread(self,kp,infile,kcname,kin,kopt)
      else
         call log_error(m_name,s_name,2,log_info,'Field data file opened')
      end if
+     kin=nin
 
   end if
 
@@ -808,7 +816,7 @@ subroutine vfile_rfieldread(self,kp,infile,kcname,kin,kopt)
      call log_read_check(m_name,s_name,7,status)
      islen=max(2,scan(ibuf1,' '))-1
      sname=ibuf1(:islen)
-     if (sname(:islen)==kcname(:islen2)) then
+     if (sname(:islen)==icname(:iclen)) then
         call log_value("Scalar array found ",sname)
         ilok=.TRUE.
         exit
@@ -837,7 +845,7 @@ subroutine vfile_rscalarwrite(self,kp,kcname,kctyp,kplot,kheader)
   integer(ki4), intent(in) :: kp   !< size of scalar list data
   character(*),intent(in) :: kcname !< name of field
   character(*),intent(in) :: kctyp !< type of data
-  integer(ki4), intent(in) :: kplot   !< output channel for scalar list data
+  integer, intent(in) :: kplot   !< output channel for scalar list data
   integer(ki4), intent(in) :: kheader   !< header options
 
   !! local
@@ -855,7 +863,7 @@ subroutine vfile_rscalarwrite(self,kp,kcname,kctyp,kplot,kheader)
      write(kplot,'(A,''_DATA'',1X,I9)',iostat=status) kctyp(1:islen),kp
   end if
   call log_write_check(m_name,s_name,1,status)
-  write(kplot,'(''SCALARS '',A,'' float 1'')',iostat=status), kcname(1:islen2)
+  write(kplot,'(''SCALARS '',A,'' float 1'')',iostat=status) kcname(1:islen2)
   call log_write_check(m_name,s_name,2,status)
   write(kplot,'(''LOOKUP_TABLE default'')',iostat=status)
   call log_write_check(m_name,s_name,3,status)
@@ -877,7 +885,7 @@ subroutine vfile_dscalarwrite(self,kp,kcname,kctyp,kplot,kheader)
   integer(ki4), intent(in) :: kp   !< size of scalar list data
   character(*),intent(in) :: kcname !< name of field
   character(*),intent(in) :: kctyp !< type of data
-  integer(ki4), intent(in) :: kplot   !< output channel for scalar list data
+  integer, intent(in) :: kplot   !< output channel for scalar list data
   integer(ki4), intent(in) :: kheader   !< header options
 
   !! local
@@ -895,7 +903,7 @@ subroutine vfile_dscalarwrite(self,kp,kcname,kctyp,kplot,kheader)
      write(kplot,'(A,''_DATA'',I8)',iostat=status) kctyp(1:islen),kp
   end if
   call log_write_check(m_name,s_name,1,status)
-  write(kplot,'(''SCALARS '',A,'' float 1'')',iostat=status), kcname(1:islen2)
+  write(kplot,'(''SCALARS '',A,'' float 1'')',iostat=status) kcname(1:islen2)
   call log_write_check(m_name,s_name,2,status)
   write(kplot,'(''LOOKUP_TABLE default'')',iostat=status)
   call log_write_check(m_name,s_name,3,status)
@@ -917,7 +925,7 @@ subroutine vfile_dvectorwrite(self,kp,kcname,kctyp,kplot,kheader)
   integer(ki4), intent(in) :: kp   !< size of vector list data
   character(*),intent(in) :: kcname !< name of field
   character(*),intent(in) :: kctyp !< type of data
-  integer(ki4), intent(in) :: kplot   !< output channel for vector list data
+  integer, intent(in) :: kplot   !< output channel for vector list data
   integer(ki4), intent(in) :: kheader   !< header options
 
   !! local
@@ -935,7 +943,7 @@ subroutine vfile_dvectorwrite(self,kp,kcname,kctyp,kplot,kheader)
      write(kplot,'(A,''_DATA'',I8)',iostat=status) kctyp(1:islen),kp
   end if
   call log_write_check(m_name,s_name,1,status)
-  write(kplot,'(''VECTORS '',A,'' float'')',iostat=status), kcname(1:islen2)
+  write(kplot,'(''VECTORS '',A,'' float'')',iostat=status) kcname(1:islen2)
   call log_write_check(m_name,s_name,2,status)
 
   !! write vectors
@@ -957,7 +965,7 @@ subroutine vfile_iscalarwrite(self,kp,kcname,kctyp,kplot,kheader)
   integer(ki4), intent(in) :: kp   !< size of scalar list data
   character(*),intent(in) :: kcname !< name of field
   character(*),intent(in) :: kctyp !< type of data
-  integer(ki4), intent(in) :: kplot   !< output channel for scalar list data
+  integer, intent(in) :: kplot   !< output channel for scalar list data
   integer(ki4), intent(in) :: kheader   !< header options
 
   !! local
@@ -975,7 +983,7 @@ subroutine vfile_iscalarwrite(self,kp,kcname,kctyp,kplot,kheader)
      write(kplot,'(A,''_DATA'',I8)',iostat=status) kctyp(1:islen),kp
   end if
   call log_write_check(m_name,s_name,1,status)
-  write(kplot,'(''SCALARS '',A,'' int '')',iostat=status), kcname(1:islen2)
+  write(kplot,'(''SCALARS '',A,'' int '')',iostat=status) kcname(1:islen2)
   call log_write_check(m_name,s_name,2,status)
   write(kplot,'(''LOOKUP_TABLE default'')',iostat=status)
   call log_write_check(m_name,s_name,3,status)
@@ -993,7 +1001,8 @@ end subroutine vfile_iscalarwrite
 !> close vis vtk file on unit nplot
 subroutine vfile_close
 
-  close(nplot)
+  close(nplot,iostat=status)
+  !DBG write(*,*) 'iostat=',status !DBG
 
 end subroutine vfile_close
 !---------------------------------------------------------------------
@@ -1002,11 +1011,11 @@ subroutine vfile_getfmt(infile,kfmta,kin)
   !! arguments
   character(*),intent(in) :: infile !< name of input file
   integer(ki4), dimension(2), intent(out) :: kfmta   !< format as number of entries per line
-  integer(ki4), intent(inout), optional :: kin   !< input channel for object data structure
+  integer, intent(inout), optional :: kin   !< input channel for object data structure
 
   !! local
   character(*), parameter :: s_name='vfile_getfmt' !< subroutine name
-  logical :: unitused !< flag to test unit is available
+  !! logical :: unitused !< flag to test unit is available
   integer(ki4) :: ir   !< counter for file header read
   integer(ki4) :: ifmt   !< formatting of position vectors
   character(len=132) :: bigbuf !<big buffer for input/output
@@ -1020,17 +1029,10 @@ subroutine vfile_getfmt(infile,kfmta,kin)
      nin=kin
      rewind(nin)
   else
-     !! get file unit
-     do i=99,1,-1
-        inquire(i,opened=unitused)
-        if(.not.unitused)then
-           nin=i
-           exit
-        end if
-     end do
-     if (present(kin)) kin=nin
+     !! get file unit do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then nin=i exit end if end do
 
      !! open file
+     call misc_getfileunit(nin)
      open(unit=nin,file=infile,status='OLD',form='FORMATTED',iostat=status)
      if(status/=0)then
         !! error opening file
@@ -1039,6 +1041,7 @@ subroutine vfile_getfmt(infile,kfmta,kin)
      else
         call log_error(m_name,s_name,2,log_info,'vtk data file opened')
      end if
+     if (present(kin)) kin=nin
   end if
 
   !! first set of reads to determine format of position vectors
@@ -1073,11 +1076,11 @@ subroutine vfile_skiptolabel(infile,kclabel,kin)
   !! arguments
   character(*),intent(in) :: infile !< name of input file, ignored if kin set positive
   character(*),intent(in) :: kclabel !< find this label in file
-  integer(ki4), intent(inout), optional :: kin   !< input channel for object data structure
+  integer, intent(inout), optional :: kin   !< input channel for object data structure
 
   !! local
   character(*), parameter :: s_name='vfile_skiptolabel' !< subroutine name
-  logical :: unitused !< flag to test unit is available
+  !! logical :: unitused !< flag to test unit is available
   integer(ki4) :: ir   !< counter for file header read
   integer(ki4) :: ilen   !< length of string in file
 
@@ -1086,17 +1089,10 @@ subroutine vfile_skiptolabel(infile,kclabel,kin)
      nin=kin
      rewind(nin)
   else
-     !! get file unit
-     do i=99,1,-1
-        inquire(i,opened=unitused)
-        if(.not.unitused)then
-           nin=i
-           exit
-        end if
-     end do
-     if (present(kin)) kin=nin
+     !! get file unit do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then nin=i exit end if end do
 
      !! open file
+     call misc_getfileunit(nin)
      open(unit=nin,file=infile,status='OLD',form='FORMATTED',iostat=status)
      if(status/=0)then
         !! error opening file
@@ -1105,6 +1101,7 @@ subroutine vfile_skiptolabel(infile,kclabel,kin)
      else
         call log_error(m_name,s_name,2,log_info,'vtk data file opened')
      end if
+     if (present(kin)) kin=nin
   end if
 
   !! reads to find label
@@ -1124,30 +1121,5 @@ subroutine vfile_skiptolabel(infile,kclabel,kin)
   call log_value("Successfully found label ",kclabel)
 
 end subroutine vfile_skiptolabel
-
-subroutine misc_countnos(bigbuf,kfmt)
-  character(len=*),intent(in) :: bigbuf !< buffer for input
-  integer(ki4), intent(out) :: kfmt !< format of buffer - number of 3-vectors
-  character(len=132) :: ibuf !< buffer for input/output
-  integer(ki4) :: ilen !< length of string
-  integer(ki4) :: iblan !< number of bank substrings
-  integer(ki4) :: isw !< switch on if last character was not blank
-  integer(ki4) :: ji !< loop variable
-  iblan=0
-  ibuf=adjustl(bigbuf)
-  ilen=len_trim(ibuf)
-  isw=1
-  do ji=1,ilen
-     if (ibuf(ji:ji)==' ') then
-        if (isw/=0) then
-           iblan=iblan+1
-           isw=0
-        end if
-     else
-        isw=1
-     end if
-  end do
-  kfmt=(iblan+1)/3
-end subroutine misc_countnos
 
 end module vfile_m
