@@ -1,0 +1,16 @@
+#! /bin/bash --norc
+swd=$PWD
+if [[ -z "$SMALIB_DIR" ]] ; then
+   if [[ ! -z "$SMITER_DIR" ]] ; then
+      cd ${SMITER_DIR%/*}/smardda-lib
+      export SMALIB_DIR=${SMITER_DIR%/*}/smardda-lib
+   fi
+else
+   cd $SMALIB_DIR
+fi
+(cd fortd;make)
+cd f95
+ln -sf ../fortd LIB
+for i in lib geofil move vtktfm datvtk hdsgen ctlgen parse; do make -f Makefile.lib $i ;done
+for i in geofil move vtktfm datvtk hdsgen ctlgen parse; do mv -f $i ../exec ;done
+cd $swd

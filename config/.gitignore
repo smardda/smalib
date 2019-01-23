@@ -1,0 +1,12 @@
+*
+!config_gfortran_dbg.inc
+!config_gfortran.inc
+!config_intel_dbg.inc
+!config_intel.inc
+!config_intel_dbg_pg.inc
+!config_intel_pg.inc
+!.gitignore
+!config_gfortran_pg.inc
+!config_intel_old.inc
+!path_generic.inc
+!path.inc

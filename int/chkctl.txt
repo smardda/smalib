@@ -1,0 +1,4 @@
+--item-help --checklist "Control file checklist : The computation will " 0 0 9
+0c "Use cartesian coordinates" on "Cylindrical coordinates (EXPERT only) otherwise"
+1c "Use periodic geometry" off "Shadowing geometry specified only as say n=18 toroidal sector"
+2c "Examine only first intersections" on "Multiple bounce code needs writing"

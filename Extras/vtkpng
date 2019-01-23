@@ -1,0 +1,9 @@
+#! /bin/bash
+if [[ -z "$SMALIB_DIR" ]] ; then SMALIB_DIR=$HOME/smardda/smardda-lib; fi
+extra=$SMALIB_DIR/Extras
+for i in $*; do
+   rm -f vtkpng.py
+   istr=${i%%.vtk}
+   sed -e "s/PART/$istr/" < $extra/vtkpng_skel.py > vtkpng.py
+   pvpython < vtkpng.py
+done

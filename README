@@ -1,0 +1,77 @@
+SMARDDA-LIB
+-----------
+
+SMARDDA-LIB (SMALIB for short) is a set of object-oriented Fortran-95 modules for ray,
+particle and fieldline tracing using the SMARDDA ray-tracing algorithm.
+SMARDDA is a published algorithm for triangulated surface geometries, designed to handle
+short tracks as well as 'long' rays efficiently. The central geometry format is the legacy
+vtk format, with the smint tool provided for basic geometry manipulations including
+conversions from other mesh formats.
+For a description of the SMARDDA algorithm for ray tracing
+see http://dx.doi.org/10.1109/TPS.2015.2458897 (also http://arxiv.org/abs/1403.6750 )
+
+SMARDDA-LIB has been tested on CentOS 7.0, Ubuntu 18.04 and Red Hat 4.4 (Scientific Linux).
+Try to use the latest stable fortran compiler version available.
+
+See LICENCE.txt for details. 
+
+To proceed to install from here (and only from here), type
+source ./exec/build intel
+The argument which is optional, will cause the script to try to use the Intel fortran compiler, 
+which is advisable on ITER hpc machines as a Fortran compiler release post-2011 is needed.
+Note that this script
+(1) recommends you source the file ./Extras/setup so that the main
+SMARDDA-LIB executables are placed on your path, essential for smint (see below) to work
+(2) sets the shell variable SMALIB_DIR; you may find it a good idea to ensure
+that SMALIB_DIR is always set by modifying your .bashrc file, by adding the line, for example
+export SMALIB_DIR=~/smardda/smardda-lib
+
+bash shell release 3.2 or later (i.e. from 2005 or later) is needed.
+ParaView may be downloaded separately from www.paraview.org if not already installed.
+
+To produce the html documentation in $SMALIB_DIR/doc, note
+particularly that doxygen 1.8.6+ is needed.
+(For creation of user manual as a pdf the texlive/2015 module is needed:
+module load texlive/2015
+cd ./doc/srcdoc/latex/; pdflatex refman )
+
+To run the test deck, it helps to know that it is 
+orchestrated by file tests.bash in directory TEST.
+
+Linux modules dated post-2011 are generally required.
+The following module versions are indicative:
+module load qt/4.8.7
+module load paraview/4.4.0
+module load GCC/4.8.3
+module load dialog/1.2
+module load flex
+module load doxygen/1.8.8
+module load gnuplot
+module load convert
+(others may be needed, and not all machines will have exactly these versions).
+The test deck should be run before any problems are reported.
+
+The script smint guides the user interactively through the setting up of a basic test
+case, starting with the sub-class of MSC Nastran-TM .dat files output by CATIA-TM.
+smint has a significant inbuilt help capability
+For efficient smint interaction with ParaView, the following settings are needed:
+Settings->General, Click on gearwheel, untick Show Splash Screen, tick AutoApply (near top)
+(Also useful is parallel projection:
+[vtk file loaded] -> Properties tab, Click gearwheel, tick Camera Parallel projection (near bottom)
+See SMARDDA-LIB user manual webpages for further details of smint and smardda-lib use.
+file://$SMALIB_DIR/doc/srcdoc/html/index.html
+(assuming that doxygen doxyfile has been executed correctly in  $SMALIB_DIR/doc).
+Note that the CADfix-TM interface between CATIA-TM and SMARDDA/SMARDDA-LIB is not supported,
+
+The script tests.bash in $SMALIB_DIR show how SMARDDA-LIB works in detail, given the
+necessary geometry in legacy vtk format. Detailed descriptions of the namelists in the .ctl
+files (which control execution) may be found by pointing a browser at
+file://$SMALIB_DIR/doc/srcdoc/html/classes.html
+(assuming that doxygen doxyfile has been executed correctly in  $SMALIB_DIR/doc).
+
+Developers should notice that SMARDDA-LIB was developed according to the principles and
+conventions set out in http://www.ccfe.ac.uk/assets/Documents/CCFE-R%20(15)34.pdf
+Production of support files and scripts for developers has been initiated.
+Users with CCFE account may access these from 
+git@git.ccfe.ac.uk:smardda/develop.git
+

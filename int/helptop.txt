@@ -1,0 +1,15 @@
+To calculate intersections of rays with surfaces
+for the first time, work through the menu items in order
+to produce the surface geometry.
+(The default parameter options should be OK for this.)
+Output may be visualised using gnuplot and ParaView.
+
+If this is your first use of this script, you probably
+need "more information" for input conventions.
+
+Also access documentation for SMARDDA-LIB as web-based
+help launchable from the "more information" menu-box. 
+Links to the ParaView manual are also provided.
+There are two published papers
+showing the capabilities of SMARDDA, similarly accessible.
+

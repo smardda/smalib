@@ -1,0 +1,15 @@
+#! /bin/bash --norc
+#remove all object, libraries and executables
+swd=$PWD
+if [[ -z "$SMALIB_DIR" ]] ; then
+   if [[ ! -z "$SMITER_DIR" ]] ; then
+      cd ${SMITER_DIR%/*}/smardda-lib
+   fi
+else
+   cd $SMALIB_DIR
+fi
+(cd fortd;make clean;make "DBG=" libclean; make "DBG=g" libclean)
+cd f95
+make -f Makefile.lib $i clean
+for i in geofil move vtktfm datvtk hdsgen ctlgen; do rm -f $SMALIB_DIR/exec/$i ;done
+cd $swd

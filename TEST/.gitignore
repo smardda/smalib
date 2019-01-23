@@ -1,0 +1,8 @@
+*
+!.gitignore
+!GFRUN
+!MTRUN
+!RAYS
+!SMRUN
+!test.bash
+!README

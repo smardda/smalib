@@ -1,0 +1,6 @@
+#! /bin/bash
+SMSMITERHOME=~/smardda/smiter
+rm -f obj2stl.py
+echo $* > obj2stl.py
+vim obj2stl.py -S $SMSMITERHOME/Extras/obj2stl.ed
+pvpython < obj2stl.py

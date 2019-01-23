@@ -1,0 +1,4 @@
+--checklist "Input file checklist : I want this calculation to use " 0 0 4
+1 "vtk format file describing geometry" on 
+2 "different vtk format file describing launch geometry" on 
+3 "precomputed ray directions" on 
