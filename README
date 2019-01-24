@@ -16,8 +16,9 @@ Try to use the latest stable fortran compiler version available.
 See LICENCE.txt for details. 
 
 To proceed to install from here (and only from here), type
+export SMALIB_DIR=$PWD
 source ./exec/build intel
-The argument which is optional, will cause the script to try to use the Intel fortran compiler, 
+The argument to build which is optional, will cause the script to try to use the Intel fortran compiler, 
 which is advisable on ITER hpc machines as a Fortran compiler release post-2011 is needed.
 Note that this script
 (1) recommends you source the file ./Extras/setup so that the main

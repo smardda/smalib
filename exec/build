@@ -56,4 +56,4 @@ if [  $? == 0 ] ; then
 else
   echo "Looks like you didn't"
 fi
-cd $SMALIB
+cd $SMALIB_DIR

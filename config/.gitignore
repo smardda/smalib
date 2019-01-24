@@ -9,4 +9,3 @@
 !config_gfortran_pg.inc
 !config_intel_old.inc
 !path_generic.inc
-!path.inc
