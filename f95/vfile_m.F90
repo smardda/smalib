@@ -518,6 +518,7 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt,kcdata)
   integer(ki4) :: iclen   !< length of required scalar field name
   character(80) :: sname !< name of scalar
   integer(ki4) :: islen   !< length of scalar field name
+  integer(ki4) :: imeta   !< METADATA/INFORMATION line handling
   logical :: ilfound !< flag whether field name found
   logical :: ilpointd !< point data is acceptable
   logical :: ilcelld !< cell data is acceptable
@@ -602,6 +603,7 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt,kcdata)
 
   !! find scalar header
   ilfound=.FALSE.
+  imeta=0
   do
      read(nin,fmt='(a)',iostat=status) ibuf1
      !!eof
@@ -614,8 +616,12 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt,kcdata)
         return
      else
         ibuf2=adjustl(ibuf1)
-        if(ibuf2(1:7)=='SCALARS') then
+        if(ibuf2(1:7)=='SCALARS'.OR.imeta==-2) then
+           if (imeta==-2) then
+           ibuf1=ibuf2
+           else
            ibuf1=adjustl(ibuf2(8:))
+           end if
            islen=max(2,scan(ibuf1,' '))-1
            sname=ibuf1(:islen)
            if (sname(:islen)==icname(:iclen)) then
@@ -624,7 +630,14 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt,kcdata)
               exit
            else
               call log_value("Skipped scalar field ",sname)
+              imeta=0
            end if
+        else if(ibuf2(1:8)=='METADATA') then
+           imeta=0
+        else if(ibuf2(1:11)=='INFORMATION') then
+           imeta=imeta-1
+        else if (imeta==-1) then
+           imeta=imeta-1
         end if
      end if
   end do
@@ -656,7 +669,7 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt,kcdata)
   !! data
   if(ilfound) then
      !! skip LOOKUP table default
-     read(nin,fmt='(a)',iostat=status) ibuf1
+     if (imeta==0) read(nin,fmt='(a)',iostat=status) ibuf1
      !dbgw write(*,*) kp, ibuf1 !dbgw
      !! read data
      read(nin,*,iostat=status) (kself(j),j=1,kp)
