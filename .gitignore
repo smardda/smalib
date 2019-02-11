@@ -1,0 +1,13 @@
+*
+!.gitignore
+!exec
+!f95
+!int
+!README
+!README_windows_bash
+!LICENCE.txt
+!doc
+!Extras
+!fortd
+!lgpl-3.0.txt
+!TEST
