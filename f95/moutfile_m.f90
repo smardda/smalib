@@ -79,7 +79,7 @@ subroutine moutfile_read(infile,pvar,kin)
 
   !! open file
   call misc_getfileunit(kin)
-  open(unit=kin,file=trim(infile),status='OLD',form='FORMATTED',iostat=status)
+  open(unit=kin,file=trim(adjustl(infile)),status='OLD',form='FORMATTED',iostat=status)
   if(status/=0)then
      !! error opening file
      call log_error(m_name,s_name,1,error_fatal,'Error opening magnetic field file')

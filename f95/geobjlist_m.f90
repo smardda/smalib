@@ -2870,6 +2870,8 @@ subroutine geobjlist_cumulate(self,selfin,start,copy,kopt,kgcode)
   self%nnod=innod
   if (kgcode>=0) self%posl%np=inpt
   if (kgcode/=0) self%nparam(2)=1
+  ! refinement structure destroyed by cumulate
+  self%nparam(1)=1
 
 end subroutine geobjlist_cumulate
 !---------------------------------------------------------------------

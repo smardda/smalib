@@ -1005,6 +1005,13 @@ subroutine beq_readequ(self,infile,numerics)
      ! without setting BEQ_OVERRIDE_ITER=.FALSE., which is what
      ! really should be done, and no special fldspec test
      ! This works because .equ files only ever used for MAST cases
+     ! Allow reversal of psi in any case 26/2/19
+     if (.NOT.numerics%leqok) then
+              self%psiaxis=-psic
+              self%psiqbdry=-psib
+              self%psibdry=self%psiqbdry
+              work2=-work2
+     end if
   end select fld_specn
 
   close(iin)
@@ -1535,7 +1542,7 @@ subroutine beq_readpart(self,infile)
   read(nin,*,iostat=status) self%n%fldspec
   call log_read_check(m_name,s_name,4,status)
   read(nin,*,iostat=status) ibuff
-  read(nin,*,iostat=status) self%n%vacfile
+  read(nin,'(a)',iostat=status) self%n%vacfile
   call log_read_check(m_name,s_name,63,status)
   ! ripple field data
   read(nin,*,iostat=status) ibuff
@@ -1693,7 +1700,7 @@ subroutine beq_readplus(self,infile)
      call log_read_check(m_name,s_name,62,status)
   end if
   read(nin,*,iostat=status) ibuff
-  read(nin,*,iostat=status) self%n%vacfile
+  read(nin,'(a)',iostat=status) self%n%vacfile
   call log_read_check(m_name,s_name,63,status)
 
   if (iextra==2.OR.iextra==4) then
