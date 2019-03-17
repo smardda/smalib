@@ -1,9 +1,0 @@
-*
-!.gitignore
-!absb.ctl
-!absb_geofil.out
-!absb.log
-!absb.vtk
-!div_ansysmesh.vtk
-!jetbot1.dat
-!jetbot2.dat

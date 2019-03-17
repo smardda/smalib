@@ -65,12 +65,13 @@ end  subroutine control_init
 !---------------------------------------------------------------------
 !! read data for this run
 
-subroutine control_read(file,numerics,plot)
+subroutine control_read(file,numerics,plot,combined)
 
   !! arguments
   type(files_t), intent(out) :: file !< file names
   type(numerics_t), intent(out) :: numerics !< input numerical parameters
   type(plots_t), intent(out) :: plot !< vtk plot selectors
+  logical,intent(in) :: combined !< is the code running as a single executable
 
   !!local
   character(*), parameter :: s_name='control_read' !< subroutine name
@@ -153,13 +154,15 @@ subroutine control_read(file,numerics,plot)
 
   !!check files exist
 
-  call log_value("Objectg data file, vtk_input_file",trim(file%vtkdata))
-  inquire(file=vtk_input_file,exist=filefound)
-  if(.not.filefound) then
-     !! error opening file
-     print '("Fatal error: Unable to find geobj data file, ",a)',vtk_input_file
-     call log_error(m_name,s_name,2,error_fatal,'Objectg data file not found')
-  end if
+  if(.not. combined) then
+     call log_value("Objectg data file, vtk_input_file",trim(file%vtkdata))
+     inquire(file=vtk_input_file,exist=filefound)
+     if(.not.filefound) then
+        !! error opening file
+        print '("Fatal error: Unable to find geobj data file, ",a)',vtk_input_file
+        call log_error(m_name,s_name,2,error_fatal,'Objectg data file not found')
+     end if
+  endif
 
   !! create output file names from root
 
@@ -384,7 +387,7 @@ subroutine control_dread(file,numerics,plot)
      print '("Fatal error: Unable to find geobj data file, ",a)',vtk_input_file
      call log_error(m_name,s_name,2,error_fatal,'Objectg data file not found')
   end if
-
+  
   call log_value("HDS data file, hds_input_file",trim(file%hdsdata))
   inquire(file=hds_input_file,exist=filefound)
   if(.not.filefound) then

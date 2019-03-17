@@ -4,6 +4,8 @@
 !beqan_h.f90
 !beqan_m.doc
 !beqan_m.f90
+!beqart_h.f90
+!beqart_m.f90
 !beq_h.doc
 !beq_h.f90
 !beq_m.doc
@@ -127,3 +129,4 @@
 !Makefile.lib
 !misc_m.f90
 !move.f90
+!smitermpi_h.f90

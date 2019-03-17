@@ -2,6 +2,7 @@ module beq_h
 
   use const_kind_m
   use fmesh_h
+  use beqart_h
   use spl2d_m
   use spl3d_m
 
@@ -131,11 +132,17 @@ module beq_h
    !! - 'equ' for FIESTA input
    !! - 'ana' for analytic
      character(len=80) :: eqtype !< -
-     character(len=80) :: vacfile !< specifies file for spl3d format vacuum field
+     character(len=80) :: vacfile !< specifies file containing vacuum field
+   !> format within vacfile
+   !! - 'sp3' for magtfm produced
+   !! - 'txt' for fmesh format
+     character(len=3) :: vactype !< -
      integer(ki4) :: mrip !< \f$ N \f$ number of ripple coils
      real(kr8) :: irip !< unused parameter of ripple coils
      real(kr8) :: arip !< \f$ a \f$ for ripple coils
      logical :: leqok !< equilibrium helicity is ok, no need for override
+     logical :: eqscale !< if true, scale flux by psic-psib
+     logical :: mastequ !< if true, helicity regarded as correct even if leqok=false
      logical :: duct !< flag whether work in duct coordinates
      integer(ki4), dimension(0:10) :: objadd !< number of objects of given description to add to geobjlist
      logical :: skyl !< flag whether skylight present
@@ -196,7 +203,8 @@ module beq_h
      real(kr8) :: ivac !< \f$ I \f$ for vacuum field
      real(kr8) :: psicen !<  Computed \f$ \psi \f$ on axis, compare PSIAXIS from eqdsk
      logical :: replasi !< If .TRUE. geoq is replacing psiaxis and psiqbdry from EQDSK with its estimates
-     type(spl3d_t)  :: vacfld  !< vacuum field structure
+     type(spl3d_t)  :: vacfld  !< vacuum field structure as 3-D spline
+     type(beqart_t)  :: beqart  !< vacuum field structure fmesh gridding
      type(fmesh_t)  :: fmesh  !< field mesh for calculation in duct coordinates
      real(kr8), dimension(:,:), allocatable :: ctrackrz !< central track, of psi extremum through plasma centre
      integer(ki4) :: nctrack !<  bound for ctrackrz array

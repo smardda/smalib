@@ -56,6 +56,7 @@ program hdsgen_p
 
   integer:: nplot !< unit for vfiles
   integer:: nouth !< unit for hdsfiles
+  logical :: combined=.FALSE. !< not integrated with geofil/move
 
 !--------------------------------------------------------------------------
 !! initialise timing
@@ -93,7 +94,7 @@ program hdsgen_p
 
   call clock_start(2,'control_init time')
   call control_init(fileroot)
-  call control_read(file,numerics,plot)
+  call control_read(file,numerics,plot,combined)
   call clock_stop(2)
 
 !--------------------------------------------------------------------------

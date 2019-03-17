@@ -1,8 +1,0 @@
-Simple test that "wheels go round", for geofil, hdsgen and move.
-The test-deck should be invoked using
-./test.bash
-which should take less than a minute on a high-end laptop or desktop,
-creating scratch directories workdirg and workdirm, plus
-workdirr to contain some specially generated rays.
-The bash script will automatically diff the results with 
-corresponding repo files.

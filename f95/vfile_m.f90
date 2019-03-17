@@ -222,6 +222,9 @@ end subroutine vfile_rscalarread
 !---------------------------------------------------------------------
 !> read vtk real vectors
 subroutine vfile_rvectorread(self,kp,kadim,infile,kcname,kin,kopt)
+
+  use smitermpi_h  
+
   !! arguments
   real(kr4), dimension(:), allocatable, intent(inout) :: self !< real vector list data
   integer(ki4), intent(inout) :: kp   !< size of vector list data
@@ -356,8 +359,11 @@ subroutine vfile_rvectorread(self,kp,kadim,infile,kcname,kin,kopt)
   !! read coordinates
   read(nin,*,iostat=status) (self(j),j=1,3*kp)
   call log_read_check(m_name,s_name,7,status)
-  print '("number of vectors read = ",i10)',kp
-  call log_value("number of vectors read ",kp)
+
+  if(myrank_log .eq. 0) then
+     print '("number of vectors read = ",i10)',kp
+     call log_value("number of vectors read ",kp)
+  endif
   kopt=0
 
 end subroutine vfile_rvectorread

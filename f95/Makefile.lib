@@ -10,6 +10,8 @@ LIBS = ./LIB/libsmarddalib$(DBG).a
 SOURCES = \
 beqan_h.f90 \
 beqan_m.f90 \
+beqart_h.f90 \
+beqart_m.f90 \
 beq_h.f90 \
 beq_m.f90 \
 bods_h.f90 \
@@ -45,6 +47,7 @@ hdsfile_m.f90 \
 indict_m.f90 \
 ld_m.f90 \
 li_m.f90 \
+log_h.f90 \
 log_m.f90 \
 ls_m.f90 \
 mcontrol_h.f90 \
@@ -65,6 +68,7 @@ position_m.f90 \
 query_m.f90 \
 scontrol_h.f90 \
 scontrol_m.f90 \
+smitermpi_h.f90 \
 spl2d_m.f90 \
 spl3d_m.f90 \
 stack_m.f90 \
@@ -118,6 +122,7 @@ beq_h.f90 : const_kind_m.mod
 beq_h.f90 : fmesh_h.mod
 beq_h.f90 : spl2d_m.mod
 beq_h.f90 : spl3d_m.mod
+beq_h.f90 : beqart_h.mod
 beq_m.f90 : const_kind_m.mod
 beq_m.f90 : const_numphys_h.mod
 beq_m.f90 : position_h.mod
@@ -135,6 +140,21 @@ beq_m.f90 : fmesh_m.mod
 beq_m.f90 : posang_m.mod
 beq_m.f90 : beqan_m.mod
 beq_m.f90 : gfile_m.mod
+beqart_h.f90 : const_kind_m.mod
+beqart_h.f90 : fmesh_h.mod
+beqart_m.f90 : const_kind_m.mod
+beqart_m.f90 : const_numphys_h.mod
+beqart_m.f90 : position_m.mod
+beqart_m.f90 : posang_h.mod
+beqart_m.f90 : log_m.mod
+beqart_m.f90 : misc_m.mod
+beqart_m.f90 : fmesh_h.mod
+beqart_m.f90 : beqart_h.mod
+beqart_m.f90 : beq_h.mod
+beqart_m.f90 : fmesh_m.mod
+beqart_m.f90 : vfile_m.mod
+beqart_m.f90 : spl2d_m.mod
+beqart_m.f90 : posang_m.mod
 bods_h.f90 : const_kind_m.mod
 bods_m.f90 : const_kind_m.mod
 bods_m.f90 : log_m.mod
@@ -259,6 +279,7 @@ geobjlist_m.f90 : pcle_m.mod
 geobjlist_m.f90 : mtest_m.mod
 geobjlist_m.f90 : indict_m.mod
 geobjlist_m.f90 : vfile_m.mod
+geobjlist_m.f90 : smitermpi_h.mod
 geobj_m.f90 : const_kind_m.mod
 geobj_m.f90 : const_numphys_h.mod
 geobj_m.f90 : log_m.mod
@@ -306,6 +327,8 @@ li_m.f90 : const_kind_m.mod
 li_m.f90 : log_m.mod
 log_m.f90 : const_kind_m.mod
 log_m.f90 : date_time_m.mod
+log_m.f90 : log_h.mod
+log_m.f90 : smitermpi_h.mod
 ls_m.f90 : const_kind_m.mod
 ls_m.f90 : log_m.mod
 ls_m.f90 : control_h.mod
@@ -383,6 +406,7 @@ position_m.f90 : const_kind_m.mod
 position_m.f90 : log_m.mod
 position_m.f90 : misc_m.mod
 position_m.f90 : position_h.mod
+position_m.f90 : smitermpi_h.mod
 query_m.f90 : const_kind_m.mod
 query_m.f90 : const_numphys_h.mod
 query_m.f90 : log_m.mod
@@ -395,36 +419,4 @@ scontrol_m.f90 : const_kind_m.mod
 scontrol_m.f90 : log_m.mod
 scontrol_m.f90 : misc_m.mod
 scontrol_m.f90 : scontrol_h.mod
-spl2d_m.f90 : const_kind_m.mod
-spl2d_m.f90 : const_numphys_h.mod
-spl2d_m.f90 : log_m.mod
-spl2d_m.f90 : misc_m.mod
-spl2d_m.f90 : position_h.mod
-spl2d_m.f90 : position_m.mod
-spl3d_m.f90 : const_kind_m.mod
-spl3d_m.f90 : const_numphys_h.mod
-spl3d_m.f90 : log_m.mod
-spl3d_m.f90 : misc_m.mod
-spl3d_m.f90 : position_h.mod
-spl3d_m.f90 : position_m.mod
-spl3d_m.f90 : spl2d_m.mod
-stack_m.f90 : const_kind_m.mod
-stack_m.f90 : const_numphys_h.mod
-stack_m.f90 : log_m.mod
-stlfile_m.f90 : const_kind_m.mod
-stlfile_m.f90 : log_m.mod
-stlfile_m.f90 : misc_m.mod
-termplane_h.f90 : const_kind_m.mod
-vcontrol_h.f90 : const_kind_m.mod
-vcontrol_h.f90 : position_h.mod
-vcontrol_m.f90 : const_kind_m.mod
-vcontrol_m.f90 : const_numphys_h.mod
-vcontrol_m.f90 : log_m.mod
-vcontrol_m.f90 : misc_m.mod
-vcontrol_m.f90 : position_h.mod
-vcontrol_m.f90 : vcontrol_h.mod
-vcontrol_m.f90 : position_m.mod
-vcontrol_m.f90 : scontrol_m.mod
-vfile_m.f90 : const_kind_m.mod
-vfile_m.f90 : log_m.mod
-vfile_m.f90 : misc_m.mod
+smitermpi_h.f90 : const_kind_m.mod

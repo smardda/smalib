@@ -112,9 +112,10 @@ program vtktfm_p
   geobjl%ngtype=2
 !dbgw  write(*,*) "fn,iopt=",file%nvtkdata, iopt  !dbgw
   if (file%nvtkdata==1) then
-! just one file with Body data
-     call geobjlist_read(geobjl,file%vtkdata(1),iched)
-!dbgw     write(*,*) 'first',(geobjl%nodl(j),j=1,20) !dbgw
+     ! just one file with Body data
+     call geobjlist_read(geobjl,file%vtkdata(1),kched=iched,leave_open=.true.)
+     !dbgw     write(*,*) 'first',(geobjl%nodl(j),j=1,20) !dbgw
+     print*, "Read geobjlist"
      nin=0
      call vfile_iscalarread(bods%list,nscal,file%vtkdata(1),numerics%name,nin,iopt) !W
 !dbgw  write(*,*) "fn,iopt=",file%nvtkdata, iopt !dbgw
@@ -134,7 +135,7 @@ program vtktfm_p
      end if
      call bods_init(bods,geobjl,numerics) !W
   else if (numerics%preserve) then
-     call geobjlist_read(geobjl,file%vtkdata(1),iched)
+     call geobjlist_read(geobjl,file%vtkdata(1),kched=iched,leave_open=.true.)
      nin=0
      call vfile_iscalarread(bods%list,bods%nbod,file%vtkdata(1),numerics%name,nin,iopt) !W
      call bods_init(bods,geobjl,numerics) !W
@@ -143,7 +144,7 @@ program vtktfm_p
      do j=1,file%nvtkdata
         icall=j-1
         igeobjl%ngtype=2
-        call geobjlist_read(igeobjl,file%vtkdata(j),iched)
+        call geobjlist_read(igeobjl,file%vtkdata(j),kched=iched,leave_open=.true.)
         iopt=1
         nin=0
         call vfile_iscalarread(ibods,nscal,file%vtkdata(j),numerics%name,nin,iopt) !W
@@ -155,14 +156,14 @@ program vtktfm_p
         call geobjlist_close()
      end do
   else
-     call geobjlist_read(geobjl,file%vtkdata(1),iched)
+     call geobjlist_read(geobjl,file%vtkdata(1),kched=iched,leave_open=.true.)
      call bods_initlist(bods,geobjl,101)
      call bods_init(bods,geobjl,numerics) !W
      call geobjlist_close()
      cpstart=2
      do j=1,file%nvtkdata
         igeobjl%ngtype=2
-        call geobjlist_read(igeobjl,file%vtkdata(j),iched)
+        call geobjlist_read(igeobjl,file%vtkdata(j),kched=iched,leave_open=.true.)
 !dbgw     write(*,*) 'third',(geobjl%nodl(ij),ij=1,20)  !dbgw
         call geobjlist_cumulate(geobjl,igeobjl,cpstart,file%vtkcopies(j),iopt,0_ki2par)
         call bods_cumulate(bods,igeobjl,j,cpstart,file%vtkcopies(j),0)

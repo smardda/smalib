@@ -9,7 +9,7 @@ F90 ?= gfortran
 FC = gfortran
 
 # Fortran compiler flags
-F90FLAGS = -O
+F90FLAGS = -O -cpp
 ifeq ($(findstring mpi,$(F90)),mpi)
    F90FLAGS += -DWITH_MPI
 endif
