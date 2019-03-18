@@ -1,0 +1,25 @@
+This directory contains source for two Fortran-77 codes, unif and exps,
+to generate tracks approximately aligned with the x coordinate.
+
+Produce executable unif using for example
+ifort -g unif.f -o unif ../../fortd/libg.a 
+To produce a set of 200 points defining 100 tracks as adjacent vectors
+in the file unif00000100.qry
+./unif 100 1 2
+where the second and third arguments n2 and n3 define the uniform
+source parameter a=n2*10**(-n3). Parameter a (=0.01 in the example)
+should not exceed unity in absolute value.
+The maximum angular deviation \alpha of a track from the x direction
+is given by \alpha = \sin^{-1} a, in radians, all angles within this
+cone are equally likely.
+
+Produce executable exps using for example
+ifort -g exps.f -o exps ../../fortd/libg.a 
+To produce a set of 400 points defining 200 tracks as adjacent vectors
+in the file exps00000200.qry
+./exps 200 4 0
+where the second and third arguments n2 and n3 define the exponential
+source biasing parameter a=n2+n3*0.001. Parameter a  should lie between
+0.01 and 4 approximately. The angle \alpha of a track from the x direction
+is given by \alpha = \cos^{-1} \mu, where \mu is small (\alpha large)
+if a is small, and vice versa.
