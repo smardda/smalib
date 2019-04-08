@@ -52,6 +52,16 @@ if [ $? -eq 0 ] ; then
 module load ifort/12.0
 mcfound=y
 fi
+name -n | grep -q F8395
+if [ $? -eq 0 ] ; then
+#nothing needed on laptop
+mcfound=y
+fi
+uname -n | grep -q DESKTOP-L49I1U5
+if [ $? -eq 0 ] ; then
+#nothing needed on laptop
+mcfound=y
+fi
 if [ $mcfound == n ] ; then
   echo "No additional modules loaded - if needed, edit $SMALIB_DIR/Extras/setup"
 fi
