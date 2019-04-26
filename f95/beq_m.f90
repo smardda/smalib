@@ -586,6 +586,7 @@ subroutine beq_readequil(self,infile,numerics)
   call log_value("number of fpol values read ",nw)
   btcen=abs(self%f(1))/max(rmaxis,1.e-9)
   call log_value("Estimated central B_T ",btcen)
+  self%ivac=self%f(1)
 
   ! 1D work array
   !! allocate 1D work storage and read
