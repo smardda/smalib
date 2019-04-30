@@ -89,7 +89,13 @@ $(TGTS) : $(LIBf90) $(LIBS)
 	$(F90) $(F90FLAGS) $@.f90 -o $@ $(LIBf90) $(LIBS)
 
 lib $(LIBf90) : $(OBJECTS)
-	ar ru $(LIBf90) $(OBJECTS)
+	@ar ru $(LIBf90) $(OBJECTS)
+
+$(LIBS) :
+	cd ./LIB && $(MAKE)
+
+$(LIBS) :
+	cd ./LIB && $(MAKE)
 
 $(LIBS) :
 	cd ./LIB && $(MAKE)

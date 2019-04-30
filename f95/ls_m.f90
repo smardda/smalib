@@ -15,6 +15,7 @@ module ls_m
   ls_write, &  ! write  list structure
   ls_write1, &  ! write partial list
   ls_add,   & ! add to  list structure
+  ls_adder,   & ! add to  list structure with error return
   ls_copy    ! copy entries in list structure
 
 ! public types
@@ -235,6 +236,41 @@ subroutine ls_add(self,kadr,k2,kitem)
   end if
 
 end subroutine ls_add
+!---------------------------------------------------------------------
+subroutine ls_adder(self,kadr,k2,kitem,kerr)
+
+  !! arguments
+  type(ls_t), intent(inout) :: self   !< list
+  integer(ki4) , intent(in) :: kadr !< first entry of list
+  integer(ki4) , intent(in) :: k2 !< second entry of list
+  integer(ki4) , intent(in) :: kitem !< item to add to list
+  integer(ki4) , intent(out) :: kerr !<  error code
+
+  !! local
+  character(*), parameter :: s_name='ls_adder' !< subroutine name
+  integer(ki4) :: isiz  !< local variable
+  integer(ki4):: il  !< local variable
+  integer(ki4):: iu  !< local variable
+
+  !! test storage
+  isiz=size(self%list,1)
+  il=lbound(self%list,2)
+  iu=ubound(self%list,2)
+  if(il<=k2.AND.k2<=iu) then
+     if(kadr<=isiz) then
+        !! add to existing
+        self%list(kadr,k2)=kitem
+        kerr=0
+     else
+        !call log_error(m_name,s_name,1,error_fatal,'List array not large enough, increase btree_sizel')
+        kerr=1
+     end if
+  else
+     !call log_error(m_name,s_name,2,error_fatal,'List array not large enough, increase btree_sizel')
+     kerr=2
+  end if
+
+end subroutine ls_adder
 !---------------------------------------------------------------------
 subroutine ls_copy(self,kadr1,k1,kadr2,k2,klen)
 

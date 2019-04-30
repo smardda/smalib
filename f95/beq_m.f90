@@ -586,6 +586,7 @@ subroutine beq_readequil(self,infile,numerics)
   call log_value("number of fpol values read ",nw)
   btcen=abs(self%f(1))/max(rmaxis,1.e-9)
   call log_value("Estimated central B_T ",btcen)
+  self%ivac=self%f(1)
 
   ! 1D work array
   !! allocate 1D work storage and read
@@ -1560,8 +1561,8 @@ subroutine beq_readpart(self,infile)
   call log_read_check(m_name,s_name,4,status)
   read(nin,*,iostat=status) ibuff
   read(nin,'(a)',iostat=status) ibuf1
-  self%n%vacfile=adjustl(ibuf1)
   call log_read_check(m_name,s_name,63,status)
+  self%n%vacfile=adjustl(ibuf1)
   call misc_fsuffixget(self%n%vacfile,self%n%vactype,ierr)
   if (ierr/=0) then
      call log_error(m_name,s_name,63,ierr,'vacuum field data file has no suffix')
@@ -1724,8 +1725,8 @@ subroutine beq_readplus(self,infile)
   end if
   read(nin,*,iostat=status) ibuff
   read(nin,'(a)',iostat=status) ibuf1
-  self%n%vacfile=adjustl(ibuf1)
   call log_read_check(m_name,s_name,63,status)
+  self%n%vacfile=adjustl(ibuf1)
   call misc_fsuffixget(self%n%vacfile,self%n%vactype,ierr)
   if (ierr/=0) then
      call log_error(m_name,s_name,63,ierr,'vacuum field data file has no suffix')

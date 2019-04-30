@@ -1421,8 +1421,8 @@ subroutine geobjlist_stepmove(self,btree,mtest)
      call btree_mfind(btree,iobj,tposl,inode)
      if (inode<0) then
         call log_value("Bad start inode",inode)
-        call log_value("Bad start mtest%posl%pos",mtest%posl%pos(j))
-        call log_value("Bad start tposl%pos",tposl%pos(1))
+        call log_value("Bad start mtest%posl%pos (1) ",mtest%posl%pos(j)%posvec(1))
+        call log_value("Bad start tposl%pos (1) ",tposl%pos(1)%posvec(1))
         cycle
      end if
      xo%posvec=tposl%pos(1)%posvec
