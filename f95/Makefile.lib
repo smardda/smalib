@@ -94,12 +94,6 @@ lib $(LIBf90) : $(OBJECTS)
 $(LIBS) :
 	cd ./LIB && $(MAKE)
 
-$(LIBS) :
-	cd ./LIB && $(MAKE)
-
-$(LIBS) :
-	cd ./LIB && $(MAKE)
-
 $(OBJECTS):$(MODULES)
 	@touch .TOUCHFILE
 
