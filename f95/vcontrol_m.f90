@@ -377,8 +377,17 @@ subroutine vcontrol_read(file,numerics)
      if (panel_bodies(j)>0) exit
      inbod=0
   end do
-  if (inbod==0) &
- &call log_error(m_name,s_name,33,error_fatal,'No panels present')
+ ! if (inbod==0) &
+ !&call log_error(m_name,s_name,33,error_fatal,'No panels present')
+  if (inbod==0) then
+    call log_error(m_name,s_name,33,error_warning,'No panels listed in panelarrayparameters')
+    inbod=maximum_number_of_panels
+    call log_value("Fix up is to assume maximum allowed number of panels, namely ",inbod)
+    do j=1,inbod
+       panel_bodies(j)=j
+       panel_transform(j)=max(panel_transform(j),0)
+    end do
+  end if
 
   defn_option: select case (option(1:5))
   case ('split')
