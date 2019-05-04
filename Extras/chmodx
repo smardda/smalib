@@ -1,9 +1,6 @@
 cd $SMALIB_DIR
 cd Extras
 chmod a+x  obj2stl setup stl2vtk obj2vtk vtkpng vtkpngcl
-#chmod a+x trtognu
-#chmod a+x *.sgo
-#chmod a+x *.bash
 cd ../int
 chmod a+x *.bash
 chmod a+x cmdwrap
@@ -11,8 +8,3 @@ cd ../exec
 chmod a+x *
 cd ../TEST
 chmod a+x *.bash
-if [ -d ../develop ] ; then
-cd ../develop
-chmod a+x *.bash
-chmod a+x inden95 makemake rsync-sm striptb build mginfo mcommit mpush
-fi
