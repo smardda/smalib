@@ -322,7 +322,7 @@ module namelist
 !!
   type, public :: panelarrayparameters
    !> bodies defining the geometry,
-   !! default 0 gives error so must be changed
+   !! if no bodies are listed, then all are considered
      integer(ki4), dimension(2*maximum_number_of_panels) :: panel_bodies !< .
    !> number of transform to apply,
    !! default -1 gives error so must be changed

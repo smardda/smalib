@@ -10,7 +10,7 @@ FC = ifort
 
 # Fortran compiler flags
 #F90FLAGS = -O -std03 -unroll -fp-model source -diag-disable 8291,8577
-F90FLAGS = -debug -debug-parameters all -trace -fpe0 -fp-stack-check -check
+F90FLAGS = -debug -debug-parameters all -trace -fpe0 -fp-stack-check -check -fpp
 ifeq ($(findstring mpi,$(F90)),mpi)
    F90FLAGS += -DWITH_MPI
 endif

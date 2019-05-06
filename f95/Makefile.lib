@@ -85,11 +85,14 @@ MODULES=$(SOURCES:.f90=.mod)
 
 OBJECTS=$(SOURCES:.f90=.o)
 
-$(TGTS) : $(LIBf90)
+$(TGTS) : $(LIBf90) $(LIBS)
 	$(F90) $(F90FLAGS) $@.f90 -o $@ $(LIBf90) $(LIBS)
 
 lib $(LIBf90) : $(OBJECTS)
-	ar ru $(LIBf90) $(OBJECTS)
+	@ar ru $(LIBf90) $(OBJECTS)
+
+$(LIBS) :
+	cd ./LIB && $(MAKE)
 
 $(OBJECTS):$(MODULES)
 	@touch .TOUCHFILE
@@ -101,7 +104,7 @@ clean:
 	rm -f $(OBJECTS) *$(MOD) $(EXTRA_CLEAN_FILES)
 
 distclean: clean
-	rm -f  $(TGTS) $(LIBf90)
+	rm -f  $(TGTS) $(LIBf90) $(LIBS)
 
 libclean: clean
 	rm -f  $(LIBf90)

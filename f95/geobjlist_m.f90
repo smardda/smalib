@@ -262,7 +262,7 @@ subroutine geobjlist_read(self,infile,kched,kin,leave_open)
      open(unit=nin,file=infile,status='OLD',form='FORMATTED',iostat=status)
      if(status/=0)then
         !! error opening file
-        write(*,*) 'infile=',infile
+        call log_value("geobj data file ",infile)
         call log_error(m_name,s_name,1,error_fatal,'Error opening geobj data file')
      else
         if(myrank_log.eq.0) call log_error(m_name,s_name,2,log_info,'geometrical object  data file opened')
@@ -1420,7 +1420,9 @@ subroutine geobjlist_stepmove(self,btree,mtest)
      iobj%objtyp=1 ! for point
      call btree_mfind(btree,iobj,tposl,inode)
      if (inode<0) then
-        write(*,*) 'Bad start', inode,mtest%posl%pos(j),tposl%pos(1)
+        call log_value("Bad start inode",inode)
+        call log_value("Bad start mtest%posl%pos (1) ",mtest%posl%pos(j)%posvec(1))
+        call log_value("Bad start tposl%pos (1) ",tposl%pos(1)%posvec(1))
         cycle
      end if
      xo%posvec=tposl%pos(1)%posvec

@@ -8,7 +8,7 @@ EXEDIR = ../exec
 F90 ?= ifort
 FC = ifort
 # Fortran compiler flags
-F90FLAGS = -O3 
+F90FLAGS = -O3 -fpp
 ifeq ($(findstring mpi,$(F90)),mpi)
    F90FLAGS += -DWITH_MPI
 endif

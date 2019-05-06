@@ -18,6 +18,7 @@ module mcontrol_h
      real(kr8) :: cutoff !<  cutoff for maximum mode number calculation
      integer(ki4) :: layout !< data layout in vac .txt file
      integer(ki4) :: nzetap !< namelist \f$ N_{\zeta P} \f$
+     real(kr8) :: zetsta    !< Toroidal angle \f$ zeta \f$ of first point in samples (degrees) \f$ \zeta_{0} \f$
   end type mnumerics_t
 
 
