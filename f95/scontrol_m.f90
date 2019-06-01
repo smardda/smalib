@@ -16,9 +16,9 @@ module scontrol_m
  &scontrol_readcon !< read data for this object
 
 ! public variables
-  integer(ki4), parameter, public :: RECOGNISED_KEYS=4 !< number of rekeys recognised by code
+  integer(ki4), parameter, public :: RECOGNISED_KEYS=5 !< number of rekeys recognised by code
   character(len=6),  dimension(RECOGNISED_KEYS), parameter, public :: reckey = & !< input variable must match
- &(/'null  ','angle ','poloid','toroid'/)
+ &(/'null  ','angle ','poloid','toroid', 'userde'/)
 
 ! private variables
   character(*), parameter :: m_name='scontrol_m' !< module name
@@ -277,13 +277,16 @@ subroutine scontrol_readcon(self,channel)
   real(kr8) :: nominal_r_central !< user defined value of central \f$ R \f$
   real(kr8) :: nominal_z_central !< user defined value of central \f$ Z \f$
   integer(ki4) :: number_of_clusters !< sets cluster size by dividing range
-  character(len=80) :: new_key !<  new key for sorting (only angle allowed)
+  character(len=80) :: new_key !<  new key for sorting (allowable entries in reckey array)
   logical :: rekey !<  only rekey, i.e. use new key, if .true.
   integer(ki4), parameter :: MAX_NUMBER_OF_PARAMETERS=100 !< maximum number of parameters allowed
 
   character(len=80), dimension(MAX_NUMBER_OF_PARAMETERS) :: required_statistics  !< statistics to be calculated
+  integer(ki4), dimension(MAX_NUMBER_OF_PARAMETERS)  :: dictionary !< overwrites dictionary
   integer(ki4) :: itotstat  !< actual number of statistics needed
+  integer(ki4) :: inudict  !< number of entries in user defined dictionary
   integer(ki4) :: ierr  !< for checking statistics
+  integer  :: ilog      !< for namelist dump after error
   character(len=80) :: icstat  !< local variable
 
   !! smanal parameters
@@ -294,6 +297,7 @@ subroutine scontrol_readcon(self,channel)
  &nominal_r_central,nominal_z_central, &
  &new_key, &
  &rekey, &
+ &dictionary, &
  &required_statistics
 
   !! set default smanal parameters
@@ -307,6 +311,8 @@ subroutine scontrol_readcon(self,channel)
   number_of_clusters = 18
   new_key = 'null'
   rekey = .false.
+  !dictionary = 1*4,2*4,3*2,4*4,7,8,8,7,8,8,6*4 !namelist input
+  dictionary = 0
   do i=1,MAX_NUMBER_OF_PARAMETERS
      required_statistics(i)='unset '
   end do
@@ -321,6 +327,8 @@ subroutine scontrol_readcon(self,channel)
   read(nin,nml=smanalparameters,iostat=status)
   if(status/=0) then
      print '("Fatal error reading smanal parameters")'
+     call log_getunit(ilog)
+     write(ilog,nml=smanalparameters)
      call log_error(m_name,s_name,1,error_fatal,'Error reading smanal parameters')
   end if
 
@@ -374,8 +382,25 @@ subroutine scontrol_readcon(self,channel)
   if (set_r_central) self%urcen=nominal_r_central
   if (set_z_central) self%uzcen=nominal_z_central
   self%nbin=number_of_clusters
-  self%newkey=new_key
   self%rekey=rekey
+
+  new_key1: select case (new_key)
+  case('userde')
+     if (minval(dictionary)<0) &
+ &   call log_error(m_name,s_name,5,error_fatal,'Dictionary entries must be positive')
+     ! inudict should now return location of first zero
+     inudict=0
+     do j=1,MAX_NUMBER_OF_PARAMETERS
+        if (dictionary(j)<=0) exit
+        inudict=j
+     end do
+     allocate(self%userdict(inudict), stat=status)
+     call log_alloc_check(m_name,s_name,9,status)
+     self%userdict=dictionary
+     self%nudict=inudict
+  end select new_key1
+
+  self%newkey=new_key
   self%mode=analysis_mode
 
   !! allocate arrays and assign

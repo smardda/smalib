@@ -21,6 +21,8 @@ module scontrol_h
      real(kr8) :: realpar !< real control parameter
      integer(ki4) :: intpar !< integer control parameter
      logical :: logicpar !< logical control parameter
+     integer(ki4), dimension(:), allocatable :: userdict !< defines user dictionary
+     integer(ki4) :: nudict !< number of entries in userdict
      character(len=80), dimension(:), allocatable :: namstat !< statistics control parameter
   end type snumerics_t
 
