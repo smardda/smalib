@@ -207,13 +207,6 @@ subroutine bods_write(self,geobjl,fileroot,kctyp,kcname,kheader)
 
   do i=1,infile
 
-     !! make up icplot from fileroot, iched from fileroot
-     write(ic5,'(I5.5)') i
-     icplot=trim(fileroot)//'_'//ic5
-     iched='root was '//fileroot
-     call geobjlist_makehedline(geobjl,iched,vtkdesc)
-     call vfile_init(icplot,vtkdesc,iplot)
-
      !! construct small geobjl, first allocate storage
 
      inobjsmall=0
@@ -230,6 +223,16 @@ subroutine bods_write(self,geobjl,fileroot,kctyp,kcname,kheader)
         end if
      end do
      iostart=ioend+1-inobjsmall
+
+     !! make sure there are objects corresponding to this id
+     if (inobjsmall==0) cycle
+
+     !! make up icplot from fileroot, iched from fileroot
+     write(ic5,'(I5.5)') i
+     icplot=trim(fileroot)//'_'//ic5
+     iched='root was '//fileroot
+     call geobjlist_makehedline(geobjl,iched,vtkdesc)
+     call vfile_init(icplot,vtkdesc,iplot)
 
      call geobjlist_iinit(glsmall,inptsmall,inobjsmall,innodsmall,2,1)
 
