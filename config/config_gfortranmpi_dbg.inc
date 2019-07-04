@@ -9,7 +9,7 @@ F90 = mpifort
 FC = mpifort
 
 # Fortran compiler flags
-F90FLAGS = -fexceptions -fbacktrace --check=all -g -O -cpp
+F90FLAGS = -fexceptions -fbacktrace --check=all -g -O -cpp -D WITH_MPI
 
 FFLAGS = -fdefault-real-8 -fdefault-double-8 -O 
 

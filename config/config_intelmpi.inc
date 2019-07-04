@@ -14,7 +14,7 @@ else
 endif
 
 # Fortran compiler flags
-F90FLAGS = -O -fpp
+F90FLAGS = -O -fpp -D WITH_MPI
 
 FFLAGS = -r8 -save -O
 
