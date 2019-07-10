@@ -9,8 +9,8 @@ ifeq ($(SGE_CLUSTER_NAME),Freia)
   F90 = mpifort
   FC = mpifort
 else
-  F90 = mpiifort
-  FC = mpiifort
+  F90 ?= mpif90
+  FC = ifort
 endif
 
 # Fortran compiler flags

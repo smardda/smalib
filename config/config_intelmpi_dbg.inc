@@ -5,8 +5,8 @@
 EXEDIR = ../exec
 
 # Fortran compiler
-F90 = mpiifort
-FC = mpiifort
+F90 ?= mpif90
+FC = ifort
 
 # Fortran compiler flags
 F90FLAGS = debug -debug-parameters all -check all -trace -g -O -fpp -D WITH_MPI
