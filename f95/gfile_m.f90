@@ -3,6 +3,7 @@ module gfile_m
   use const_kind_m
   use log_m
   use misc_m
+  use smitermpi_h
 
   implicit none
   private
@@ -40,7 +41,6 @@ subroutine gfile_init(fprint,descriptor,kprint)
   !! logical :: unitused !< flag to test unit is available
 
   !! open file do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then kprint=i exit end if end do
-
   call misc_getfileunit(kprint)
   open(unit=kprint,file=trim(fprint)//'.gnu')
 
