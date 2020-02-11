@@ -172,6 +172,8 @@ subroutine btree_init(self,numerics)
   self%exten(:,1)=(/iquante,iquante,iquante/)
 
   call ls_init(self%objectls,isizeh,isizel)
+  ! Initialize list to 0
+  self%objectls%list = 0
   ! define dummy first record (0 objects) in list 0 and 2
   call ls_add(self%objectls,1,0,0)
   call ls_add(self%objectls,1,2,0)
