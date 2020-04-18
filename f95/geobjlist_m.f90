@@ -4017,7 +4017,7 @@ end subroutine geobjlist_centroids
 subroutine geobjlist_extract(self,kbods,numerics)
   !! arguments
   type(geobjlist_t), intent(inout) :: self !< geobj list data
-  integer(ki4), dimension(:), intent(inout) :: kbods !< integer scalar list data of bodies for each point
+  integer(ki4), dimension(:), allocatable, intent(inout) :: kbods !< integer scalar list data of bodies for each point
   type(vnumerics_t), intent(in) :: numerics !< input numerical parameters
 
 
@@ -4069,6 +4069,9 @@ subroutine geobjlist_extract(self,kbods,numerics)
      end do
   end select extract_key
 
+  !! return marker info array
+  if (.NOT.allocated(kbods)) allocate(kbods(self%ng), stat=status)
+  call log_alloc_check(m_name,s_name,2,status)
   kbods(1:self%ng)=0
   ! extract objects containing marked points
   do j=1,self%ng

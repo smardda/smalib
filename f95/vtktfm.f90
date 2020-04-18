@@ -185,16 +185,20 @@ program vtktfm_p
      call geobjlist_paneltfm(geobjl,bods,numerics)
   end if
   if (numerics%extract) then
-     call geobjlist_extract(geobjl,bods%list,numerics)
+     call geobjlist_extract(geobjl,bods%mark,numerics)
+     bods%nmark=1
   end if
   call clock_stop(6)
 !--------------------------------------------------------------------------
 !! output file(s)
 
   call clock_start(30,'outfile_init time')
-  if (numerics%split.OR.numerics%extract) then
+  if (numerics%split) then
 ! write out as separate files
      call bods_write(bods,geobjl,fileroot,'none',numerics%name,1)
+  else if (numerics%extract) then
+! write out extract
+     call bods_writex(bods,geobjl,fileroot,'none',numerics%name,1)
   else
      call geobjlist_makehedline(geobjl,iched,vtkdesc)
      call vfile_init(file%vtkout,vtkdesc,nplot)
