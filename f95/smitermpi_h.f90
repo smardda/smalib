@@ -37,6 +37,9 @@ module smitermpi_h
      integer(ki4) :: prochdsgen = 0     ! The process assigned to run hdsgen
      logical :: powcal = .False. ! If true this process runs the powcal step
      logical :: bcasthdsgen = .False., bcastpowcal = .False. ! If true then hdsgen and powcal expect data as broadcasts
+     logical :: readpowcalcontrol, bcastpowcalcontrol ! toggles to read and broadcast the powcal pcontrol data
+     logical :: readpowcaldata, bcastpowcaldata ! toggles to read and broadcast the powcal data
+     logical :: bcastflag ! toggles powcal broadcasts
   end type decomp_t
 
   ! Global variables (yuck)
