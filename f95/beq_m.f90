@@ -978,6 +978,9 @@ subroutine beq_readequ(self,infile,numerics)
   self%rqcen=(workr1(1)+workr1(jm))/2
   self%zqcen=(workz1(1)+workz1(km))/2 ! km not jm??
 
+  deallocate(workr1) ! Added for combined smiter runs HJL
+  deallocate(workz1) ! Added for combined smiter runs HJL
+  
   beq_nobinq=.TRUE.
 
   ! set up fpol
@@ -1138,6 +1141,9 @@ subroutine beq_readana(self,beqan,kfldspec)
   self%rqcen=(workr1(1)+workr1(nw))/2
   self%zqcen=(workz1(1)+workz1(nh))/2
 
+  deallocate(workr1) ! Added for smiter combined runs HJL
+  deallocate(workz1) ! Added for smiter combined runs HJL
+  
   self%psiaxis=psic
   self%psibdry=psib
   self%psiqbdry=self%psibdry

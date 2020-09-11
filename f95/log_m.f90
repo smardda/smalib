@@ -60,14 +60,16 @@ module log_m
 contains
   !---------------------------------------------------------------------
   !> create log file and initialise
-  subroutine log_init(fileroot,timestamp)
+  subroutine log_init(fileroot,timestamp,decomp)
 
     !! arguments
     character(*), intent(inout) :: fileroot !<root of log file name
     type(date_time_t), intent(in) :: timestamp !< timestamp
+    type(decomp_t), intent(in), optional :: decomp !< decomp data structure
     !! local
     logical :: unitused !< flag to test unit is available
     integer(ki4) :: ilen  !< length of string
+    integer(ki4) :: ierr !< needed for MPI Barrier if requred
 
     ! Allocate error buffer with a default size 
     ! this can grow dynamically
@@ -93,9 +95,6 @@ contains
     ! and reset file root
     fileroot=logfile(1:ilen)
 
-    ! All processes other than root finish here
-    if(myrank_log .gt. 0) return    
-
     !! get file unit
     do i=99,1,-1
        inquire(i,opened=unitused)
@@ -104,9 +103,15 @@ contains
           exit
        end if
     end do
-
     !! open file
-    open(unit=nlog,file=logfile,status='REPLACE')
+    if(myrank_log == 0) open(unit=nlog,file=logfile,status='REPLACE')
+#ifdef WITH_MPI
+    if(present(decomp)) then ! If the decomnp structure is included then this is a call from powcal
+       call MPI_BARRIER(decomp%commpowcal,ierr) ! Need to wait until the root process creates the log file       
+       if(myrank_log > 0) open(unit=nlog,file=logfile,status='OLD')
+    endif
+#endif
+    
 
     !! write initial header
 
@@ -128,7 +133,7 @@ contains
     logical, intent(in), optional :: writeout
 
     !! local
-    logical :: flush = .False. ! errors default to a buffer which can be flushed, change to true to write to disk by default
+    logical :: flush = .True. ! errors default to write to screen, change to false to write to a buffer that can be periodically flushed
 
     !! If there is only 1 process then we don't want to store this in the buffer but flush directly
     if(nproc_log == 1) flush = .True.
@@ -136,7 +141,7 @@ contains
     !! Or it can be forced to flush manually
     if(present(writeout)) flush = writeout
 
-    if( (flush .eqv. .False.) .or. (myrank_log > 0) ) then
+    if( flush .eqv. .False. ) then
        call add_error_line(modname,subname,point,severity,errormessage)          
     else if(severity<log_info) then       
        errorno=errorno+1   !<  This errorno is only updated during a flush, errorno is also stored independently in the error_buffer

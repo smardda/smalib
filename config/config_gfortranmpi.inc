@@ -9,7 +9,7 @@ F90 = mpif90
 FC = mpif90
 
 # Fortran compiler flags
-F90FLAGS = -O -cpp
+F90FLAGS = -O -cpp -D WITH_MPI
 
 FFLAGS = -fdefault-real-8 -fdefault-double-8 -O
 
