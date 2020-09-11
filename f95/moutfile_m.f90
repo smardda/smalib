@@ -57,10 +57,15 @@ subroutine moutfile_init(fout,numerics,descriptor,kout)
 
   !! header information
 
-  write(kout,*,iostat=status) 'ireq'
-  call log_write_check(m_name,s_name,1,status)
-  write(kout,*,iostat=status) numerics%ireq
-  call log_write_check(m_name,s_name,2,status)
+  vac_type: select case (descriptor)
+  case('txt')
+     ! no header
+  case default
+     write(kout,*,iostat=status) 'ireq'
+     call log_write_check(m_name,s_name,1,status)
+     write(kout,*,iostat=status) numerics%ireq
+     call log_write_check(m_name,s_name,2,status)
+  end select vac_type
 
 end  subroutine moutfile_init
 !---------------------------------------------------------------------

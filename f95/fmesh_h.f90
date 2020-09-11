@@ -22,6 +22,10 @@ module fmesh_h
      real(kr8) :: dyf !< field mesh spacing size in second direction
      real(kr8) :: dzf !< field mesh spacing size in third direction
 
+     real(kr8) :: rdxf !< reciprocal of field mesh spacing size in first direction
+     real(kr8) :: rdyf !< reciprocal of field mesh spacing size in second direction
+     real(kr8) :: rdzf !< reciprocal of field mesh spacing size in third direction
+
      real(kr8), dimension (3) :: xa0f !< lower and upper co-ordinate bound of mesh as vectors
      real(kr8), dimension (3) :: xa1f !< lower and upper co-ordinate bound of mesh as vectors
 

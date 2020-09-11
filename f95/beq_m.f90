@@ -6,6 +6,7 @@ module beq_m
   use fmesh_h
   use beq_h
   use beqan_h
+  use beqart_h
   use posang_h
   use position_m
   use log_m
@@ -16,6 +17,7 @@ module beq_m
   use fmesh_m
   use posang_m
   use beqan_m
+  use beqart_m
   use gfile_m
 
   implicit none
@@ -122,6 +124,8 @@ module beq_m
 !> read in data format
 subroutine beq_read(self,infile)
 
+  use smitermpi_h
+  
   !! arguments
   type(beq_t), intent(out) :: self   !< object data structure
   character(*),intent(in) :: infile !< name of input file
@@ -139,7 +143,7 @@ subroutine beq_read(self,infile)
      !! error opening file
      call log_error(m_name,s_name,1,error_fatal,'Error opening beq data structure file')
   else
-     call log_error(m_name,s_name,2,log_info,'beq data structure file opened')
+     if(myrank_log .eq. 0) call log_error(m_name,s_name,2,log_info,'beq data structure file opened')
   end if
 
   read(nin,*,iostat=status) ibuff
@@ -582,6 +586,7 @@ subroutine beq_readequil(self,infile,numerics)
   call log_value("number of fpol values read ",nw)
   btcen=abs(self%f(1))/max(rmaxis,1.e-9)
   call log_value("Estimated central B_T ",btcen)
+  self%ivac=self%f(1)
 
   ! 1D work array
   !! allocate 1D work storage and read
@@ -751,6 +756,7 @@ subroutine beq_readequil(self,infile,numerics)
      call log_value("Giving up on EQDSK for B values, status",status)
      !        deallocate(workr1)
      !        deallocate(workz1)
+     close(iin) ! Added HJL
      return
   end if
   if(ncoil>0) then
@@ -770,6 +776,7 @@ subroutine beq_readequil(self,infile,numerics)
      call log_error(m_name,s_name,63,error_warning,'Error reading coils')
      call log_value("Giving up on EQDSK for B values, status",status)
      deallocate(work1)
+     close(iin) ! Added HJL
      return
   end if
   deallocate(work1)
@@ -788,6 +795,7 @@ subroutine beq_readequil(self,infile,numerics)
      call log_error(m_name,s_name,71,error_warning,'Error reading Br')
      call log_value("Giving up on EQDSK for B values, status",status)
      deallocate(workr2)
+     close(iin) ! Added HJL
      return
   end if
   print '("number of Br values read = ",i10)',nw*nh
@@ -807,6 +815,7 @@ subroutine beq_readequil(self,infile,numerics)
      call log_value("Giving up on EQDSK for B values, status",status)
      deallocate(workr2)
      deallocate(workz2)
+     close(iin) ! Added HJL
      return
   end if
   print '("number of Bz values read = ",i10)',nw*nh
@@ -849,7 +858,8 @@ subroutine beq_readequ(self,infile,numerics)
   real(kr8) :: btf !< FIESTA vacuum toroidal field at r=rtf
   real(kr8) :: rtf !< FIESTA vacuum toroidal field position
   real(kr8) :: psib !< FIESTA poloidal flux at the boundary (Wb/rad)
-  real(kr8) :: psic !< madeup poloidal flux at the plasma centre (Wb/rad), to force on-axis minimum/maximum
+  real(kr8) :: psic !< FIESTA poloidal flux at the plasma centre (Wb/rad), maybe madeup to force on-axis minimum/maximum
+  real(kr8) :: psisca !< scaling factor for flux
 
   !! get file unit do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then iin=i exit end if end do
 
@@ -1004,16 +1014,21 @@ subroutine beq_readequ(self,infile,numerics)
      ! Separating this case enables MAST test deck case to work,
      ! without setting BEQ_OVERRIDE_ITER=.FALSE., which is what
      ! really should be done, and no special fldspec test
-     ! This works because .equ files only ever used for MAST cases
-     ! Allow reversal of psi in any case 26/2/19
      if (.NOT.numerics%leqok) then
-              self%psiaxis=-psic
-              self%psiqbdry=-psib
-              self%psibdry=self%psiqbdry
-              work2=-work2
+        if (.NOT.numerics%mastequ) then
+           self%psiaxis=-psic
+           self%psiqbdry=-psib
+           self%psibdry=self%psiqbdry
+           work2=-work2
+        end if
      end if
   end select fld_specn
 
+  ! scale factor
+  if (numerics%eqscale) then
+     psisca=psic-psib
+     work2=psisca*work2
+  end if
   close(iin)
 
 end subroutine beq_readequ
@@ -1328,9 +1343,9 @@ subroutine beq_sense(self,k3d)
   type(posang_t) :: posang !< position and vector involving angles
   integer(ki4) :: isleft !< unity if left-handed helix
 
-  !write(*,*) self%n%vacfile
-  if ( (k3d==0.AND.self%n%vacfile/='null') .OR. &
- &(k3d==1.AND.self%n%vacfile=='null') ) return
+  !write(*,*) self%n%vactype
+  if ( (k3d==0.AND.self%n%vactype/='nul') .OR. &
+ &(k3d==1.AND.self%n%vactype=='nul') ) return
   ! sense (R,Z) values
   posang%pos(1)=self%rmin+0.7*(self%rmax-self%rmin)
   posang%pos(2)=0
@@ -1398,6 +1413,8 @@ end subroutine beq_readv
 !> check field as mapped or 3-cpt and for extras
 subroutine beq_readcheck(self,infile,kextra)
 
+  use smitermpi_h
+  
   !! arguments
   type(beq_t), intent(out) :: self   !< object data structure
   character(*),intent(in) :: infile !< name of input file
@@ -1417,7 +1434,7 @@ subroutine beq_readcheck(self,infile,kextra)
      !! error opening file
      call log_error(m_name,s_name,1,error_fatal,'Error opening beq data structure file')
   else
-     call log_error(m_name,s_name,2,log_info,'beq data structure file opened')
+     if(myrank_log .eq. 0) call log_error(m_name,s_name,2,log_info,'beq data structure file opened')
   end if
 
   ! skip header data
@@ -1453,6 +1470,7 @@ subroutine beq_readpart(self,infile)
 
   !! local
   character(*), parameter :: s_name='beq_readpart' !< subroutine name
+  integer(ki4) :: ierr !< error flag
   !! logical :: unitused !< flag to test unit is available
 
   !! get file unit do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then nin=i exit end if end do
@@ -1542,8 +1560,13 @@ subroutine beq_readpart(self,infile)
   read(nin,*,iostat=status) self%n%fldspec
   call log_read_check(m_name,s_name,4,status)
   read(nin,*,iostat=status) ibuff
-  read(nin,'(a)',iostat=status) self%n%vacfile
+  read(nin,'(a)',iostat=status) ibuf1
   call log_read_check(m_name,s_name,63,status)
+  self%n%vacfile=adjustl(ibuf1)
+  call misc_fsuffixget(self%n%vacfile,self%n%vactype,ierr)
+  if (ierr/=0) then
+     call log_error(m_name,s_name,63,ierr,'vacuum field data file has no suffix')
+  end if
   ! ripple field data
   read(nin,*,iostat=status) ibuff
   read(nin,*,iostat=status) self%n%mrip
@@ -1573,6 +1596,7 @@ subroutine beq_readplus(self,infile)
   !! logical :: unitused !< flag to test unit is available
   integer(ki4) :: ifldspec !< field as mapped or 3-cpt + extra info
   integer(ki4) :: iextra !< extra info extracted
+  integer(ki4) :: ierr !< error flag
 
   !! get file unit do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then nin=i exit end if end do
 
@@ -1700,8 +1724,13 @@ subroutine beq_readplus(self,infile)
      call log_read_check(m_name,s_name,62,status)
   end if
   read(nin,*,iostat=status) ibuff
-  read(nin,'(a)',iostat=status) self%n%vacfile
+  read(nin,'(a)',iostat=status) ibuf1
   call log_read_check(m_name,s_name,63,status)
+  self%n%vacfile=adjustl(ibuf1)
+  call misc_fsuffixget(self%n%vacfile,self%n%vactype,ierr)
+  if (ierr/=0) then
+     call log_error(m_name,s_name,63,ierr,'vacuum field data file has no suffix')
+  end if
 
   if (iextra==2.OR.iextra==4) then
      read(nin,*,iostat=status) ibuff
@@ -2383,6 +2412,8 @@ subroutine beq_writepart(self,kout)
 
   !! local
   character(*), parameter :: s_name='beq_writepart' !< subroutine name
+  integer(ki4) :: iextra !< extra info extracted
+  integer(ki4) :: ierr !< error flag
 
   write(kout,*,iostat=status) 'mr'
   write(kout,*,iostat=status) self%mr
@@ -2620,7 +2651,7 @@ subroutine beq_deleteplus(self)
   call spl2d_delete( self%dpsidz )
 
   if (self%n%skylpsi) then
-     deallocate( self%ctrackrz )
+     if(allocated( self%ctrackrz )) deallocate( self%ctrackrz )
   end if
 
 end subroutine beq_deleteplus
@@ -2783,6 +2814,7 @@ subroutine beq_readcon(selfn,kin)
 
   !! local
   character(*), parameter :: s_name='beq_readcon' !< subroutine name
+  integer(ki4) :: ierr !< error flag
   integer(ki4) :: mzeta_vtk !< number of sample points in  \f$ \zeta \f$ for vtk
   integer(ki4) :: mzeta_gnup !< number of sample points in  \f$ \zeta \f$ for gnuplot
   integer(ki4) :: beq_cenopt !< namelist option for \f$ R_{cen}, Z_{cen} \f$
@@ -2833,6 +2865,8 @@ subroutine beq_readcon(selfn,kin)
   integer(ki4) :: limiter_search !< how to search for contact point (1 = within box)
   real(kr8) :: beq_psibig !< unity implies \f$ 2 \pi \f$ too big
   logical :: equil_helicity_ok !<  equilibrium helicity is ok
+  logical :: equil_scale !<  default false, if true, scale flux by psic-psib (equ case)
+  logical :: equil_mastequ !<  default true, MAST-U equ file has right helicity
   real(kr8) :: beq_xrsta !< X-point box min R (m)
   real(kr8) :: beq_xrend !< X-point box max R (m)
   real(kr8) :: beq_xzsta !< X-point box min Z (m)
@@ -2844,6 +2878,7 @@ subroutine beq_readcon(selfn,kin)
   real(kr8) :: z1 !< scratch
   real(kr8) :: z2 !< scratch
   character(len=80) :: beq_vacuum_field_file !< local variable
+  character(len=3) :: vacuum_field_type !< local variable
 
   !! beq parameters
   namelist /beqparameters/ &
@@ -2874,6 +2909,8 @@ subroutine beq_readcon(selfn,kin)
  &beq_thetaref, beq_ntheta, beq_fldspec,&
  &beq_psibig,&
  &equil_helicity_ok,&
+ &equil_scale,&
+ &equil_mastequ,&
  &beq_xsearch,beq_xrsta,beq_xrend,beq_xzsta,beq_xzend,&
  &limiter_search,search_r_start,search_r_end,search_z_start,search_z_end,&
  &beq_vacuum_field_file
@@ -2925,6 +2962,8 @@ subroutine beq_readcon(selfn,kin)
   beq_fldspec=1
   beq_psibig=0
   equil_helicity_ok=.FALSE.
+  equil_scale=.FALSE.
+  equil_mastequ=.TRUE.
   beq_xsearch=0
   beq_xrsta=0
   beq_xrend=0
@@ -3012,6 +3051,10 @@ subroutine beq_readcon(selfn,kin)
  &call log_error(m_name,s_name,8,error_fatal,'beq_psibig must be small non-negative integer')
   if(.NOT.equil_helicity_ok) &
  &call log_error(m_name,s_name,8,error_warning,'Sense of helicity of field input may be changed - check log file')
+  if(equil_scale) &
+ &call log_error(m_name,s_name,8,error_warning,'Flux in equ file will be scaled by psic-psib')
+  if(equil_mastequ) &
+ &call log_error(m_name,s_name,8,error_warning,'Sense of helicity will not change')
   if(beq_xsearch<0.OR.beq_xsearch>=2) &
  &call log_error(m_name,s_name,9,error_fatal,'beq_xsearch must be small non-negative integer')
   if(limiter_search<0.OR.limiter_search>=2) &
@@ -3142,6 +3185,8 @@ subroutine beq_readcon(selfn,kin)
   selfn%fldspec=beq_fldspec
   selfn%psibig=beq_psibig
   selfn%leqok=equil_helicity_ok
+  selfn%eqscale=equil_scale
+  selfn%mastequ=equil_mastequ
   selfn%xsearch=beq_xsearch
   selfn%xrsta=beq_xrsta
   selfn%xrend=beq_xrend
@@ -3153,6 +3198,21 @@ subroutine beq_readcon(selfn,kin)
   selfn%lkzsta=search_z_start
   selfn%lkzend=search_z_end
   selfn%vacfile=beq_vacuum_field_file
+  if (beq_vacuum_field_file/='null') then
+     call misc_fsuffixget(beq_vacuum_field_file,vacuum_field_type,ierr)
+     if (ierr/=0) then
+        call log_error(m_name,s_name,2,ierr,'vacuum field data file has no suffix')
+     end if
+     vac_type: select case (vacuum_field_type(1:3))
+     case('sp3','txt','xxx')
+        continue
+     case default
+        call log_error(m_name,s_name,1,error_fatal,'vacuum field type not recognised')
+     end select vac_type
+  else
+     vacuum_field_type='nul'
+  end if
+  selfn%vactype=vacuum_field_type
 
   selfn%skylcen=skylight_centre_line.OR.centre_line_cutout
   selfn%ctrackcode=GEOBJ_SKYLIT
@@ -4213,6 +4273,7 @@ subroutine beq_b(self,posang,kopt)
   real(kr8) :: zrfac    !<  \f$ R(x,y,z) \f$ factor
   !     real(kr8), dimension(3) :: zbrip    !<  Ripple field in Cartesians
   type(posang_t)  :: zparip !< position and vector for ripple
+  type(posvecl_t) :: zpos !< local variable
   real(kr8), dimension(3)  :: zvecf    !<  Vacuum field
 
   if(kopt==0) then
@@ -4233,14 +4294,17 @@ subroutine beq_b(self,posang,kopt)
      zparip=posang
      zparip%vec=0
      ! get ripple
-     if (self%n%vacfile(1:4)=='null') then
+     vac_type: select case (self%n%vactype(1:3))
+     case('nul','xxx')
         if (self%n%mrip/=0) then
            ! 'ripple' includes toroidal field
            posang%vec(3)=0
            zparip=posang
            call beq_ripple(self,zparip,1)
         end if
-     else
+        ! (BR,BZ,BT) vector to cartesians
+        call posang_tfm(zparip,-3)
+     case('sp3')
         ! 'ripple' includes toroidal field
         posang%vec(3)=0
         call spl3d_evalm(self%vacfld,zparip%pos,zparip%vec)
@@ -4249,18 +4313,26 @@ subroutine beq_b(self,posang,kopt)
         ! following converts F to (BR,BZ,BT)
         zrfac=1/zr**spl3d_rpower
         zparip%vec=zrfac*zparip%vec ; zparip%vec(3)=zr*zparip%vec(3)
-     end if
-     ! (BR,BZ,BT) vector to cartesians
+        ! (BR,BZ,BT) vector to cartesians
+        call posang_tfm(zparip,-3)
+     case('txt')
+        ! 'ripple' includes toroidal field
+        posang%vec(3)=0
+        zpos%posvec=posang%pos
+        call beqart_interp(self%beqart,zpos,zvecf)
+        zparip%vec=zvecf
+     end select vac_type
+     ! Flux (BR,BZ,BT) vector to cartesians
      call posang_tfm(posang,-3)
-     call posang_tfm(zparip,-3)
      posang%vec=posang%vec+zparip%vec
      !        posang%vec=zparip%vec
 
   else if (kopt==1) then
 
-     if (self%n%vacfile=='null') then
+     vac_type2: select case (self%n%vactype(1:3))
+     case('nul','xxx')
         call log_error(m_name,s_name,1,error_fatal,'No coding for this case')
-     else
+     case('sp3')
         ! calculate vector (RBR,RBZ,BT) at quantised coordinate
         zr=posang%pos(1)
         zz=posang%pos(2)
@@ -4270,7 +4342,18 @@ subroutine beq_b(self,posang,kopt)
         posang%vec(1)=-zdpdz+zvecf(1)
         posang%vec(2)=zdpdr+zvecf(2)
         posang%vec(3)=zvecf(3)
-     end if
+     case('txt')
+        ! calculate vector (RBR,RBZ,BT) at quantised coordinate
+        zr=posang%pos(1)
+        zz=posang%pos(2)
+        call spl2d_evaln(self%dpsidr,zr,zz,1,zdpdr)
+        call spl2d_evaln(self%dpsidz,zr,zz,2,zdpdz)
+        zpos%posvec=posang%pos
+        call beqart_interp(self%beqart,zpos,zvecf)
+        posang%vec(1)=-zdpdz+zvecf(1)
+        posang%vec(2)=zdpdr+zvecf(2)
+        posang%vec(3)=zvecf(3)
+     end select vac_type2
 
   end if
 

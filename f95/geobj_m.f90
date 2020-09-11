@@ -208,7 +208,7 @@ subroutine geobj_writestl(self,posl,nodl,k,kout)
 
   else
      ! not triangle type
-     call log_error(m_name,s_name,1,error_fatal,'Can only write triangle geobj')
+     call log_error(m_name,s_name,1,error_warning,'Can only write triangle geobj')
   end if
 
 end subroutine geobj_writestl
@@ -238,7 +238,7 @@ function geobj_inbox(self,posl,nodl,box)
 
   ityp=ibits(self%objtyp,0,GEOBJ_BIT_SHIFT)
 
-  if (self%objtyp==1) then
+  if (ityp==1) then
      ! particle type
      ii=self%geobj
      zpos=posl%pos(ii)
@@ -249,10 +249,7 @@ function geobj_inbox(self,posl,nodl,box)
         linbox=linbox.and.linint
      end do
 
-  else
-
-     ityp=ibits(self%objtyp,0,GEOBJ_BIT_SHIFT)
-     if (ityp==VTK_TRIANGLE) then
+  else if (ityp==VTK_TRIANGLE) then
         ! triangle type
         inn=geobj_entry_table(ityp)
         ii=self%geobj
@@ -263,7 +260,9 @@ function geobj_inbox(self,posl,nodl,box)
         xc=0.5*(box(:,1)+box(:,2))
         hh=0.500005*abs(box(:,2)-box(:,1))
         linbox=geobj_trihitsbox(xc,hh,xnodes)
-     end if
+  else 
+        ! no intersection unless point or triangle
+        linbox=.FALSE.
   end if
 
   geobj_inbox=linbox

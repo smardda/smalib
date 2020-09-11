@@ -13,6 +13,7 @@ module pcontrol_h
      real(kr8) :: ploss !< power crossing the separatrix (W)
      real(kr8) :: sigma !< diffusion length (m)
      integer(ki4)  :: nlevel !< refinement level
+     logical  :: usepsista    !< use value of psi on termplane to evaluate Q
      integer(ki4)  :: shadow !< shadowing calculation if positive
      real(kr8) :: qpara0 !< parallel reference flux (W/sqm)
    ! additions for powcal

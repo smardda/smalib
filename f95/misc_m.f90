@@ -218,14 +218,15 @@ subroutine misc_fsuffixget(filename,filesuffix,kerr)
   integer(ki4) :: ilent !< length of suffix string
   character(len=80) :: icsuf  !< file suffix local variable
 
-  ilenf=len_trim(filename)
-  indot=index(filename,'.',.TRUE.)
-  if (indot>=ilenf) then
+  ibuf1=adjustl(filename)
+  ilenf=len_trim(ibuf1)
+  indot=index(ibuf1,'.',.TRUE.)
+  if (indot>=ilenf.OR.indot==0) then
      kerr=error_warning
-     filesuffix='xxx'
+     filesuffix='nul'
   else
      kerr=0
-     icsuf=filename(indot+1:ilenf)
+     icsuf=ibuf1(indot+1:ilenf)
      ilent=len_trim(icsuf)
      call lowor(icsuf,1,ilent)
      filesuffix=icsuf

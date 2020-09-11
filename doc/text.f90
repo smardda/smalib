@@ -119,7 +119,7 @@
 !! \subsection sec1work Workflow
 !>
 !! \image html flomm.png
-!! \image latex flomm.eps "SMARDDA/MOVE flow chart" width=10cm
+!! \image latex flomm.eps "SMARDDA-MOVE flow chart" width=10cm
 !!
 !! 
 !! Steps MAking ReaDy for geometry DAta
@@ -132,7 +132,7 @@
 !! a project specific 'gnu dat' format \ref sec2formats) to
 !! legacy .vtk format (OpenSource) by SMALIB datvtk.
 !! 3. Combination of part bodies to form PFC geometry under study, by
-!! SMARDDA/PFC vtktfm.
+!! SMARDDA-PFC vtktfm.
 !! 4. Conversion of STL and obj files to legacy .vtk format (OpenSource) by
 !! ParaView, scripts stl2vtk and obj2vtk provided.
 !! 5. Use of ParaView "Sources" menu  to produce simple objects in legacy .vtk,

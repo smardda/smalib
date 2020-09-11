@@ -121,12 +121,13 @@ module geobjlist_m
   contains
 !---------------------------------------------------------------------
 !> read in geobjlist data structure
-subroutine geobjlist_init(self,vtkfile,numerics)
+subroutine geobjlist_init(self,vtkfile,numerics,noread)
 
   !! arguments
   type(geobjlist_t), intent(out) :: self   !< geobj list data
   character(*), intent(in)       :: vtkfile !< name of input file
   type(numerics_t), intent(inout) :: numerics !< numerical control data
+  logical, optional :: noread ! Only sets values from numerics, no reading
 
 
   !! local
@@ -150,17 +151,20 @@ subroutine geobjlist_init(self,vtkfile,numerics)
   self%ngunassigned=0
   self%nwset=0
 
-  !! read coords
-  call geobjlist_read(self,vtkfile)
-  numerics%ngeobj=self%ng
-  call log_error(m_name,s_name,1,log_info,'geobj data read')
-
   ! allocate array
   status=0
   if (.not.allocated(rposl%pos)) allocate(rposl%pos(1), stat=status)
   call log_alloc_check(m_name,s_name,2,status)
   if (.not.allocated(tposl%pos)) allocate(tposl%pos(2), stat=status)
   call log_alloc_check(m_name,s_name,3,status)
+  
+  if(present(noread)) return
+  
+  !! read coords
+  call geobjlist_read(self,vtkfile)
+  numerics%ngeobj=self%ng
+  call log_error(m_name,s_name,1,log_info,'geobj data read')
+
 
 end subroutine geobjlist_init
 !---------------------------------------------------------------------
@@ -173,8 +177,8 @@ subroutine geobjlist_delete(self)
 
   deallocate(self%posl%pos)
   if (self%ngtype==1.OR.self%nwset/=0) then
-     !  write(*,*) self%ngtype,self%nwset
-     !    if (allocated(self%obj)) deallocate(self%obj)
+     !dbgngw  write(*,*) self%ngtype,self%nwset  !dbgngw
+     !dbgngw    if (allocated(self%obj)) deallocate(self%obj)  !dbgnw
      deallocate(self%obj)
   end if
   if (self%ngtype/=1) then
@@ -206,12 +210,16 @@ subroutine geobjlist_close(self)
 end subroutine geobjlist_close
 !---------------------------------------------------------------------
 !> read geobj coordinates
-subroutine geobjlist_read(self,infile,kched,kin)
+subroutine geobjlist_read(self,infile,kched,kin,leave_open)
+
+  use smitermpi_h
+  
   !! arguments
   type(geobjlist_t), intent(inout) :: self !< geobj list data
   character(*),intent(in) :: infile !< name of input file
   character(len=80),intent(out), optional :: kched !< field file header
   integer, intent(inout), optional :: kin   !< input channel for object data structure
+  logical, intent(in), optional :: leave_open
 
   !! local
   character(*), parameter :: s_name='geobjlist_read' !< subroutine name
@@ -233,9 +241,15 @@ subroutine geobjlist_read(self,infile,kched,kin)
   integer(ki4) :: iopt !< option
   character(len=30) :: iclabel !< label on line 2 of vtk file
 
+  logical :: close_file = .True.
+  
   logical :: isnumb !< local variable
   external isnumb
 
+  if(present(leave_open)) then
+     if( leave_open ) close_file = .False.
+  endif
+  
   if(present(kin).AND.kin>0) then
      !! assume unit already open and reading infile
      nin=kin
@@ -248,10 +262,10 @@ subroutine geobjlist_read(self,infile,kched,kin)
      open(unit=nin,file=infile,status='OLD',form='FORMATTED',iostat=status)
      if(status/=0)then
         !! error opening file
-        write(*,*) 'infile=',infile
+        call log_value("geobj data file ",infile)
         call log_error(m_name,s_name,1,error_fatal,'Error opening geobj data file')
      else
-        call log_error(m_name,s_name,2,log_info,'geometrical object  data file opened')
+        if(myrank_log.eq.0) call log_error(m_name,s_name,2,log_info,'geometrical object  data file opened')
      end if
      if (present(kin)) kin=nin
   end if
@@ -335,8 +349,10 @@ subroutine geobjlist_read(self,infile,kched,kin)
   !     call position_readv(self%posl%pos(j),nin)
   !  end do
   ! end position_readlis
-  print '("number of geobj coordinates read = ",i10)',self%np
-  call log_value("number of geobj coordinates read ",self%np)
+  if( myrank_log .eq. 0 ) then
+     print '("number of geobj coordinates read = ",i10)',self%np
+     call log_value("number of geobj coordinates read ",self%np)
+  endif
 
   self%nwset=0
   geobject_typer : select case (ivtktyp)
@@ -467,8 +483,10 @@ subroutine geobjlist_read(self,infile,kched,kin)
         end if
      end do
      innd=innd-1
-     print '("number of node pointers read = ",i10)',innd
-     call log_value("number of node pointers read ",innd)
+     if(myrank_log .eq. 0) then
+        print '("number of node pointers read = ",i10)',innd
+        call log_value("number of node pointers read ",innd)
+     endif
      if (innd.ne.self%nnod) then
         call log_error(m_name,s_name,33,error_warning,'Not all pointers read in, nnod reset')
         self%nnod=innd
@@ -569,8 +587,10 @@ subroutine geobjlist_read(self,infile,kched,kin)
         end if
      end do
      innd=innd-1
-     print '("number of node pointers read = ",i10)',innd
-     call log_value("number of node pointers read ",innd)
+     if(myrank_log .eq. 0) then
+        print '("number of node pointers read = ",i10)',innd
+        call log_value("number of node pointers read ",innd)
+     endif
      if (innd.ne.self%nnod) then
         call log_error(m_name,s_name,53,error_warning,'Not all pointers read in, nnod reset')
         self%nnod=innd
@@ -619,15 +639,17 @@ subroutine geobjlist_read(self,infile,kched,kin)
 
   end select geobject_typer
 
-
-  print '("number of geobj read = ",i10)',self%ng
-  call log_value("number of geobj read ",self%ng)
-  call log_error(m_name,s_name,70,log_info,'geobjlist read in from data file')
+  if(myrank_log .eq. 0) then
+     print '("number of geobj read = ",i10)',self%ng
+     call log_value("number of geobj read ",self%ng)
+     call log_error(m_name,s_name,70,log_info,'geobjlist read in from data file')
+  endif
 
   !w write(*,*) (self%nodl(k),k=1,100)
   call geobjlist_addcube(self)
   !w write(*,*) 'after'
   !w write(*,*) (self%nodl(k),k=1,100)
+  if(close_file) close(nin) ! Added HJL
 
 end subroutine geobjlist_read
 !---------------------------------------------------------------------
@@ -1398,7 +1420,9 @@ subroutine geobjlist_stepmove(self,btree,mtest)
      iobj%objtyp=1 ! for point
      call btree_mfind(btree,iobj,tposl,inode)
      if (inode<0) then
-        write(*,*) 'Bad start', inode,mtest%posl%pos(j),tposl%pos(1)
+        call log_value("Bad start inode",inode)
+        call log_value("Bad start mtest%posl%pos (1) ",mtest%posl%pos(j)%posvec(1))
+        call log_value("Bad start tposl%pos (1) ",tposl%pos(1)%posvec(1))
         cycle
      end if
      xo%posvec=tposl%pos(1)%posvec
@@ -1805,9 +1829,9 @@ subroutine geobjlist_paneltfm(self,bods,numerics)
      ibod=bods%list(j)
      ! object may have no associated body
      if (ibod==0) cycle
-     !dbgw iibod=ibod !dbgw
+        !dbgw iibod=ibod !dbgw
      if (bods%nindx>0) ibod=bods%indx(ibod)
-     !dbgw write(110,*) j,iibod,ibod !dbgw
+        !dbgw write(110,*) j,iibod,ibod !dbgw
      !BP      !w    ipan=ibodpan(ibod)
      ipan=indict2(inpan,numerics%panbod,ibod)
      if (ipan==0) then
@@ -1967,9 +1991,9 @@ subroutine geobjlist_paneltfm(self,bods,numerics)
      ibod=bods%list(j)
      ! object may have no associated body
      if (ibod==0) cycle
-     !dbgw iibod=ibod !dbgw
+        !dbgw iibod=ibod !dbgw
      if (bods%nindx>0) ibod=bods%indx(ibod)
-     !dbgw write(110,*) j,iibod,ibod !dbgw
+        !dbgw write(110,*) j,iibod,ibod !dbgw
      !BP      !w    ipan=ibodpan(ibod)
      ipan=indict2(inpan,numerics%panbod,ibod)
      if (ipan==0) then
@@ -2783,6 +2807,8 @@ subroutine geobjlist_cumulate(self,selfin,start,copy,kopt,kgcode)
      self%posl%pos(j)%posvec=rwork2(:,j)
   end do
   deallocate(rwork2)
+  ! Added HJL
+  self%posl%np = inpt
 
   inobj=self%ng+selfin%ng*icopy
   if (self%ngtype==1.OR.kopt/=0) then
@@ -2870,7 +2896,7 @@ subroutine geobjlist_cumulate(self,selfin,start,copy,kopt,kgcode)
   self%nnod=innod
   if (kgcode>=0) self%posl%np=inpt
   if (kgcode/=0) self%nparam(2)=1
-  ! refinement structure destroyed by cumulate
+  ! Mesh refinement structure produced by CFMCNP destroyed by cumulate
   self%nparam(1)=1
 
 end subroutine geobjlist_cumulate
@@ -3062,8 +3088,7 @@ subroutine geobjlist_create3d(self,numerics,kgcode)
         zpos1%posvec(2)=numerics%z(i)
         zpos1%posvec(3)=zeta
         zposang%pos=zpos1%posvec
-        !zposang%opt=1 ; zposang%units=0
-        !call posang_tfm(zposang,0)
+        
         zposang%opt=numerics%csys ; zposang%units=numerics%cunits
         call posang_tfm(zposang,-3)
         self%posl%pos(ip)%posvec=zposang%pos
@@ -3099,8 +3124,7 @@ subroutine geobjlist_create3d(self,numerics,kgcode)
            zpos1%posvec(2)=numerics%z(i)
            zpos1%posvec(3)=zeta
            zposang%pos=zpos1%posvec
-           !zposang%opt=1 ; zposang%units=0
-           !call posang_tfm(zposang,0)
+           
            zposang%opt=numerics%csys ; zposang%units=numerics%cunits
            call posang_tfm(zposang,-3)
            self%posl%pos(ip)%posvec=zposang%pos
@@ -3999,7 +4023,7 @@ end subroutine geobjlist_centroids
 subroutine geobjlist_extract(self,kbods,numerics)
   !! arguments
   type(geobjlist_t), intent(inout) :: self !< geobj list data
-  integer(ki4), dimension(:), intent(inout) :: kbods !< integer scalar list data of bodies for each point
+  integer(ki4), dimension(:), allocatable, intent(inout) :: kbods !< integer scalar list data of bodies for each point
   type(vnumerics_t), intent(in) :: numerics !< input numerical parameters
 
 
@@ -4051,6 +4075,9 @@ subroutine geobjlist_extract(self,kbods,numerics)
      end do
   end select extract_key
 
+  !! return marker info array
+  if (.NOT.allocated(kbods)) allocate(kbods(self%ng), stat=status)
+  call log_alloc_check(m_name,s_name,2,status)
   kbods(1:self%ng)=0
   ! extract objects containing marked points
   do j=1,self%ng

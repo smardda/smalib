@@ -9,3 +9,7 @@
 !config_gfortran_pg.inc
 !config_intel_old.inc
 !path_generic.inc
+!config_gfortranmpi_dbg.inc
+!config_gfortranmpi.inc
+!config_intelmpi_dbg.inc
+!config_intelmpi.inc

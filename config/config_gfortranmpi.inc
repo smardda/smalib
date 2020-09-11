@@ -5,21 +5,18 @@
 EXEDIR = ../exec
 
 # Fortran compiler
-F90 ?= gfortran
-FC = gfortran
+F90 = mpif90
+FC = mpif90
 
 # Fortran compiler flags
 F90FLAGS = -O -cpp
-ifeq ($(findstring mpi,$(F90)),mpi)
-   F90FLAGS += -DWITH_MPI
-endif
 
 FFLAGS = -fdefault-real-8 -fdefault-double-8 -O
 
 FSFLAG = -O
 
 # Debug option
-DBG =  
+DBG =
 
 # command to remove files
 RM = /bin/rm -f

@@ -179,6 +179,9 @@ subroutine ccontrol_writectl
   integer(ki4) :: max_number_of_files !< number >= no. of files for which transform defined
   integer(ki4) :: max_number_of_panels !< number >= no. of panels for which transform defined
   integer(ki4) :: max_number_of_transforms !< number >= no. of panels for which transform defined
+  logical :: preserve_internal_structure !< bods remain distinct
+  logical :: make_same !< make attribute take same value
+  integer(ki4) :: same_value !<  value for attribute to take
   integer(ki4), dimension(:), allocatable :: panel_transform !< number of transform to apply
   character(len=20), dimension(:), allocatable :: transform_id !< INACTIVE id of transform to apply
   integer(ki4), dimension(:), allocatable :: panel_bodies !< bodies defining the geometry
@@ -190,13 +193,20 @@ subroutine ccontrol_writectl
   character(len=20) :: transform_desc !< describes transformation type
   integer(ki4):: ntfm  !< number of transformations
 
-  !! misc parameters
-  namelist /miscparameters/ &
+  !! vtktfm parameters
+  namelist /vtktfmparameters/ &
  &option, &
  &angle_units, &
  &max_number_of_panels,max_number_of_transforms ,&
- &max_number_of_files !, &
-  ! &number_of_panels,number_of_transforms
+ &max_number_of_files , &
+ &preserve_internal_structure  ,&
+ &make_same, same_value ! , &
+  ! &split_file, &
+  ! &process_by_name, &
+  ! &number_of_panels,number_of_transforms,&
+  ! &paneltfm, extract, extract_key,&
+  ! &max_bods_index, max_bods_in_file&
+  ! &plasma_centre, minimum_angle, maximum_angle
 
   !! file names
   namelist /vtkfiles/ &
@@ -256,14 +266,19 @@ subroutine ccontrol_writectl
   transform_id(inpfile), stat=status)
   call log_alloc_check(m_name,s_name,56,status)
 
+  write(nout,'(a)', iostat=status)  '&miscparameters new_controls=T /'
+  call log_write_check(m_name,s_name,9,status)
 
   lenfac=1.
-  !! set default miscparameters
+  !! set default vtktfmparameters
   max_number_of_files = inpfile !maximum_number_of_files
   max_number_of_panels = inpfile !maximum_number_of_panels
   max_number_of_transforms = 1
   angle_units = 'degree'
   option = 'panel'
+  preserve_internal_structure = .true.
+  make_same = .false.
+  same_value = 1
   !! these not written out
   number_of_panels = 0
   number_of_transforms = 0
@@ -280,7 +295,7 @@ subroutine ccontrol_writectl
         exit
      end if
   end do
-  write(nout,nml=miscparameters, iostat=status)
+  write(nout,nml=vtktfmparameters, iostat=status)
   call log_write_check(m_name,s_name,10,status)
 
   !! file names

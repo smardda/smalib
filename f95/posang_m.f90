@@ -14,7 +14,7 @@ module posang_m
   private
 
 ! public subroutines
-  public ::posang_tfm,& !< convert polar-toroidal to cartesian coordinates
+  public :: posang_tfm,& !< convert polar-toroidal to cartesian coordinates
   posang_invtfm,& !< convert cartesian back to polar-toroidal coordinates
   posang_psitfm,&   !< convert polar to flux coordinates
   posang_invpsitfm,& !< convert flux back to polar coordinates
@@ -109,6 +109,8 @@ subroutine posang_invtfm(self,kunits)
 
   !! local
   character(*), parameter :: s_name='posang_invtfm' !< subroutine name
+  real(kr8) :: zcos    !<  \f$ \cos(\zeta) \f$
+  real(kr8) :: zsin    !<  \f$ \sin(\zeta) \f$
 
   iopt=self%opt
 
@@ -132,6 +134,15 @@ subroutine posang_invtfm(self,kunits)
         self%opt=17
      end select vector_format
 
+  case(32) ! vector only
+     zcos=cos(self%pos(3))
+     zsin=sin(self%pos(3))
+     zv1=self%vec(1) ; zv2=self%vec(2) ; zv3=self%vec(3)
+     zvr=zv1*zcos-zv2*zsin
+     zvzeta=-zv1*zsin-zv2*zcos
+     zvz=zv3
+     self%vec(1)=zvr ; self%vec(2)=zvz ; self%vec(3)=zvzeta
+     self%opt=17
   case default
      call log_error(m_name,s_name,1,error_fatal,'Vector in wrong format')
   end select position_format

@@ -29,6 +29,7 @@ module bods_m
  &bods_initlist, & !< initialise datvtk file bods list only
  &bods_getlist, & !< get list of different bods in bods array
  &bods_write, & !< write out bods in separate files
+ &bods_writex, &  !< write out bods extract
  &bods_cumulate, & !< cumulate bods information
  &bods_cumulate2, & !< cumulate bods information and index
  &bods_delete !< delete bods information
@@ -82,6 +83,8 @@ subroutine bods_init(self,geobjl,numerics)
      allocate(self%indx(mindx),stat=status)
      call log_alloc_check(m_name,s_name,3,status)
   end if
+
+  self%nmark=0
 
 end subroutine bods_init
 !---------------------------------------------------------------------
@@ -207,13 +210,6 @@ subroutine bods_write(self,geobjl,fileroot,kctyp,kcname,kheader)
 
   do i=1,infile
 
-     !! make up icplot from fileroot, iched from fileroot
-     write(ic5,'(I5.5)') i
-     icplot=trim(fileroot)//'_'//ic5
-     iched='root was '//fileroot
-     call geobjlist_makehedline(geobjl,iched,vtkdesc)
-     call vfile_init(icplot,vtkdesc,iplot)
-
      !! construct small geobjl, first allocate storage
 
      inobjsmall=0
@@ -230,6 +226,16 @@ subroutine bods_write(self,geobjl,fileroot,kctyp,kcname,kheader)
         end if
      end do
      iostart=ioend+1-inobjsmall
+
+     !! make sure there are objects corresponding to this id
+     if (inobjsmall==0) cycle
+
+     !! make up icplot from fileroot, iched from fileroot
+     write(ic5,'(I5.5)') i
+     icplot=trim(fileroot)//'_'//ic5
+     iched='root was '//fileroot
+     call geobjlist_makehedline(geobjl,iched,vtkdesc)
+     call vfile_init(icplot,vtkdesc,iplot)
 
      call geobjlist_iinit(glsmall,inptsmall,inobjsmall,innodsmall,2,1)
 
@@ -269,7 +275,108 @@ subroutine bods_write(self,geobjl,fileroot,kctyp,kcname,kheader)
   end do
 
 end subroutine bods_write
+!---------------------------------------------------------------------
+subroutine bods_writex(self,geobjl,fileroot,kctyp,kcname,kheader)
+  !! arguments
+  type(bods_t), intent(in) :: self !< bods list
+  type(geobjlist_t), intent(in) :: geobjl   !< geobj list data
+  character(*),intent(in) :: fileroot !< file root
+  character(*),intent(in) :: kctyp !< type of points compression (none)
+  character(*),intent(in) :: kcname !< name of cell attribute
+  integer(ki4), intent(in) :: kheader   !< header options
 
+  !! local
+  character(*), parameter :: s_name='bods_writex' !< subroutine name
+  type(geobjlist_t) :: glsmall   !< geobj list data small
+  integer(ki4) :: infile   !< number of different bods files
+  integer(ki4)  :: inpt !< number of points in generic geobjlist
+  integer(ki4)  :: inobj !< number of objects in generic geobjlist
+  integer(ki4)  :: innod !< number of nodal data in generic geobjlist
+  integer(ki4)  :: inptsmall !< number of points in small geobjlist
+  integer(ki4)  :: inobjsmall !< number of objects in small geobjlist
+  integer(ki4)  :: innodsmall !< number of nodal data in small geobjlist
+  integer(ki4)  :: iostart!< end points of object list if bods' objects contiguous
+  integer(ki4)  :: ioend !< end points of object list if bods' objects contiguous
+  integer :: iplot   !< output channel for bods list data
+  integer(ki4) :: innd !< position of first entry for object in nodl
+  integer(ki4) :: iobj !< local variable
+  integer(ki4) :: inumpts !< length of object in nodl array
+  integer(ki4) :: ityp !< local variable
+  character(len=5) :: ic5  !< local variable
+  character(len=80) :: icplot  !< local variable
+  character(len=80) :: iched  !< local variable
+  integer(ki4), dimension(:), allocatable :: iwork !< integer work array
+
+  ! write out all points
+  inptsmall=geobjl%np
+
+     !! construct small geobjl, first allocate storage
+
+     inobjsmall=0
+     innodsmall=0
+     do j=1,geobjl%ng
+
+        if (self%mark(j)==1) then
+           ioend=j
+           inobjsmall=inobjsmall+1
+           !     iobj=geobjl%obj2(j)%ptr
+           ityp=geobjl%obj2(j)%typ
+           inumpts=geobj_entry_table_fn(ityp)
+           innodsmall=innodsmall+inumpts
+        end if
+     end do
+     iostart=ioend+1-inobjsmall
+
+     !! make sure there are objects corresponding to this id
+     if (inobjsmall==0) return
+
+     !! make up icplot from fileroot, iched from fileroot
+     icplot=trim(fileroot)//'_ext'
+     iched='root was '//fileroot
+     call geobjlist_makehedline(geobjl,iched,vtkdesc)
+     call vfile_init(icplot,vtkdesc,iplot)
+
+     call geobjlist_iinit(glsmall,inptsmall,inobjsmall,innodsmall,2,1)
+
+     !! fill small geobjl with data
+  allocate(iwork(inobjsmall), stat=status)
+  call log_alloc_check(m_name,s_name,1,status)
+
+     !! copy all points
+     glsmall%posl=geobjl%posl
+
+     inobj=0
+     innd=1
+     do j=1,geobjl%ng
+
+        if (self%mark(j)==1) then
+           inobj=inobj+1
+           iobj=geobjl%obj2(j)%ptr
+           ityp=geobjl%obj2(j)%typ
+           inumpts=geobj_entry_table_fn(ityp)
+           do k=1,inumpts
+              glsmall%nodl(innd-1+k)=geobjl%nodl(iobj-1+k)
+           end do
+           glsmall%obj2(inobj)%ptr=innd
+           glsmall%obj2(inobj)%typ=ityp
+           iwork(inobj)=self%list(j)
+           innd=innd+inumpts
+        end if
+     end do
+
+     call geobjlist_ptcompress(glsmall)
+
+     call geobjlist_writev(glsmall,'geometry',iplot)
+
+     call vfile_iscalarwrite(iwork,inobjsmall,kcname,'CELL',iplot,kheader)
+
+     call vfile_close
+
+     call geobjlist_delete(glsmall)
+
+   deallocate(iwork)
+
+end subroutine bods_writex
 !---------------------------------------------------------------------
 !> cumulate bods information
 subroutine bods_cumulate(self,geobjl,nfile,start,copy,kopt)
@@ -415,6 +522,7 @@ subroutine bods_delete(self)
 
   deallocate(self%list)
   if (allocated(self%indx)) deallocate(self%indx)
+  if (allocated(self%mark)) deallocate(self%mark)
 
 end subroutine bods_delete
 

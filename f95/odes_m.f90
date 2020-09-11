@@ -5,6 +5,9 @@ module odes_m
   use log_m
   use spl2d_m
   use spl3d_m
+  use fmesh_h
+  use beqart_h
+  use beqart_m
   use odes_h
   use nrsolve_m
 
@@ -29,6 +32,21 @@ module odes_m
   odes_writev, &   !< write (vtk) odes data (dummy)
   odes_write, &  !< output odes data (dummy)
   odes_delete  !< delete odes data
+
+  interface odes_3rdstep1
+   module procedure odes_3rdstep1_sp3
+   module procedure odes_3rdstep1_qart
+  end interface odes_3rdstep1
+
+  interface odes_3rdstep
+   module procedure odes_3rdstep_sp3
+   module procedure odes_3rdstep_qart
+  end interface odes_3rdstep
+
+  interface odes_rkf23d
+   module procedure odes_rkf23d_sp3
+   module procedure odes_rkf23d_qart
+  end interface odes_rkf23d
 
 ! public types
 
@@ -574,19 +592,19 @@ subroutine odes_2ndstep(self,kerr,pdfaca,pf,psi,dspldr,dspldz)
 end subroutine odes_2ndstep
 !---------------------------------------------------------------------
 !> special timestepping for 3-D vector field
-subroutine odes_3rdstep(self,kerr,pdfaca,spl3d,psi,dspldr,dspldz)
+subroutine odes_3rdstep_sp3(self,kerr,pdfaca,spl3d,psi,dspldr,dspldz)
 
   !! arguments
   type(odes_t), intent(inout) :: self   !< object data structure
   integer(ki4), intent(inout) :: kerr   !< error flag
   real(kr8), dimension(mpvdim), intent(in) :: pdfaca   !< direction factor array
-  type(spl3d_t), intent(inout) :: spl3d !< spl2d object data structure
+  type(spl3d_t), intent(inout) :: spl3d !< spl3d object data structure
   type(spl2d_t), intent(inout) :: psi !< spl2d object data structure
   type(spl2d_t), intent(inout) :: dspldr !< derivative spl2d object data structure
   type(spl2d_t), intent(inout) :: dspldz !< derivative spl2d object data str`
 
   !! local
-  character(*), parameter :: s_name='odes_3rdstep' !< subroutine name
+  character(*), parameter :: s_name='odes_3rdstep_sp3' !< subroutine name
   integer(ki4), parameter :: ifixdt=0 !< fix timestep
   real(kr8), dimension(mpvdim) :: g !< local variable
   real(kr8), dimension(mpvdim) :: g2 !< local variable
@@ -668,7 +686,102 @@ subroutine odes_3rdstep(self,kerr,pdfaca,spl3d,psi,dspldr,dspldz)
   call log_error(m_name,s_name,1,error_warning,'t-step too small')
   kerr=1
 
-end subroutine odes_3rdstep
+end subroutine odes_3rdstep_sp3
+subroutine odes_3rdstep_qart(self,kerr,pdfaca,beqart,psi,dspldr,dspldz)
+
+  !! arguments
+  type(odes_t), intent(inout) :: self   !< object data structure
+  integer(ki4), intent(inout) :: kerr   !< error flag
+  real(kr8), dimension(mpvdim), intent(in) :: pdfaca   !< direction factor array
+  type(beqart_t), intent(inout) :: beqart !< beqart object data structure
+  type(spl2d_t), intent(inout) :: psi !< spl2d object data structure
+  type(spl2d_t), intent(inout) :: dspldr !< derivative spl2d object data structure
+  type(spl2d_t), intent(inout) :: dspldz !< derivative spl2d object data str`
+
+  !! local
+  character(*), parameter :: s_name='odes_3rdstep_qart' !< subroutine name
+  integer(ki4), parameter :: ifixdt=0 !< fix timestep
+  real(kr8), dimension(mpvdim) :: g !< local variable
+  real(kr8), dimension(mpvdim) :: g2 !< local variable
+  real(kr8), dimension(mpvdim) :: g3 !< local variable
+  real(kr8), dimension(mpvdim,3) :: gdia !< local variable
+  real(kr8), dimension(mpvdim) :: g3d !< local variable
+  real(kr8), dimension(mpvdim) :: g23d !< local variable
+  real(kr8) :: rs !< local variable
+  real(kr8) :: zhf !< local variable
+  real(kr8) :: zdt !< local variable
+  real(kr8) :: zdir !< local variable
+  real(kr8) :: zgincr !< local variable
+  real(kr8) :: t !< local variable
+  integer(ki4) :: ik  !< winding number
+
+  g=self%vecp%pos(self%ndt)%posvec
+  t=self%t
+  ik=self%posk(self%ndt)
+  ! save direction of advance
+  zdir=sign(1._kr8,self%dt)
+201   continue
+  call odes_rkf23d(odes_3rdfunqart,t,self%dt,g,g2,g3,gdia,pdfaca,beqart,dspldr,dspldz)
+  if (ifixdt==1) then
+     self%dt=zdir*self%n%dt0
+     self%t=self%t+self%dt
+     self%ndt=self%ndt+1
+     self%posk(self%ndt)=ik
+     !     save position
+     self%vecp%pos(self%ndt)%posvec=g3
+     kerr=0
+     return
+  end if
+  g3d=abs(g3-g2)
+  g23d=abs(g)+abs(g3)+self%epsar
+  !DES     rs=self%reps*maxval(g3d/g23d)
+  rs=self%reps*maxval(g3d)
+  !DOD      write(*,*) 'g3d=',g3d,'g23d=',g23d !DOD
+  !DOD      write(*,*) 'rs=',rs !DOD
+
+  if (rs<=1) then
+     !     step succeeded, but if possible increase t-step for next step
+     zhf=self%facu
+     if (rs>self%facut) zhf=self%ffac/rs**self%rsord
+     zgincr=maxval(abs(g3-g))
+     if (kerr==-1.OR.zgincr>self%n%termcon(2)) zhf=1
+     !DOD         write(*,*) 'zhf=',zhf !DOD
+     ! set new timestep, allow negative timestep
+     zdt=zdir*max(zhf*abs(self%dt),self%dtmin)
+     !        t=t+zdt
+     self%t=self%t+self%dt
+     self%ndt=self%ndt+1
+     self%posk(self%ndt)=ik
+     !     save position
+     self%vecp%pos(self%ndt)%posvec=g3
+     !DOD         write(*,*) 'pass,t,dt,g3=',t,self%dt,g3 !DOD
+     !D       write(20,*)i,t,self%dt,g,g2,g3 !D
+
+     !        self%posa(1)=min(g2,g3,gdia(1),gdia(2),gdia(3))
+     !        self%posb(1)=max(g2,g3,gdia(1),gdia(2),gdia(3))
+     self%dt=zdt
+     kerr=0
+     !        g=g3
+     !        if (zg3>self%glt) g=g3-2.*self%glt
+     return
+  end if
+  !
+  !     step failed, reduce t-step , equivalent to setting lfail=t
+  kerr=-1
+
+  zhf=self%facd
+  if (rs<self%facdt) zhf=self%ffac/rs**self%rsord
+  zdt=zhf*self%dt
+  self%dt=zdt
+  !DOD      write(*,*) 'fail,t,dt,g3=',t,self%dt,g3 !DOD
+  !DOD      write(*,*) 'failextra g,g2=',g,g2 !DOD
+  !     try again unless t-step too small
+  if (abs(self%dt)>=self%dtmin) goto 201
+
+  call log_error(m_name,s_name,1,error_warning,'t-step too small')
+  kerr=1
+
+end subroutine odes_3rdstep_qart
 !---------------------------------------------------------------------
 !> special timestepping for axisymm 3-D vector field
 subroutine odes_4thstep(self,kerr,pdfaca,pf,psi,dspldr,dspldz)
@@ -1100,13 +1213,13 @@ subroutine odes_2ndstep1(self,kerr,pdfaca,pf,psi,dspldr,dspldz,kflag)
 end subroutine odes_2ndstep1
 !---------------------------------------------------------------------
 !> special first timestep for 3-D vector field
-subroutine odes_3rdstep1(self,kerr,pdfaca,spl3d,psi,dspldr,dspldz,kflag)
+subroutine odes_3rdstep1_sp3(self,kerr,pdfaca,spl3d,psi,dspldr,dspldz,kflag)
 
      !! arguments
   type(odes_t), intent(inout) :: self   !< object data structure
   integer(ki4), intent(out) :: kerr   !< error flag (dummy)
   real(kr8), intent(in), dimension(*) :: pdfaca !< direction factor
-  type(spl3d_t), intent(inout) :: spl3d !< spl2d object data structure
+  type(spl3d_t), intent(inout) :: spl3d !< spl3d object data structure
   type(spl2d_t), intent(inout) :: psi !< spl2d object data structure
   type(spl2d_t), intent(inout) :: dspldr !< derivative spl2d object data structure
   type(spl2d_t), intent(inout) :: dspldz !< derivative spl2d object data str`
@@ -1114,7 +1227,7 @@ subroutine odes_3rdstep1(self,kerr,pdfaca,spl3d,psi,dspldr,dspldz,kflag)
 
 
      !! local
-  character(*), parameter :: s_name='odes_3rdstep1' !< subroutine name
+  character(*), parameter :: s_name='odes_3rdstep1_sp3' !< subroutine name
   integer(ki4), parameter :: ipdtfac=1 !< multiplies dt on first step
   real(kr8), dimension(mpvdim) :: g !< function value
   real(kr8), dimension(mpvdim) :: gdot !< function derivative value
@@ -1145,7 +1258,49 @@ subroutine odes_3rdstep1(self,kerr,pdfaca,spl3d,psi,dspldr,dspldz,kflag)
      ! estimate first step of trajectory with positive dt
      self%vecp%pos(self%ndt+1)%posvec=g+gdot*self%dt
 
-end subroutine odes_3rdstep1
+end subroutine odes_3rdstep1_sp3
+subroutine odes_3rdstep1_qart(self,kerr,pdfaca,beqart,psi,dspldr,dspldz,kflag)
+
+     !! arguments
+  type(odes_t), intent(inout) :: self   !< object data structure
+  integer(ki4), intent(out) :: kerr   !< error flag (dummy)
+  real(kr8), intent(in), dimension(*) :: pdfaca !< direction factor
+  type(beqart_t), intent(inout) :: beqart !< beqart object data structure
+  type(spl2d_t), intent(inout) :: psi !< spl2d object data structure
+  type(spl2d_t), intent(inout) :: dspldr !< derivative spl2d object data structure
+  type(spl2d_t), intent(inout) :: dspldz !< derivative spl2d object data str`
+  integer(ki4), intent(in) :: kflag   !< dummy
+
+
+     !! local
+  character(*), parameter :: s_name='odes_3rdstep1_qart' !< subroutine name
+  integer(ki4), parameter :: ipdtfac=1 !< multiplies dt on first step
+  real(kr8), dimension(mpvdim) :: g !< function value
+  real(kr8), dimension(mpvdim) :: gdot !< function derivative value
+  real(kr8), dimension(mpvdim,3) :: gdia !< diagnostics
+  real(kr8) :: gn !< function norm
+  real(kr8) :: gdotn !< function derivative norm
+  real(kr8) :: zepst  !< local variable
+  real(kr8) :: t !< pseudo-time
+
+     kerr=0
+     g=self%vecp%pos(self%ndt)%posvec
+     t=self%t
+     call odes_3rdfunqart(t,g,gdot,gdia,pdfaca,beqart,dspldr,dspldz)
+
+     gn=maxval(abs(g))
+     gdotn=maxval(abs(gdot))
+     zepst=self%n%epsr+self%n%epsa
+     if (zepst .lt. gdotn**self%nsord) then
+        self%dt=(zepst/gdotn)**self%rsord
+     else
+        self%dt=self%n%dt0
+     end if
+     self%dt=ipdtfac*max(self%dt,self%dtmin)
+     ! estimate first step of trajectory with positive dt
+     self%vecp%pos(self%ndt+1)%posvec=g+gdot*self%dt
+
+end subroutine odes_3rdstep1_qart
 !---------------------------------------------------------------------
 !> special first timestep for axisymm 3-D vector field
 subroutine odes_4thstep1(self,kerr,pdfaca,pf,psi,dspldr,dspldz,kflag)
@@ -1328,7 +1483,7 @@ subroutine odes_rkf23m(pfunct,pt,pdt,py,py2,py3,pdia,&
 end subroutine odes_rkf23m
 !---------------------------------------------------------------------
 !> RKF 23 step for 3-D vector, t-dependence
-subroutine odes_rkf23d(pfunct,pt,pdt,py,py2,py3,pdia,&
+subroutine odes_rkf23d_sp3(pfunct,pt,pdt,py,py2,py3,pdia,&
      pdfaca,spl3d,dspldr,dspldz)
      !     rkf23 scheme for 'msus','global' work
   real(kr8), intent(in) :: pt !< starting time
@@ -1345,7 +1500,7 @@ subroutine odes_rkf23d(pfunct,pt,pdt,py,py2,py3,pdia,&
      external pfunct
 
      !! local
-  character(*), parameter :: s_name='odes_rkf23d' !< subroutine name
+  character(*), parameter :: s_name='odes_rkf23d_sp3' !< subroutine name
   real(kr8), dimension(mpvdim) :: zy1 !< 1st order estimate
   real(kr8), dimension(mpvdim) :: zy1b !< 1st order estimate
   real(kr8), dimension(mpvdim) :: zy1bb !< intermediate 0th order estimate
@@ -1370,7 +1525,50 @@ subroutine odes_rkf23d(pfunct,pt,pdt,py,py2,py3,pdia,&
      pdia(:,2)=zy1b
      pdia(:,3)=zy2b
 
-end subroutine odes_rkf23d
+end subroutine odes_rkf23d_sp3
+subroutine odes_rkf23d_qart(pfunct,pt,pdt,py,py2,py3,pdia,&
+     pdfaca,beqart,dspldr,dspldz)
+     !     rkf23 scheme for 'msus','global' work
+  real(kr8), intent(in) :: pt !< starting time
+  real(kr8), intent(in) :: pdt !< timestep
+  real(kr8),  intent(inout), dimension(mpvdim) :: py !< starting value
+  real(kr8),  intent(inout), dimension(mpvdim) :: py2 !< 2nd order estimate
+  real(kr8),  intent(inout), dimension(mpvdim) :: py3 !< 3rd order estimate
+  real(kr8), intent(out), dimension(mpvdim,*) :: pdia !< diagnostic
+  real(kr8), intent(in), dimension(*) :: pdfaca !< direction factor
+  type(beqart_t), intent(inout) :: beqart !< beqart object data structure
+  type(spl2d_t), intent(inout) :: dspldr !< derivative spl2d object data structure
+  type(spl2d_t), intent(inout) :: dspldz !< derivative spl2d object data structure
+
+     external pfunct
+
+     !! local
+  character(*), parameter :: s_name='odes_rkf23d_qart' !< subroutine name
+  real(kr8), dimension(mpvdim) :: zy1 !< 1st order estimate
+  real(kr8), dimension(mpvdim) :: zy1b !< 1st order estimate
+  real(kr8), dimension(mpvdim) :: zy1bb !< intermediate 0th order estimate
+  real(kr8), dimension(mpvdim) :: zy2b !< 2nd order estimate
+  real(kr8), dimension(mpvdim) :: zydot !< derivative estimate
+  real(kr8), dimension(mpvdim) :: zyd1 !< derivative estimate
+  real(kr8), dimension(mpvdim) :: zyd1bb !< derivative estimate
+
+     call pfunct(pt,py,zydot,pdia,pdfaca,beqart,dspldr,dspldz)
+     !     call pfunct(pt+pdt/2,py,zydot,pdia,pdfaca,beqart,dspldr,dspldz)
+     zy1=py+pdt*zydot
+     call pfunct(pt,zy1,zyd1,pdia,pdfaca,beqart,dspldr,dspldz)
+     !     call pfunct(pt+pdt/2,zy1,zyd1,pdia,pdfaca,beqart,dspldr,dspldz)
+     zy1b=py+pdt*zyd1
+     py2=(zy1+zy1b)/2
+
+     zy1bb=(py+py2)/2
+     call pfunct(pt,zy1bb,zyd1bb,pdia,pdfaca,beqart,dspldr,dspldz)
+     zy2b=py+pdt*zyd1bb
+     py3=(py2+2*zy2b)/3
+     pdia(:,1)=zy1
+     pdia(:,2)=zy1b
+     pdia(:,3)=zy2b
+
+end subroutine odes_rkf23d_qart
 !---------------------------------------------------------------------
 !> RKF 23 step for 3-D vector, t-dependence
 subroutine odes_rkf23p(pfunct,pt,pdt,py,py2,py3,pdia,&
@@ -1533,6 +1731,41 @@ subroutine odes_3rdfunct(pt,py,pydot,pdia,pdfaca,spl3d,dspldr,dspldz)
      !D     write(*,*) 'pt,py,pydot,zvecf=',pt,py,pydot,zvecf !D
 
 end subroutine odes_3rdfunct
+!---------------------------------------------------------------------
+!> advance 3-D vector field using 3-D array
+subroutine odes_3rdfunqart(pt,py,pydot,pdia,pdfaca,beqart,dspldr,dspldz)
+
+     !! arguments
+  real(kr8), intent(in) :: pt !< time
+  real(kr8),  intent(inout), dimension(mpvdim) :: py !< starting value
+  real(kr8), intent(inout), dimension(mpvdim) :: pydot !< \f$ d\theta d\zeta \f$
+  real(kr8), intent(out), dimension(mpvdim,*) :: pdia !< diagnostic
+  real(kr8), intent(in), dimension(*) :: pdfaca !< direction factor
+  type(beqart_t), intent(inout) :: beqart !< beqart object data structure
+  type(spl2d_t), intent(inout) :: dspldr !< derivative spl2d object data structure
+  type(spl2d_t), intent(inout) :: dspldz !< derivative spl2d object data structure
+
+     !! local
+  character(*), parameter :: s_name='odes_3rdfunqart' !< subroutine name
+  real(kr8) :: zdpdr    !<  \f$ \frac{\partial\psi}{\partial R} \f$
+  real(kr8) :: zdpdz    !<  \f$ \frac{\partial\psi}{\partial Z} \f$
+  real(kr8), dimension(3)  :: zvecf    !<  Vacuum field
+  type(posvecl_t) :: zpos !< position vector in beqart coordinates
+
+     call spl2d_evaln(dspldr,py(1),py(2),1,zdpdr)
+     call spl2d_evaln(dspldz,py(1),py(2),2,zdpdz)
+     zpos%posvec=py
+     call beqart_interp(beqart,zpos,zvecf)
+     pydot(1)=pdfaca(1)*(-zdpdz+zvecf(1))
+     pydot(2)=pdfaca(2)*(zdpdr+zvecf(2))
+     pydot(3)=pdfaca(3)*zvecf(3)
+     !D     write(*,*) pt,py,pydot !D
+     pdia(1,1)=-zdpdz+zvecf(1)
+     pdia(2,1)=zdpdr+zvecf(2)
+     pdia(3,1)=zvecf(3)
+     !D     write(*,*) 'pt,py,pydot,zvecf=',pt,py,pydot,zvecf !D
+
+end subroutine odes_3rdfunqart
 !---------------------------------------------------------------------
 !> advance 3-D vector field
 subroutine odes_4thfunct(pt,py,pydot,pdia,pdfaca,pf,dspldr,dspldz)
