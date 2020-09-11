@@ -60,12 +60,17 @@ $SMALIB_DIR/Extras/chmodx
 #produce the fortran executables 
 $SMALIB_DIR/exec/compile
 
+read -p '(Re)generate documentation, can take minutes? (Y/N): ' ndoc
+if [ "$ndoc" == "Y" ] ; then
 cd $SMALIB_DIR/doc
 echo "Warning - Documentation production requires doxygen at 1.8 or later"
 doxygen doxyfile
 if [  $? == 0 ] ; then 
   echo "to access documentation type firefox  or xdg-open $SMALIB_DIR/doc/srcdoc/html/index.html"
 else
-  echo "Looks like you didn't"
+  echo "Error producing documentation - look for doxygen log file"
+fi
+else
+  echo "Documentation not produced as requested"
 fi
 cd $SMALIB_DIR
