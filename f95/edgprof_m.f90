@@ -287,11 +287,14 @@ subroutine edgprof_factors(self,rbdry,bpbdry,btotbdry,psign)
   real(kr8) :: zrbfac !< power factor in \f$ B \f$ only
   real(kr8) :: zrblfac !< power factor scaled by lmid
 
+  self%fpfacnr=0.0
+  self%rblfacnr=0.0
+  
   ! power normalisation factor
   zrbfac=1/(2*const_pid*rbdry*bpbdry)
   ! default diffusion factor
   self%slfac=0
-
+  
   formula_chosen: select case (self%formula)
   case('unset','exp')
      zrblfac=zrbfac/self%lmid

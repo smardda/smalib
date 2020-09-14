@@ -9,7 +9,6 @@ else
    cd $SMALIB_DIR
 fi
 (cd fortd;make clean;make "DBG=" libclean; make "DBG=g" libclean)
-cd f95
-make -f Makefile.lib $i clean
+cd f95; make -f Makefile.lib libclean
 for i in geofil move vtktfm datvtk hdsgen ctlgen; do rm -f $SMALIB_DIR/exec/$i ;done
 cd $swd
