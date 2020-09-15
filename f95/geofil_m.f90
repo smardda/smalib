@@ -61,12 +61,22 @@ subroutine geofil_read(self,file,numerics)
 
   self%geobjl%ngtype=2
   ! just one file with Body data
-  call geobjlist_read(self%geobjl,file%vtk)
+  call geobjlist_read(self%geobjl,file%vtk,leave_open=.true.)
   ningf=0
   iopt=1
   ! set nkey here because vtk file may not contain key or body data
   self%nscag=self%geobjl%ng
   call vfile_iscalarread(self%scag,self%nscag,file%vtk,numerics%namekey,ningf,iopt)
+
+  if (4 <=iopt.AND.iopt<=9) then
+    ! no scalar data in file, fix up
+    call log_value("Fixing up file for missing body/cell labels replacement ",1)
+    allocate(self%scag(self%nscag),stat=status)
+    call log_alloc_check(m_name,s_name,1,status)
+    self%scag=1
+  else  if (iopt/=0) then
+    call log_error(m_name,m_name,iopt,error_fatal,'Corrupt vtk file')
+  end if
 
   self%n=numerics
 

@@ -17,6 +17,7 @@ gv
 
 For any bash X-windows-based GUI to work, the Windows 8-10 machine requires XMing to be
 installed upon it, installation well explained in the Windows documentation.
+(Other X-Windows software such as VcXsrv may work equally well or better.)
 The XMing icon must be clicked to activate whenever the PC is switched on, and
 the bash session commands must commence with -
 export DISPLAY=:0
