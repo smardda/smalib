@@ -4,7 +4,7 @@ Installation of the bash shell is well explained in the Windows documentation,
 google "bash on Ubuntu on Windows" or try
 https://msdn.microsoft.com/en-gb/commandline/wsl/about
 
-The following packages have to be installed using sudo apt get -
+The following packages have to be installed using sudo apt-get install
 ------------
 firefox
 paraview
