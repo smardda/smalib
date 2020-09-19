@@ -25,7 +25,7 @@ module vfile_m
 
 ! public types
 
-  integer(ki4), parameter, public :: vfile_made_up_data = 1 !< local variable
+  integer(ki4), parameter, public :: vfile_made_up_data = 1 !<  make up scalar data if none found
 
 ! private variables
   character(*), parameter :: m_name='vfile_m' !< module name
@@ -222,6 +222,9 @@ end subroutine vfile_rscalarread
 !---------------------------------------------------------------------
 !> read vtk real vectors
 subroutine vfile_rvectorread(self,kp,kadim,infile,kcname,kin,kopt)
+
+  use smitermpi_h  
+
   !! arguments
   real(kr4), dimension(:), allocatable, intent(inout) :: self !< real vector list data
   integer(ki4), intent(inout) :: kp   !< size of vector list data
@@ -356,8 +359,11 @@ subroutine vfile_rvectorread(self,kp,kadim,infile,kcname,kin,kopt)
   !! read coordinates
   read(nin,*,iostat=status) (self(j),j=1,3*kp)
   call log_read_check(m_name,s_name,7,status)
-  print '("number of vectors read = ",i10)',kp
-  call log_value("number of vectors read ",kp)
+
+  if(myrank_log .eq. 0) then
+     print '("number of vectors read = ",i10)',kp
+     call log_value("number of vectors read ",kp)
+  endif
   kopt=0
 
 end subroutine vfile_rvectorread
@@ -535,6 +541,7 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt,kcdata)
         inquire(file=infile,number=kin,iostat=status)
         if(status/=0.OR.kin==-1)then
            !! error opening file
+           !dbg1 write(*,*) 'status,kin', status,kin !dbg1
            call log_error(m_name,s_name,1,error_fatal,'Error opening scalar list data file')
         else
            call log_error(m_name,s_name,1,log_info,'Scalar list data file opened')

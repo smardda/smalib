@@ -5,13 +5,16 @@
 EXEDIR = ../exec
 
 # Fortran compiler
-F90 ?= ifort
-FC = ifort
-# Fortran compiler flags
-F90FLAGS = -O3 -fpp
-ifeq ($(findstring mpi,$(F90)),mpi)
-   F90FLAGS += -DWITH_MPI
+ifeq ($(SGE_CLUSTER_NAME),Freia)
+  F90 = mpifort
+  FC = mpifort
+else
+  F90 ?= mpif90
+  FC = ifort
 endif
+
+# Fortran compiler flags
+F90FLAGS = -O -fpp -D WITH_MPI
 
 FFLAGS = -r8 -save -O
 

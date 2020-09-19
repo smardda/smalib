@@ -9,4 +9,5 @@
 !.gitignore
 !images
 !text.f90
+!mpidoc
 !srcdoc

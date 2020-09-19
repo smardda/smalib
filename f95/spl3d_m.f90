@@ -85,6 +85,8 @@ module spl3d_m
 !> read in data format
 subroutine spl3d_read(self,infile,kin)
 
+  use smitermpi_h ! For log message control
+  
   !! arguments
   type(spl3d_t), intent(out) :: self   !< object data structure
   character(len=80),intent(in) :: infile !< name of input file
@@ -236,7 +238,9 @@ subroutine spl3d_read(self,infile,kin)
      call log_error(m_name,s_name,81,error_fatal,'Error reading mask data')
   end if
 
-  print '("finished reading 3D spline")'
+  close(nin) ! Added for smiter combined HJL
+
+  if(myrank_log == 0) print '("finished reading 3D spline")'
   call log_error(m_name,s_name,99,log_info,'finished reading 3D spline')
 
 end subroutine spl3d_read

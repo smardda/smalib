@@ -5,13 +5,11 @@
 EXEDIR = ../exec
 
 # Fortran compiler
-F90 ?= ifort
+F90 ?= mpif90
 FC = ifort
+
 # Fortran compiler flags
-F90FLAGS = -O3 -fpp
-ifeq ($(findstring mpi,$(F90)),mpi)
-   F90FLAGS += -DWITH_MPI
-endif
+F90FLAGS = debug -debug-parameters all -check all -trace -g -O -fpp -D WITH_MPI
 
 FFLAGS = -r8 -save -O
 

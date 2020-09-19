@@ -119,6 +119,7 @@ subroutine vcontrol_read(file,numerics)
   real(kr8), dimension(2) :: plasma_centre !< centre of discharge in \f$ (R,Z) \f$
   real(kr8) :: minimum_angle !< minimum angle for extraction
   real(kr8) :: maximum_angle !< maximum angle for extraction
+  logical :: lglobtfm !< apply same transform to all bodies
 
 
   !> misc parameters, unusually comes first
@@ -377,8 +378,28 @@ subroutine vcontrol_read(file,numerics)
      if (panel_bodies(j)>0) exit
      inbod=0
   end do
-  if (inbod==0) &
- &call log_error(m_name,s_name,33,error_fatal,'No panels present')
+ 
+  ! no positive entries in panel_bodies
+  if (inbod==0) then
+    call log_error(m_name,s_name,33,error_warning,'No panels listed in panelarrayparameters')
+    inbod=maximum_number_of_panels
+    call log_value("Fix up is to assume maximum allowed number of panels, namely ",inbod)
+    lglobtfm=(panel_bodies(1)<0)
+    do j=1,inbod
+       panel_bodies(j)=j
+    end do
+    ! set up transforms
+    if (.NOT.lglobtfm) then
+      do j=1,inbod
+         panel_transform(j)=max(panel_transform(j),0)
+      end do
+    else
+      ! negative first implies transform all bodies using 1
+      do j=2,inbod
+         panel_transform(j)=panel_transform(1)
+      end do
+    end if
+  end if
 
   defn_option: select case (option(1:5))
   case ('split')

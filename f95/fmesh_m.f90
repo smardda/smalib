@@ -17,6 +17,7 @@ module fmesh_m
   fmesh_uniform,  & !< calculate uniform field mesh
   fmesh_userdefined,  & !< userdefined analytic field mesh
   fmesh_generic,  & !< generic analytic call
+  fmesh_qtfm, &  !< transform mesh locations
   fmesh_initwrite, & !< open new output file
   fmesh_copy, &  !< copy object
   fmesh_write, &  !< write out object
@@ -253,7 +254,6 @@ subroutine fmesh_readcon(self,kin)
      xend=faclen*xend; yend=faclen*yend; zend=faclen*zend
      dx=faclen*dx; dy=faclen*dy; dz=faclen*dz
      length_x=faclen*length_x; length_y=faclen*length_y; length_z=faclen*length_z
-     length_units='millimetre'
   end if
 
   self%xlengthf=length_x
@@ -284,10 +284,11 @@ subroutine fmesh_readcon(self,kin)
      call log_alloc_check(m_name,s_name,66,status)
      self%rpar=general_real_parameters(:number_of_real_parameters)
      self%npar=general_integer_parameters(:number_of_integer_parameters)
-     self%formula='userdefined'
   case default
   end select formula_allocate
 
+  !! store mesh values
+  self%formula=mesh_formula
   self%iltfm=mesh_transform
   if (mesh_transform) then
      !! read in transform
@@ -367,6 +368,53 @@ subroutine fmesh_generic(self)
   end select formula_chosen
 
 end subroutine fmesh_generic
+!---------------------------------------------------------------------
+!> transform mesh locations
+subroutine fmesh_qtfm(self,qtfmdata)
+
+  !! arguments
+  type(fmesh_t), intent(inout) :: self   !< object data structure
+  type(quantfm_t), intent(inout) :: qtfmdata   !< data defining transform
+
+  !! local
+  character(*), parameter :: s_name='fmesh_qtfm' !< subroutine name
+  type(posveclis_t) :: zposl !< local variable
+  type(posvecl_t) :: zpos !< local variable
+  type(posvecl_t) :: zposq !< local variable
+  integer(ki4) :: inqtfm   !< save transform type
+
+  ! origins as posveclis
+  allocate(zposl%pos(1),stat=status)
+  call log_alloc_check(m_name,s_name,1,status)
+  zposl%pos(1)%posvec=(/self%x0f, self%y0f, self%z0f/)
+  zposl%np=1
+  call position_qtfmlis(zposl,qtfmdata)
+  self%x0f=zposl%pos(1)%posvec(1)
+  self%y0f=zposl%pos(1)%posvec(2)
+  self%z0f=zposl%pos(1)%posvec(3)
+  deallocate(zposl%pos)
+
+  ! spacings as posvecl
+  mesh_form: select case (self%formula)
+  case ('uniform')
+     zpos%posvec=(/self%dxf, self%dyf , self%dzf/)
+     inqtfm=qtfmdata%nqtfm
+     ! case 1 just scales
+     qtfmdata%nqtfm=1
+     zposq=position_qtfm(zpos,qtfmdata)
+     self%dxf=zposq%posvec(1)
+     self%rdxf=1/zposq%posvec(1)
+     self%dyf=zposq%posvec(2)
+     self%rdyf=1/zposq%posvec(2)
+     self%dzf=zposq%posvec(3)
+     self%rdzf=1/zposq%posvec(3)
+     ! restore
+     qtfmdata%nqtfm=inqtfm
+  case default
+     call log_error(m_name,s_name,20,error_fatal,'Nonuniform mesh not implemented')
+  end select mesh_form
+
+end subroutine fmesh_qtfm
 !---------------------------------------------------------------------
 !> open new file
 subroutine fmesh_initwrite(fileroot,channel)
