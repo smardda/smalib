@@ -3073,7 +3073,13 @@ subroutine geobjlist_create3d(self,numerics,kgcode)
   !! define positions
   tfm_type: select case (numerics%tfm)
   case ('translate')
-     zeta=numerics%stang
+     if (numerics%endgle==-1) then
+        zeta=numerics%minang
+     else if (numerics%endgle==1) then
+        zeta=numerics%maxang
+     else
+        zeta=numerics%stang
+     end if
      ip=0
      ! convert set of (R,Z) points to (X,Y,Z)
      do i=1,n

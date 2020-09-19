@@ -10,7 +10,8 @@ conversions from other mesh formats.
 For a description of the SMARDDA algorithm for ray tracing
 see http://dx.doi.org/10.1109/TPS.2015.2458897 (also http://arxiv.org/abs/1403.6750 )
 
-SMARDDA-LIB has been tested on CentOS 7.0, Ubuntu 18.04 and Red Hat 4.4 (Scientific Linux).
+SMARDDA-LIB has been tested on CentOS 7.0, Ubuntu 18.04 and Red Hat 4.4 (Scientific Linux)
+and is known to run on MacOS and WSL 1.
 Try to use the latest stable fortran compiler version available.
 
 See LICENCE.txt for details. 
@@ -26,6 +27,7 @@ SMARDDA-LIB executables are placed on your path, essential for smint (see below)
 (2) sets the shell variable SMALIB_DIR; you may find it a good idea to ensure
 that SMALIB_DIR is always set by modifying your .bashrc file, by adding the line, for example
 export SMALIB_DIR=~/smardda/smardda-lib
+(3) requires a prompt Y/N regarding the production of documentation
 
 bash shell release 3.2 or later (i.e. from 2005 or later) is needed.
 ParaView may be downloaded separately from www.paraview.org if not already installed.

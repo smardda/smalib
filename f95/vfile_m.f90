@@ -25,7 +25,7 @@ module vfile_m
 
 ! public types
 
-  integer(ki4), parameter, public :: vfile_made_up_data = 1 !< local variable
+  integer(ki4), parameter, public :: vfile_made_up_data = 1 !<  make up scalar data if none found
 
 ! private variables
   character(*), parameter :: m_name='vfile_m' !< module name
@@ -541,6 +541,7 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt,kcdata)
         inquire(file=infile,number=kin,iostat=status)
         if(status/=0.OR.kin==-1)then
            !! error opening file
+           !dbg1 write(*,*) 'status,kin', status,kin !dbg1
            call log_error(m_name,s_name,1,error_fatal,'Error opening scalar list data file')
         else
            call log_error(m_name,s_name,1,log_info,'Scalar list data file opened')
