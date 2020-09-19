@@ -1,4 +1,4 @@
-SMARDDA-LIB on bash (on Ubuntu) on Windows 8-10
+SMARDDA-LIB on bash (on Ubuntu) on Windows 10
 -----------------------------------------------
 Installation of the bash shell is well explained in the Windows documentation,
 google "bash on Ubuntu on Windows" or try
@@ -14,6 +14,7 @@ doxygen
 dialog
 gnuplot5-x11
 gv
+( texlive-font-utils for pdf documentation )
 
 For any bash X-windows-based GUI to work, the Windows 8-10 machine requires XMing to be
 installed upon it, installation well explained in the Windows documentation.
@@ -23,8 +24,10 @@ the bash session commands must commence with -
 export DISPLAY=:0
 when smint should work adequately if not perfectly. Given the number of warnings
 using firefox on bash on Windows causes to be generated, it might be preferable to
-use the Windows browser. (N.B. These comments apply to a Dell 5000 13" laptop,
-other machines may have different bash GUI issues.)
+use the Windows browser.
+N.B. These comments apply to a Dell 5000 13" laptop, other machines may have different bash GUI issues.
+Experiment suggest that X-Windows integration is poorer with WSL 2 and Ubuntu 20.04, 
+the recommended combination is WSL 1 and Ubuntu 18.04.
 
 git commands to fetch files
 ---------------------------

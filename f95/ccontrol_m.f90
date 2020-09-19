@@ -328,6 +328,7 @@ subroutine ccontrol_writectl
   do j=1,inpfile
      panel_bodies(j)=maximum_number_of_bodies_in_file*j+1
   end do
+  ! flags only one input file, the if only first transform defined, applied to all separate bodies
   if (inpfile==1) panel_bodies(1)=-1
   panel_transform=ntfm
   write(nout,nml=panelarrayparameters, iostat=status)
