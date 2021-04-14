@@ -117,6 +117,7 @@ module beq_m
   real(kr8), save :: rsig    !< sign of  \f$ d \psi/dr \f$, value  \f$ \pm 1 \f$
   character(len=80) :: ibuff !< buffer for input/output
   character(len=80) :: ibuf1 !< buffer for input/output
+  character(len=15) :: cfmtd !< fixed format for body
   logical :: iltest !< logical flag
 
   contains
@@ -360,7 +361,6 @@ subroutine beq_readequil(self,infile,numerics)
   character(*), parameter :: s_name='beq_readequil' !< subroutine name
   character(len=8), parameter :: cfmt1='(5e16.9)'
   character(len=15) :: cfmtdh !< fixed format for header
-  character(len=15) :: cfmtd !< fixed format for header
   logical, parameter :: debug=.TRUE. !< flag for e16.9 output
   !! logical :: unitused !< flag to test unit is available
   logical :: needfixup=.FALSE. !< flag special SMITER fix up
@@ -820,6 +820,7 @@ subroutine beq_readequil(self,infile,numerics)
   end if
   print '("number of Bz values read = ",i10)',nw*nh
   call log_value("number of Bz values read ",nw*nh)
+2     continue
   if (.NOT.numerics%leqok) then
      if (BEQ_OVERRIDE_ITER) then
         ! fix sign consistent with psi above
@@ -834,9 +835,10 @@ subroutine beq_readequil(self,infile,numerics)
   return
 
 1     continue
-  print '("Eqdsk file ended status ",i10," but may have got enough data.")',status
-  call log_error(m_name,s_name,80,error_warning,'Unexpected end of eqdsk file')
+  print '("EQDSK file ended status ",i10," but may have got enough data.")',status
+  call log_error(m_name,s_name,80,error_warning,'Unexpected end of EQDSK file')
   call log_value("May have got enough data. Termination status ",status)
+  go to 2  
 
 end subroutine beq_readequil
 !---------------------------------------------------------------------
@@ -869,6 +871,8 @@ subroutine beq_readequ(self,infile,numerics)
   if (status/=0) then
      call log_error(m_name,s_name,1,error_fatal,'Error opening file')
   end if
+  cfmtd=cfmt1
+1000 continue
   ! skip header data
   do
      read(iin,fmt='(a)',iostat=status) ibuff
@@ -919,12 +923,27 @@ subroutine beq_readequ(self,infile,numerics)
      allocate(workr1(jm), stat=status)
      call log_alloc_check(m_name,s_name,10,status)
   else
-     call log_error(m_name,s_name,11,error_fatal,'No 1D data')
+     call log_error(m_name,s_name,11,error_fatal,'No 1D R data')
   end if
 
-  read(iin,cfmt1,iostat=status)(workr1(i),i=1,jm)
+  if (cfmtd=='*') then
+     read(iin,*,iostat=status)(workr1(i),i=1,jm)
+  else
+     read(iin,cfmtd,iostat=status)(workr1(i),i=1,jm)
+  end if 
   if(status/=0) then
-     call log_error(m_name,s_name,12,error_fatal,'Error reading R values')
+     if(cfmtd(1:1)/='*') then
+        call log_value("Format statement used ",cfmtd)
+        call log_error(m_name,s_name,12,error_warning,'Error reading R values')
+        ! try using free format
+        cfmtd='*'
+        deallocate(workr1)
+        rewind(iin,iostat=status)
+        call log_read_check(m_name,s_name,12,status)
+        go to 1000
+     else
+        call log_error(m_name,s_name,12,error_fatal,'Error reading R values')
+     end if
   end if
   print '("number of R values read = ",i10)',jm
   call log_value("number of R values read ",jm)
@@ -936,10 +955,14 @@ subroutine beq_readequ(self,infile,numerics)
      allocate(workz1(km), stat=status)
      call log_alloc_check(m_name,s_name,15,status)
   else
-     call log_error(m_name,s_name,16,error_fatal,'No 1D data')
+     call log_error(m_name,s_name,16,error_fatal,'No 1D Z data')
   end if
 
-  read(iin,cfmt1,iostat=status)(workz1(i),i=1,km)
+  if (cfmtd=='*') then
+     read(iin,*,iostat=status)(workz1(i),i=1,km)
+  else
+     read(iin,cfmtd,iostat=status)(workz1(i),i=1,km)
+  end if
   if(status/=0) then
      call log_error(m_name,s_name,17,error_fatal,'Error reading Z values')
   end if
@@ -960,7 +983,11 @@ subroutine beq_readequ(self,infile,numerics)
      call log_error(m_name,s_name,21,error_fatal,'No psi data')
   end if
 
-  read(iin,cfmt1,iostat=status) ((work2(i,j),i=1,jm),j=1,km)
+  if (cfmtd=='*') then
+     read(iin,*,iostat=status) ((work2(i,j),i=1,jm),j=1,km)
+  else
+     read(iin,cfmtd,iostat=status) ((work2(i,j),i=1,jm),j=1,km)
+  end if
   if(status/=0) then
      call log_error(m_name,s_name,22,error_fatal,'Error reading psi')
   end if
@@ -981,8 +1008,6 @@ subroutine beq_readequ(self,infile,numerics)
   deallocate(workr1) ! Added for combined smiter runs HJL
   deallocate(workz1) ! Added for combined smiter runs HJL
   
-  beq_nobinq=.TRUE.
-
   ! set up fpol
   !! allocate fpol storage
   allocate(self%f(jm), stat=status)
@@ -1032,7 +1057,90 @@ subroutine beq_readequ(self,infile,numerics)
      psisca=psic-psib
      work2=psisca*work2
   end if
+
+  !! now the changes for the kludged B output format
+  ! error indicates not present
+  read(iin,*,iostat=status) ibuff
+  ! optionally skip B in file
+  beq_nobinq=(status/=0).OR.numerics%skipb
+  if(beq_nobinq) then
+     call log_error(m_name,s_name,60,error_warning,'Unable to read B descriptor')
+     call log_value("Giving up on EQU file for B values, status",status)
+     close(iin) ! Added HJL
+     return
+  end if
+  ! workr2 array for Br
+  !! allocate workr2 storage
+  allocate(workr2(jm,km), stat=status)
+  call log_alloc_check(m_name,s_name,70,status)
+  if (cfmtd=='*') then
+     read(iin,*,iostat=status) ((workr2(i,j),i=1,jm),j=1,km)
+  else
+     read(iin,cfmtd,iostat=status) ((workr2(i,j),i=1,jm),j=1,km)
+  end if
+  beq_nobinq=(status/=0)
+  if(beq_nobinq) then
+     call log_error(m_name,s_name,71,error_warning,'Error reading Br')
+     call log_value("Giving up on EQU file for B values, status",status)
+     deallocate(workr2)
+     close(iin) ! Added HJL
+     return
+  end if
+  print '("number of Br values read = ",i10)',jm*km
+  call log_value("number of Br values read ",jm*km)
+  ! workz2 array for Bz
+  !! allocate workz2 storage
+  allocate(workz2(jm,km), stat=status)
+  call log_alloc_check(m_name,s_name,72,status)
+  read(iin,*,iostat=status) ibuff
+  if (cfmtd=='*') then
+     read(iin,*,iostat=status,end=1) ((workz2(i,j),i=1,jm),j=1,km)
+  else
+     read(iin,cfmtd,iostat=status,end=1) ((workz2(i,j),i=1,jm),j=1,km)
+  end if
+  beq_nobinq=(status/=0)
+  if(beq_nobinq) then
+     call log_error(m_name,s_name,73,error_warning,'Error reading Bz')
+     call log_value("Giving up on EQU file for B values, status",status)
+     deallocate(workr2)
+     deallocate(workz2)
+     close(iin) ! Added HJL
+     return
+  end if
+  print '("number of Bz values read = ",i10)',jm*km
+  call log_value("number of Bz values read ",jm*km)
+2     continue
+  fld_specrz: select case (numerics%fldspec)
+  case(1,3)
+     if (.NOT.numerics%leqok) then
+        if (BEQ_OVERRIDE_ITER) then
+           call log_error(m_name,s_name,49,log_info,'override for ITER')
+           ! special for ITER to align current and toroidal field
+           if (psic>psib) then
+           workr2=-workr2
+           workz2=-workz2
+           end if
+        end if
+     end if
+  case(2)
+     ! Separating this case enables MAST test deck case to work,
+     ! without setting BEQ_OVERRIDE_ITER=.FALSE., which is what
+     ! really should be done, and no special fldspec test
+     if (.NOT.numerics%leqok) then
+        if (.NOT.numerics%mastequ) then
+           workr2=-workr2
+           workz2=-workz2
+        end if
+     end if
+  end select fld_specrz
   close(iin)
+  return
+
+1     continue
+  print '("Equ file ended status ",i10," but may have got enough data.")',status
+  call log_error(m_name,s_name,80,error_warning,'Unexpected end of equ file')
+  call log_value("May have got enough data. Termination status ",status)
+  go to 2  
 
 end subroutine beq_readequ
 !---------------------------------------------------------------------
@@ -2797,7 +2905,7 @@ subroutine beq_centre(self)
   call log_value("SMITER-GEOQ psicen ",self%psicen)
   call log_value("SMITER-GEOQ psiaxis ",self%psiaxis)
   if (abs(self%psicen-self%psiaxis)> 0.1*self%psinorm) then
-     call log_error(m_name,s_name,2,error_warning,'Eqdsk value of psi on axis very different from computed')
+     call log_error(m_name,s_name,2,error_warning,'EQDSK value of psi on axis very different from computed')
      call log_error(m_name,s_name,2,error_warning,'Using geoq computed value psicen')
      self%replasi=.TRUE.
      self%psiaxis=self%psicen
