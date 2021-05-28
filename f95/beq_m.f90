@@ -33,6 +33,7 @@ module beq_m
   beq_move, & !< move  beq data structure (controls)
   beq_init,   & !< create  beq data structure
   beq_sense,   & !< helical sense of field
+  beq_fmeshset, & !< create fmesh data structure from other data
   beq_delete,   & !< delete  beq data structure
   beq_readv, & !< read in visualisation format (TO DO)
   beq_readcheck, & !< check field as mapped or 3-cpt and for extras
@@ -690,8 +691,8 @@ subroutine beq_readequil(self,infile,numerics)
   if(status/=0) then
      call log_error(m_name,s_name,50,error_fatal,'Error reading qpsi')
   end if
-  !DPR      write(*,*) 'qpsi', (i,work1(i),i=1,nw) !DPR
-  !DPR      write(*,*) 'fpol', (i,self%f(i),i=1,nw) !DPR
+  !DPR write(*,*) 'qpsi', (i,work1(i),i=1,nw) !DPR
+  !DPR write(*,*) 'fpol', (i,self%f(i),i=1,nw) !DPR
   deallocate(work1)
   read(iin,*,iostat=istatus,end=1) nbbbs,limitr
   if(istatus/=0) then
@@ -1389,6 +1390,8 @@ subroutine beq_init(self,numerics,fmesh)
   ! initialise control structure
   self%n=numerics
   self%fmesh=fmesh
+  ! only true here if duct calculation (may be set later)
+  self%lfmeshset=numerics%duct
   self%replasi=.FALSE.
 
   ! set flag for whether psi increases or decreases with minor radius
@@ -1479,6 +1482,32 @@ subroutine beq_sense(self,k3d)
 
 end subroutine beq_sense
 !---------------------------------------------------------------------
+!> create fmesh data structure from other data
+subroutine beq_fmeshset(self)
+
+  !! arguments
+  type(beq_t), intent(inout) :: self   !< object data structure
+
+  !! local
+  character(*), parameter :: s_name='beq_fmeshset' !< subroutine name
+
+  self%fmesh%nxf=self%mr+1
+  self%fmesh%nyf=self%mz+1
+  self%fmesh%nzf=1
+  self%fmesh%x0f=self%rmin
+  self%fmesh%y0f=self%zmin
+  self%fmesh%z0f=0
+  self%fmesh%dxf=self%dr
+  self%fmesh%dyf=self%dz
+  self%fmesh%dzf=0
+  self%fmesh%ndimf=2
+
+  call fmesh_uniform(self%fmesh)
+
+  self%lfmeshset=.true.
+
+end subroutine beq_fmeshset
+!---------------------------------------------------------------------
 !> delete  beq data structure
 subroutine beq_delete(self)
 
@@ -1505,6 +1534,8 @@ subroutine beq_delete(self)
      call spl2d_delete(self%rispldr)
      call spl2d_delete(self%rispldz)
   end select fld_specn
+
+  if (self%lfmeshset) call fmesh_delete(self%fmesh)
 
 end subroutine beq_delete
 !---------------------------------------------------------------------
@@ -1894,6 +1925,7 @@ subroutine beq_readplus(self,infile)
   if (iextra==1) then
      self%n%duct=.TRUE.
      call fmesh_read(self%fmesh,infile,nin)
+     self%lfmeshset=.TRUE.
   else
      self%n%duct=.FALSE.
   end if

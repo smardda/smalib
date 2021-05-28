@@ -4284,6 +4284,19 @@ subroutine geobjlist_readhedline(self,descriptor)
            iieq=index(ibuf2,'=')
            read(ibuf2(iieq+2:),'(I3)',iostat=istatus,end=1) self%nparam(1)
            if(istatus/=0) call log_error(m_name,s_name,3,error_warning,'Error reading nparam')
+        else
+           isubstr=index(descriptor,'Mesh___Parameters=')
+           if (isubstr/=0) then
+              ibuf2=descriptor(isubstr:)
+              iieq=index(ibuf2,'=')
+              read(ibuf2(iieq+2:),'(I3)',iostat=istatus,end=1) inumnparam
+              if(istatus/=0) call log_error(m_name,s_name,4,error_warning,'Error reading inumparam')
+              read(ibuf2(iieq+4:),*,iostat=istatus,end=1) (ipara(l),l=1,inumnparam)
+              if(istatus/=0) call log_error(m_name,s_name,5,error_warning,'Error reading line 2 parameters')
+              do j=1,min(inumnparam,self%numnparam)
+                 self%nparam(j)=ipara(j)
+              end do
+           end if
         end if
      end if
   else

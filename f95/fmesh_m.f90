@@ -21,6 +21,7 @@ module fmesh_m
   fmesh_initwrite, & !< open new output file
   fmesh_copy, &  !< copy object
   fmesh_write, &  !< write out object
+  fmesh_readmlab, & !< read fmesh data in matlab format
   fmesh_read, &  !< read in object
   fmesh_delete, & !< delete object
   fmesh_close, & !< close file
@@ -582,6 +583,84 @@ subroutine fmesh_write(self,kout)
   end if
 
 end subroutine fmesh_write
+!---------------------------------------------------------------------
+!> read fmesh data in matlab format
+subroutine  fmesh_readmlab(self,kin)
+
+  !! arguments
+  type(fmesh_t), intent(out) :: self   !< fmesh data structure
+  integer, intent(in) :: kin   !< input channel for object data structure
+
+  !! local
+  character(*), parameter :: s_name='fmesh_readmlab' !< subroutine name
+  character(len=80) :: ibuffl   !< character string
+
+  ! skip first header data
+  call misc_fileafter('Zeta grid',kin)
+
+  read(kin,*,iostat=status) self%nzf
+  if(status/=0) then
+     call log_error(m_name,s_name,11,error_fatal,'Error reading object data')
+  end if
+  ! position 3 array
+  !! allocate position 3 storage
+  if(self%nzf>0) then
+     allocate(self%zf(self%nzf), stat=status)
+     call log_alloc_check(m_name,s_name,12,status)
+  else
+     call log_error(m_name,s_name,13,error_fatal,'No 1D data')
+  end if
+
+  read(kin,*,iostat=status)(self%zf(i),i=1,self%nzf)
+  call log_alloc_check(m_name,s_name,14,status)
+  print '("number of zeta values read = ",i10)',self%nzf
+  call log_value("number of zeta values read ",self%nzf)
+
+  call misc_fileafter('R grid',kin)
+
+  read(kin,*,iostat=status) self%nxf
+  call log_read_check(m_name,s_name,21,status)
+  ! position 1 array
+  !! allocate position 1 storage
+  if(self%nxf>0) then
+     allocate(self%xf(self%nxf), stat=status)
+     call log_alloc_check(m_name,s_name,22,status)
+  else
+     call log_error(m_name,s_name,23,error_fatal,'No 1D data')
+  end if
+
+  read(kin,*,iostat=status)(self%xf(i),i=1,self%nxf)
+  call log_alloc_check(m_name,s_name,24,status)
+  print '("number of R values read = ",i10)',self%nxf
+  call log_value("number of R values read ",self%nxf)
+
+  call misc_fileafter('Z grid',kin)
+
+  read(kin,*,iostat=status) self%nyf
+  call log_read_check(m_name,s_name,33,status)
+  ! position 2 array
+  !! allocate position 2 storage
+  if(self%nyf>0) then
+     allocate(self%yf(self%nyf), stat=status)
+     call log_alloc_check(m_name,s_name,32,status)
+  else
+     call log_error(m_name,s_name,33,error_fatal,'No 1D data')
+  end if
+
+  read(kin,*,iostat=status)(self%yf(i),i=1,self%nyf)
+  call log_alloc_check(m_name,s_name,34,status)
+  print '("number of Z values read = ",i10)',self%nyf
+  call log_value("number of Z values read ",self%nyf)
+
+  !!     write(*,*)(self%xf(i),i=1,self%nxf)
+  !!     write(*,*)(self%yf(i),i=1,self%nyf)
+  !!     write(*,*)(self%zf(i),i=1,self%nzf)
+
+  ! skip blank and non-blank
+  read(kin,fmt='(a)',iostat=status) ibuffl
+  read(kin,fmt='(a)',iostat=status) ibuffl
+
+end subroutine  fmesh_readmlab
 !---------------------------------------------------------------------
 !> read fmesh data
 subroutine fmesh_read(self,infile,channel)

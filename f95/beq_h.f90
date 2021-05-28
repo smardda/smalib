@@ -206,6 +206,7 @@ module beq_h
      type(spl3d_t)  :: vacfld  !< vacuum field structure as 3-D spline
      type(beqart_t)  :: beqart  !< vacuum field structure fmesh gridding
      type(fmesh_t)  :: fmesh  !< field mesh for calculation in duct coordinates
+     logical  :: lfmeshset  !< flag if fmesh coordinate arrays allocated
      real(kr8), dimension(:,:), allocatable :: ctrackrz !< central track, of psi extremum through plasma centre
      integer(ki4) :: nctrack !<  bound for ctrackrz array
      real(kr8) :: rcenq !< quantised \f$ R_{cen} \f$

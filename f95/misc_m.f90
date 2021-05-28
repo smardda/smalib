@@ -15,6 +15,8 @@ module misc_m
  &misc_lines2d, &  !< sample 2-D straight lines between end-points
  &misc_anglevec, & !< return angle in degrees between two vectors
  &misc_fsuffixget, & !< get file suffix as lower case string
+ &misc_fileafter, & !< move to point in file after line beginning with string
+ &misc_readmlab, & !< read 3D array in matlab format
  &misc_countnos
 
 ! public types
@@ -258,5 +260,228 @@ subroutine misc_countnos(bigbuf,kfmt)
   end do
   kfmt=(iblan+1)/3
 end subroutine misc_countnos
+!>---------------------------------------------------------------------
+subroutine misc_fileafter(kfind,kin)
+  !< move to point in file after line beginning with string
+  !! arguments
+  character(len=*), intent(in) :: kfind   !< character string to find
+  integer, intent(in) :: kin   !< file unit for reading
+
+  !! local
+  character(*), parameter :: s_name='misc_fileafter' !< subroutine name
+  character(len=80) :: ibuff   !< character string
+
+  do
+     read(kin,fmt='(a)',iostat=status) ibuff
+     call log_read_check(m_name,s_name,1,status)
+     if (adjustl(ibuff)==kfind) exit
+  end do
+
+  if (adjustl(ibuff)/=kfind) then
+     ! jm string not found
+     call log_error(m_name,s_name,10,error_fatal,'Error reading object data')
+  end if
+
+end subroutine misc_fileafter
+!---------------------------------------------------------------------
+!> read 3D array in matlab format
+subroutine misc_readmlab(pwork,kn1,kn2,kn3,layout,koff,kzetap,kcpt,infile,kin)
+
+  use smitermpi_h ! For log message control
+
+  !! arguments
+  real(kr8), dimension(:,:,:,:), intent(out) :: pwork   !< input samples
+  integer(ki4) :: kn1   !< first nominal dimension
+  integer(ki4) :: kn2   !< second nominal dimension
+  integer(ki4) :: kn3   !< third nominal dimension
+  integer(ki4), intent(in) :: layout   !< layout of data
+  integer(ki4), intent(in) :: koff !< offset within cell
+  integer(ki4), intent(in) :: kzetap   !< layout of data
+  integer(ki4), intent(in) :: kcpt   !< number of components
+  character(len=80), intent(in) :: infile !< name of input file
+  integer, intent(in),optional :: kin   !< input channel for object data structure
+
+  !! local
+  character(*), parameter :: s_name='misc_readmlab' !< subroutine name
+  real(kr8), dimension(:,:), allocatable :: workv2 !< vector work array
+  real(kr8), dimension(:,:,:), allocatable :: workm2 !< vector work array
+  real(kr8), dimension(:), allocatable :: zwork !< work
+  integer(ki4) :: inin !< input unit
+  integer(ki4) :: in3m !< compressed number of points in 3 direction
+  integer(ki4) :: inp !< number of points per period
+  integer(ki4) :: inj !< angular period selector
+  integer(ki4) :: ij !< local variable
+  integer(ki4) :: jj !< local variable
+  integer(ki4) :: jseg !< segment loop variable
+  integer(ki4) :: iseg !< segment offset
+  integer(ki4) :: im !< j-1
+
+  if(present(kin).AND.kin/=0) then
+     !! assume unit already open and reading infile
+     inin=kin
+  else
+     !! open file
+     call misc_getfileunit(inin)
+     open(unit=inin,file=infile,status='OLD',form='FORMATTED',iostat=status)
+     if(status/=0)then
+        !! error opening file
+        call log_error(m_name,s_name,1,error_fatal,'Error opening data structure file')
+     else
+        call log_error(m_name,s_name,2,log_info,'data structure file opened')
+     end if
+  end if
+
+  in3m=kn3-1
+  ! allocate storage for read
+  allocate(zwork(kcpt), stat=status)
+  call log_alloc_check(m_name,s_name,3,status)
+  ! allocate 2D storage for read
+  allocate(workv2(kn3,kcpt), stat=status)
+  call log_alloc_check(m_name,s_name,4,status)
+  inp=kn3/kzetap-1
+  if (layout==33) then
+     ! stacked segments
+     iseg=inp+2
+     loopseg: do jseg=1,kzetap
+        do l=1,kn2
+           loopk0: do k=1,kn1
+
+              do j=1,inp+1
+                 read(inin,*,iostat=status)(workv2(j,i),i=1,kcpt)
+                 if(status/=0) then
+                    call log_error(m_name,s_name,10,error_fatal,'Error reading field values')
+                 end if
+                 ij=ij+kcpt
+              end do
+              ! loop ignores first entry in workv2, because repeated
+              do j=1,inp
+                 inj=iseg-j
+                 jj=mod( inj+in3m-koff-1,in3m ) + 1
+                 pwork(jj,:,k,l)=workv2(j,:)
+              end do
+
+           end do loopk0
+        end do
+        iseg=iseg+inp
+     end do loopseg
+     ! wrap last points
+     pwork(in3m+1,:,:,:)=pwork(1,:,:,:)
+
+  else if (layout==34.OR.layout==35) then
+     ! stacked segments
+     iseg=0
+     loopseg4: do jseg=1,kzetap
+        do l=1,kn2
+           loopk4: do k=1,kn1
+
+              do j=1,inp+1
+                 read(inin,*,iostat=status)(workv2(j,i),i=1,kcpt)
+                 if(status/=0) then
+                    call log_error(m_name,s_name,11,error_fatal,'Error reading field values')
+                 end if
+                 ij=ij+kcpt
+              end do
+              ! loop ignores last entry in workv2, because repeated
+              do j=1,inp
+                 inj=iseg+j
+                 jj=mod( inj+in3m-koff-1,in3m ) + 1
+                 pwork(jj,:,k,l)=workv2(j,:)
+              end do
+
+           end do loopk4
+        end do
+        iseg=iseg-inp
+     end do loopseg4
+     ! wrap last points
+     pwork(in3m+1,:,:,:)=pwork(1,:,:,:)
+
+  else if (layout==42) then
+     ! assume j,k index ordering reversed
+     allocate(workm2(kn1,kn3,kcpt), stat=status)
+     call log_alloc_check(m_name,s_name,53,status)
+
+     do l=1,kn2
+
+        do j=1,kn3
+           do k=1,kn1
+              read(inin,*,iostat=status)(workm2(k,j,i),i=1,kcpt)
+              if(status/=0) then
+                 call log_error(m_name,s_name,12,error_fatal,'Error reading field values')
+              end if
+              ij=ij+kcpt
+           end do
+        end do
+        ! unravelling stacked periodic cases
+        do j=1,in3m
+           inj=(j-2+koff)/inp
+           jj=mod(j+kn3+koff+inj-1,kn3)+1
+           do k=1,kn1
+              pwork(j,:,k,l)=workm2(k,jj,:)
+           end do
+        end do
+        ! wrapping point
+        do k=1,kn1
+           pwork(in3m+1,:,k,l)=pwork(1,:,k,l)
+        end do
+
+     end do
+     deallocate(workm2)
+  else
+     do l=1,kn2
+        loopk: do k=1,kn1
+
+           do j=1,kn3
+              read(inin,*,iostat=status)(workv2(j,i),i=1,kcpt)
+              if(status/=0) then
+                 call log_error(m_name,s_name,14,error_fatal,'Error reading field values')
+              end if
+              ij=ij+kcpt
+           end do
+
+           layout_type2: select case (layout)
+           case(1,2)
+              ! assumes data input on phi periodic cell, not zeta cell (phi=-zeta)
+              do j=1,kn3
+                 pwork(kn3+1-j,:,k,l)=workv2(j,:)
+              end do
+           case(3)
+              ! another option for unravelling periodic cases
+              do j=1,kn3
+                 pwork(j,:,k,l)=workv2(j,:)
+              end do
+           case(12)
+              ! another option for unravelling periodic cases
+              do j=1,kn3-1
+                 jj=mod(j+koff,kn3-1)+1
+                 pwork(jj,:,k,l)=workv2(j,:)
+              end do
+           case(14)
+              ! staggered option for unravelling periodic cases
+              do j=1,kn3
+                 im=mod(j+kn3-3,kn3-1)+1
+                 zwork(:)=0.5*(workv2(im,:)+workv2(j,:))
+                 jj=mod(j+koff,kn3)+1
+                 pwork(jj,:,k,l)=zwork(:)
+              end do
+           case(23)
+              ! option for unravelling stacked periodic cases
+              do j=1,in3m
+                 inj=(j-2+koff)/inp
+                 jj=mod(j+kn3+koff+inj-1,kn3)+1
+                 pwork(j,:,k,l)=workv2(jj,:)
+              end do
+              ! wrapping point
+              pwork(in3m+1,:,k,l)=pwork(1,:,k,l)
+           case default
+              pwork(:,:,k,l)=workv2
+           end select layout_type2
+
+        end do loopk
+     end do
+  end if
+  deallocate(workv2)
+  deallocate(zwork)
+
+end subroutine misc_readmlab
 
 end module misc_m
