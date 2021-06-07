@@ -574,6 +574,8 @@ subroutine spl2d_offscale(selfin,selfout,poff,pfac)
   call spl2d_init(selfout,work2,selfin%n1,selfin%n2,  &
 & selfin%org1,selfin%org2,selfin%h1,selfin%h2,iorder)
 
+  call spl2d_coeff(selfout)
+
 end subroutine spl2d_offscale
 !---------------------------------------------------------------------
 !> delete  spl2d data structure
