@@ -17,6 +17,7 @@ module spl2d_m
   spl2d_ptlimits,   & !< get \f$ \psi,\theta \f$ limits of interpolation
   spl2d_ptscale,  &  !< scale points at which spline defined
   spl2d_scale,  &  !< scale spline values
+  spl2d_offscale,  &  !< offset and scale spline values
   spl2d_delete,   & !< delete  spl2d data structure
   spl2d_writeg, & !< write in gnuplot format
   spl2d_writev, & !< write in paraview format
@@ -550,6 +551,30 @@ subroutine spl2d_scale(self,pfac)
   self%coeff=pfac*self%coeff
 
 end subroutine spl2d_scale
+!---------------------------------------------------------------------
+!> offset and scale spline values
+subroutine spl2d_offscale(selfin,selfout,poff,pfac)
+
+  !! arguments
+  type(spl2d_t), intent(in) :: selfin   !< object data structure
+  type(spl2d_t), intent(out) :: selfout   !< object data structure
+  real(kr8), intent(in) :: poff   !< offset factor
+  real(kr8), intent(in) :: pfac   !< scale factor
+
+  !! local
+  character(*), parameter :: s_name='spl2d_offscale' !< subroutine name
+  integer(ki4) :: iorder   !< order of splines
+
+  allocate(work2(selfin%n1p,selfin%n2p), stat=status)
+  call log_alloc_check(m_name,s_name,1,status)
+
+  work2=pfac*(selfin%sampl-poff)
+  iorder=selfin%nord
+
+  call spl2d_init(selfout,work2,selfin%n1,selfin%n2,  &
+& selfin%org1,selfin%org2,selfin%h1,selfin%h2,iorder)
+
+end subroutine spl2d_offscale
 !---------------------------------------------------------------------
 !> delete  spl2d data structure
 subroutine spl2d_delete(self)
