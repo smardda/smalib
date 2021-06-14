@@ -16,6 +16,7 @@ module spl2d_m
   spl2d_initpart,   & !< create create dummy part of spl2d data structure
   spl2d_ptlimits,   & !< get \f$ \psi,\theta \f$ limits of interpolation
   spl2d_ptscale,  &  !< scale points at which spline defined
+  spl2d_ptscalinv,  &  !< inverse scale points at which spline defined
   spl2d_scale,  &  !< scale spline values
   spl2d_offscale,  &  !< offset and scale spline values
   spl2d_delete,   & !< delete  spl2d data structure
@@ -468,7 +469,7 @@ subroutine spl2d_ptlimits(self,p1min,p1max,p2min,p2max)
   p2max=self%pos2(self%n2p)
 
 end subroutine spl2d_ptlimits
-!---------------------------------------------------------------------
+!>--------------------------------------------------------------------
 !> scale points at which spline defined
 subroutine spl2d_ptscale(self,qtfmdata)
 
@@ -536,6 +537,77 @@ subroutine spl2d_ptscale(self,qtfmdata)
   deallocate(zposl%pos)
 
 end subroutine spl2d_ptscale
+!---------------------------------------------------------------------
+!> inverse scale points at which spline defined
+subroutine spl2d_ptscalinv(selfin,selfout,qtfmdata)
+
+  !! arguments
+  type(spl2d_t), intent(in) :: selfin   !< object data structure
+  type(spl2d_t), intent(out) :: selfout   !< output  object data structure
+  type(quantfm_t), intent(inout) :: qtfmdata   !< data defining transform
+
+  !! local
+  character(*), parameter :: s_name='spl2d_ptscalinv' !< subroutine name
+  type(posveclis_t) :: zposl !< local variable
+  type(posvecl_t) :: zpos !< local variable
+  type(posvecl_t) :: zposq !< local variable
+  integer(ki4) :: inqtfm   !< save transform type
+  integer(ki4) :: inkn1   !< number of knots in 1-direction
+  integer(ki4) :: inkn2   !< number of knots in 2-direction
+  integer(ki4) :: inkn   !< maximum number of knots in either direction
+
+  ! global copy
+  selfout=selfin
+  ! origins
+  allocate(zposl%pos(1),stat=status)
+  call log_alloc_check(m_name,s_name,10,status)
+  zposl%pos(1)%posvec=(/selfin%org1, selfin%org2, 0._kr8/)
+  zposl%np=1
+  call position_invqtfmlis(zposl,qtfmdata)
+  selfout%org1=zposl%pos(1)%posvec(1)
+  selfout%org2=zposl%pos(1)%posvec(2)
+  deallocate(zposl%pos)
+
+  ! spacings
+  zpos%posvec=(/selfin%h1, selfin%h2 , 0._kr8/)
+  inqtfm=qtfmdata%nqtfm
+  ! case 1 just scales
+  qtfmdata%nqtfm=1
+  zposq=position_invqtfm(zpos,qtfmdata)
+  selfout%h1=zposq%posvec(1)
+  selfout%rh1=1/zposq%posvec(1)
+  selfout%rh2=1/zposq%posvec(2)
+  selfout%h2=zposq%posvec(2)
+  ! restore
+  qtfmdata%nqtfm=inqtfm
+
+  ! knots
+  inkn1=selfin%n1p+selfin%nord
+  inkn2=selfin%n2p+selfin%nord
+
+  inkn=max(inkn1,inkn2)
+  allocate(zposl%pos(inkn),stat=status)
+  call log_alloc_check(m_name,s_name,20,status)
+  do j=1,inkn
+     zposl%pos(j)%posvec=0
+  end do
+  do j=1,inkn1
+     zposl%pos(j)%posvec(1)=selfin%knot1(j)
+  end do
+  do j=1,inkn2
+     zposl%pos(j)%posvec(2)=selfin%knot2(j)
+  end do
+  zposl%np=inkn
+  call position_invqtfmlis(zposl,qtfmdata)
+  do j=1,inkn1
+     selfout%knot1(j)=zposl%pos(j)%posvec(1)
+  end do
+  do j=1,inkn2
+     selfout%knot2(j)=zposl%pos(j)%posvec(2)
+  end do
+  deallocate(zposl%pos)
+
+end subroutine spl2d_ptscalinv
 !---------------------------------------------------------------------
 !> scale spline values
 subroutine spl2d_scale(self,pfac)
