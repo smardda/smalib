@@ -575,7 +575,12 @@ subroutine geobj_normal(self,posl,nodl,pnormal,pmag,plane)
         inod(jj)=nodl(ii+jj-1)
         xnodes(:,jj)=posl%pos(inod(jj))%posvec
      end do
-     z01=plane
+     if (present(plane)) then
+        z01=plane
+     else
+        ! hardwired assumption that in (X,Z) plane
+        z01=(/0,1,0/)
+     end if
      z02=xnodes(:,2)-xnodes(:,1)
      pnormal(1)=z01(2)*z02(3)-z01(3)*z02(2)
      pnormal(2)=z01(3)*z02(1)-z01(1)*z02(3)
@@ -763,8 +768,8 @@ subroutine geobj_centre(self,posl,nodl,pcentr)
 
   ityp=ibits(self%objtyp,0,GEOBJ_BIT_SHIFT)
   pcentr=0
-  if (ityp==VTK_TRIANGLE.OR.ityp==VTK_QUAD) then
-     ! triangle or quad type
+  if (ityp==VTK_LINE.OR.ityp==VTK_TRIANGLE.OR.ityp==VTK_QUAD) then
+     ! line, triangle or quad type
      inn=geobj_entry_table(ityp)
      ii=self%geobj
      do jj=1,inn

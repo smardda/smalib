@@ -334,11 +334,17 @@ subroutine dcontrol_readnum(numerics,kunit,klfile)
   end if
   numerics%cunits=-3
   ! positive integer parameter
-  if(cell_type==3.AND.number_of_divisions<0) then
-     call log_error(m_name,s_name,29,error_fatal,'number of divisions must be non-negative')
-  else if(cell_type/=3.AND.number_of_divisions<=0) then
-     call log_error(m_name,s_name,30,error_fatal,'number of divisions must be positive')
+  if(cell_type==VTK_LINE.AND.number_of_divisions<0) then
+     call log_error(m_name,s_name,28,error_fatal,'number of divisions must be non-negative')
+  else if(cell_type/=VTK_LINE.AND.number_of_divisions<=0) then
+     call log_error(m_name,s_name,29,error_fatal,'number of divisions must be positive')
   end if
+  if(cell_type==VTK_TRIANGLE) then
+     if (number_of_divisions/=2*((number_of_divisions)/2))  then
+        call log_error(m_name,s_name,30,error_warning,'number of divisions made even')
+     end if 
+     number_of_divisions=2*((number_of_divisions+1)/2)
+  end if 
   if(coordinate_system/=1) then
      call log_error(m_name,s_name,31,error_fatal,'coordinate system must be positive, unity for polars')
   end if
@@ -355,7 +361,7 @@ subroutine dcontrol_readnum(numerics,kunit,klfile)
   numerics%finang=finish_angle*angfac
   numerics%stpos=start_position*lenfac
   numerics%finpos=finish_position*lenfac
-  numerics%div=2*((number_of_divisions+1)/2)
+  numerics%div=number_of_divisions
   numerics%csys=coordinate_system
   numerics%endgle=end_angle
   numerics%celltyp=cell_type
