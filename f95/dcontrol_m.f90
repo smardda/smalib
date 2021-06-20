@@ -244,6 +244,7 @@ subroutine dcontrol_readnum(numerics,kunit,klfile)
   integer(ki4) :: number_of_divisions !< number of divisions
   integer(ki4) :: coordinate_system !< coordinate system positive as posang (q.v.), unity for polars
   integer(ki4) :: end_angle !< +-1, use largest/smallest angle in geometry
+  integer(ki4) :: cell_type !< cell geometry, values VTK_TRIANGLE, VTK_QUAD etc.
   integer(ki4) :: line_divisions !< number of divisions
   character(len=20) :: angle_units  !< units, either radian(s) or degree(s)
   character(len=20) :: length_units  !< units, either me(tres) or mm
@@ -263,6 +264,7 @@ subroutine dcontrol_readnum(numerics,kunit,klfile)
  &number_of_divisions,&
  &coordinate_system,&
  &end_angle,&
+ &cell_type,&
  &line_divisions
 
   !---------------------------------------------------------------------
@@ -281,6 +283,7 @@ subroutine dcontrol_readnum(numerics,kunit,klfile)
   number_of_divisions = 10
   coordinate_system = 1
   end_angle = 0
+  cell_type = VTK_TRIANGLE
 
   !!read datvtk parameters
   read(kunit,nml=datvtkparameters,iostat=status)
@@ -331,7 +334,9 @@ subroutine dcontrol_readnum(numerics,kunit,klfile)
   end if
   numerics%cunits=-3
   ! positive integer parameter
-  if(number_of_divisions<=0) then
+  if(cell_type==3.AND.number_of_divisions<0) then
+     call log_error(m_name,s_name,29,error_fatal,'number of divisions must be non-negative')
+  else if(cell_type/=3.AND.number_of_divisions<=0) then
      call log_error(m_name,s_name,30,error_fatal,'number of divisions must be positive')
   end if
   if(coordinate_system/=1) then
@@ -339,6 +344,9 @@ subroutine dcontrol_readnum(numerics,kunit,klfile)
   end if
   if(abs(end_angle)>1) then
      call log_error(m_name,s_name,32,error_fatal,'end angle must not exceed unit in absolute value')
+  end if
+  if(cell_type<1) then
+     call log_error(m_name,s_name,33,error_fatal,'cell types must be small integers as VTK cell types')
   end if
 
   numerics%descode=igcode
@@ -350,6 +358,7 @@ subroutine dcontrol_readnum(numerics,kunit,klfile)
   numerics%div=2*((number_of_divisions+1)/2)
   numerics%csys=coordinate_system
   numerics%endgle=end_angle
+  numerics%celltyp=cell_type
   numerics%minang=numerics%stang
   numerics%maxang=numerics%finang
 
