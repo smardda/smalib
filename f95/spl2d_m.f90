@@ -14,10 +14,13 @@ module spl2d_m
   public :: spl2d_read, & !< read in data structure format
   spl2d_init,   & !< create spl2d data structure and knots
   spl2d_initpart,   & !< create create dummy part of spl2d data structure
+  spl2d_initfull, &  !< create spl2d data structure from existing 
   spl2d_ptlimits,   & !< get \f$ \psi,\theta \f$ limits of interpolation
   spl2d_ptscale,  &  !< scale points at which spline defined
   spl2d_ptscalinv,  &  !< inverse scale points at which spline defined
   spl2d_scale,  &  !< scale spline values
+  spl2d_specoffscale, & !< scale spline values to range (0,1) subject to special constraints
+  spl2d_sumint, & !< weighted integral of spline values
   spl2d_offscale,  &  !< offset and scale spline values
   spl2d_delete,   & !< delete  spl2d data structure
   spl2d_writeg, & !< write in gnuplot format
@@ -77,6 +80,7 @@ module spl2d_m
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
   integer(ki4) :: l !< loop counter
+  integer(ki4) :: i12k !< max 1D index times spline order
   integer(ki4) :: i12m !< max 1D index
   integer(ki4) :: isw !< max 1D index
   integer(ki4) :: iswm !< max 1D index
@@ -266,7 +270,6 @@ subroutine spl2d_init(self,pwork,kn1,kn2,porg1,porg2,ph1,ph2,korder)
 
   !! local
   character(*), parameter :: s_name='spl2d_init' !< subroutine name
-  integer(ki4) :: i12k !< max 1D index times spline order
   !-----------------------------------------------------------------------
   !              Initialise scalar variables
   !self%pad1=0
@@ -450,6 +453,116 @@ subroutine spl2d_initpart(self)
 
 end subroutine spl2d_initpart
 !---------------------------------------------------------------------
+!> create spl2d data structure from existing 
+subroutine spl2d_initfull(self,selfout)
+
+  !! arguments
+  type(spl2d_t), intent(in) :: self   !< object data structure
+  type(spl2d_t), intent(out) :: selfout   !< object data structure
+
+  !! local
+  character(*), parameter :: s_name='spl2d_initfull' !< subroutine name
+
+  selfout%lunif=self%lunif
+
+  selfout%nord=self%nord
+  selfout%noff=self%noff
+
+  selfout%n1=self%n1
+  selfout%n2=self%n2
+  selfout%h1=self%h1
+  selfout%h2=self%h2
+
+  selfout%n1p=self%n1p
+  selfout%n2p=self%n2p
+
+  selfout%org1=self%org1
+  selfout%org2=self%org2
+
+  !-----------------------------------------------------------------------
+  !            Input data array
+  !! allocate 2D storage
+  allocate(selfout%sampl(self%n1p,self%n2p), stat=status)
+  call log_alloc_check(m_name,s_name,40,status)
+  !-----------------------------------------------------------------------
+  !              Initialise position arrays
+  ! position 1 array
+  !! allocate and assign position 1 storage
+  allocate(selfout%pos1(self%n1p), stat=status)
+  call log_alloc_check(m_name,s_name,1,status)
+  selfout%pos1=self%pos1
+
+  ! position 2 array
+  !! allocate and assign position 2 storage
+  allocate(selfout%pos2(self%n2p), stat=status)
+  call log_alloc_check(m_name,s_name,2,status)
+  selfout%pos2=self%pos2
+
+
+  !-----------------------------------------------------------------------
+  !              Initialise knots
+  ! knot 1 array
+  !! allocate and assign knot 1 storage
+  allocate(selfout%knot1(self%n1p+self%nord), stat=status)
+  call log_alloc_check(m_name,s_name,3,status)
+  selfout%knot1=self%knot1
+
+  ! knot 2 array
+  !! allocate and assign knot 2 storage
+  allocate(selfout%knot2(self%n2p+self%nord), stat=status)
+  call log_alloc_check(m_name,s_name,4,status)
+  selfout%knot2=self%knot2
+
+  !-----------------------------------------------------------------------
+  !              Other stuff
+  selfout%rh1=self%rh1
+  selfout%rh2=self%rh2
+
+  !-----------------------------------------------------------------------
+  !              Allocate 2D storage and work space
+  !! allocate 2D storage
+  allocate(selfout%coeff(self%n1p,self%n2p), stat=status)
+  call log_alloc_check(m_name,s_name,10,status)
+
+  i12m=max(self%n1p,self%n2p)
+  !! allocate work storage
+  allocate(selfout%wv1(i12m), stat=status)
+  call log_alloc_check(m_name,s_name,11,status)
+  selfout%wv1=0
+  allocate(selfout%wv2(i12m), stat=status)
+  call log_alloc_check(m_name,s_name,12,status)
+  selfout%wv2=0
+  allocate(selfout%iwa1(self%n1p), stat=status)
+  call log_alloc_check(m_name,s_name,14,status)
+  selfout%iwa1=0
+  allocate(selfout%iwa2(self%n2p), stat=status)
+  call log_alloc_check(m_name,s_name,15,status)
+  selfout%iwa2=0
+  allocate(selfout%wa1k(self%n1p,self%nord), stat=status)
+  call log_alloc_check(m_name,s_name,16,status)
+  allocate(selfout%wa2k(self%n2p,self%nord), stat=status)
+  call log_alloc_check(m_name,s_name,17,status)
+  iswm=2*i12m+3*self%nord+1
+  allocate(selfout%wv3(iswm), stat=status)
+  call log_alloc_check(m_name,s_name,18,status)
+  i12k=i12m*self%nord
+  allocate(selfout%wv2k(i12k), stat=status)
+  call log_alloc_check(m_name,s_name,20,status)
+  !-----------------------------------------------------------------------
+  !              Initialise spline look up arrays
+  ! value arrays
+  !! allocate value 1 storage
+  allocate(selfout%val1(self%nord), stat=status)
+  call log_alloc_check(m_name,s_name,30,status)
+  selfout%val1=0
+  !! allocate value 2 storage
+  allocate(selfout%val2(self%nord), stat=status)
+  call log_alloc_check(m_name,s_name,31,status)
+  selfout%val2=0
+
+
+end subroutine spl2d_initfull
+!---------------------------------------------------------------------
 !> get \f$ \psi,\theta \f$ limits of interpolation
 subroutine spl2d_ptlimits(self,p1min,p1max,p2min,p2max)
 
@@ -624,6 +737,93 @@ subroutine spl2d_scale(self,pfac)
 
 end subroutine spl2d_scale
 !---------------------------------------------------------------------
+!> scale spline values to range (0,1) subject to special constraints
+subroutine spl2d_specoffscale(self, &
+ &psicen,psibdry,prcen,pzcen,lplasbox,plasbox, &
+ &selfout)
+
+  !! arguments
+  type(spl2d_t), intent(in) :: self   !< object data structure
+  real(kr8), intent(in) :: psicen   !<  \f$ \psi_c \f$
+  real(kr8), intent(in) :: psibdry   !<  \f$ \psi_b \f$
+  real(kr8), intent(in) :: prcen   !<  \f$ R_c \f$
+  real(kr8), intent(in) :: pzcen   !<  \f$ Z_c \f$
+  logical, intent(in) :: lplasbox !< plasma box set
+  real(kr8), dimension(4), intent(in) :: plasbox !< plasma box corners \f$ (R_1,Z_1), (R_2,Z_2) \f$
+  type(spl2d_t), intent(out) :: selfout   !< object data structure
+
+  !! local
+  character(*), parameter :: s_name='spl2d_specoffscale' !< subroutine name
+  real(kr8) :: zpsi !< position in \f$ \psi \f$
+  real(kr8) :: zpos1 !< value of \f$ R \f$
+  real(kr8) :: zpos2 !< value of \f$ Z \f$
+
+  call spl2d_initfull(self,selfout)
+
+  selfout%sampl=1
+
+  if (lplasbox) then
+     do j=1,self%n2p
+        zpos2=self%pos2(j)
+        if ( (zpos2-plasbox(2))*(zpos2-plasbox(4)) < 0 ) then
+           do i=1,self%n1p
+              zpos1=self%pos1(i)
+              if ( (zpos1-plasbox(1))*(zpos1-plasbox(3)) < 0 ) then
+                 zpsi=self%sampl(i,j)
+                 if ( (zpsi-psicen)*(zpsi-psibdry) <= 0 ) then
+                    selfout%sampl(i,j)=(zpsi-psicen)/(psibdry-psicen)
+                 end if
+              end if
+           end do
+        end if
+     end do
+  else
+     do j=1,self%n2p
+        do i=1,self%n1p
+           zpsi=self%sampl(i,j)
+           if ( (zpsi-psicen)*(zpsi-psibdry) <= 0 ) then
+              selfout%sampl(i,j)=(zpsi-psicen)/(psibdry-psicen)
+           end if
+        end do
+     end do
+  end if
+
+  call spl2d_coeff(selfout)
+
+end subroutine spl2d_specoffscale
+!---------------------------------------------------------------------
+!> weighted integral of spline values
+subroutine spl2d_sumint(self,pint,kwt)
+
+  !! arguments
+  type(spl2d_t), intent(inout) :: self   !< object data structure
+  real(kr8), intent(out) :: pint   !< sumint factor
+  integer(ki4), intent(in) :: kwt   !< weight integral if nonzero
+
+  !! local
+  character(*), parameter :: s_name='spl2d_sumint' !< subroutine name
+  real(kr8) :: zsum !< value of weighted sum of spline values
+  real(kr8) :: zfacr !< weights edge values in \f$ R \f$ different from unity
+  real(kr8) :: zfacz !< weights edge values in \f$ Z \f$ different from unity
+
+  zsum=0
+  zfacz=0.5
+
+  do j=1,self%n2p
+     zfacr=0.5
+     do i=1,self%n1p
+        zsum=zsum+zfacr*zfacz*self%pos1(i)**kwt*self%sampl(i,j)
+        zfacr=1
+        if (i==self%n1p) zfacr=0.5
+     end do
+     zfacz=1
+     if (j==self%n2p) zfacz=0.5
+  end do
+
+  pint=zsum*self%h1*self%h2
+
+end subroutine spl2d_sumint
+!---------------------------------------------------------------------
 !> offset and scale spline values
 subroutine spl2d_offscale(selfin,selfout,poff,pfac)
 
@@ -644,7 +844,7 @@ subroutine spl2d_offscale(selfin,selfout,poff,pfac)
   iorder=selfin%nord
 
   call spl2d_init(selfout,work2,selfin%n1,selfin%n2,  &
-& selfin%org1,selfin%org2,selfin%h1,selfin%h2,iorder)
+ &selfin%org1,selfin%org2,selfin%h1,selfin%h2,iorder)
 
   call spl2d_coeff(selfout)
 
