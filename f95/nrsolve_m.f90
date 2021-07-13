@@ -6,7 +6,7 @@ module nrsolve_m
   use misc_m
   use date_time_m
   use spl2d_m
-  use pcontrol_h
+  !use pcontrol_h
 !     use beq_m, only : beq_ripple_h1
 
   implicit none
@@ -38,10 +38,10 @@ module nrsolve_m
   contains
 !---------------------------------------------------------------------
 !> open output file
-subroutine nrsolve_init(file,timestamp)
+subroutine nrsolve_init(timestamp)
 
   !! argument
-  type(pfiles_t), intent(in) :: file !< file names
+  !type(pfiles_t), intent(in) :: file !< file names
   type(date_time_t), intent(in) :: timestamp !< timestamp of run
 
   !! local

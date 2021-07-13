@@ -14,7 +14,7 @@ module pcontrol_h
      real(kr8) :: sigma !< diffusion length (m)
      integer(ki4)  :: nlevel !< refinement level
      logical  :: usepsista    !< use value of psi on termplane to evaluate Q
-     integer(ki4)  :: shadow !< shadowing calculation if positive
+     integer(ki4)  :: shadow !< shadowing pcle calculation if positive
      real(kr8) :: qpara0 !< parallel reference flux (W/sqm)
    ! additions for powcal
      character(len=80) :: caltype !< type of calculation ('afws','local', 'msus','global', 'msum','middle')

@@ -549,7 +549,7 @@ subroutine vcontrol_read(file,numerics)
               iswap=numerics%panbod(:,j)
               numerics%panbod(1,j)=panel_bodies(2*j-1)
               numerics%panbod(2,j)=panel_bodies(2*j)
-              numerics%panbod(:,i)=iswap
+              if (i>j) numerics%panbod(:,i)=iswap
               exit
            end if
         end do

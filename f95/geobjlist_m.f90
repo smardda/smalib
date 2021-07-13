@@ -59,6 +59,7 @@ module geobjlist_m
   geobjlist_mbin,   & !< bin many-one geobjlist data structure
   geobjlist_dread,  & !< read dat file
   geobjlist_iinit,  & !< initialise geobjlist from internal data
+  geobjlist_cinit, & !< initialise geobjlist controls
   geobjlist_ptcompress,  & !< compress points
   geobjlist_orientri,  & !< orient triangles consistently
   geobjlist_fliptri, & !< flip orientation of triangles
@@ -76,6 +77,7 @@ module geobjlist_m
   geobjlist_area, & !< calculate areas of objects
   geobjlist_totarea, & !< calculate total area of objects
   geobjlist_angext, & !< angular extent limits of objects
+  geobjlist_normal, & !< calculate normal to objects assumed coplanar
   geobjlist_readhedline, & !<  read 2nd line of header of legacy vtk file
   geobjlist_makehedline !<  construct 2nd line for header of legacy vtk file
 
@@ -166,6 +168,14 @@ subroutine geobjlist_init(self,vtkfile,numerics,noread)
   call log_error(m_name,s_name,1,log_info,'geobj data read')
 
 
+  if(present(noread)) return
+
+  !! read coords
+  call geobjlist_read(self,vtkfile)
+  numerics%ngeobj=self%ng
+  call log_error(m_name,s_name,1,log_info,'geobj data read')
+
+
 end subroutine geobjlist_init
 !---------------------------------------------------------------------
 !> delete geobjlist_t
@@ -213,13 +223,13 @@ end subroutine geobjlist_close
 subroutine geobjlist_read(self,infile,kched,kin,leave_open)
 
   use smitermpi_h
-  
+
   !! arguments
   type(geobjlist_t), intent(inout) :: self !< geobj list data
   character(*),intent(in) :: infile !< name of input file
   character(len=80),intent(out), optional :: kched !< field file header
   integer, intent(inout), optional :: kin   !< input channel for object data structure
-  logical, intent(in), optional :: leave_open
+  logical, intent(in), optional :: leave_open !< local variable
 
   !! local
   character(*), parameter :: s_name='geobjlist_read' !< subroutine name
@@ -241,15 +251,15 @@ subroutine geobjlist_read(self,infile,kched,kin,leave_open)
   integer(ki4) :: iopt !< option
   character(len=30) :: iclabel !< label on line 2 of vtk file
 
-  logical :: close_file = .True.
-  
+  logical :: close_file = .True. !< local variable
+
   logical :: isnumb !< local variable
   external isnumb
 
   if(present(leave_open)) then
      if( leave_open ) close_file = .False.
   endif
-  
+
   if(present(kin).AND.kin>0) then
      !! assume unit already open and reading infile
      nin=kin
@@ -2711,6 +2721,43 @@ subroutine geobjlist_iinit(self,knpt,knobj,knnod,kgtype,kopt)
 
 end subroutine geobjlist_iinit
 !---------------------------------------------------------------------
+!> initialise geobjlist controls
+subroutine geobjlist_cinit(self)
+
+  !! arguments
+  type(geobjlist_t), intent(out) :: self   !< geobj list data
+
+  !! local
+  character(*), parameter :: s_name='geobjlist_cinit' !< subroutine name
+
+  ! The following values before geobjlist_read are set to initial value,
+  ! because valgrind reports them as being uninitialized.
+
+  ! self%ngtype is not needed by GEOQ. It is used by HDSGEN for stating
+  ! the type of elements: Either 1 (points) or 2 (triangles). So to avoid
+  ! using it we set it to 0. Same goes for
+  self%ngtype=0
+
+  ! self%coordbb and self%binbb are not needed by GEOQ, as they are
+  ! properly initialized in subroutine geobjlist_init called from hdsgen
+  ! and smannal. These two variables are bounding boxes of geobj coord and
+  ! geobj binning, respectively.
+  self%coordbb=0
+  self%binbb=0
+
+
+  ! self%ngunassigned is set to 0 in geobjlist_init but nothing is done
+  ! with it in geobjlist_read, therefore an uninitialized broadcast is done
+  ! with mpi. The value is not used for calculating except for writing in
+  ! log file.
+  self%ngunassigned=0
+
+  ! self%nsampl is an UNUSED variable used in subroutine
+  ! geobjlist_bindyn which is never called.
+  self%nsampl=0
+
+end subroutine geobjlist_cinit
+!---------------------------------------------------------------------
 !> copy geobjlist to another
 subroutine geobjlist_copy(selfin,selfout,kopt)
 
@@ -3045,6 +3092,7 @@ subroutine geobjlist_create3d(self,numerics,kgcode)
   type(posvecl_t) :: zpos1   !< one position data
   integer(ki4) :: innd !< position of first entry for object in nodl
   integer(ki4) :: inobj !< number of geometrical objects
+  integer(ki4) :: icelltyp !< describes geometrical object as triangle, quadrilateral etc.
   integer(ki4) :: insto !< total storage
   integer(ki4) :: inumpts !< length of object in nodl array
   integer(ki4) :: io !< loop counter
@@ -3088,7 +3136,7 @@ subroutine geobjlist_create3d(self,numerics,kgcode)
         zpos1%posvec(2)=numerics%z(i)
         zpos1%posvec(3)=zeta
         zposang%pos=zpos1%posvec
-        
+
         zposang%opt=numerics%csys ; zposang%units=numerics%cunits
         call posang_tfm(zposang,-3)
         self%posl%pos(ip)%posvec=zposang%pos
@@ -3111,10 +3159,10 @@ subroutine geobjlist_create3d(self,numerics,kgcode)
      if (abs(numerics%endgle)==1) then
         ! use geometry limits
         zeta=numerics%minang
-        delzeta=(numerics%maxang-numerics%minang)/m
+        delzeta=(numerics%maxang-numerics%minang)/max(m,1)
      else
         zeta=numerics%stang
-        delzeta=(numerics%finang-numerics%stang)/m
+        delzeta=(numerics%finang-numerics%stang)/max(m,1)
      end if
      ip=0
      do j=1,mp1
@@ -3124,7 +3172,7 @@ subroutine geobjlist_create3d(self,numerics,kgcode)
            zpos1%posvec(2)=numerics%z(i)
            zpos1%posvec(3)=zeta
            zposang%pos=zpos1%posvec
-           
+
            zposang%opt=numerics%csys ; zposang%units=numerics%cunits
            call posang_tfm(zposang,-3)
            self%posl%pos(ip)%posvec=zposang%pos
@@ -3138,59 +3186,121 @@ subroutine geobjlist_create3d(self,numerics,kgcode)
   call log_value("number of geobj coordinates created ",self%np)
 
   innd=1
-  ! CELLS and CELL_TYPES
-  inobj=2*nseg*m
-  inumpts=3
-  insto=inobj*(1+inumpts)
-  ! create geobj storage
-  self%ng=inobj
-  allocate(self%obj2(self%ng), stat=status)
-  call log_alloc_check(m_name,s_name,14,status)
-  self%nnod=insto-inobj
-  allocate(self%nodl(self%nnod), stat=status)
-  call log_alloc_check(m_name,s_name,15,status)
-  io=0
-  ip=0
-  do j=0,m-1,2
-     do i=1,nseg
-        ! triangle nodes (array positions, starting at unity)
-        self%nodl(ip+1)=j*n+i
-        self%nodl(ip+2)=j*n+i+1
-        self%nodl(ip+3)=(j+1)*n+i
-        io=io+1
-        innd=ip+1
-        self%obj2(io)%ptr=innd
-        self%obj2(io)%typ=inumpts
-        ip=ip+inumpts
-        self%nodl(ip+1)=j*n+i+1
-        self%nodl(ip+2)=(j+1)*n+i+1
-        self%nodl(ip+3)=(j+1)*n+i
-        io=io+1
-        innd=ip+1
-        self%obj2(io)%ptr=innd
-        self%obj2(io)%typ=inumpts
-        ip=ip+inumpts
-        self%nodl(ip+1)=(j+1)*n+i
-        self%nodl(ip+2)=(j+1)*n+i+1
-        self%nodl(ip+3)=(j+2)*n+i+1
-        io=io+1
-        innd=ip+1
-        self%obj2(io)%ptr=innd
-        self%obj2(io)%typ=inumpts
-        ip=ip+inumpts
-        self%nodl(ip+1)=(j+1)*n+i
-        self%nodl(ip+2)=(j+2)*n+i+1
-        self%nodl(ip+3)=(j+2)*n+i
-        io=io+1
-        innd=ip+1
-        self%obj2(io)%ptr=innd
-        self%obj2(io)%typ=inumpts
-        ip=ip+inumpts
+  icelltyp=numerics%celltyp
+
+  cell_type: select case (numerics%celltyp)
+  case (VTK_LINE)
+     ! CELLS and CELL_TYPES
+     inobj=nseg*mp1
+     inumpts=2
+     insto=inobj*(1+inumpts)
+     ! create geobj storage
+     self%ng=inobj
+     allocate(self%obj2(self%ng), stat=status)
+     call log_alloc_check(m_name,s_name,14,status)
+     self%nnod=insto-inobj
+     allocate(self%nodl(self%nnod), stat=status)
+     call log_alloc_check(m_name,s_name,15,status)
+     io=0
+     ip=0
+     do j=0,m
+        do i=1,nseg
+           ! line nodes (array positions, starting at unity)
+           self%nodl(ip+1)=j*n+i
+           self%nodl(ip+2)=j*n+i+1
+           io=io+1
+           innd=ip+1
+           self%obj2(io)%ptr=innd
+           self%obj2(io)%typ=inumpts
+           ip=ip+inumpts
+        end do
      end do
-  end do
-  ! now set cell type as triangle with geometry code kgcode
+  case (VTK_QUAD)
+     ! CELLS and CELL_TYPES
+     inobj=nseg*m
+     inumpts=4
+     insto=inobj*(1+inumpts)
+     ! create geobj storage
+     self%ng=inobj
+     allocate(self%obj2(self%ng), stat=status)
+     call log_alloc_check(m_name,s_name,14,status)
+     self%nnod=insto-inobj
+     allocate(self%nodl(self%nnod), stat=status)
+     call log_alloc_check(m_name,s_name,15,status)
+     io=0
+     ip=0
+     do j=0,m-1
+        do i=1,nseg
+           ! quad nodes (array positions, starting at unity)
+           self%nodl(ip+1)=j*n+i
+           self%nodl(ip+2)=j*n+i+1
+           self%nodl(ip+3)=(j+1)*n+i+1
+           self%nodl(ip+4)=(j+1)*n+i
+           io=io+1
+           innd=ip+1
+           self%obj2(io)%ptr=innd
+           self%obj2(io)%typ=inumpts
+           ip=ip+inumpts
+        end do
+     end do
+
+  case default
+     icelltyp=VTK_TRIANGLE
+     ! CELLS and CELL_TYPES
+     inobj=2*nseg*m
+     inumpts=3
+     insto=inobj*(1+inumpts)
+     ! create geobj storage
+     self%ng=inobj
+     allocate(self%obj2(self%ng), stat=status)
+     call log_alloc_check(m_name,s_name,16,status)
+     self%nnod=insto-inobj
+     allocate(self%nodl(self%nnod), stat=status)
+     call log_alloc_check(m_name,s_name,17,status)
+     io=0
+     ip=0
+     do j=0,m-1,2
+        do i=1,nseg
+           ! triangle nodes (array positions, starting at unity)
+           self%nodl(ip+1)=j*n+i
+           self%nodl(ip+2)=j*n+i+1
+           self%nodl(ip+3)=(j+1)*n+i
+           io=io+1
+           innd=ip+1
+           self%obj2(io)%ptr=innd
+           self%obj2(io)%typ=inumpts
+           ip=ip+inumpts
+           self%nodl(ip+1)=j*n+i+1
+           self%nodl(ip+2)=(j+1)*n+i+1
+           self%nodl(ip+3)=(j+1)*n+i
+           io=io+1
+           innd=ip+1
+           self%obj2(io)%ptr=innd
+           self%obj2(io)%typ=inumpts
+           ip=ip+inumpts
+           self%nodl(ip+1)=(j+1)*n+i
+           self%nodl(ip+2)=(j+1)*n+i+1
+           self%nodl(ip+3)=(j+2)*n+i+1
+           io=io+1
+           innd=ip+1
+           self%obj2(io)%ptr=innd
+           self%obj2(io)%typ=inumpts
+           ip=ip+inumpts
+           self%nodl(ip+1)=(j+1)*n+i
+           self%nodl(ip+2)=(j+2)*n+i+1
+           self%nodl(ip+3)=(j+2)*n+i
+           io=io+1
+           innd=ip+1
+           self%obj2(io)%ptr=innd
+           self%obj2(io)%typ=inumpts
+           ip=ip+inumpts
+        end do
+     end do
+  end select cell_type
+
+  ! now set cell type plus geometry code kgcode
   do j=1,self%ng
-     self%obj2(j)%typ=VTK_TRIANGLE+kgcode*GEOBJ_POW
+     self%obj2(j)%typ=icelltyp+kgcode*GEOBJ_POW
   end do
 
   ! units of mm
@@ -4243,6 +4353,62 @@ subroutine geobjlist_angext(self,angmin,angmax)
 
 end subroutine geobjlist_angext
 !---------------------------------------------------------------------
+!> calculate normal of objects assumed coplanar
+subroutine geobjlist_normal(self,pnormal)
+  !! arguments
+  type(geobjlist_t), intent(inout) :: self !< geobj list data
+  real(kr8), dimension(3), intent(out) :: pnormal !< normal 
+
+  !! local
+  character(*), parameter :: s_name='geobjlist_normal' !< subroutine name
+  real(kr4), dimension(3,8) :: xnodes !< x(compt,node) of obj
+  real(kr4), dimension(3) :: zvec1 !< point vector
+  real(kr4), dimension(3) :: zvec2 !< point vector
+  real(kr4), dimension(3) :: zvec3 !< point vector
+  real(kr4), dimension(3) :: z01 !< vector joining adjacent points
+  real(kr4), dimension(3) :: z02 !< vector joining adjacent points
+  real(kr8), dimension(3) :: znormal !< local variable
+  real(kr8), dimension(3) :: ztotnormal !< local variable
+  real(kr4) :: zdsq !< dot product squared
+  real(kr4) :: zd !< dot product
+  real(kr4) :: zref !< reference length based on maximum component length
+  integer(ki2) :: ityp !< object type
+
+  pnormal=0
+  if (self%np<3) then
+     call log_error(m_name,s_name,1,error_warning,'need at least 3 points to define normal')
+     return
+  end if
+
+  ztotnormal=0
+  zvec1=self%posl%pos(1)%posvec
+  zvec2=self%posl%pos(2)%posvec
+  z01=zvec2-zvec1
+  zref=max( abs(maxval(z01)), abs(minval(z01)) )
+  do j=2,self%np-1
+     zvec3=self%posl%pos(j+1)%posvec
+     z02=zvec3-zvec2
+     znormal(1)=z01(2)*z02(3)-z01(3)*z02(2)
+     znormal(2)=z01(3)*z02(1)-z01(1)*z02(3)
+     znormal(3)=z01(1)*z02(2)-z01(2)*z02(1)
+     ztotnormal=ztotnormal+znormal
+     zvec1=zvec2
+     zvec2=zvec3
+     z01=z02
+     zref=max( zref, abs(maxval(z01)), abs(minval(z01)) )
+  end do
+
+  zdsq=dot_product(ztotnormal,ztotnormal)
+  zd=sqrt( max(0.,zdsq) )
+  if (zd<const_pusheps*zref) then
+     call log_error(m_name,s_name,2,error_warning,'polygon is degenerate')
+  else
+     ! normalise
+     pnormal=ztotnormal/zd
+  end if
+
+end subroutine geobjlist_normal
+!---------------------------------------------------------------------
 !>  read 2nd line of header of legacy vtk file
 subroutine geobjlist_readhedline(self,descriptor)
   !! arguments
@@ -4284,6 +4450,19 @@ subroutine geobjlist_readhedline(self,descriptor)
            iieq=index(ibuf2,'=')
            read(ibuf2(iieq+2:),'(I3)',iostat=istatus,end=1) self%nparam(1)
            if(istatus/=0) call log_error(m_name,s_name,3,error_warning,'Error reading nparam')
+        else
+           isubstr=index(descriptor,'Mesh___Parameters=')
+           if (isubstr/=0) then
+              ibuf2=descriptor(isubstr:)
+              iieq=index(ibuf2,'=')
+              read(ibuf2(iieq+2:),'(I3)',iostat=istatus,end=1) inumnparam
+              if(istatus/=0) call log_error(m_name,s_name,4,error_warning,'Error reading inumparam')
+              read(ibuf2(iieq+4:),*,iostat=istatus,end=1) (ipara(l),l=1,inumnparam)
+              if(istatus/=0) call log_error(m_name,s_name,5,error_warning,'Error reading line 2 parameters')
+              do j=1,min(inumnparam,self%numnparam)
+                 self%nparam(j)=ipara(j)
+              end do
+           end if
         end if
      end if
   else

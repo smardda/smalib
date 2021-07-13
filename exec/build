@@ -1,6 +1,7 @@
 #! /bin/bash --norc
 #produce executables once git repository cloned
-#options compiler=intel, gfortran (default)
+#options compiler=intel, gfortran (default) 
+#Y/N produce documentation, default produce (Y)
 if [[ -z "$SMALIB_DIR" ]] ; then
    if [[ -z "$SMITER_DIR" ]] ; then
       #export SMALIB_DIR=../../smardda-lib/
@@ -35,6 +36,16 @@ elif [ "$1" == "$compiler8" ] ; then
 else
     compiler=$compiler4
 fi
+
+#(Re)generate documentation option, can take minutes
+if [ $# = 2 ] ; then
+   newdoc=$2
+elif [ "$1" == N ] ; then
+   newdoc=N
+else
+   newdoc=Y
+fi
+
 if [ -f $SMALIB_DIR/Extras/setup ] ; then
 	source $SMALIB_DIR/Extras/setup
  	echo "you may want to add 'source "$SMALIB_DIR"/Extras/setup' to your .bashrc file"
@@ -60,8 +71,8 @@ $SMALIB_DIR/Extras/chmodx
 #produce the fortran executables 
 $SMALIB_DIR/exec/compile
 
-read -p '(Re)generate documentation, can take minutes? (Y/N): ' ndoc
-if [ "$ndoc" == "Y" ] ; then
+#read -p '(Re)generate documentation, can take minutes? (Y/N): ' newdoc
+if [ "$newdoc" == "Y" ] ; then
 cd $SMALIB_DIR/doc
 echo "Warning - Documentation production requires doxygen at 1.8 or later"
 doxygen doxyfile

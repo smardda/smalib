@@ -99,7 +99,7 @@ module namelist
 !! The plane in which the line in \f$ (R,Z) \f$ is regarded as
 !! positioned initially is given by start_angle, unless end_angle is nonzero,
 !! when either the smallest or largest angle in the geometry is selected
-!! dpending whether end_angle=-1 or +1.
+!! depending whether end_angle=-1 or +1.
   type, public :: datvtkparameters
    !> surface interaction with particles
    !! - 'absorb' first wall (absorbing boundary)

@@ -541,7 +541,7 @@ function geobj_trihitsbox(xc,hh,xnodes)
 end function geobj_trihitsbox
 !---------------------------------------------------------------------
 !> calculate normal to geobj
-subroutine geobj_normal(self,posl,nodl,pnormal,pmag)
+subroutine geobj_normal(self,posl,nodl,pnormal,pmag,plane)
 
   !! arguments
   type(geobj_t), intent(in) :: self   !< geobj definition
@@ -549,6 +549,7 @@ subroutine geobj_normal(self,posl,nodl,pnormal,pmag)
   integer(ki4), dimension(*), intent(in) :: nodl   !< list of nodes
   real(kr4), dimension(3), intent(out) :: pnormal !< unit normal vector
   real(kr4), intent(out) :: pmag !< magnitude of normal vector
+  real(kr4), dimension(3), intent(in), optional  :: plane !< unit normal vector to plane
 
   !! local
   character(*), parameter :: s_name='geobj_normal' !< subroutine name
@@ -565,7 +566,27 @@ subroutine geobj_normal(self,posl,nodl,pnormal,pmag)
   integer(ki2) :: ityp !< object type
 
   ityp=ibits(self%objtyp,0,GEOBJ_BIT_SHIFT)
-  if (ityp==VTK_TRIANGLE) then
+  cell_type: select case (ityp)
+  case (VTK_LINE)
+     ! line type
+     inn=geobj_entry_table(ityp)
+     ii=self%geobj
+     do jj=1,inn
+        inod(jj)=nodl(ii+jj-1)
+        xnodes(:,jj)=posl%pos(inod(jj))%posvec
+     end do
+     if (present(plane)) then
+        z01=plane
+     else
+        ! hardwired assumption that in (X,Z) plane
+        z01=(/0,1,0/)
+     end if
+     z02=xnodes(:,2)-xnodes(:,1)
+     pnormal(1)=z01(2)*z02(3)-z01(3)*z02(2)
+     pnormal(2)=z01(3)*z02(1)-z01(1)*z02(3)
+     pnormal(3)=z01(1)*z02(2)-z01(2)*z02(1)
+     zref=max( abs(maxval(z02)), abs(minval(z02)) )
+  case (VTK_TRIANGLE)
      ! triangle type
      inn=geobj_entry_table(ityp)
      ii=self%geobj
@@ -578,20 +599,35 @@ subroutine geobj_normal(self,posl,nodl,pnormal,pmag)
      pnormal(1)=z01(2)*z02(3)-z01(3)*z02(2)
      pnormal(2)=z01(3)*z02(1)-z01(1)*z02(3)
      pnormal(3)=z01(1)*z02(2)-z01(2)*z02(1)
-     zdsq=dot_product(pnormal,pnormal)
-     zd=sqrt( max(0.,zdsq) )
      zref=max( abs(maxval(z01)), abs(minval(z01) ), abs(maxval(z02)), abs(minval(z02)) )
-     if (zd<const_pusheps*zref) then
-        call log_error(m_name,s_name,1,error_warning,'triangle is degenerate')
-     else
-        pnormal=pnormal/zd
-     end if
-  else
-     call log_error(m_name,s_name,10,error_warning,'object is not a triangle')
+  case (VTK_QUAD)
+     ! quad type
+     inn=geobj_entry_table(ityp)
+     ii=self%geobj
+     do jj=1,inn
+        inod(jj)=nodl(ii+jj-1)
+        xnodes(:,jj)=posl%pos(inod(jj))%posvec
+     end do
+     z01=xnodes(:,3)-xnodes(:,1)
+     z02=xnodes(:,2)-xnodes(:,4)
+     pnormal(1)=z01(2)*z02(3)-z01(3)*z02(2)
+     pnormal(2)=z01(3)*z02(1)-z01(1)*z02(3)
+     pnormal(3)=z01(1)*z02(2)-z01(2)*z02(1)
+     zref=max( abs(maxval(z01)), abs(minval(z01) ), abs(maxval(z02)), abs(minval(z02)) )
+  case default
+     call log_error(m_name,s_name,10,error_warning,'object is not a line, triangle or quad')
      pnormal=0
-     zd=1
-  end if
+     pmag=1
+     return
+  end select cell_type
 
+  zdsq=dot_product(pnormal,pnormal)
+  zd=sqrt( max(0.,zdsq) )
+  if (zd<const_pusheps*zref) then
+     call log_error(m_name,s_name,1,error_warning,'line, triangle or quad is degenerate')
+  else
+     pnormal=pnormal/zd
+  end if
   pmag=zd
 
 end subroutine geobj_normal
@@ -622,8 +658,20 @@ subroutine geobj_area(self,posl,nodl,parea)
   integer(ki2) :: ityp !< object type
 
   ityp=ibits(self%objtyp,0,GEOBJ_BIT_SHIFT)
-  if (ityp==VTK_TRIANGLE.OR.ityp==VTK_QUAD) then
-     ! triangle or quad type
+  cell_type: select case (ityp)
+  case (VTK_LINE)
+     ! line  type
+     inn=geobj_entry_table(ityp)
+     ii=self%geobj
+     do jj=1,inn
+        inod(jj)=nodl(ii+jj-1)
+        xnodes(:,jj)=posl%pos(inod(jj))%posvec
+     end do
+     z01=xnodes(:,2)-xnodes(:,1)
+     zref=max( abs(maxval(z01)), abs(minval(z01)) )
+     zarea=sqrt(dot_product(z01,z01))
+  case (VTK_TRIANGLE)
+     ! triangle  type
      inn=geobj_entry_table(ityp)
      ii=self%geobj
      do jj=1,inn
@@ -632,25 +680,39 @@ subroutine geobj_area(self,posl,nodl,parea)
      end do
      z01=xnodes(:,2)-xnodes(:,1)
      z02=xnodes(:,3)-xnodes(:,1)
+     zref=max( abs(maxval(z01)), abs(minval(z01) ), abs(maxval(z02)), abs(minval(z02)) )
+     call cross_product(z01,z02,zcx1)
+     zarea=sqrt(dot_product(zcx1,zcx1))/2
+  case (VTK_QUAD)
+     ! quad  type
+     inn=geobj_entry_table(ityp)
+     ii=self%geobj
+     do jj=1,inn
+        inod(jj)=nodl(ii+jj-1)
+        xnodes(:,jj)=posl%pos(inod(jj))%posvec
+     end do
+     z01=xnodes(:,2)-xnodes(:,1)
+     z02=xnodes(:,3)-xnodes(:,1)
+     zref=max( abs(maxval(z01)), abs(minval(z01) ), abs(maxval(z02)), abs(minval(z02)) )
      call cross_product(z01,z02,zcx1)
      zarea=sqrt(dot_product(zcx1,zcx1))
-     if (inn==4) then
-        z01=xnodes(:,2)-xnodes(:,4)
-        z02=xnodes(:,3)-xnodes(:,4)
-        call cross_product(z01,z02,zcx1)
-        zarea=zarea+sqrt(dot_product(zcx1,zcx1))
-     end if
-     zref=max( abs(maxval(z01)), abs(minval(z01) ), abs(maxval(z02)), abs(minval(z02)) )
-     if (zarea<const_pusheps*zref) then
-        call log_error(m_name,s_name,1,error_warning,'object is degenerate')
-        zarea=const_pusheps*zref
-     end if
-  else
-     call log_error(m_name,s_name,10,error_warning,'object is not a triangle or quadrilateral')
-     zarea=0
+     z01=xnodes(:,2)-xnodes(:,4)
+     z02=xnodes(:,3)-xnodes(:,4)
+     call cross_product(z01,z02,zcx1)
+     zarea=zarea+sqrt(dot_product(zcx1,zcx1))
+     zarea=zarea/2
+  case default
+     call log_error(m_name,s_name,10,error_warning,'object is not a line, triangle or quadrilateral')
+     parea=0
+     return
+  end select cell_type
+
+  if (zarea<const_pusheps*zref) then
+     call log_error(m_name,s_name,1,error_warning,'object is degenerate')
+     zarea=const_pusheps*zref
   end if
 
-  parea=zarea/2
+  parea=zarea
 
 end subroutine geobj_area
 !---------------------------------------------------------------------
@@ -705,17 +767,18 @@ subroutine geobj_centre(self,posl,nodl,pcentr)
   integer(ki2) :: ityp !< object type
 
   ityp=ibits(self%objtyp,0,GEOBJ_BIT_SHIFT)
-  if (ityp==VTK_TRIANGLE) then
-     ! triangle type
+  pcentr=0
+  if (ityp==VTK_LINE.OR.ityp==VTK_TRIANGLE.OR.ityp==VTK_QUAD) then
+     ! line, triangle or quad type
      inn=geobj_entry_table(ityp)
      ii=self%geobj
      do jj=1,inn
         inod(jj)=nodl(ii+jj-1)
         xnodes(:,jj)=posl%pos(inod(jj))%posvec
      end do
-     pcentr=(xnodes(:,1)+xnodes(:,2)+xnodes(:,3))/3
+     pcentr=sum(xnodes(:,1:inn),2)/inn
   else
-     call log_error(m_name,s_name,10,error_warning,'object is not a triangle')
+     call log_error(m_name,s_name,10,error_warning,'object is not a triangle or quad')
   end if
 
 end subroutine geobj_centre
@@ -727,7 +790,7 @@ subroutine geobj_sample(self,posl,nodl,pt,psampl)
   type(geobj_t), intent(in) :: self   !< geobj definition
   type(posveclis_t), intent(in) :: posl   !< list of positions
   integer(ki4), dimension(*), intent(in) :: nodl   !< list of nodes
-  real(kr4), dimension(3), intent(in) :: pt !< sample point
+  real(kr4), dimension(*), intent(in) :: pt !< sample point
   real(kr4), dimension(3), intent(out) :: psampl !< sample value
 
   !! local
@@ -739,18 +802,19 @@ subroutine geobj_sample(self,posl,nodl,pt,psampl)
   real(kr4), dimension(3,8) :: xnodes !< x(compt,node) of obj
   integer(ki2) :: ityp !< object type
 
+  psampl=0
   ityp=ibits(self%objtyp,0,GEOBJ_BIT_SHIFT)
-  if (ityp==VTK_TRIANGLE) then
-     ! triangle type
+  if (ityp==VTK_TRIANGLE.OR.ityp==VTK_QUAD) then
+     ! triangle or quad type
      inn=geobj_entry_table(ityp)
      ii=self%geobj
      do jj=1,inn
         inod(jj)=nodl(ii+jj-1)
         xnodes(:,jj)=posl%pos(inod(jj))%posvec
+        psampl=psampl+pt(jj)*xnodes(:,jj)
      end do
-     psampl=pt(1)*xnodes(:,1)+pt(2)*xnodes(:,2)+pt(3)*xnodes(:,3)
   else
-     call log_error(m_name,s_name,10,error_warning,'object is not a triangle')
+     call log_error(m_name,s_name,10,error_warning,'object is not a triangle or quad')
   end if
 
 end subroutine geobj_sample
