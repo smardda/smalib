@@ -159,6 +159,14 @@ subroutine geobjlist_init(self,vtkfile,numerics,noread)
   call log_alloc_check(m_name,s_name,2,status)
   if (.not.allocated(tposl%pos)) allocate(tposl%pos(2), stat=status)
   call log_alloc_check(m_name,s_name,3,status)
+  
+  if(present(noread)) return
+  
+  !! read coords
+  call geobjlist_read(self,vtkfile)
+  numerics%ngeobj=self%ng
+  call log_error(m_name,s_name,1,log_info,'geobj data read')
+
 
   if(present(noread)) return
 
@@ -1831,9 +1839,9 @@ subroutine geobjlist_paneltfm(self,bods,numerics)
      ibod=bods%list(j)
      ! object may have no associated body
      if (ibod==0) cycle
-     !dbgw iibod=ibod !dbgw
+        !dbgw iibod=ibod !dbgw
      if (bods%nindx>0) ibod=bods%indx(ibod)
-     !dbgw write(110,*) j,iibod,ibod !dbgw
+        !dbgw write(110,*) j,iibod,ibod !dbgw
      !BP      !w    ipan=ibodpan(ibod)
      ipan=indict2(inpan,numerics%panbod,ibod)
      if (ipan==0) then
@@ -1993,9 +2001,9 @@ subroutine geobjlist_paneltfm(self,bods,numerics)
      ibod=bods%list(j)
      ! object may have no associated body
      if (ibod==0) cycle
-     !dbgw iibod=ibod !dbgw
+        !dbgw iibod=ibod !dbgw
      if (bods%nindx>0) ibod=bods%indx(ibod)
-     !dbgw write(110,*) j,iibod,ibod !dbgw
+        !dbgw write(110,*) j,iibod,ibod !dbgw
      !BP      !w    ipan=ibodpan(ibod)
      ipan=indict2(inpan,numerics%panbod,ibod)
      if (ipan==0) then
