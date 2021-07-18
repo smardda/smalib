@@ -3367,7 +3367,7 @@ subroutine beq_readcon(selfn,kin)
   end if
 
   selfn%skyl=(selfn%objadd(GEOBJ_SKYLIT)>0)&
- &.OR.selfn%skylpsi.OR.(selfn%skyldbg>0)
+ &.OR.selfn%skylpsi.OR.(selfn%skyldbg>0)! 2021.OR.selfn%skylcen
 
 end subroutine beq_readcon
 !---------------------------------------------------------------------

@@ -489,6 +489,7 @@ subroutine dcontrol_ctrack(self,ptrack,kn,posz,kndiv,ktyps,kcall)
      call log_alloc_check(m_name,s_name,1,status)
   else
      ! no centreline
+     call log_error(m_name,s_name,1,error_warning,'No centreline found - too short?')
      return
   end if
   ! fill numerics arrays appropriately
