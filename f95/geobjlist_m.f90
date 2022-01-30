@@ -161,14 +161,6 @@ subroutine geobjlist_init(self,vtkfile,numerics,noread)
   call log_alloc_check(m_name,s_name,3,status)
   
   if(present(noread)) return
-  
-  !! read coords
-  call geobjlist_read(self,vtkfile)
-  numerics%ngeobj=self%ng
-  call log_error(m_name,s_name,1,log_info,'geobj data read')
-
-
-  if(present(noread)) return
 
   !! read coords
   call geobjlist_read(self,vtkfile)

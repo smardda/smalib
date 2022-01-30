@@ -75,7 +75,7 @@ subroutine vcontrol_read(file,numerics)
   !!local
   character(*), parameter :: s_name='vcontrol_read' !< subroutine name
   integer(ki4), parameter  :: maximum_number_of_files=100 !< maximum number of files allowed
-  integer(ki4), parameter  :: maximum_number_of_panels=100 !< maximum number of panels allowed
+  integer(ki4), parameter  :: maximum_number_of_panels=200 !< maximum number of panels allowed
   character(len=80), dimension(maximum_number_of_files) :: vtk_input_file !< vtk format geometry data input file
   integer(ki4), dimension(maximum_number_of_files) :: number_of_copies !< number of copies to make of input file
   character(len=80), dimension(maximum_number_of_files) :: vtk_label  !< labels vtk format geometry data input file
