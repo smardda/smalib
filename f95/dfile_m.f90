@@ -42,12 +42,13 @@ subroutine dfile_init(fileroot,kunit,kwrite)
 
   !! local
   character(*), parameter :: s_name='dfile_init' !< subroutine name
-  !! logical :: unitused !< flag to test unit is available
-
-  !! open file do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then kunit=i exit end if end do
+  logical :: ilnew=.false. !< open new file
 
   !! open file
-  if(present(kwrite).AND.kwrite/=0) then
+  if(present(kwrite)) then
+     ilnew=(kwrite/=0)
+  end if
+  if (ilnew) then
      call misc_getfileunit(kunit)
      open(unit=kunit,file=trim(fileroot)//'.dat',status='NEW',iostat=status)
   else

@@ -243,6 +243,7 @@ subroutine geobjlist_read(self,infile,kched,kin,leave_open)
   integer(ki4) :: iopt !< option
   character(len=30) :: iclabel !< label on line 2 of vtk file
 
+  logical :: ilrew=.false. !< flag rewind
   logical :: close_file = .True. !< local variable
 
   logical :: isnumb !< local variable
@@ -252,7 +253,11 @@ subroutine geobjlist_read(self,infile,kched,kin,leave_open)
      if( leave_open ) close_file = .False.
   endif
 
-  if(present(kin).AND.kin>0) then
+  if(present(kin)) then
+    ilrew=(kin>0)
+  end if
+
+  if (ilrew) then
      !! assume unit already open and reading infile
      nin=kin
      rewind(nin)
