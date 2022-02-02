@@ -37,6 +37,8 @@ else
     compiler=$compiler4
 fi
 
+echo "Building SMARDDA-LIB with" $compiler
+
 #(Re)generate documentation option, can take minutes
 if [ $# = 2 ] ; then
    newdoc=$2
