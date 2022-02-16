@@ -26,7 +26,7 @@ module clock_m
   integer(ki4) :: noclock   !< number of active clocks
   integer(ki4) :: maxclocks !< max no of clocks
   integer(ki4) :: iclock    !< index of current clock
-  integer(ki4)  :: i         !< loop index
+  integer(ki4)  :: i,j         !< loop index
   integer(ki4), dimension(:), allocatable :: mapclock !< cpu clock numbers
   character(len=80), dimension(:), allocatable :: clocknames !< clock names
   real(kr8), dimension(:), allocatable :: starttime !< start time of cpu clock
@@ -142,8 +142,8 @@ end subroutine clock_log
 !---------------------------------------------------------------------
 !> print cpu clock summary
 subroutine clock_summary
-  do i=1,noclock
-     call clock_log(mapclock(i))
+  do j=1,noclock
+     call clock_log(mapclock(j))
   end do
 
 end subroutine clock_summary
