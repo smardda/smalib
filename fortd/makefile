@@ -10,6 +10,7 @@ src =  bsplvn.f bsplwn.f  bvalue.f  interu.f  interv.f  interw.f tb06a.f  tc01a.
 
 obj = $(src:.f=.o)
 
+
 libsmarddalib$(DBG).a: $(obj) randlx.o
 	ar ru libsmarddalib$(DBG).a $(obj) randlx.o
 	ranlib libsmarddalib$(DBG).a
