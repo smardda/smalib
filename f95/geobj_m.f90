@@ -54,7 +54,7 @@ module geobj_m
    !! 7. cutout
    !! 32+ptr. termination plane
    !! 64+ptr. boundary interface
-     integer(ki2) :: typ !< -
+     integer(ki2) :: typ !< 
   end type geobj2_t
 
   type, public :: geobj_t

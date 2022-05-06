@@ -11,10 +11,10 @@ module termplane_h
    !> vector describing termination plane
    !! 1. position in coordinate given by termplanedir
    !! 2. Auxilliary test value for code 4
-     real(kr4), dimension(:,:), allocatable :: termplane !< -
+     real(kr4), dimension(:,:), allocatable :: termplane !< 
    !> Storage of vector for extremum test. 1.e+30 flags first time per track,
    !! thereafter becomes position of last but one step.
-     real(kr4), dimension(:,:), allocatable :: termstore !< -
+     real(kr4), dimension(:,:), allocatable :: termstore !< 
    !> termplane direction and operation, entries
    !! 1. coordinate direction of travel to be tested
    !! 2. sign of direction of travel
@@ -25,7 +25,7 @@ module termplane_h
    !! - 4. intersecting a plane with auxilliary condition
    !! 4. direction in which auxilliary condition to be applied
    !! 5. sign of direction of auxilliary condition
-     integer(ki4), dimension(:,:), allocatable :: termplanedir !< -
+     integer(ki4), dimension(:,:), allocatable :: termplanedir !< 
      integer(ki4)  :: ntermplane !< number of termination planes
      integer(ki4)  :: ntermactive !< number of active termination planes
   end type termplane_t

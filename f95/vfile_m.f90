@@ -100,7 +100,7 @@ subroutine vfile_rscalarread(self,kp,infile,kcname,kin,kopt)
   !> if positive on input, assume unit open and do not terminate execution if
   !! data is missing, return positive code if trouble, else zero
   !! if zero on input, missing data is a fatal error
-  integer(ki4), intent(inout) :: kopt   !< .
+  integer(ki4), intent(inout) :: kopt   !< 
 
   !! local
   character(*), parameter :: s_name='vfile_rscalarread' !< subroutine name
@@ -237,7 +237,7 @@ subroutine vfile_rvectorread(self,kp,kadim,infile,kcname,kin,kopt)
   !> if positive on input, assume unit open and do not terminate execution if
   !! data is missing, return positive code if trouble, else zero
   !! if zero on input, missing data is a fatal error
-  integer(ki4), intent(inout) :: kopt   !< .
+  integer(ki4), intent(inout) :: kopt   !< 
 
   !! local
   character(*), parameter :: s_name='vfile_rvectorread' !< subroutine name
@@ -381,7 +381,7 @@ subroutine vfile_dscalarread(self,kp,infile,kcname,kin,kopt)
   !> if positive on input, assume unit open and do not terminate execution if
   !! data is missing, return positive code if trouble, else zero
   !! if zero on input, missing data is a fatal error
-  integer(ki4), intent(inout) :: kopt   !< .
+  integer(ki4), intent(inout) :: kopt   !< 
 
   !! local
   character(*), parameter :: s_name='vfile_dscalarread' !< subroutine name
@@ -514,7 +514,7 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt,kcdata)
   !> if positive on input, assume unit open and do not terminate execution if
   !! data is missing, return positive code if trouble, else zero
   !! if zero on input, missing data is a fatal error
-  integer(ki4), intent(inout) :: kopt   !< .
+  integer(ki4), intent(inout) :: kopt   !< 
   character(*),intent(in), optional :: kcdata !< nonblank, must match POINT_ or CELL_ DATA
 
   !! local
@@ -708,7 +708,7 @@ subroutine vfile_rfieldread(self,kp,infile,kcname,kin,kopt)
   !! data is missing, return positive code if trouble, else zero
   !! kopt=2, assume at start point of field
   !! if zero on input, missing data is a fatal error
-  integer(ki4), intent(inout) :: kopt   !< .
+  integer(ki4), intent(inout) :: kopt   !< 
 
   !! local
   character(*), parameter :: s_name='vfile_rfieldread' !< subroutine name

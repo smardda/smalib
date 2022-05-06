@@ -2813,7 +2813,7 @@ subroutine geobjlist_cumulate(self,selfin,start,copy,kopt,kgcode)
   !> geometry code for new objects
   !! if negative or zero, ignored, except that
   !! if negative, do not update %posl%np, only %np
-  integer(ki2par), intent(in) :: kgcode   !< .
+  integer(ki2par), intent(in) :: kgcode   !< 
   !! local
   character(*), parameter :: s_name='geobjlist_cumulate' !< subroutine name
   real(kr4), dimension(:), allocatable :: rwork !< real work array
