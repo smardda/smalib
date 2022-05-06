@@ -1,5 +1,7 @@
+!> @addtogroup groupname3
+!> @{
 module smitermpi_h
-
+!> @}
   use const_kind_m
 #ifdef WITH_MPI
   use mpi

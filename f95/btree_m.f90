@@ -1,5 +1,7 @@
+!> @addtogroup groupname4
+!> @{
 module btree_m
-
+!> @}
   use const_kind_m
   use log_m
   use control_h

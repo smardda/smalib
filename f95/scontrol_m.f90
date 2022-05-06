@@ -1,5 +1,7 @@
+!> @addtogroup groupname4
+!> @{
 module scontrol_m
-
+!> @}
   use const_kind_m
   use log_m
   use misc_m

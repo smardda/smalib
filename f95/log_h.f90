@@ -1,5 +1,7 @@
+!> @addtogroup groupname3
+!> @{
 module log_h
-
+!> @}
   use const_kind_m
 
   type, public :: error_line_t

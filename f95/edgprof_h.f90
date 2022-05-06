@@ -1,5 +1,7 @@
+!> @addtogroup groupname3
+!> @{
 module edgprof_h
-
+!> @}
   use const_kind_m
 
 ! public types

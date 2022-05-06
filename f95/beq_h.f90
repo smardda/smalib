@@ -1,5 +1,7 @@
+!> @defgroup groupname3 SMARDDA-lib Header Modules
+!> @{
 module beq_h
-
+!> @}
   use const_kind_m
   use fmesh_h
   use beqart_h

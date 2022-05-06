@@ -1,5 +1,7 @@
+!> @addtogroup groupname4
+!> @{
 module const_kind_m
-
+!> @}
   implicit none
   private
 

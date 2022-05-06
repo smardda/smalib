@@ -1,5 +1,7 @@
+!> @addtogroup groupname3
+!> @{
 module pcontrol_h
-
+!> @}
   use const_kind_m
   use termplane_h
 

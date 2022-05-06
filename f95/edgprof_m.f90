@@ -1,5 +1,7 @@
+!> @addtogroup groupname4
+!> @{
 module edgprof_m
-
+!> @}
   use edgprof_h
   use log_m
   use misc_m
@@ -25,7 +27,8 @@ module edgprof_m
   edgprof_write, &  !< write out object
   edgprof_delete, & !< delete object
   edgprof_close, & !< close file
-  edgprof_closewrite !< close write file
+  edgprof_closewrite, & !< close write file
+  edgprof_lambda_q !< Calculates_lambda_q
 
 ! private variables
   character(*), parameter :: m_name='edgprof_m' !< module name
@@ -704,5 +707,14 @@ subroutine edgprof_close
   end if
 
 end subroutine edgprof_close
+!---------------------------------------------------------------------
+!> close file
+subroutine edgprof_lambda_q
+
+  !! local
+  character(*), parameter :: s_name='edgprof_lambda_q' !< subroutine name
+
+
+end subroutine edgprof_lambda_q
 
 end module edgprof_m

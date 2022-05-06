@@ -1,5 +1,7 @@
+!> @addtogroup groupname4
+!> @{
 module spl3d_m
-
+!> @}
   use const_kind_m
   use const_numphys_h
   use log_m

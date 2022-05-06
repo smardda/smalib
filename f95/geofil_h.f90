@@ -1,5 +1,7 @@
+!> @addtogroup groupname3
+!> @{
 module geofil_h
-
+!> @}
   use const_kind_m
   use geobjlist_h
   use gfcontrol_h

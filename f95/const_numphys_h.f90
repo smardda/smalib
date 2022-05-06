@@ -1,5 +1,7 @@
+!> @addtogroup groupname3
+!> @{
 module const_numphys_h
-
+!> @}
   use const_kind_m
 
   implicit none
