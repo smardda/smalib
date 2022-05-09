@@ -1,5 +1,7 @@
+!> @addtogroup groupname0
+!> @{
 program datvtk_p
-
+!> @}
   use const_kind_m
   use const_numphys_h
   use date_time_m
@@ -216,4 +218,4 @@ program datvtk_p
   call clock_delete
 !--------------------------------------------------------------------------
 
-end program datvtk_p
+end program datvtk_p_lib

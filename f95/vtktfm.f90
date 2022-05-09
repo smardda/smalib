@@ -1,5 +1,7 @@
+!> @addtogroup groupname0
+!> @{
 program vtktfm_p
-
+!> @}
   use const_kind_m
   use const_numphys_h
   use date_time_m
@@ -220,4 +222,4 @@ program vtktfm_p
   call clock_delete
 !--------------------------------------------------------------------------
 
-end program vtktfm_p
+end program vtktfm_p_lib

@@ -1,4 +1,7 @@
+!> @addtogroup groupname0
+!> @{
 program parse
+!> @}
   implicit none
 
   character(len=20) :: typetest !< type of test
@@ -75,4 +78,4 @@ program parse
      end do
   end select test_type
 
-end program parse
+end program parse_lib

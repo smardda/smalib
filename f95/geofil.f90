@@ -1,5 +1,7 @@
+!> @defgroup groupname0 SMARDDA-lib Programs
+!> @{
 program geofil_p
-
+!> @}
   use date_time_m
   use const_kind_m
   use log_m
@@ -159,4 +161,4 @@ program geofil_p
   call clock_delete
 !--------------------------------------------------------------------------
 
-end program geofil_p
+end program geofil_p_lib

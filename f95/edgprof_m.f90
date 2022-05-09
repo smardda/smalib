@@ -98,6 +98,7 @@ subroutine edgprof_readcon(self,pnumerics,kin)
   real(kr8), dimension(MAX_NUMBER_OF_POSITIONS) :: deposition_profile  !< local variable
   integer(ki4) :: number_of_positions  !< local variable
   character(len=80) :: coord_of_positions !< whether in distance or flux from SOL
+  character(len=80) :: lambda_q_choice !< Choice of calculation of lambda_q
 
   real(kr8), dimension(MAX_NUMBER_OF_PARAMETERS) :: general_real_parameters  !< local variable
   integer(ki4), dimension(MAX_NUMBER_OF_PARAMETERS) :: general_integer_parameters  !< local variable
@@ -114,7 +115,7 @@ subroutine edgprof_readcon(self,pnumerics,kin)
  &decay_length_near, &
  &positions, deposition_profile, coord_of_positions, number_of_positions,&
  &general_real_parameters, number_of_real_parameters, &
- &general_integer_parameters, number_of_integer_parameters
+ &general_integer_parameters, number_of_integer_parameters,lambda_q_choice
 
   !! set default edgprof parameters
   power_split=0.5_kr8
@@ -125,6 +126,7 @@ subroutine edgprof_readcon(self,pnumerics,kin)
   q_parallel0=-1_kr8
   ratio_of_q_parallel0_near=0
 
+  lambda_q_choice='default'
   profile_formula='unset'
   decay_length_near=0
   positions=0
@@ -165,6 +167,14 @@ subroutine edgprof_readcon(self,pnumerics,kin)
   end if
 
   call lowor(profile_formula,1,len_trim(profile_formula))
+
+  !!Calculates user choice of lambda_q
+  formula_chosen: select case (profile_formula)
+  case('default')
+  
+  case('2-point') 
+    decay_length_near=power_loss**(-5.0d0/9.0d0)
+  end select formula_chosen
   !! check for valid data
 
   formula_chosen: select case (profile_formula)
