@@ -1,6 +1,9 @@
-!> @defgroup groupname3 SMARDDA-lib Header Modules
+!> @addtogroup groupname222
+!> @{
+!> @defgroup groupname3 SMARDDA-lib 
 !> @{
 module beq_h
+!> @}
 !> @}
   use const_kind_m
   use fmesh_h

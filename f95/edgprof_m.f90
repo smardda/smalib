@@ -96,6 +96,8 @@ subroutine edgprof_readcon(self,pnumerics,kin)
 
   real(kr8), dimension(MAX_NUMBER_OF_POSITIONS) :: positions  !< local variable
   real(kr8), dimension(MAX_NUMBER_OF_POSITIONS) :: deposition_profile  !< local variable
+  real(kr8):: c_proportionality  !< Constant of proportionality for lambda_q custom
+  real(kr8):: power_loss_exponent !< Exponent for power loss in lambda_q custom
   integer(ki4) :: number_of_positions  !< local variable
   character(len=80) :: coord_of_positions !< whether in distance or flux from SOL
   character(len=80) :: lambda_q_choice !< Choice of calculation of lambda_q
@@ -173,7 +175,7 @@ subroutine edgprof_readcon(self,pnumerics,kin)
   case('default')
   
   case('2-point') 
-    decay_length_near=power_loss**(-5.0d0/9.0d0)
+    decay_length=c_proportionality*power_loss**(power_loss_exponent)
   end select formula_chosen_lambda
   !! check for valid data
 
