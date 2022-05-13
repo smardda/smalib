@@ -226,4 +226,4 @@ program hdsgen_p
 
 !--------------------------------------------------------------------------
 
-end program hdsgen_p_lib
+end program hdsgen_p

@@ -169,12 +169,12 @@ subroutine edgprof_readcon(self,pnumerics,kin)
   call lowor(profile_formula,1,len_trim(profile_formula))
 
   !!Calculates user choice of lambda_q
-  formula_chosen: select case (profile_formula)
+  formula_chosen_lambda: select case (profile_formula)
   case('default')
   
   case('2-point') 
     decay_length_near=power_loss**(-5.0d0/9.0d0)
-  end select formula_chosen
+  end select formula_chosen_lambda
   !! check for valid data
 
   formula_chosen: select case (profile_formula)

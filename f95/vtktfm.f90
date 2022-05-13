@@ -222,4 +222,4 @@ program vtktfm_p
   call clock_delete
 !--------------------------------------------------------------------------
 
-end program vtktfm_p_lib
+end program vtktfm_p

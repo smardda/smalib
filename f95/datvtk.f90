@@ -218,4 +218,4 @@ program datvtk_p
   call clock_delete
 !--------------------------------------------------------------------------
 
-end program datvtk_p_lib
+end program datvtk_p

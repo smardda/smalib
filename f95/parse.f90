@@ -78,4 +78,4 @@ program parse
      end do
   end select test_type
 
-end program parse_lib
+end program parse

@@ -11,6 +11,6 @@ fi
 (cd fortd;make -j -f makefile > /dev/null 2>&1)
 cd f95
 ln -sf ../fortd LIB
-for i in lib geofil move vtktfm datvtk hdsgen ctlgen parse; do make -j -f Makefile.Lib $i > /dev/null 2>&1 ;done
+for i in lib geofil move vtktfm datvtk hdsgen ctlgen parse; do make -j -f Makefile.lib $i > /dev/null 2>&1;done
 for i in geofil move vtktfm datvtk hdsgen ctlgen parse; do mv -f $i ../exec ;done
 cd $swd

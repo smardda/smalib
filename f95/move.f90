@@ -229,4 +229,4 @@ program move_p
 
 !--------------------------------------------------------------------------
 
-end program move_p_lib
+end program move_p
