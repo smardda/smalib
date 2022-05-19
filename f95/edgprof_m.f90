@@ -96,17 +96,41 @@ subroutine edgprof_readcon(self,pnumerics,kin)
 
   real(kr8), dimension(MAX_NUMBER_OF_POSITIONS) :: positions  !< local variable
   real(kr8), dimension(MAX_NUMBER_OF_POSITIONS) :: deposition_profile  !< local variable
-  real(kr8):: c_proportionality  !< Constant of proportionality for lambda_q custom
+  real(kr8):: c_prop_1  !< Constant of proportionality for lambda_q custom-1
+  real(kr8):: c_prop_2  !< Constant of proportionality for lambda_q custom-1
+  real(kr8):: c_prop_3  !< Constant of proportionality for lambda_q custom-1
+  real(kr8):: c_prop_4  !< Constant of proportionality for lambda_q custom-1
   real(kr8):: power_loss_exponent !< Exponent for power loss in lambda_q custom
+  real(kr8):: k_0_exponent !< Exponent for k_0 in lambda_q custom
+  real(kr8):: q_exponent !< Exponent for q in lambda_q custom
+  real(kr8):: a_exponent !< Exponent for a in lambda_q custom
+  real(kr8):: R_exponent !< Exponent for R in lambda_q custom
+  real(kr8):: L_exponent !< Exponent for L in lambda_q custom
+  real(kr8):: ratio_B_exponent !< Exponent for ratio_B in lambda_q custom
+  real(kr8):: P_V_ratio_exponent !< Exponent for P_V_ratio in lambda_q custom
+  real(kr8):: a_R0_elongation_ratio_exponent !< Exponent for a_R0_elogation_ratio in lambda_q custom
   integer(ki4) :: number_of_positions  !< local variable
   character(len=80) :: coord_of_positions !< whether in distance or flux from SOL
   character(len=80) :: lambda_q_choice !< Choice of calculation of lambda_q
 
   real(kr8), dimension(MAX_NUMBER_OF_PARAMETERS) :: general_real_parameters  !< local variable
+  real(kr8) :: pi=3.1415926535 !< Pi
+  real(kr8) :: n_u!< Plasma upstream density
+  real(kr8) :: e_charge=1.602E-19 !< Electron charge
+  real(kr8) :: k_0 !< Electron conductivity
+  real(kr8) :: q !< Safety factor
+  real(kr8) :: R !< 
+  real(kr8) :: a !< 
+  real(kr8) :: L !< Length of the scrape off layer
+  real(kr8) :: ratio_B !< 
+  real(kr8) :: P_V_ratio !<
+  real(kr8) :: a_R0_ratio !<
+  real(kr8) :: elongation !<
+  real(kr8) :: x_perpendicular  !< 
   integer(ki4), dimension(MAX_NUMBER_OF_PARAMETERS) :: general_integer_parameters  !< local variable
   integer(ki4) :: number_of_real_parameters  !< local variable
   integer(ki4) :: number_of_integer_parameters  !< local variable
-
+  
   !! edgprof parameters
   namelist /edgprofparameters/ &
  &profile_formula, &
@@ -117,7 +141,46 @@ subroutine edgprof_readcon(self,pnumerics,kin)
  &decay_length_near, &
  &positions, deposition_profile, coord_of_positions, number_of_positions,&
  &general_real_parameters, number_of_real_parameters, &
- &general_integer_parameters, number_of_integer_parameters,lambda_q_choice
+ &general_integer_parameters, number_of_integer_parameters, lambda_q_choice
+ 
+   namelist /lambdaqparameters/ &
+  &c_prop_1 , c_prop_2, c_prop_3, &
+  &c_prop_4, power_loss_exponent, n_u, &
+  &k_0, k_0_exponent, q, q_exponent, &
+  &R, R_exponent, a, a_exponent, &
+  &x_perpendicular, L, L_exponent,  &
+  &ratio_B, ratio_B_exponent, P_V_ratio_exponent, &
+  &P_V_ratio, a_R0_ratio, a_R0_elongation_ratio_exponent, &
+  &elongation
+
+  !! Set default lambdaqparameters
+  c_prop_1 = ((7.0d0/8.0d0)**(2.0d0/9.0d0))*((8.0d0*(pi**2.0d0)/7.0d0)**(7.0d0/9.0d0))  
+  c_prop_2 = ((8.0d0*(pi**2.0d0)/7.0d0)**(7.0d0/9.0d0))  
+  c_prop_3 = (8**(5.0d0/9.0d0))*(pi**(4.0d0/3.0d0))/(7.0d0**(5.0d0/9.0d0))
+  c_prop_4 = 10.0d0
+  power_loss_exponent=-5.0d0/9.0d0
+  n_u=1E+19
+  k_0=2000.0d0
+  k_0_exponent=-2.0d0/9.0d0
+  q=3.0d0
+  q_exponent=4.0/9.0d0
+  R=2.5d0
+  R_exponent=5.0d0/9.0d0
+  a=1.5d0
+  a_exponent=5.0d0/9.0d0
+  x_perpendicular=2.0d0
+  L=50.0d0
+  L_exponent=4.0d0/9.0d0
+  ratio_B=0.3d0
+  ratio_B_exponent=-2.0d0/9.0d0
+  P_V_ratio_exponent=-0.38d0
+  P_V_ratio = 4100.0d0
+  a_R0_ratio=0.33d0
+  a_R0_elongation_ratio_exponent=1.3d0
+  elongation=1.3d0
+  
+  ! lambda_q_custom=0.002257862 if defaults above are used
+
 
   !! set default edgprof parameters
   power_split=0.5_kr8
@@ -148,11 +211,19 @@ subroutine edgprof_readcon(self,pnumerics,kin)
   if (pnumerics%ledgprof) then
      !!read edgprof parameters
      read(ninep,nml=edgprofparameters,iostat=status)
+  formula_chosen_lambda_pre_read: select case (lambda_q_choice)
+  case('custom-3') 
+    a_exponent=7.0d0/9.0d0
+    L_exponent=2.0d0/9.0d0
+
+  end select formula_chosen_lambda_pre_read
+  
+     read(ninep,nml=lambdaqparameters,iostat=status)
      if(status/=0) then
-        print '("Fatal error reading edgprofparameters")'
+        print '("Fatal error reading edgprofparameters or lambda q parameters")'
         call log_getunit(ilog)
         write(ilog,nml=edgprofparameters)
-        call log_error(m_name,s_name,1,error_fatal,'Error reading edgprofparameters')
+        call log_error(m_name,s_name,1,error_fatal,'Error reading edgprofparameters or lambdaqparameters')
      end if
   else
      !! set edgprof parameters using values from powcalparameters
@@ -171,11 +242,27 @@ subroutine edgprof_readcon(self,pnumerics,kin)
   call lowor(profile_formula,1,len_trim(profile_formula))
 
   !!Calculates user choice of lambda_q
-  formula_chosen_lambda: select case (profile_formula)
+  formula_chosen_lambda: select case (lambda_q_choice)
   case('default')
   
-  case('2-point') 
-    decay_length=c_proportionality*power_loss**(power_loss_exponent)
+  case('custom-1') 
+    decay_length=c_prop_1*(power_loss**power_loss_exponent)*&
+                 (k_0**k_0_exponent)*(q**q_exponent)*R*(a**a_exponent)*&
+                 ((e_charge*n_u*x_perpendicular)**(7.0d0/9.0d0))
+                 
+  case('custom-2') 
+    decay_length=c_prop_2*(power_loss**power_loss_exponent)*&
+                 (k_0**k_0_exponent)*(R**R_exponent)*(a**a_exponent)*&
+                 ((e_charge*n_u*x_perpendicular)**(7.0d0/9.0d0))*(L**L_exponent)
+                 
+  case('custom-3') 
+    decay_length=c_prop_3*(power_loss**power_loss_exponent)*&
+                 (k_0**k_0_exponent)*(q**q_exponent)*(R**R_exponent)*(a**a_exponent)*&
+                 ((e_charge*n_u*x_perpendicular)**(7.0d0/9.0d0))*(L**L_exponent)*&
+                 (ratio_B**ratio_B_exponent)
+  case('custom-4') 
+    decay_length=c_prop_4*((P_V_ratio)**P_V_ratio_exponent)*((a_R0_ratio/elongation)**a_R0_elongation_ratio_exponent)
+    
   end select formula_chosen_lambda
   !! check for valid data
 
@@ -720,7 +807,7 @@ subroutine edgprof_close
 
 end subroutine edgprof_close
 !---------------------------------------------------------------------
-!> close file
+!> Calculates custom lambda q
 subroutine edgprof_lambda_q
 
   !! local
