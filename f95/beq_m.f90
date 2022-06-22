@@ -1882,7 +1882,7 @@ subroutine beq_readplus(self,infile)
      call log_error(m_name,s_name,63,ierr,'vacuum field data file has no suffix')
   end if
 
-  if (iextra==2.OR.iextra==4) then
+  if (iextra==2 .OR. iextra==4) then
      read(nin,*,iostat=status) ibuff
      read(nin,*,iostat=status) self%rxpt
      call log_read_check(m_name,s_name,64,status)
@@ -1918,7 +1918,7 @@ subroutine beq_readplus(self,infile)
   else
      self%n%skylpsi=.FALSE.
      ! dummy definitions
-     self%rxpt=0
+    self%rxpt=0
      self%zxpt=0
      self%psixpt=0
      self%zmin=0
@@ -3569,24 +3569,24 @@ subroutine beq_psix(self)
   integer(ki4) :: ixf    !< code describing X-point find
   real(kr8) :: zsrm   !< extremal \f$ R \f$
 
-  zsrmin=1.e+16
-  zepsg=epsg*self%psinorm
-  zepsr=epsr*self%psinorm
-  ixf=0
+  zsrmin=1.e+16 !Minium r^2 for search
+  zepsg=epsg*self%psinorm !normalised value of epsilon_g tolerance
+  zepsr=epsr*self%psinorm !normalised value of epsilon_r tolerance
+  ixf=0 !counts number of x points found
   self%psixpt=rsig*100*self%psinorm
-  zsrr=max( abs(self%rmax-self%n%rcen), abs(self%rmin-self%n%rcen) )
-  zszz=max( abs(self%zmax-self%n%zcen), abs(self%zmin-self%n%zcen) )
-  zsrlt=(zsrr**2+zszz**2)/100
+  zsrr=max( abs(self%rmax-self%n%rcen), abs(self%rmin-self%n%rcen) ) !estimate for maximum \f$ |R-R_c| \f$ in domain
+  zszz=max( abs(self%zmax-self%n%zcen), abs(self%zmin-self%n%zcen) ) !estimate for maximum \f$ |Z-Z_c| \f$ in domain
+  zsrlt=(zsrr**2+zszz**2)/100 !minimum r or r^2 for search
 
-  if (self%n%xsearch==1) mhemi=1
-  do_hemi: do jhemi=0,mhemi-1
+  if (self%n%xsearch==1) mhemi=1 !If xsearch=1 then only search top half of box
+  do_hemi: do jhemi=0,mhemi-1 !loop over both and below midplane of box if xsearch=0
 
-     if (self%n%xsearch==1) then
-        zt2=-const_pid ; zt1=const_pid
-        i1=1+max(int((self%n%xrsta-self%rmin)/self%dr),0)
-        i2=2+min(int((self%n%xrend-self%rmin)/self%dr),self%mr-2)
-        j1=1+max(int((self%n%xzsta-self%zmin)/self%dz),0)
-        j2=2+min(int((self%n%xzend-self%zmin)/self%dz),self%mz-2)
+     if (self%n%xsearch==1) then !If only search the top half of the box
+        zt2=-const_pid ; zt1=const_pid !theta_1 and theta_2
+        i1=1+max(int((self%n%xrsta-self%rmin)/self%dr),0) !R_1
+        i2=2+min(int((self%n%xrend-self%rmin)/self%dr),self%mr-2) !R_2
+        j1=1+max(int((self%n%xzsta-self%zmin)/self%dz),0) !z_1
+        j2=2+min(int((self%n%xzend-self%zmin)/self%dz),self%mz-2) !z_2
      else
         zt2=(jhemi-1)*const_pid ; zt1=jhemi*const_pid
         j1=2+(self%mz/2)*jhemi
@@ -3594,24 +3594,24 @@ subroutine beq_psix(self)
         i1=2
         i2=self%mr-1
      end if
-     zsr1=zsrmin ; zsr2=-zsrmin
+     zsr1=zsrmin ; zsr2=-zsrmin !minimum and maximum value of r in search for extremus
      isrmin=0 ; jsrmin=0
-     zgpsimin=1.e+16
+     zgpsimin=1.e+16 !smallest \f$ |\nabla\psi|^2 \f$ in search
 
      ! step one, limiting r and theta for minimum of \f$ |\nabla\psi|^2 \f$
      ! one-a find mesh-point with smallest \f$ |\nabla\psi|^2 \f$
-     do_meshj: do j=j1,j2
+     do_meshj: do j=j1,j2 !Search over z
         ! note, skip edges of computational rectangle and avoid centre
-        ze=self%zmin+(j-1)*self%dz
-        do_meshi: do i=i1,i2
-           re=self%rmin+(i-1)*self%dr
-           zsrsq=(re-self%n%rcen)**2+(ze-self%n%zcen)**2
-           if (zsrsq>zsrlt) then
-              call spl2d_evaln(self%dpsidr,re,ze,1,zdpdr)
-              call spl2d_evaln(self%dpsidz,re,ze,2,zdpdz)
-              if (zdpdr*zdpdz<0.) then
-                 zgpsi=zdpdr**2+zdpdz**2
-                 if (zgpsi<zgpsimin) then
+        ze=self%zmin+(j-1)*self%dz !sets value of z
+        do_meshi: do i=i1,i2 !loop over r
+           re=self%rmin+(i-1)*self%dr !sets value of r
+           zsrsq=(re-self%n%rcen)**2+(ze-self%n%zcen)**2 !length^2
+           if (zsrsq>zsrlt) then !if length^2 > minium length^2 value
+              call spl2d_evaln(self%dpsidr,re,ze,1,zdpdr) !\f$ \frac{\partial\psi}{\partial R} \f$
+              call spl2d_evaln(self%dpsidz,re,ze,2,zdpdz) !\f$ \frac{\partial\psi}{\partial Z} \f$
+              if (zdpdr*zdpdz<0.) then !If derivatives have opposite signs
+                 zgpsi=zdpdr**2+zdpdz**2 !\f$ |\nabla\psi|^2 
+                 if (zgpsi<zgpsimin) then ! if \f$ |\nabla\psi|^2 \f$ is smaller than smallest value so far
                     zgpsimin=zgpsi
                     isrmin=i
                     jsrmin=j
@@ -3628,20 +3628,20 @@ subroutine beq_psix(self)
 
      ! step one-b set r and theta limits for search using adjacent mesh-points
      do j=1,3
-        ze=self%zmin+(jsrmin+j-3)*self%dz
+        ze=self%zmin+(jsrmin+j-3)*self%dz ! caculates z at various points around minium grad psi value
         do i=1,3
-           re=self%rmin+(isrmin+i-3)*self%dr
-           zthet=atan2( ze-self%n%zcen, re-self%n%rcen )
+           re=self%rmin+(isrmin+i-3)*self%dr ! caculates z at various points around minium grad psi value
+           zthet=atan2( ze-self%n%zcen, re-self%n%rcen ) !calculates angle the r,z co-ordinates makes with origin at centre of plasma
            ! no shift if (zthet<-const_pid/2) zthet=2*const_pid+zthet
-           zt1=min(zthet,zt1)
-           zt2=max(zthet,zt2)
-           zsrsq=(re-self%n%rcen)**2+(ze-self%n%zcen)**2
-           zsr1=min(zsrsq,zsr1)
-           zsr2=max(zsrsq,zsr2)
+           zt1=min(zthet,zt1) !compares evaluted theta in comparison to minimum value
+           zt2=max(zthet,zt2) !compares evaulate threa in comparison to maximum value
+           zsrsq=(re-self%n%rcen)**2+(ze-self%n%zcen)**2 ! calculates value of r^2 for each point around minimum grad psi value
+           zsr1=min(zsrsq,zsr1) !compares evaluated r^2 in comparison to minimum value
+           zsr2=max(zsrsq,zsr2) !compares evaluated r^2 in comparison to maximum value
         end do
      end do
-     zsr1=sqrt(zsr1)
-     zsr2=sqrt(zsr2)
+     zsr1=sqrt(zsr1) !calculates minimum r around minimum grad psi value
+     zsr2=sqrt(zsr2) !calculates maximum r around minimum grad psi value
 
      ! step two, initialise for search
      zt3=zg1*zt1+zg2*zt2
@@ -3787,23 +3787,23 @@ subroutine beq_bdryrb(self)
      return
   end select pick_angle
 
-  zpsiinr=(self%psibdry+self%psiaxis)/2
-  zsrr=max( abs(self%rmax-self%n%rcen), abs(self%rmin-self%n%rcen) )
-  zszz=max( abs(self%zmax-self%n%zcen), abs(self%zmin-self%n%zcen) )
-  zsrmax=sqrt(zsrr**2+zszz**2)
-  nsrsamp=self%mr+self%mz
-  zdsr=zsrmax/nsrsamp
-  zsrsta=zsrmax/10
-  zpsioutr=zpsiinr
+  zpsiinr=(self%psibdry+self%psiaxis)/2 !estimate for inner limit of \f$ \psi \f$
+  zsrr=max( abs(self%rmax-self%n%rcen), abs(self%rmin-self%n%rcen) ) !estimate for maximum \f$ |R-R_c| \f$ in domain
+  zszz=max( abs(self%zmax-self%n%zcen), abs(self%zmin-self%n%zcen) ) !estimate for maximum \f$ |Z-Z_c| \f$ in domain
+  zsrmax=sqrt(zsrr**2+zszz**2) !larger \f$ r \f$ corresponding to zpsioutr
+  nsrsamp=self%mr+self%mz !number of samples in \f$ r \f$
+  zdsr=zsrmax/nsrsamp !\f$ \Delta r_i \f$
+  zsrsta=zsrmax/10 !estimate for starting \f$ r \f$
+  zpsioutr=zpsiinr !estimate for outer limit of \f$ \psi \f$
 
-  zcos=cos(ztheta)
-  zsin=sin(ztheta)
+  zcos=cos(ztheta) !\f$ \cos(\theta=0) \f$
+  zsin=sin(ztheta) !\f$ \sin(\theta=0) \f$
   ! loop over distance from centre
   ! start a little way from origin
-  zsr=zsrsta
-  zsrinr=zsr
-  isr=0
-  idplset=0
+  zsr=zsrsta !\f$  r_i \f$
+  zsrinr=zsr !smallest \f$ r \f$ in range
+  isr=0 !flag that value \f$ \psi < \psi_{\min} \f$ found
+  idplset=0 !flag that \f$ \frac{\partial\psi}{\partial r}_{i-1}  \f$ set
   radial:do i=1,nsrsamp
      re=self%n%rcen+zsr*zcos
      if (re>=self%rmax.OR.re<=self%rmin) then
