@@ -3579,6 +3579,7 @@ subroutine beq_psix(self)
   zsrlt=(zsrr**2+zszz**2)/100 !minimum r or r^2 for search
 
   if (self%n%xsearch==1) mhemi=1 !If xsearch=1 then only search top half of box
+       open (unit = 102, file = "x-points.txt")
   do_hemi: do jhemi=0,mhemi-1 !loop over both and below midplane of box if xsearch=0
 
      if (self%n%xsearch==1) then !If only search the top half of the box
@@ -3708,10 +3709,10 @@ subroutine beq_psix(self)
            self%thetaxpt=zt3
            zsrxpt=(zsr1+zsr2)/2
         end if
+        WRITE(102,*) self%n%rcen+zsrxpt*cos(self%thetaxpt),self%n%zcen+zsrxpt*sin(self%thetaxpt),self%psixpt
      end if
-
   end do do_hemi
-
+     close(102)
   if (ixf==0) then
      call log_error(m_name,s_name,80,error_fatal,'no X-point found')
   else

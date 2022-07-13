@@ -1,5 +1,5 @@
 # Configuration file for compiling software on Ubuntu linux system
-# using debugging gfortran compiler
+# using optimised gfortran compiler
 
 # Set EXEDIR 
 EXEDIR = ../exec
@@ -9,17 +9,17 @@ F90 ?= gfortran-mp-11
 FC = gfortran-mp-11
 
 # Fortran compiler flags
-F90FLAGS = -g -fbacktrace -fbounds-check -fexceptions -cpp
+F90FLAGS = -O -cpp
 ifeq ($(findstring mpi,$(F90)),mpi)
    F90FLAGS += -DWITH_MPI
 endif
 
-FFLAGS = -fdefault-real-8 -fdefault-double-8 -g -fbacktrace -fbounds-check -fexceptions
+FFLAGS = -fdefault-real-8 -fdefault-double-8 -O
 
-FSFLAG = -g -fbacktrace -fbounds-check -fexceptions
+FSFLAG = -O
 
 # Debug option
-DBG = g
+DBG =  
 
 # command to remove files
 RM = /bin/rm -f

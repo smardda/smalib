@@ -8,13 +8,13 @@ module edgprof_h
 
 !> type storing edge profile data
   type, public :: edgprof_t
-     character(len=80) :: formula !< profile formula
+     character(len=80) :: formula(4) !< profile formula
      real(kr8) :: f !< power split
      real(kr8),dimension(4) :: lmid !< decay length
      real(kr8) :: ploss !< power loss
      real(kr8),dimension(4) :: sigma !< diffusion length
      real(kr8) :: qpara0 !< parallel power flux (W/sqm)
-     real(kr8) :: lmidnr !< decay length near SOL
+     real(kr8) :: lmidnr(4) !< decay length near SOL
      real(kr8) :: rqpara0 !< ratio of parallel power flux near SOL
      integer(ki4) :: npos !< number of positions
      real(kr8), dimension(:), allocatable   :: pos !< positions
