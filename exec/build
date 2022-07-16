@@ -77,7 +77,7 @@ $SMALIB_DIR/exec/compile
 if [ "$newdoc" == "Y" ] ; then
 cd $SMALIB_DIR/doc
 echo "Warning - Documentation production requires doxygen at 1.8 or later"
-doxygen -q
+doxygen doxyfile
 if [  $? == 0 ] ; then 
   echo "to access documentation type firefox  or xdg-open $SMALIB_DIR/doc/srcdoc/html/index.html"
 else
