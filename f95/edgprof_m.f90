@@ -463,142 +463,20 @@ end do
 end subroutine edgprof_factors
 !---------------------------------------------------------------------
 !> exponential profile
-function edgprof_exp(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
+function edgprof_exp(self,psid,j)
 
   !! arguments
   type(edgprof_t), intent(in) :: self !< type containing profile parameters
   real(kr8) :: edgprof_exp !< local variable
-  real(kr8), intent(in) :: psi !< position in \f$ \psi \f$
   real(kr8), intent(in) :: psid !< position in \f$ \psi \f$
-  real(kr8) :: R !< position  \f$ R \f$
-  real(kr8) :: Z !< position  \f$ Z \f$
-  real(kr8) :: cenr !< centre of plasma \f$ R \f$
-  real(kr8) :: cenz !< centre of plasma \f$ Z \f$
-  real(kr8) :: rxpt(2)   !<  position x point \f$ R \f$
-  real(kr8) :: zxpt(2)   !<  position x point \f$ Z \f$
-  real(kr8) :: psixpt(2) !<  \f$ \psi \f$ at x point
-  real(kr8) :: RIN !< Inboard radius
-  real(kr8) :: ROUT !< Outboard radius
+  integer (ki4) :: j
 
   !! local variables
   character(*), parameter :: s_name='edgprof_exp' !< subroutine name
   real(kr8) :: pow !< local variable
-  real(kr8) :: dis !<  distance between xpoints
-  real(kr8) :: disx1 !<  distance from centre of plasma to xpoint 1
-  real(kr8) :: disx2 !<  distance from centre of plasma to xpoint 2
-  real(kr8) :: num_xpoints !<  number of xpoints
-  integer(ki4) :: con=2 !< test if xpoints connected (con=0 connected, =1 if disconnected)
-  
-	dis=sqrt((rxpt(2)-rxpt(1))**2.0d0 + (zxpt(2)-zxpt(1))**2.0d0)
-	disx1=sqrt((rxpt(1)-cenr)**2.0d0 + (zxpt(1)-cenz)**2.0d0)
-	disx2=sqrt((rxpt(2)-cenr)**2.0d0 + (zxpt(2)-cenz)**2.0d0)
-	IF(dis < 0.001d0) num_xpoints=1
-	IF(dis > 0.001d0) THEN
-		num_xpoints=2
-		IF(psixpt(1)==psixpt(2)) con=0
-		IF(psixpt(1)/=psixpt(2)) con=1
-	END IF
-	IF(con==0 .or. dis < 0.001d0) THEN
-		!! calculate profile
-		IF(Z<=cenz) THEN
-			IF(R<=rxpt(1)) THEN
-				IF(R<=RIN) THEN
-					pow=self%fpfac(1)*exp(self%rblfac(1)*psid)
-				ELSE 
-					pow=self%fpfac(2)*exp(self%rblfac(2)*psid)
-				END IF
-			ELSE
-				IF(R>=ROUT) THEN
-					pow=self%fpfac(4)*exp(self%rblfac(4)*psid)
-				ELSE 
-					pow=self%fpfac(3)*exp(self%rblfac(3)*psid)
-				END IF			
-			END IF
-		ELSE
-			IF(R<=rxpt(2)) THEN
-				IF(R<=RIN) THEN
-					pow=self%fpfac(1)*exp(self%rblfac(1)*psid)
-				ELSE 
-					pow=self%fpfac(2)*exp(self%rblfac(2)*psid)
-				END IF
-			ELSE
-				IF(R>=ROUT) THEN
-					pow=self%fpfac(4)*exp(self%rblfac(4)*psid)
-				ELSE 
-					pow=self%fpfac(3)*exp(self%rblfac(3)*psid)
-				END IF			
-			END IF
-		END IF
-	END IF
-  
-	IF(con==1) THEN
-		IF(disx1 < disx2) THEN
-			!! calculate profile
-			IF(Z<=cenz) THEN
-				IF(R<=rxpt(1)) THEN
-					IF(R<=RIN) THEN
-						pow=self%fpfac(1)*exp(self%rblfac(1)*psid)
-					ELSE 
-						pow=self%fpfac(2)*exp(self%rblfac(2)*psid)
-					END IF
-				ELSE
-					IF(R>=ROUT) THEN
-						pow=self%fpfac(4)*exp(self%rblfac(4)*psid)
-					ELSE 
-						pow=self%fpfac(3)*exp(self%rblfac(3)*psid)
-					END IF			
-				END IF
-			ELSE
-				IF(R<=rxpt(2)) THEN
-					IF(R<=RIN) THEN
-						pow=self%fpfac(1)*exp(self%rblfac(1)*psid)
-					ELSE 
-						pow=self%fpfac(2)*exp(self%rblfac(2)*psid)
-					END IF
-				ELSE
-					IF(R>=ROUT) THEN
-						pow=self%fpfac(4)*exp(self%rblfac(4)*psid)
-					ELSE 
-						pow=self%fpfac(3)*exp(self%rblfac(3)*psid)
-					END IF			
-				END IF
-			END IF
-			
-		ELSE
-			!! calculate profile
-			IF(Z<=cenz) THEN
-				IF(R<=rxpt(1)) THEN
-					IF(R<=RIN) THEN
-						pow=self%fpfac(1)*exp(self%rblfac(1)*psid)
-					ELSE 
-						pow=self%fpfac(2)*exp(self%rblfac(2)*psid)
-					END IF
-				ELSE
-					IF(R>=ROUT) THEN
-						pow=self%fpfac(4)*exp(self%rblfac(4)*psid)
-					ELSE 
-						pow=self%fpfac(3)*exp(self%rblfac(3)*psid)
-					END IF			
-				END IF
-			ELSE
-				IF(R<=rxpt(2)) THEN
-					IF(R<=RIN) THEN
-						pow=self%fpfac(1)*exp(self%rblfac(1)*psid)
-					ELSE 
-						pow=self%fpfac(2)*exp(self%rblfac(2)*psid)
-					END IF
-				ELSE
-					IF(R>=ROUT) THEN
-						pow=self%fpfac(4)*exp(self%rblfac(4)*psid)
-					ELSE 
-						pow=self%fpfac(3)*exp(self%rblfac(3)*psid)
-					END IF			
-				END IF
-			END IF
-				
-		END IF
-	END IF
-	!  WRITE(6,*) R,Z,cenr,cenz,rxpt,zxpt,psixpt,self%fpfac,self%rblfac,pow
+
+  pow=self%fpfac(j)*exp(self%rblfac(j)*psid)
+
   !! return profile
   edgprof_exp=pow
 
@@ -606,166 +484,21 @@ end function edgprof_exp
 
 !---------------------------------------------------------------------
 !> double exponential profile
-function edgprof_expdouble(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,&
-							RIN,ROUT)
+function edgprof_expdouble(self,psid,j)
 
   !! arguments
   type(edgprof_t), intent(in) :: self !< type containing profile parameters
   real(kr8) :: edgprof_expdouble !< local variable
-  real(kr8), intent(in) :: psi !< position in \f$ \psi \f$
   real(kr8), intent(in) :: psid !< position in \f$ \psi \f$
-  real(kr8) :: R !< position \f$ R \f$
-  real(kr8) :: Z !< position  \f$ Z \f$
-  real(kr8) :: cenr !< centre of plasma \f$ R \f$
-  real(kr8) :: cenz !< centre of plasma \f$ Z \f$
-  real(kr8) :: rxpt(2)   !<  position x point \f$ R \f$
-  real(kr8) :: zxpt(2)   !<  position x point \f$ Z \f$
-  real(kr8) :: psixpt(2) !<  \f$ \psi \f$ at x point
-  real(kr8) :: RIN !< Inboard radius
-  real(kr8) :: ROUT !< Outboard radius
+  integer (ki4) :: j
   
   !! local variables
   character(*), parameter :: s_name='edgprof_expdouble' !< subroutine name
   real(kr8) :: pow !< local variable
-  real(kr8) :: dis !<  distance between xpoints
-  real(kr8) :: disx1 !<  distance from centre of plasma to xpoint 1
-  real(kr8) :: disx2 !<  distance from centre of plasma to xpoint 2
-  real(kr8) :: num_xpoints !<  number of xpoints
-  integer(ki4) :: con=2 !< test if xpoints connected (con=0 connected, =1 if disconnected)
   
-	dis=sqrt((rxpt(2)-rxpt(1))**2.0d0 + (zxpt(2)-zxpt(1))**2.0d0)
-	disx1=sqrt((rxpt(1)-cenr)**2.0d0 + (zxpt(1)-cenz)**2.0d0)
-	disx2=sqrt((rxpt(2)-cenr)**2.0d0 + (zxpt(2)-cenz)**2.0d0)
-	IF(dis < 0.001d0) num_xpoints=1
-	IF(dis > 0.001d0) THEN
-		num_xpoints=2
-		IF(psixpt(1)==psixpt(2)) con=0
-		IF(psixpt(1)/=psixpt(2)) con=1
-	END IF
-	IF(con==0 .or. dis < 0.001d0) THEN
-		!! calculate profile
-		IF(Z<=cenz) THEN
-			IF(R<=rxpt(1)) THEN
-				IF(R<=RIN) THEN
-				  pow=self%fpfac(1)*exp(self%rblfac(1)*psid) &
- &+self%fpfacnr(1)*exp(self%rblfacnr(1)*psid)
-				ELSE 
-				  pow=self%fpfac(2)*exp(self%rblfac(2)*psid) &
- &+self%fpfacnr(2)*exp(self%rblfacnr(2)*psid)
-				END IF
-			ELSE
-				IF(R>=ROUT) THEN
-				  pow=self%fpfac(4)*exp(self%rblfac(4)*psid) &
- &+self%fpfacnr(4)*exp(self%rblfacnr(4)*psid)
-				ELSE 
-				  pow=self%fpfac(3)*exp(self%rblfac(3)*psid) &
- &+self%fpfacnr(3)*exp(self%rblfacnr(3)*psid)
-				END IF			
-			END IF
-		ELSE
-			IF(R<=rxpt(2)) THEN
-				IF(R<=RIN) THEN
-				  pow=self%fpfac(1)*exp(self%rblfac(1)*psid) &
- &+self%fpfacnr(1)*exp(self%rblfacnr(1)*psid)
-				ELSE 
-				  pow=self%fpfac(2)*exp(self%rblfac(2)*psid) &
- &+self%fpfacnr(2)*exp(self%rblfacnr(2)*psid)
-				END IF
-			ELSE
-				IF(R>=ROUT) THEN
-				  pow=self%fpfac(4)*exp(self%rblfac(4)*psid) &
- &+self%fpfacnr(4)*exp(self%rblfacnr(4)*psid)
-				ELSE 
-				  pow=self%fpfac(3)*exp(self%rblfac(3)*psid) &
- &+self%fpfacnr(3)*exp(self%rblfacnr(3)*psid)
-				END IF			
-			END IF
-		END IF
-	END IF
-  
-	IF(con==1) THEN
-		IF(disx1 < disx2) THEN
-			!! calculate profile
-			IF(Z<=cenz) THEN
-				IF(R<=rxpt(1)) THEN
-					IF(R<=RIN) THEN
-					  pow=self%fpfac(1)*exp(self%rblfac(1)*psid) &
- &+self%fpfacnr(1)*exp(self%rblfacnr(1)*psid)
-					ELSE 
-					  pow=self%fpfac(2)*exp(self%rblfac(2)*psid) &
- &+self%fpfacnr(2)*exp(self%rblfacnr(2)*psid)
-					END IF
-				ELSE
-					IF(R>=ROUT) THEN
-					  pow=self%fpfac(4)*exp(self%rblfac(4)*psid) &
- &+self%fpfacnr(4)*exp(self%rblfacnr(4)*psid)
-					ELSE 
-  pow=self%fpfac(3)*exp(self%rblfac(3)*psid) &
- &+self%fpfacnr(3)*exp(self%rblfacnr(3)*psid)
-					END IF			
-				END IF
-			ELSE
-				IF(R<=rxpt(2)) THEN
-					IF(R<=RIN) THEN
-					  pow=self%fpfac(1)*exp(self%rblfac(1)*psid) &
- &+self%fpfacnr(1)*exp(self%rblfacnr(1)*psid)
-					ELSE 
-  pow=self%fpfac(2)*exp(self%rblfac(2)*psid) &
- &+self%fpfacnr(2)*exp(self%rblfacnr(2)*psid)
-					END IF
-				ELSE
-					IF(R>=ROUT) THEN
-					  pow=self%fpfac(4)*exp(self%rblfac(4)*psid) &
- &+self%fpfacnr(4)*exp(self%rblfacnr(4)*psid)
-					ELSE 
-					  pow=self%fpfac(3)*exp(self%rblfac(3)*psid) &
- &+self%fpfacnr(3)*exp(self%rblfacnr(3)*psid)
-					END IF			
-				END IF
-			END IF
-			
-		ELSE
-			!! calculate profile
-			IF(Z<=cenz) THEN
-				IF(R<=rxpt(1)) THEN
-					IF(R<=RIN) THEN
-					  pow=self%fpfac(1)*exp(self%rblfac(1)*psid) &
- &+self%fpfacnr(1)*exp(self%rblfacnr(1)*psid)
-					ELSE 
-					  pow=self%fpfac(2)*exp(self%rblfac(2)*psid) &
- &+self%fpfacnr(2)*exp(self%rblfacnr(2)*psid)
-					END IF
-				ELSE
-					IF(R>=ROUT) THEN
-					  pow=self%fpfac(4)*exp(self%rblfac(4)*psid) &
- &+self%fpfacnr(4)*exp(self%rblfacnr(4)*psid)
-					ELSE 
-					  pow=self%fpfac(3)*exp(self%rblfac(3)*psid) &
- &+self%fpfacnr(3)*exp(self%rblfacnr(3)*psid)
-					END IF			
-				END IF
-			ELSE
-				IF(R<=rxpt(2)) THEN
-					IF(R<=RIN) THEN
-					  pow=self%fpfac(1)*exp(self%rblfac(1)*psid) &
- &+self%fpfacnr(1)*exp(self%rblfacnr(1)*psid)
-					ELSE 
-					  pow=self%fpfac(2)*exp(self%rblfac(2)*psid) &
- &+self%fpfacnr(2)*exp(self%rblfacnr(2)*psid)
-					END IF
-				ELSE
-					IF(R>=ROUT) THEN
-					  pow=self%fpfac(4)*exp(self%rblfac(4)*psid) &
- &+self%fpfacnr(4)*exp(self%rblfacnr(4)*psid)
-					ELSE 
-					  pow=self%fpfac(3)*exp(self%rblfac(3)*psid) &
- &+self%fpfacnr(3)*exp(self%rblfacnr(3)*psid)
-					END IF			
-				END IF
-			END IF
-				
-		END IF
-	END IF
+				  pow=self%fpfac(j)*exp(self%rblfac(j)*psid) &
+ &+self%fpfacnr(j)*exp(self%rblfacnr(j)*psid)
+
 
   !! return profile
   edgprof_expdouble=pow
@@ -774,32 +507,23 @@ end function edgprof_expdouble
 
 !---------------------------------------------------------------------
 !> Eich profile
-function edgprof_eich(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
+function edgprof_eich(self,psid,j)
 
   !! arguments
   type(edgprof_t), intent(in) :: self !< type containing profile parameters
   real(kr8) :: edgprof_eich !< local variable
-  real(kr8), intent(in) :: psi !< position in \f$ \psi \f$
   real(kr8), intent(in) :: psid !< position in \f$ \psi \f$
-  real(kr8) :: R !< position \f$ R \f$  
-  real(kr8) :: Z !< position  \f$ Z \f$
-  real(kr8) :: cenr !< centre of plasma \f$ R \f$
-  real(kr8) :: cenz !< centre of plasma \f$ Z \f$
-  real(kr8) :: rxpt(2)   !<  position x point \f$ R \f$
-  real(kr8) :: zxpt(2)   !<  position x point \f$ Z \f$
-  real(kr8) :: psixpt(2) !<  \f$ \psi \f$ at x point
-  real(kr8) :: RIN !< Inboard radius
-  real(kr8) :: ROUT !< Outboard radius
-  
+  integer (ki4) :: j
+    
   !! local variables
   character(*), parameter :: s_name='edgprof_eich' !< subroutine name
   real(kr8) :: pow !< local variable
 
   !! calculate profile
 
-  pow=self%fpfac(1)*&
-  exp(self%slfac(1)**2+self%rblfac(1)*psid)*&
-  erfc(self%slfac(1)+self%rblfac(1)*psid/(2*self%slfac(1)))
+  pow=self%fpfac(j)*&
+  exp(self%slfac(j)**2+self%rblfac(j)*psid)*&
+  erfc(self%slfac(j)+self%rblfac(j)*psid/(2*self%slfac(j)))
 
   !! return profile
   edgprof_eich=pow
@@ -808,24 +532,14 @@ end function edgprof_eich
 
 !---------------------------------------------------------------------
 !> userdefined profile
-function edgprof_userdefined(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,&
-							RIN,ROUT)
+function edgprof_userdefined(self,psid,j)
 
   !! arguments
   type(edgprof_t), intent(in) :: self !< type containing profile parameters
   real(kr8) :: edgprof_userdefined !< local variable
-  real(kr8), intent(in) :: psi !< position in \f$ \psi \f$
   real(kr8), intent(in) :: psid !< position in \f$ \psi \f$
-  real(kr8) :: R !< position \f$ R \f$
-  real(kr8) :: Z !< position  \f$ Z \f$
-  real(kr8) :: cenr !< centre of plasma \f$ R \f$
-  real(kr8) :: cenz !< centre of plasma \f$ Z \f$
-  real(kr8) :: rxpt(2)   !<  position x point \f$ R \f$
-  real(kr8) :: zxpt(2)   !<  position x point \f$ Z \f$
-  real(kr8) :: psixpt(2) !<  \f$ \psi \f$ at x point
-  real(kr8) :: RIN !< Inboard radius
-  real(kr8) :: ROUT !< Outboard radius
-   
+  integer (ki4) :: j
+
   !! local variables
   character(*), parameter :: s_name='edgprof_userdefined' !< subroutine name
   real(kr8) :: pow !< local variable
@@ -835,11 +549,11 @@ function edgprof_userdefined(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,&
   !! user defines profile here
 
   ! convert to r if necessary
-  zpos=self%rblfac(1)*psi
+  zpos=self%rblfac(j)*psid
   ! must define f(zpos)
   ! integral of f over r to normalise
   zfint=1
-  pow=self%fpfac(1)/zfint
+  pow=self%fpfac(j)/zfint
 
   !! return profile
   edgprof_userdefined=pow
@@ -848,23 +562,14 @@ end function edgprof_userdefined
 
 !---------------------------------------------------------------------
 !> profile from samples
-function edgprof_samples(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
+function edgprof_samples(self,psid,j)
 
   !! arguments
   type(edgprof_t), intent(in) :: self !< type containing profile parameters
   real(kr8) :: edgprof_samples !< local variable
-  real(kr8), intent(in) :: psi !< position in \f$ \psi \f$
   real(kr8), intent(in) :: psid !< position in \f$ \psi \f$
-  real(kr8) :: R !< position \f$ R \f$
-  real(kr8) :: Z !< position  \f$ Z \f$
-  real(kr8) :: cenr !< centre of plasma \f$ R \f$
-  real(kr8) :: cenz !< centre of plasma \f$ Z \f$
-  real(kr8) :: rxpt(2)   !<  position x point \f$ R \f$
-  real(kr8) :: zxpt(2)   !<  position x point \f$ Z \f$
-  real(kr8) :: psixpt(2) !<  \f$ \psi \f$ at x point
-  real(kr8) :: RIN !< Inboard radius
-  real(kr8) :: ROUT !< Outboard radius
-  
+  integer (ki4) :: j
+    
   !! local variables
   character(*), parameter :: s_name='edgprof_samples' !< subroutine name
   real(kr8) :: pow !< local variable
@@ -876,7 +581,7 @@ function edgprof_samples(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
 
   !! calculate profile
   ! convert to r if necessary
-  zpos=self%rblfac(1)*psi
+  zpos=self%rblfac(j)*psid
   call interv(self%pos,self%npos,zpos,ip,iflag)
   if (iflag/=0) then
      call log_error(m_name,s_name,1,error_warning,'Point not in range of positions')
@@ -890,6 +595,58 @@ function edgprof_samples(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
 
 end function edgprof_samples
 
+
+!---------------------------------------------------------------------
+!> Determines the region needed for edgprof
+function edgprof_region(R,Z,cenz,rxpt,zxpt,RIN,ROUT)
+
+  !! arguments
+  integer(ki4) :: edgprof_region !< local variable
+  real(kr8) :: R !< position \f$ R \f$
+  real(kr8) :: Z !< position  \f$ Z \f$
+  real(kr8) :: cenz !< position centre of plasma \f$ Z \f$
+  real(kr8) :: rxpt(2)   !<  position x point \f$ R \f$
+  real(kr8) :: zxpt(2)   !<  position x point \f$ Z \f$
+  real(kr8) :: RIN !< Inboard radius
+  real(kr8) :: ROUT !< Outboard radius
+  
+  !! local variables
+  character(*), parameter :: s_name='edgprof_region' !< subroutine name
+  integer(ki4) :: pow !< local variable
+  
+  		IF(Z<=cenz) THEN
+			IF(R<=rxpt(1)) THEN
+				IF(R<=RIN) THEN
+					pow=1
+				ELSE 
+					pow=2
+				END IF
+			ELSE
+				IF(R>=ROUT) THEN
+					pow=4
+				ELSE 
+					pow=3
+				END IF			
+			END IF
+		ELSE
+			IF(R<=rxpt(2)) THEN
+				IF(R<=RIN) THEN
+					pow=1
+				ELSE 
+					pow=2
+				END IF
+			ELSE
+				IF(R>=ROUT) THEN
+					pow=4
+				ELSE 
+					pow=3
+				END IF			
+			END IF
+		END IF
+
+  !!return region
+  edgprof_region=pow
+ end function edgprof_region
 !---------------------------------------------------------------------
 !> profile from samples
 function edgprof_fn(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
@@ -913,409 +670,21 @@ function edgprof_fn(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
   !! local variables
   character(*), parameter :: s_name='edgprof_fn' !< subroutine name
   real(kr8) :: pow !< local variable
-  real(kr8) :: dis !<  distance between xpoints
-  real(kr8) :: disx1 !<  distance from centre of plasma to xpoint 1
-  real(kr8) :: disx2 !<  distance from centre of plasma to xpoint 2
-  real(kr8) :: num_xpoints !<  number of xpoints
-  integer(ki4) :: con=2 !< test if xpoints connected (con=0 connected, =1 if disconnected)
 
-	dis=sqrt((rxpt(2)-rxpt(1))**2.0d0 + (zxpt(2)-zxpt(1))**2.0d0)
-	disx1=sqrt((rxpt(1)-cenr)**2.0d0 + (zxpt(1)-cenz)**2.0d0)
-	disx2=sqrt((rxpt(2)-cenr)**2.0d0 + (zxpt(2)-cenz)**2.0d0)
-	IF(dis < 0.001d0) num_xpoints=1
-	IF(dis > 0.001d0) THEN
-		num_xpoints=2
-		IF(psixpt(1)==psixpt(2)) con=0
-		IF(psixpt(1)/=psixpt(2)) con=1
-	END IF
-	IF(con==0 .or. dis < 0.001d0) THEN
-		!! calculate profile
-		IF(Z<=cenz) THEN
-			IF(R<=rxpt(1)) THEN
-				IF(R<=RIN) THEN
-					!! select profile
-					formula_chosen: select case (self%formula(1))
-					case('unset','exp')
-						pow=edgprof_exp(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('expdouble')
-						pow=edgprof_expdouble(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('eich')
-						pow=edgprof_eich(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('userdefined')
-						pow=edgprof_userdefined(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('samples')
-						pow=edgprof_samples(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					end select formula_chosen
-				ELSE 
-					!! select profile
-					formula_chosen2: select case (self%formula(2))
-					case('unset','exp')
-						pow=edgprof_exp(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('expdouble')
-						pow=edgprof_expdouble(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('eich')
-						pow=edgprof_eich(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('userdefined')
-						pow=edgprof_userdefined(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('samples')
-						pow=edgprof_samples(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					end select formula_chosen2
-				END IF
-			ELSE
-				IF(R>=ROUT) THEN
-					!! select profile
-					formula_chosen3: select case (self%formula(4))
-					case('unset','exp')
-						pow=edgprof_exp(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('expdouble')
-						pow=edgprof_expdouble(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('eich')
-						pow=edgprof_eich(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('userdefined')
-						pow=edgprof_userdefined(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('samples')
-						pow=edgprof_samples(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					end select formula_chosen3
-				ELSE 
-					!! select profile
-					formula_chosen4: select case (self%formula(3))
-					case('unset','exp')
-						pow=edgprof_exp(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('expdouble')
-						pow=edgprof_expdouble(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('eich')
-						pow=edgprof_eich(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('userdefined')
-						pow=edgprof_userdefined(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('samples')
-						pow=edgprof_samples(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					end select formula_chosen4
-				END IF			
-			END IF
-		ELSE
-			IF(R<=rxpt(2)) THEN
-				IF(R<=RIN) THEN
-					!! select profile
-					formula_chosen5: select case (self%formula(1))
-					case('unset','exp')
-						pow=edgprof_exp(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('expdouble')
-						pow=edgprof_expdouble(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('eich')
-						pow=edgprof_eich(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('userdefined')
-						pow=edgprof_userdefined(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('samples')
-						pow=edgprof_samples(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					end select formula_chosen5
-				ELSE 
-					!! select profile
-					formula_chosen6: select case (self%formula(2))
-					case('unset','exp')
-						pow=edgprof_exp(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('expdouble')
-						pow=edgprof_expdouble(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('eich')
-						pow=edgprof_eich(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('userdefined')
-						pow=edgprof_userdefined(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('samples')
-						pow=edgprof_samples(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					end select formula_chosen6
-				END IF
-			ELSE
-				IF(R>=ROUT) THEN
-					!! select profile
-					formula_chosen7: select case (self%formula(4))
-					case('unset','exp')
-						pow=edgprof_exp(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('expdouble')
-						pow=edgprof_expdouble(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('eich')
-						pow=edgprof_eich(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('userdefined')
-						pow=edgprof_userdefined(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('samples')
-						pow=edgprof_samples(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					end select formula_chosen7
-				ELSE 
-					!! select profile
-					formula_chosen8: select case (self%formula(3))
-					case('unset','exp')
-						pow=edgprof_exp(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('expdouble')
-						pow=edgprof_expdouble(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('eich')
-						pow=edgprof_eich(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('userdefined')
-						pow=edgprof_userdefined(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('samples')
-						pow=edgprof_samples(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					end select formula_chosen8
-				END IF			
-			END IF
-		END IF
-	END IF
-  
-	IF(con==1) THEN
-		IF(disx1 < disx2) THEN
-			!! calculate profile
-			IF(Z<=cenz) THEN
-				IF(R<=rxpt(1)) THEN
-					IF(R<=RIN) THEN
-					!! select profile
-					formula_chosen9: select case (self%formula(1))
-					case('unset','exp')
-						pow=edgprof_exp(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('expdouble')
-						pow=edgprof_expdouble(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('eich')
-						pow=edgprof_eich(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('userdefined')
-						pow=edgprof_userdefined(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('samples')
-						pow=edgprof_samples(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					end select formula_chosen9
-					ELSE 
-					!! select profile
-					formula_chosen10: select case (self%formula(2))
-					case('unset','exp')
-						pow=edgprof_exp(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('expdouble')
-						pow=edgprof_expdouble(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('eich')
-						pow=edgprof_eich(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('userdefined')
-						pow=edgprof_userdefined(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('samples')
-						pow=edgprof_samples(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					end select formula_chosen10
-					END IF
-				ELSE
-					IF(R>=ROUT) THEN
-					!! select profile
-					formula_chosen11: select case (self%formula(4))
-					case('unset','exp')
-						pow=edgprof_exp(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('expdouble')
-						pow=edgprof_expdouble(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('eich')
-						pow=edgprof_eich(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('userdefined')
-						pow=edgprof_userdefined(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('samples')
-						pow=edgprof_samples(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					end select formula_chosen11
-					ELSE 
-					!! select profile
-					formula_chosen12: select case (self%formula(3))
-					case('unset','exp')
-						pow=edgprof_exp(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('expdouble')
-						pow=edgprof_expdouble(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('eich')
-						pow=edgprof_eich(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('userdefined')
-						pow=edgprof_userdefined(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('samples')
-						pow=edgprof_samples(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					end select formula_chosen12
-					END IF			
-				END IF
-			ELSE
-				IF(R<=rxpt(2)) THEN
-					IF(R<=RIN) THEN
-					!! select profile
-					formula_chosen13: select case (self%formula(1))
-					case('unset','exp')
-						pow=edgprof_exp(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('expdouble')
-						pow=edgprof_expdouble(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('eich')
-						pow=edgprof_eich(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('userdefined')
-						pow=edgprof_userdefined(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('samples')
-						pow=edgprof_samples(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					end select formula_chosen13
-					ELSE 
-					!! select profile
-					formula_chosen14: select case (self%formula(2))
-					case('unset','exp')
-						pow=edgprof_exp(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('expdouble')
-						pow=edgprof_expdouble(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('eich')
-						pow=edgprof_eich(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('userdefined')
-						pow=edgprof_userdefined(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('samples')
-						pow=edgprof_samples(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					end select formula_chosen14
-					END IF
-				ELSE
-					IF(R>=ROUT) THEN
-					!! select profile
-					formula_chosen15: select case (self%formula(4))
-					case('unset','exp')
-						pow=edgprof_exp(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('expdouble')
-						pow=edgprof_expdouble(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('eich')
-						pow=edgprof_eich(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('userdefined')
-						pow=edgprof_userdefined(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('samples')
-						pow=edgprof_samples(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					end select formula_chosen15
-					ELSE 
-					!! select profile
-					formula_chosen16: select case (self%formula(3))
-					case('unset','exp')
-						pow=edgprof_exp(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('expdouble')
-						pow=edgprof_expdouble(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('eich')
-						pow=edgprof_eich(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('userdefined')
-						pow=edgprof_userdefined(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('samples')
-						pow=edgprof_samples(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					end select formula_chosen16
-					END IF			
-				END IF
-			END IF
-			
-		ELSE
-			!! calculate profile
-			IF(Z<=cenz) THEN
-				IF(R<=rxpt(1)) THEN
-					IF(R<=RIN) THEN
-					!! select profile
-					formula_chosen17: select case (self%formula(1))
-					case('unset','exp')
-						pow=edgprof_exp(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('expdouble')
-						pow=edgprof_expdouble(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('eich')
-						pow=edgprof_eich(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('userdefined')
-						pow=edgprof_userdefined(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('samples')
-						pow=edgprof_samples(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					end select formula_chosen17
-					ELSE 
-					!! select profile
-					formula_chosen18: select case (self%formula(2))
-					case('unset','exp')
-						pow=edgprof_exp(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('expdouble')
-						pow=edgprof_expdouble(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('eich')
-						pow=edgprof_eich(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('userdefined')
-						pow=edgprof_userdefined(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('samples')
-						pow=edgprof_samples(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					end select formula_chosen18
-					END IF
-				ELSE
-					IF(R>=ROUT) THEN
-					!! select profile
-					formula_chosen19: select case (self%formula(4))
-					case('unset','exp')
-						pow=edgprof_exp(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('expdouble')
-						pow=edgprof_expdouble(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('eich')
-						pow=edgprof_eich(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('userdefined')
-						pow=edgprof_userdefined(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('samples')
-						pow=edgprof_samples(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					end select formula_chosen19
-					ELSE 
-					!! select profile
-					formula_chosen20: select case (self%formula(3))
-					case('unset','exp')
-						pow=edgprof_exp(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('expdouble')
-						pow=edgprof_expdouble(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('eich')
-						pow=edgprof_eich(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('userdefined')
-						pow=edgprof_userdefined(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('samples')
-						pow=edgprof_samples(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					end select formula_chosen20
-					END IF			
-				END IF
-			ELSE
-				IF(R<=rxpt(2)) THEN
-					IF(R<=RIN) THEN
-					!! select profile
-					formula_chosen21: select case (self%formula(1))
-					case('unset','exp')
-						pow=edgprof_exp(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('expdouble')
-						pow=edgprof_expdouble(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('eich')
-						pow=edgprof_eich(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('userdefined')
-						pow=edgprof_userdefined(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('samples')
-						pow=edgprof_samples(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					end select formula_chosen21
-					ELSE 
-					!! select profile
-					formula_chosen22: select case (self%formula(2))
-					case('unset','exp')
-						pow=edgprof_exp(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('expdouble')
-						pow=edgprof_expdouble(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('eich')
-						pow=edgprof_eich(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('userdefined')
-						pow=edgprof_userdefined(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('samples')
-						pow=edgprof_samples(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					end select formula_chosen22
-					END IF
-				ELSE
-					IF(R>=ROUT) THEN
-					!! select profile
-					formula_chosen23: select case (self%formula(4))
-					case('unset','exp')
-						pow=edgprof_exp(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('expdouble')
-						pow=edgprof_expdouble(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('eich')
-						pow=edgprof_eich(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('userdefined')
-						pow=edgprof_userdefined(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('samples')
-						pow=edgprof_samples(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					end select formula_chosen23
-					ELSE 
-					!! select profile
-					formula_chosen24: select case (self%formula(3))
-					case('unset','exp')
-						pow=edgprof_exp(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('expdouble')
-						pow=edgprof_expdouble(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('eich')
-						pow=edgprof_eich(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('userdefined')
-						pow=edgprof_userdefined(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					case('samples')
-						pow=edgprof_samples(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
-					end select formula_chosen24
-					END IF			
-				END IF
-			END IF
-				
-		END IF
-	END IF
+  i=edgprof_region(R,Z,cenz,rxpt,zxpt,RIN,ROUT)
+  !! select profile
+  formula_chosen: select case (self%formula(i))
+  case('unset','exp')
+	pow=edgprof_exp(self,psid,i)
+  case('expdouble')
+	pow=edgprof_expdouble(self,psid,i)
+  case('eich')
+    pow=edgprof_eich(self,psid,i)
+  case('userdefined')
+	pow=edgprof_userdefined(self,psid,i)
+  case('samples')
+    pow=edgprof_samples(self,psid,i)
+  end select formula_chosen
 	
   !! return profile
   edgprof_fn=pow
