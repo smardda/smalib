@@ -184,7 +184,10 @@ module beq_h
      real(kr8) :: psiltr !< \f$ \psi \f$ at limiter
      real(kr8) :: rxpt !< \f$ R \f$ at X-point (\f$ R=0 \f$ implies no X-point defined)
      real(kr8) :: zxpt !< \f$ Z \f$ at X-point
+     real(kr8) :: rxpt_temp(2) !< \f$ R \f$ at X-point (\f$ R=0 \f$ implies no X-point defined)
+     real(kr8) :: zxpt_temp(2) !< \f$ Z \f$ at X-point
      real(kr8) :: psixpt !< \f$ \psi \f$ at X-point
+     real(kr8) :: psixpt_temp(2) !< \f$ \psi \f$ at X-point
      real(kr8) :: thetaxpt !< \f$ \theta \f$ at X-point
      real(kr8) :: psiotr !< Extreme value of \f$ \psi \f$ for geometry which is not limiter extremum
      real(kr8) :: psinorm !< normalisation of \f$ \psi \f$, i.e. a representative magnitude
@@ -193,7 +196,7 @@ module beq_h
      real(kr8) :: thetagmin !< minimum \f$ \theta \f$ value of geometry
      real(kr8) :: rqcen !< \f$ R \f$ at central extremum of \f$ \psi \f$
      real(kr8) :: zqcen !< \f$ Z \f$ at central extremum of \f$ \psi \f$
-     real(kr8) :: rbdry !< \f$ R \f$ at reference boundary
+     real(kr8) :: rbdry(2) !< \f$ R \f$ at reference boundary
      real(kr8) :: bpbdry !< \f$ B_p \f$ at reference boundary, \f$ B_{pm} \f$
      real(kr8) :: btotbdry !< Total \f$ B \f$ at reference boundary \f$ B_m \f$
      real(kr8) :: ximaxm !< maximum \f$ \xi \f$ value \f$ -\epsilon \f$

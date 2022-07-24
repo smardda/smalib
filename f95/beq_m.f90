@@ -1934,7 +1934,19 @@ subroutine beq_readplus(self,infile)
   else
      self%n%duct=.FALSE.
   end if
-
+     read(nin,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,76,status)
+     read(nin,*,iostat=status) self%rxpt_temp(1),self%rxpt_temp(2)
+     call log_read_check(m_name,s_name,77,status)
+     read(nin,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,78,status)
+     read(nin,*,iostat=status) self%zxpt_temp(1),self%zxpt_temp(2)
+     call log_read_check(m_name,s_name,79,status)
+     read(nin,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,80,status)
+     read(nin,*,iostat=status) self%psixpt_temp(1),self%psixpt_temp(2)
+     call log_read_check(m_name,s_name,81,status)
+     
   call log_error(m_name,s_name,90,log_info,'beq read in from data file')
 
 end subroutine beq_readplus
@@ -2784,6 +2796,19 @@ subroutine beq_writeplus(self,kout)
   if (self%n%duct) then
      call fmesh_write(self%fmesh,kout)
   end if
+  
+     write(kout,*,iostat=status) 'rxpt_double_null'
+     call log_write_check(m_name,s_name,76,status)
+     write(kout,*,iostat=status) self%rxpt_temp(1),self%rxpt_temp(2)
+     call log_write_check(m_name,s_name,77,status)
+     write(kout,*,iostat=status) 'zxpt_double_null'
+     call log_write_check(m_name,s_name,78,status)
+     write(kout,*,iostat=status) self%zxpt_temp(1),self%zxpt_temp(2)
+     call log_write_check(m_name,s_name,79,status)
+     write(kout,*,iostat=status) 'psixpt_double_null'
+     call log_write_check(m_name,s_name,80,status)
+     write(kout,*,iostat=status) self%psixpt_temp(1),self%psixpt_temp(2)
+     call log_write_check(m_name,s_name,81,status)
 
 end subroutine beq_writeplus
 !---------------------------------------------------------------------
@@ -3156,7 +3181,7 @@ subroutine beq_readcon(selfn,kin)
   if(beq_psiopt==1.AND.beq_psimin<=0) &
  &call log_error(m_name,s_name,3,error_fatal,'beq_psimin must be > 0')
 
-  if(beq_bdryopt<=0.OR.beq_bdryopt>=16) &
+  if(beq_bdryopt<=0.OR.beq_bdryopt>=17) &
  &call log_error(m_name,s_name,6,error_fatal,'beq_bdryopt must be small positive integer')
   if(beq_nopt<=0.OR.beq_nopt>=4) &
  &call log_error(m_name,s_name,4,error_fatal,'beq_nopt must be small positive integer')
@@ -3579,7 +3604,6 @@ subroutine beq_psix(self)
   zsrlt=(zsrr**2+zszz**2)/100 !minimum r or r^2 for search
 
   if (self%n%xsearch==1) mhemi=1 !If xsearch=1 then only search top half of box
-       open (unit = 102, file = "x-points.txt")
   do_hemi: do jhemi=0,mhemi-1 !loop over both and below midplane of box if xsearch=0
 
      if (self%n%xsearch==1) then !If only search the top half of the box
@@ -3709,10 +3733,11 @@ subroutine beq_psix(self)
            self%thetaxpt=zt3
            zsrxpt=(zsr1+zsr2)/2
         end if
-        WRITE(102,*) self%n%rcen+zsrxpt*cos(self%thetaxpt),self%n%zcen+zsrxpt*sin(self%thetaxpt),self%psixpt
      end if
+        self%rxpt_temp(jhemi+1) = self%n%rcen+zsrxpt*cos(self%thetaxpt)
+        self%zxpt_temp(jhemi+1) = self%n%zcen+zsrxpt*sin(self%thetaxpt)
+        self%psixpt_temp(jhemi+1) = self%psixpt
   end do do_hemi
-     close(102)
   if (ixf==0) then
      call log_error(m_name,s_name,80,error_fatal,'no X-point found')
   else
@@ -3764,6 +3789,7 @@ subroutine beq_bdryrb(self)
   integer(ki4) :: iext    !< maximum allowed number of knots for spline in \f$ r \f$
   integer(ki4) :: iknot    !< actual number of knots for spline in \f$ r \f$
   integer(ki4) :: intv    !< interval in which spline inverse found
+  integer(ki4) :: db=0    !< used for double null
   real(kr8) :: cpsi    !< constant for estimating \f$ \Delta r_i \f$
   real(kr8) :: zpsi    !<  \f$ \psi \f$
   real(kr8) :: zf    !<   \f$ f(\psi) = RB_T \f$
@@ -3773,7 +3799,7 @@ subroutine beq_bdryrb(self)
   real(kr8) :: zbt    !<  toroidal field component
 
   pick_angle : select case (self%n%bdryopt)
-  case(4,5,7,11,14) ! inboard point selected
+  case(4,5,7,11,14,16) ! inboard point selected
      ztheta=const_pid
   case(8,9,10,12,15) ! outboard point selected
      ztheta=0.0_kr8
@@ -3787,6 +3813,10 @@ subroutine beq_bdryrb(self)
   case default ! do nothing (assuming psiqbdry OK in eqdsk)
      return
   end select pick_angle
+  123 continue
+  IF(db==1) THEN
+       ztheta=0.0_kr8
+  END IF
 
   zpsiinr=(self%psibdry+self%psiaxis)/2 !estimate for inner limit of \f$ \psi \f$
   zsrr=max( abs(self%rmax-self%n%rcen), abs(self%rmin-self%n%rcen) ) !estimate for maximum \f$ |R-R_c| \f$ in domain
@@ -3948,7 +3978,32 @@ subroutine beq_bdryrb(self)
   ze=self%n%zcen+zsr*zsin
   call spl2d_evaln(self%dpsidr,re,ze,1,zdpdr)
   call spl2d_evaln(self%dpsidz,re,ze,2,zdpdz)
-  self%rbdry=re
+  IF( self%n%bdryopt==4 .or. self%n%bdryopt==5 .or. self%n%bdryopt==7 &
+      .or. self%n%bdryopt==11 .or. self%n%bdryopt==14 .or. self%n%bdryopt==16 .and. db==0) THEN
+    self%rbdry(1)=re
+  ELSE IF( self%n%bdryopt==8 .OR. self%n%bdryopt==9 .or. self%n%bdryopt==10 &
+       .or. self%n%bdryopt==12 .or. self%n%bdryopt==15 .and. db==0) THEN
+    self%rbdry(2)=re
+  END IF
+  
+  deallocate(wvextn)
+  deallocate(wvext)
+  deallocate(wvextd)
+  
+  double_null : select case (self%n%bdryopt)
+  case(16) 
+     IF(db==0) THEN
+       db=db+1
+       GOTO 123
+	 END IF
+  case default 
+     return
+  end select double_null
+  
+  IF(db==1) THEN
+    self%rbdry(2)=re
+  END IF
+  
   self%bpbdry=(1/re)*sqrt( max(0.,(zdpdr**2+zdpdz**2)) )
 
   ! evaluate I aka f at psi
@@ -3957,7 +4012,8 @@ subroutine beq_bdryrb(self)
 
   call log_error(m_name,s_name,2,log_info,'Reference boundary values')
   call log_value("SMITER-GEOQ psibdry ",self%psibdry)
-  call log_value("SMITER-GEOQ rbdry ",self%rbdry)
+  call log_value("SMITER-GEOQ rbdry ",self%rbdry(1))
+  call log_value("SMITER-GEOQ rbdry ",self%rbdry(2))
   call log_value("SMITER-GEOQ zbdry ",ze)
   call log_value("SMITER-GEOQ bpbdry ",self%bpbdry)
   call log_value("SMITER-GEOQ btotbdry ",self%btotbdry)
@@ -3971,9 +4027,7 @@ subroutine beq_bdryrb(self)
   call log_value("vertical field component",zbz)
   call log_value("toroidal field component",zbt)
 
-  deallocate(wvextn)
-  deallocate(wvext)
-  deallocate(wvextd)
+
 
 end subroutine beq_bdryrb
 !---------------------------------------------------------------------
