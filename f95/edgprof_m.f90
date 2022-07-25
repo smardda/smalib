@@ -598,7 +598,7 @@ end function edgprof_samples
 
 !---------------------------------------------------------------------
 !> Determines the region needed for edgprof
-function edgprof_region(R,Z,cenz,rxpt,zxpt,RIN,ROUT)
+function edgprof_region(R,Z,cenz,rxpt,RIN,ROUT)
 
   !! arguments
   integer(ki4) :: edgprof_region !< local variable
@@ -606,7 +606,6 @@ function edgprof_region(R,Z,cenz,rxpt,zxpt,RIN,ROUT)
   real(kr8) :: Z !< position  \f$ Z \f$
   real(kr8) :: cenz !< position centre of plasma \f$ Z \f$
   real(kr8) :: rxpt(2)   !<  position x point \f$ R \f$
-  real(kr8) :: zxpt(2)   !<  position x point \f$ Z \f$
   real(kr8) :: RIN !< Inboard radius
   real(kr8) :: ROUT !< Outboard radius
   
@@ -649,20 +648,16 @@ function edgprof_region(R,Z,cenz,rxpt,zxpt,RIN,ROUT)
  end function edgprof_region
 !---------------------------------------------------------------------
 !> profile from samples
-function edgprof_fn(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
+function edgprof_fn(self,psid,R,Z,cenz,rxpt,RIN,ROUT)
 
   !! arguments
   type(edgprof_t), intent(in) :: self !< type containing profile parameters
   real(kr8) :: edgprof_fn !< local variable
-  real(kr8), intent(inout) :: psi !< position in \f$ \psi \f$
   real(kr8), intent(in) :: psid !< position in \f$ \psi \f$
   real(kr8) :: R !< position \f$ R \f$
   real(kr8) :: Z !< position  \f$ Z \f$
-  real(kr8) :: cenr !< position centre of plasma \f$ R \f$
   real(kr8) :: cenz !< position centre of plasma \f$ Z \f$
   real(kr8) :: rxpt(2)   !<  position x point \f$ R \f$
-  real(kr8) :: zxpt(2)   !<  position x point \f$ Z \f$
-  real(kr8) :: psixpt(2) !<  \f$ \psi \f$ at x point
   real(kr8) :: RIN !< Inboard radius
   real(kr8) :: ROUT !< Outboard radius
   integer(ki4) :: i   !<  local variable
@@ -671,7 +666,7 @@ function edgprof_fn(self,psi,psid,R,Z,cenr,cenz,rxpt,zxpt,psixpt,RIN,ROUT)
   character(*), parameter :: s_name='edgprof_fn' !< subroutine name
   real(kr8) :: pow !< local variable
 
-  i=edgprof_region(R,Z,cenz,rxpt,zxpt,RIN,ROUT)
+  i=edgprof_region(R,Z,cenz,rxpt,RIN,ROUT)
   !! select profile
   formula_chosen: select case (self%formula(i))
   case('unset','exp')
