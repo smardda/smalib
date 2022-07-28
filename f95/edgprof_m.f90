@@ -598,7 +598,7 @@ end function edgprof_samples
 
 !---------------------------------------------------------------------
 !> Determines the region needed for edgprof
-function edgprof_region(R,Z,cenz,rxpt,RIN,ROUT)
+function edgprof_region(R,Z,cenz,rxpt,psi,psixpt)
 
   !! arguments
   integer(ki4) :: edgprof_region !< local variable
@@ -606,22 +606,25 @@ function edgprof_region(R,Z,cenz,rxpt,RIN,ROUT)
   real(kr8) :: Z !< position  \f$ Z \f$
   real(kr8) :: cenz !< position centre of plasma \f$ Z \f$
   real(kr8) :: rxpt(2)   !<  position x point \f$ R \f$
-  real(kr8) :: RIN !< Inboard radius
-  real(kr8) :: ROUT !< Outboard radius
+  real(kr8), intent(in) :: psi !<  \f$ \psi \f$
+  real(kr8) :: psixpt(2) !<  flux xpoints
   
   !! local variables
   character(*), parameter :: s_name='edgprof_region' !< subroutine name
+  integer(ki4) :: psixplow !< lowest x-point psi
   integer(ki4) :: pow !< local variable
+  
+  psixplow=MINVAL(psixpt)
   
   		IF(Z<=cenz) THEN
 			IF(R<=rxpt(1)) THEN
-				IF(R<=RIN) THEN
+				IF(psi<=psixplow) THEN
 					pow=1
 				ELSE 
 					pow=2
 				END IF
 			ELSE
-				IF(R>=ROUT) THEN
+				IF(psi<=psixplow) THEN
 					pow=4
 				ELSE 
 					pow=3
@@ -629,13 +632,13 @@ function edgprof_region(R,Z,cenz,rxpt,RIN,ROUT)
 			END IF
 		ELSE
 			IF(R<=rxpt(2)) THEN
-				IF(R<=RIN) THEN
+				IF(psi<=psixplow) THEN
 					pow=1
 				ELSE 
 					pow=2
 				END IF
 			ELSE
-				IF(R>=ROUT) THEN
+				IF(psi<=psixplow) THEN
 					pow=4
 				ELSE 
 					pow=3
@@ -648,25 +651,25 @@ function edgprof_region(R,Z,cenz,rxpt,RIN,ROUT)
  end function edgprof_region
 !---------------------------------------------------------------------
 !> profile from samples
-function edgprof_fn(self,psid,R,Z,cenz,rxpt,RIN,ROUT)
+function edgprof_fn(self,psi,psid,R,Z,cenz,rxpt,psixpt)
 
   !! arguments
   type(edgprof_t), intent(in) :: self !< type containing profile parameters
   real(kr8) :: edgprof_fn !< local variable
   real(kr8), intent(in) :: psid !< position in \f$ \psi \f$
+  real(kr8), intent(in) :: psi !<  \f$ \psi \f$
   real(kr8) :: R !< position \f$ R \f$
   real(kr8) :: Z !< position  \f$ Z \f$
   real(kr8) :: cenz !< position centre of plasma \f$ Z \f$
   real(kr8) :: rxpt(2)   !<  position x point \f$ R \f$
-  real(kr8) :: RIN !< Inboard radius
-  real(kr8) :: ROUT !< Outboard radius
+  real(kr8) :: psixpt(2) !<  flux xpoints
   integer(ki4) :: i   !<  local variable
   
   !! local variables
   character(*), parameter :: s_name='edgprof_fn' !< subroutine name
   real(kr8) :: pow !< local variable
 
-  i=edgprof_region(R,Z,cenz,rxpt,RIN,ROUT)
+  i=edgprof_region(R,Z,cenz,rxpt,psi,psixpt)
   !! select profile
   formula_chosen: select case (self%formula(i))
   case('unset','exp')
