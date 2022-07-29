@@ -3789,7 +3789,6 @@ subroutine beq_bdryrb(self)
   integer(ki4) :: iext    !< maximum allowed number of knots for spline in \f$ r \f$
   integer(ki4) :: iknot    !< actual number of knots for spline in \f$ r \f$
   integer(ki4) :: intv    !< interval in which spline inverse found
-  integer(ki4) :: db=0    !< used for double null
   real(kr8) :: cpsi    !< constant for estimating \f$ \Delta r_i \f$
   real(kr8) :: zpsi    !<  \f$ \psi \f$
   real(kr8) :: zf    !<   \f$ f(\psi) = RB_T \f$
@@ -3799,7 +3798,7 @@ subroutine beq_bdryrb(self)
   real(kr8) :: zbt    !<  toroidal field component
 
   pick_angle : select case (self%n%bdryopt)
-  case(4,5,7,11,14,16) ! inboard point selected
+  case(4,5,7,11,14) ! inboard point selected
      ztheta=const_pid
   case(8,9,10,12,15) ! outboard point selected
      ztheta=0.0_kr8
@@ -3813,28 +3812,24 @@ subroutine beq_bdryrb(self)
   case default ! do nothing (assuming psiqbdry OK in eqdsk)
      return
   end select pick_angle
-  123 continue
-  IF(db==1) THEN
-       ztheta=0.0_kr8
-  END IF
 
-  zpsiinr=(self%psibdry+self%psiaxis)/2 !estimate for inner limit of \f$ \psi \f$
-  zsrr=max( abs(self%rmax-self%n%rcen), abs(self%rmin-self%n%rcen) ) !estimate for maximum \f$ |R-R_c| \f$ in domain
-  zszz=max( abs(self%zmax-self%n%zcen), abs(self%zmin-self%n%zcen) ) !estimate for maximum \f$ |Z-Z_c| \f$ in domain
-  zsrmax=sqrt(zsrr**2+zszz**2) !larger \f$ r \f$ corresponding to zpsioutr
-  nsrsamp=self%mr+self%mz !number of samples in \f$ r \f$
-  zdsr=zsrmax/nsrsamp !\f$ \Delta r_i \f$
-  zsrsta=zsrmax/10 !estimate for starting \f$ r \f$
-  zpsioutr=zpsiinr !estimate for outer limit of \f$ \psi \f$
+  zpsiinr=(self%psibdry+self%psiaxis)/2
+  zsrr=max( abs(self%rmax-self%n%rcen), abs(self%rmin-self%n%rcen) )
+  zszz=max( abs(self%zmax-self%n%zcen), abs(self%zmin-self%n%zcen) )
+  zsrmax=sqrt(zsrr**2+zszz**2)
+  nsrsamp=self%mr+self%mz
+  zdsr=zsrmax/nsrsamp
+  zsrsta=zsrmax/10
+  zpsioutr=zpsiinr
 
-  zcos=cos(ztheta) !\f$ \cos(\theta=0) \f$
-  zsin=sin(ztheta) !\f$ \sin(\theta=0) \f$
+  zcos=cos(ztheta)
+  zsin=sin(ztheta)
   ! loop over distance from centre
   ! start a little way from origin
-  zsr=zsrsta !\f$  r_i \f$
-  zsrinr=zsr !smallest \f$ r \f$ in range
-  isr=0 !flag that value \f$ \psi < \psi_{\min} \f$ found
-  idplset=0 !flag that \f$ \frac{\partial\psi}{\partial r}_{i-1}  \f$ set
+  zsr=zsrsta
+  zsrinr=zsr
+  isr=0
+  idplset=0
   radial:do i=1,nsrsamp
      re=self%n%rcen+zsr*zcos
      if (re>=self%rmax.OR.re<=self%rmin) then
@@ -3978,32 +3973,7 @@ subroutine beq_bdryrb(self)
   ze=self%n%zcen+zsr*zsin
   call spl2d_evaln(self%dpsidr,re,ze,1,zdpdr)
   call spl2d_evaln(self%dpsidz,re,ze,2,zdpdz)
-  IF( self%n%bdryopt==4 .or. self%n%bdryopt==5 .or. self%n%bdryopt==7 &
-      .or. self%n%bdryopt==11 .or. self%n%bdryopt==14 .or. self%n%bdryopt==16 .and. db==0) THEN
-    self%rbdry(1)=re
-  ELSE IF( self%n%bdryopt==8 .OR. self%n%bdryopt==9 .or. self%n%bdryopt==10 &
-       .or. self%n%bdryopt==12 .or. self%n%bdryopt==15 .and. db==0) THEN
-    self%rbdry(2)=re
-  END IF
-  
-  deallocate(wvextn)
-  deallocate(wvext)
-  deallocate(wvextd)
-  
-  double_null : select case (self%n%bdryopt)
-  case(16) 
-     IF(db==0) THEN
-       db=db+1
-       GOTO 123
-	 END IF
-  case default 
-     return
-  end select double_null
-  
-  IF(db==1) THEN
-    self%rbdry(2)=re
-  END IF
-  
+  self%rbdry=re
   self%bpbdry=(1/re)*sqrt( max(0.,(zdpdr**2+zdpdz**2)) )
 
   ! evaluate I aka f at psi
@@ -4012,8 +3982,7 @@ subroutine beq_bdryrb(self)
 
   call log_error(m_name,s_name,2,log_info,'Reference boundary values')
   call log_value("SMITER-GEOQ psibdry ",self%psibdry)
-  call log_value("SMITER-GEOQ rbdry ",self%rbdry(1))
-  call log_value("SMITER-GEOQ rbdry ",self%rbdry(2))
+  call log_value("SMITER-GEOQ rbdry ",self%rbdry)
   call log_value("SMITER-GEOQ zbdry ",ze)
   call log_value("SMITER-GEOQ bpbdry ",self%bpbdry)
   call log_value("SMITER-GEOQ btotbdry ",self%btotbdry)
@@ -4027,7 +3996,9 @@ subroutine beq_bdryrb(self)
   call log_value("vertical field component",zbz)
   call log_value("toroidal field component",zbt)
 
-
+  deallocate(wvextn)
+  deallocate(wvext)
+  deallocate(wvextd)
 
 end subroutine beq_bdryrb
 !---------------------------------------------------------------------
