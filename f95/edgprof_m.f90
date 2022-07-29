@@ -397,7 +397,7 @@ end  subroutine edgprof_readcon
 subroutine edgprof_factors(self,rbdry,bpbdry,btotbdry,psign)
   !! arguments
   type(edgprof_t), intent(inout) :: self !< type containing profile parameters
-  real(kr8), intent(in) :: rbdry(2) !< boundary value
+  real(kr8), intent(in) :: rbdry !< boundary value
   real(kr8), intent(in) :: bpbdry !< boundary value
   real(kr8), intent(in) :: btotbdry!< boundary value
   real(kr8), intent(in) :: psign !< adjust sign of exponential factor
@@ -412,7 +412,7 @@ subroutine edgprof_factors(self,rbdry,bpbdry,btotbdry,psign)
   self%rblfacnr=0.0
   
   ! power normalisation factor
-  zrbfac=1/(2*const_pid*rbdry(2)*bpbdry)
+  zrbfac=1/(2*const_pid*rbdry*bpbdry)
   ! default diffusion factor
   self%slfac=0
   DO i=1,4
