@@ -28,8 +28,7 @@ module edgprof_m
   edgprof_write, &  !< write out object
   edgprof_delete, & !< delete object
   edgprof_close, & !< close file
-  edgprof_closewrite, & !< close write file
-  edgprof_lambda_q !< Calculates_lambda_q
+  edgprof_closewrite  !< close write file
 
 ! private variables
   character(*), parameter :: m_name='edgprof_m' !< module name
@@ -85,7 +84,7 @@ subroutine edgprof_readcon(self,pnumerics,kin)
   !! local
   character(*), parameter :: s_name='edgprof_readcon' !< subroutine name
   character(len=80) :: profile_formula(4) !< formula to be used
-  integer(ki4), parameter :: MAX_NUMBER_OF_POSITIONS=500 !< maximum number of positions allowed
+  integer(ki4), parameter :: MAX_NUMBER_OF_POSITIONS=100 !< maximum number of positions allowed
   integer(ki4), parameter :: MAX_NUMBER_OF_PARAMETERS=10 !< maximum number of parameters allowed
   real(kr8) :: power_split !< power split ion to electron direction
   real(kr8), dimension(4) :: decay_length !< power decay length at midplane (m)
@@ -97,10 +96,7 @@ subroutine edgprof_readcon(self,pnumerics,kin)
 
   real(kr8), dimension(MAX_NUMBER_OF_POSITIONS) :: positions  !< local variable
   real(kr8), dimension(MAX_NUMBER_OF_POSITIONS) :: deposition_profile  !< local variable
-  real(kr8):: c_prop_1  !< Constant of proportionality for lambda_q custom-1
-  real(kr8):: c_prop_2  !< Constant of proportionality for lambda_q custom-2
-  real(kr8):: c_prop_3  !< Constant of proportionality for lambda_q custom-3
-  real(kr8):: c_prop_4  !< Constant of proportionality for lambda_q custom-4
+  real(kr8):: c_prop(4)  !< Constant of proportionality for lambda_q custom
   real(kr8):: power_loss_exp !< Exponent for power loss in lambda_q custom
   real(kr8):: k_0_exp !< Exponent for k_0 in lambda_q custom
   real(kr8):: q_exp !< Exponent for q in lambda_q custom
@@ -115,9 +111,7 @@ subroutine edgprof_readcon(self,pnumerics,kin)
   character(len=80), dimension(4) :: lambda_q_choice !< Choice of calculation of lambda_q
 
   real(kr8), dimension(MAX_NUMBER_OF_PARAMETERS) :: general_real_parameters  !< local variable
-  real(kr8) :: pi=3.1415926535 !< Pi
   real(kr8) :: n_u!< Plasma upstream density
-  real(kr8) :: e_charge=1.602E-19 !< Electron charge
   real(kr8) :: k_0 !< Electron conductivity
   real(kr8) :: q !< Safety factor
   real(kr8) :: R !< 
@@ -144,42 +138,27 @@ subroutine edgprof_readcon(self,pnumerics,kin)
  &general_real_parameters, number_of_real_parameters, &
  &general_integer_parameters, number_of_integer_parameters, lambda_q_choice
  
-   namelist /lambdaqparameters/ &
-  &c_prop_1 , c_prop_2, c_prop_3, &
-  &c_prop_4, power_loss_exp, n_u, &
-  &k_0, k_0_exp, q, q_exp, &
-  &R, R_exp, a, a_exp, &
-  &x_perpendicular, L, L_exp,  &
-  &ratio_B, ratio_B_exp, P_V_ratio_exp, &
-  &P_V_ratio, a_R0_ratio, a_R0_elongation_ratio_exp, &
-  &elongation
+  !!lambdaq parameters
+  namelist /lambdaqparameters/ &
+ &c_prop, power_loss_exp, n_u, &
+ &k_0, k_0_exp, q, q_exp, R, &
+ &R_exp, a, a_exp, x_perpendicular, &
+ &L, L_exp, ratio_B, ratio_B_exp, &
+ &P_V_ratio_exp, P_V_ratio, a_R0_ratio, & 
+ &a_R0_elongation_ratio_exp, elongation
 
   !! Set default lambdaqparameters
-  c_prop_1 = ((7.0d0/8.0d0)**(2.0d0/9.0d0))*((8.0d0*(pi**2.0d0)/7.0d0)**(7.0d0/9.0d0))  
-  c_prop_2 = ((8.0d0*(pi**2.0d0)/7.0d0)**(7.0d0/9.0d0))  
-  c_prop_3 = (8**(5.0d0/9.0d0))*(pi**(4.0d0/3.0d0))/(7.0d0**(5.0d0/9.0d0))
-  c_prop_4 = 10.0d0
-  power_loss_exp=-5.0d0/9.0d0
-  n_u=1E+19
-  k_0=2000.0d0
-  k_0_exp=-2.0d0/9.0d0
-  q=3.0d0
-  q_exp=4.0/9.0d0
-  R=2.5d0
-  R_exp=5.0d0/9.0d0
-  a=1.5d0
-  a_exp=5.0d0/9.0d0
-  x_perpendicular=2.0d0
-  L=50.0d0
-  L_exp=4.0d0/9.0d0
-  ratio_B=0.3d0
-  ratio_B_exp=-2.0d0/9.0d0
-  P_V_ratio_exp=-0.38d0
-  P_V_ratio = 4100.0d0
-  a_R0_ratio=0.33d0
-  a_R0_elongation_ratio_exp=1.3d0
+  c_prop(1) = ((7.0d0/8.0d0)**(2.0d0/9.0d0))*((8.0d0*(const_pid**2.0d0)/7.0d0)**(7.0d0/9.0d0))  
+  c_prop(2) = ((8.0d0*(const_pid**2.0d0)/7.0d0)**(7.0d0/9.0d0))  
+  c_prop(3) = (8**(5.0d0/9.0d0))*(const_pid**(4.0d0/3.0d0))/(7.0d0**(5.0d0/9.0d0))
+  c_prop(4) = 10.0d0;	power_loss_exp=-5.0d0/9.0d0
+  n_u=1E+19;			k_0=2000.0d0;				k_0_exp=-2.0d0/9.0d0
+  q=3.0d0;				q_exp=4.0/9.0d0;			R=2.5d0
+  R_exp=5.0d0/9.0d0;	a=1.5d0;					a_exp=5.0d0/9.0d0
+  x_perpendicular=2.0d0;L=50.0d0;					L_exp=4.0d0/9.0d0
+  ratio_B=0.3d0;		ratio_B_exp=-2.0d0/9.0d0;	P_V_ratio_exp=-0.38d0
+  P_V_ratio = 4100.0d0;	a_R0_ratio=0.33d0;			a_R0_elongation_ratio_exp=1.3d0
   elongation=1.3d0
-
 
   !! set default edgprof parameters
   power_split=0.5_kr8
@@ -210,27 +189,25 @@ subroutine edgprof_readcon(self,pnumerics,kin)
   if (pnumerics%ledgprof) then
      !!read edgprof parameters
      read(ninep,nml=edgprofparameters,iostat=status)
-  Do i=1,4
-  formula_chosen_lambda_pre_read: select case (lambda_q_choice(i))
-  case('custom-1') 
-    read(ninep,nml=lambdaqparameters,iostat=status)  
-  case('custom-2') 
-    read(ninep,nml=lambdaqparameters,iostat=status)  
-  case('custom-3') 
-    a_exp=7.0d0/9.0d0
-    L_exp=2.0d0/9.0d0
-    read(ninep,nml=lambdaqparameters,iostat=status)
-  case('custom-4') 
-    read(ninep,nml=lambdaqparameters,iostat=status)
-  end select formula_chosen_lambda_pre_read
-  end do
-  
-     if(status/=0) then
-        print '("Fatal error reading edgprofparameters or lambda q parameters")'
+          if(status/=0) then
+        print '("Fatal error reading edgprofparameters")'
         call log_getunit(ilog)
         write(ilog,nml=edgprofparameters)
-        call log_error(m_name,s_name,1,error_fatal,'Error reading edgprofparameters or lambdaqparameters')
+        call log_error(m_name,s_name,1,error_fatal,'Error reading edgprofparameters')
      end if
+
+  if(ANY(lambda_q_choice/='default')) THEN
+  if ( ANY( lambda_q_choice=="custom-3" ) ) then
+      a_exp=7.0d0/9.0d0;	L_exp=2.0d0/9.0d0
+  end if
+  read(ninep,nml=lambdaqparameters,iostat=status)
+     if(status/=0) then
+        print '("Fatal error reading lambdaqparameters")'
+        call log_getunit(ilog)
+        write(ilog,nml=lambdaqparameters)
+        call log_error(m_name,s_name,1,error_fatal,'Error reading lambdaqparameters')
+     end if
+  end if
   else
      !! set edgprof parameters using values from powcalparameters
      power_split=pnumerics%f
@@ -238,13 +215,11 @@ subroutine edgprof_readcon(self,pnumerics,kin)
      diffusion_length=pnumerics%sigma
      power_loss=pnumerics%ploss
      q_parallel0=pnumerics%qpara0
-     DO i=1,4
-		if (diffusion_length(i)>1.e-6_kr8) then
+		if (MINVAL(diffusion_length)>1.e-6_kr8) then
 			profile_formula='eich'
 		else
 			profile_formula='unset'
 		end if
-     END DO
   end if
 
   call lowor(profile_formula,1,len_trim(profile_formula))
@@ -252,25 +227,23 @@ subroutine edgprof_readcon(self,pnumerics,kin)
   !!Calculates user choice of lambda_q
   DO i=1,4
   formula_chosen_lambda: select case (lambda_q_choice(i))
-  case('default')
-  
   case('custom-1') 
-    decay_length(i)=c_prop_1*(power_loss**power_loss_exp)*&
+    decay_length(i)=c_prop(1)*(power_loss**power_loss_exp)*&
                  (k_0**k_0_exp)*(q**q_exp)*R*(a**a_exp)*&
-                 ((e_charge*n_u*x_perpendicular)**(7.0d0/9.0d0))
+                 ((const_charge*n_u*x_perpendicular)**(7.0d0/9.0d0))
                  
   case('custom-2') 
-    decay_length(i)=c_prop_2*(power_loss**power_loss_exp)*&
+    decay_length(i)=c_prop(2)*(power_loss**power_loss_exp)*&
                  (k_0**k_0_exp)*(R**R_exp)*(a**a_exp)*&
-                 ((e_charge*n_u*x_perpendicular)**(7.0d0/9.0d0))*(L**L_exp)
+                 ((const_charge*n_u*x_perpendicular)**(7.0d0/9.0d0))*(L**L_exp)
                  
   case('custom-3') 
-    decay_length(i)=c_prop_3*(power_loss**power_loss_exp)*&
+    decay_length(i)=c_prop(3)*(power_loss**power_loss_exp)*&
                  (k_0**k_0_exp)*(q**q_exp)*(R**R_exp)*(a**a_exp)*&
-                 ((e_charge*n_u*x_perpendicular)**(7.0d0/9.0d0))*(L**L_exp)*&
+                 ((const_charge*n_u*x_perpendicular)**(7.0d0/9.0d0))*(L**L_exp)*&
                  (ratio_B**ratio_B_exp)
   case('custom-4') 
-    decay_length(i)=c_prop_4*((P_V_ratio)**P_V_ratio_exp)*((a_R0_ratio/elongation)**a_R0_elongation_ratio_exp)
+    decay_length(i)=c_prop(4)*((P_V_ratio)**P_V_ratio_exp)*((a_R0_ratio/elongation)**a_R0_elongation_ratio_exp)
   end select formula_chosen_lambda
   end do
   !! check for valid data
@@ -279,20 +252,16 @@ DO j=1,4
   case('unset','exp')
      if(power_split<0.OR.power_split>1) &
  &   call log_error(m_name,s_name,11,error_fatal,'power_split must be >=0 and <=1')
- do i=1,4
-     if(decay_length(i)<=0) &
+     if(decay_length(j)<=0) &
  &   call log_error(m_name,s_name,12,error_fatal,'decay_length (m) must be >0')
- end do
      if(q_parallel0<=0.AND.power_loss<=0) &
  &   call log_error(m_name,s_name,14,error_fatal,'power_loss (W) must be >0')
 
   case('expdouble')
      if(power_split<0.OR.power_split>1) &
  &   call log_error(m_name,s_name,21,error_fatal,'power_split must be >=0 and <=1')
- do i=1,4
-     if(decay_length(i)<=0) &
+     if(decay_length(j)<=0) &
  &   call log_error(m_name,s_name,22,error_fatal,'decay_length (m) must be >0')
- end do
      if(q_parallel0<=0.AND.power_loss<=0) &
  &   call log_error(m_name,s_name,24,error_fatal,'power_loss (W) must be >0')
      if(ratio_of_q_parallel0_near<=0.AND.power_loss<=0) &
@@ -303,12 +272,10 @@ DO j=1,4
   case('eich')
      if(power_split<0.OR.power_split>1) &
  &   call log_error(m_name,s_name,31,error_fatal,'power_split must be >=0 and <=1')
- do i=1,4
-     if(decay_length(i)<=0) &
+     if(decay_length(j)<=0) &
  &   call log_error(m_name,s_name,32,error_fatal,'decay_length (m) must be >0')
-     if(diffusion_length(i)<0) &
+     if(diffusion_length(j)<0) &
  &   call log_error(m_name,s_name,33,error_fatal,'diffusion_length (m) must be >=0')
-  end do
      if(q_parallel0<=0.AND.power_loss<=0) &
  &   call log_error(m_name,s_name,34,error_fatal,'power_loss (W) must be >0')
 
@@ -345,13 +312,9 @@ DO j=1,4
   end select formula_chosen
 end do
   !! store values
-  DO i=1,4
-  self%formula(i)=TRIM(profile_formula(i))
-  END DO
+  self%formula=profile_formula
+  self%lmid=decay_length
   self%f=power_split
-  do i=1,4
-  self%lmid(i)=decay_length(i)
-  end do
   self%ploss=power_loss
   self%sigma=diffusion_length
   self%qpara0=q_parallel0
@@ -364,8 +327,7 @@ end do
   self%npos=number_of_positions
   self%nrpams=number_of_real_parameters
   self%nipams=number_of_integer_parameters
-DO i=1,4
-  formula_allocate: select case (profile_formula(i))
+  formula_allocate: select case (profile_formula(1))
   case('samples')
      allocate(self%pos(number_of_positions), self%prof(number_of_positions), stat=status)
      call log_alloc_check(m_name,s_name,60,status)
@@ -389,7 +351,6 @@ DO i=1,4
      self%npar=general_integer_parameters(:number_of_integer_parameters)
   case default
   end select formula_allocate
-end do
 end  subroutine edgprof_readcon
 
 !---------------------------------------------------------------------
@@ -406,7 +367,6 @@ subroutine edgprof_factors(self,rbdry,bpbdry,btotbdry,psign)
   character(*), parameter :: s_name='edgprof_factors' !< subroutine name
   real(kr8) :: zrbfac(4) !< power factor in \f$ B \f$ only
   real(kr8),dimension(4) :: zrblfac !< power factor scaled by lmid
-  integer(ki4) :: i   !<  local variable
 
   self%fpfacnr=0.0
   self%rblfacnr=0.0
@@ -475,6 +435,7 @@ function edgprof_exp(self,psid,j)
   character(*), parameter :: s_name='edgprof_exp' !< subroutine name
   real(kr8) :: pow !< local variable
 
+  !! calculate profile
   pow=self%fpfac(j)*exp(self%rblfac(j)*psid)
 
   !! return profile
@@ -496,9 +457,9 @@ function edgprof_expdouble(self,psid,j)
   character(*), parameter :: s_name='edgprof_expdouble' !< subroutine name
   real(kr8) :: pow !< local variable
   
-				  pow=self%fpfac(j)*exp(self%rblfac(j)*psid) &
+    !! calculate profile
+	pow=self%fpfac(j)*exp(self%rblfac(j)*psid) &
  &+self%fpfacnr(j)*exp(self%rblfacnr(j)*psid)
-
 
   !! return profile
   edgprof_expdouble=pow
@@ -520,7 +481,6 @@ function edgprof_eich(self,psid,j)
   real(kr8) :: pow !< local variable
 
   !! calculate profile
-
   pow=self%fpfac(j)*&
   exp(self%slfac(j)**2+self%rblfac(j)*psid)*&
   erfc(self%slfac(j)+self%rblfac(j)*psid/(2*self%slfac(j)))
@@ -594,8 +554,6 @@ function edgprof_samples(self,psid,j)
   edgprof_samples=pow
 
 end function edgprof_samples
-
-
 !---------------------------------------------------------------------
 !> Determines the region needed for edgprof
 function edgprof_region(R,Z,cenz,rxpt,psi,psixpt)
@@ -611,41 +569,20 @@ function edgprof_region(R,Z,cenz,rxpt,psi,psixpt)
   
   !! local variables
   character(*), parameter :: s_name='edgprof_region' !< subroutine name
-  integer(ki4) :: psixplow !< lowest x-point psi
+  integer(ki4) :: rxpt_hemi !< r for xpoint in hemisphere being considered
   integer(ki4) :: pow !< local variable
   
-  psixplow=MINVAL(psixpt)
-  
-  		IF(Z<=cenz) THEN
-			IF(R<=rxpt(1)) THEN
-				IF(psi<=psixplow) THEN
-					pow=1
-				ELSE 
-					pow=2
-				END IF
+  !Determine whether above or below the midplane and set reference rxpt accordingly
+  IF(Z<=cenz) rxpt_hemi=rxpt(1) 
+  IF(Z>cenz)  rxpt_hemi=rxpt(2) 
+  !Determine whether the point is to the left or right of the xpointx
+			IF(R<=rxpt_hemi) THEN
+				IF(psi<=MINVAL(psixpt)) pow=1
+				IF(psi>MINVAL(psixpt)) pow=2
 			ELSE
-				IF(psi<=psixplow) THEN
-					pow=4
-				ELSE 
-					pow=3
-				END IF			
+				IF(psi<=MINVAL(psixpt)) pow=4
+				IF(psi>MINVAL(psixpt)) pow=3	
 			END IF
-		ELSE
-			IF(R<=rxpt(2)) THEN
-				IF(psi<=psixplow) THEN
-					pow=1
-				ELSE 
-					pow=2
-				END IF
-			ELSE
-				IF(psi<=psixplow) THEN
-					pow=4
-				ELSE 
-					pow=3
-				END IF			
-			END IF
-		END IF
-
   !!return region
   edgprof_region=pow
  end function edgprof_region
@@ -686,7 +623,6 @@ function edgprof_fn(self,psi,psid,R,Z,cenz,rxpt,psixpt)
 	
   !! return profile
   edgprof_fn=pow
-
 end function edgprof_fn
 !---------------------------------------------------------------------
 !> open new file
@@ -861,8 +797,7 @@ subroutine edgprof_delete(self)
   character(*), parameter :: s_name='edgprof_delete' !< subroutine name
    integer(ki4) :: i  !< local variable
    
-DO i=1,4
-  formula_deallocate: select case (self%formula(i))
+  formula_deallocate: select case (self%formula(1))
   case('samples')
      deallocate(self%pos)
      deallocate(self%prof)
@@ -872,7 +807,6 @@ DO i=1,4
      if (self%nipams>0) deallocate(self%npar)
   case default
   end select formula_deallocate
-END DO
 end subroutine edgprof_delete
 !---------------------------------------------------------------------
 !> close file
@@ -891,14 +825,4 @@ subroutine edgprof_close
   end if
 
 end subroutine edgprof_close
-!---------------------------------------------------------------------
-!> Calculates custom lambda q
-subroutine edgprof_lambda_q
-
-  !! local
-  character(*), parameter :: s_name='edgprof_lambda_q' !< subroutine name
-
-
-end subroutine edgprof_lambda_q
-
 end module edgprof_m
