@@ -600,19 +600,19 @@ function edgprof_region(R,Z,cenz,rxpt,psi,psid, psixpt)
   ELSE
 		IF(psid>0) THEN
 			IF(R<=rxpt_hemi) THEN
-				IF(psi<=MAXVAL(ABS(psixpt))) iregion=1
-				IF(psi>MAXVAL(ABS(psixpt))) iregion=2
+				IF(ABS(psi)<=MAXVAL(ABS(psixpt))) iregion=1
+				IF(ABS(psi)>MAXVAL(ABS(psixpt))) iregion=2
 			ELSE
-				IF(psi<=MAXVAL(ABS(psixpt)) iregion=4
-				IF(psi>MAXVAL(ABS(psixpt))) iregion=3	
+				IF(ABS(psi)<=MAXVAL(ABS(psixpt)) iregion=4
+				IF(ABS(psi)>MAXVAL(ABS(psixpt))) iregion=3	
 			END IF
 		ELSE
 			IF(R<=rxpt_hemi) THEN
-				IF(psi<=MINVAL(ABS(psixpt))) iregion=1
-				IF(psi>MINVAL(ABS(psixpt))) iregion=2
+				IF(ABS(psi)<=MINVAL(ABS(psixpt))) iregion=1
+				IF(ABS(psi)>MINVAL(ABS(psixpt))) iregion=2
 			ELSE
-				IF(psi<=MINVAL(ABS(psixpt))) iregion=4
-				IF(psi>MINVAL(ABS(psixpt))) iregion=3	
+				IF(ABS(psi)<=MINVAL(ABS(psixpt))) iregion=4
+				IF(ABS(psi)>MINVAL(ABS(psixpt))) iregion=3	
 			END IF		
 		END IF  
   END IF
