@@ -570,7 +570,8 @@ function edgprof_region(R,Z,cenz,rxpt,psi,psid, psixpt)
   
   !! local variables
   character(*), parameter :: s_name='edgprof_region' !< subroutine name
-  integer(ki4) :: rxpt_hemi !< r for xpoint in hemisphere being considered
+  real(kr4) :: rxpt_hemi !< r for xpoint in hemisphere being considered
+  real(kr4) :: psixpt_ref !< reference psixpt value
   integer(ki4) :: iregion !< local variable
   
   ! Determine whether above or below the midplane and set reference rxpt accordingly
