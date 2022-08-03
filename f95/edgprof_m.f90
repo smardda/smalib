@@ -571,9 +571,10 @@ function edgprof_region(R,Z,cenz,rxpt,psi,psid, psixpt)
   !! local variables
   character(*), parameter :: s_name='edgprof_region' !< subroutine name
   real(kr8) :: rxpt_hemi !< r for xpoint in hemisphere being considered
+  real(kr8) :: psi2 !<  Internal \f$ \psi \f$
   real(kr8) :: psixpt_ref !< reference psixpt value
   integer(ki4) :: iregion !< local variable
-  
+  psi2=psi
   !Determine whether above or below the midplane and set reference rxpt accordingly
   if(Z<=cenz) rxpt_hemi=rxpt(1) 
   if(Z>cenz)  rxpt_hemi=rxpt(2) 
@@ -583,14 +584,14 @@ function edgprof_region(R,Z,cenz,rxpt,psi,psid, psixpt)
   if(psi<0 .and. psid>0) psixpt_ref=MAXVAL(ABS(psixpt))
   if(psi<0 .and. psid<0) psixpt_ref=MINVAL(ABS(psixpt))
   !Flip sign of psi if negative
-  if(psi<0) psi=abs(psi) 
+  if(psi2<0) psi2=abs(psi2) 
   !Determine whether the point is to the left or right of the xpoint
   if(R<=rxpt_hemi) then
-	if(psi<=psixpt_ref) iregion=1
-    if(psi>psixpt_ref) iregion=2
+	if(psi2<=psixpt_ref) iregion=1
+    if(psi2>psixpt_ref) iregion=2
   else
-    if(psi<=psixpt_ref) iregion=4
-    if(psi>psixpt_ref) iregion=3	
+    if(psi2<=psixpt_ref) iregion=4
+    if(psi2>psixpt_ref) iregion=3	
   end if
   !! return region
   edgprof_region=iregion
