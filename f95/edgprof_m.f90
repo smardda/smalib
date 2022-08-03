@@ -138,7 +138,7 @@ subroutine edgprof_readcon(self,pnumerics,kin)
  &general_real_parameters, number_of_real_parameters, &
  &general_integer_parameters, number_of_integer_parameters, lambda_q_choice
  
-  !!lambdaq parameters
+  !! lambdaq parameters
   namelist /lambdaqparameters/ &
  &c_prop, power_loss_exp, n_u, &
  &k_0, k_0_exp, q, q_exp, R, &
@@ -151,13 +151,13 @@ subroutine edgprof_readcon(self,pnumerics,kin)
   c_prop(1) = ((7.0d0/8.0d0)**(2.0d0/9.0d0))*((8.0d0*(const_pid**2.0d0)/7.0d0)**(7.0d0/9.0d0))  
   c_prop(2) = ((8.0d0*(const_pid**2.0d0)/7.0d0)**(7.0d0/9.0d0))  
   c_prop(3) = (8**(5.0d0/9.0d0))*(const_pid**(4.0d0/3.0d0))/(7.0d0**(5.0d0/9.0d0))
-  c_prop(4) = 10.0d0;	power_loss_exp=-5.0d0/9.0d0
-  n_u=1E+19;			k_0=2000.0d0;				k_0_exp=-2.0d0/9.0d0
-  q=3.0d0;				q_exp=4.0/9.0d0;			R=2.5d0
-  R_exp=5.0d0/9.0d0;	a=1.5d0;					a_exp=5.0d0/9.0d0
-  x_perpendicular=2.0d0;L=50.0d0;					L_exp=4.0d0/9.0d0
-  ratio_B=0.3d0;		ratio_B_exp=-2.0d0/9.0d0;	P_V_ratio_exp=-0.38d0
-  P_V_ratio = 4100.0d0;	a_R0_ratio=0.33d0;			a_R0_elongation_ratio_exp=1.3d0
+  c_prop(4) = 10.0d0;  power_loss_exp=-5.0d0/9.0d0
+  n_u=1E+19;      k_0=2000.0d0;        k_0_exp=-2.0d0/9.0d0
+  q=3.0d0;        q_exp=4.0/9.0d0;      R=2.5d0
+  R_exp=5.0d0/9.0d0;  a=1.5d0;          a_exp=5.0d0/9.0d0
+  x_perpendicular=2.0d0;L=50.0d0;          L_exp=4.0d0/9.0d0
+  ratio_B=0.3d0;    ratio_B_exp=-2.0d0/9.0d0;  P_V_ratio_exp=-0.38d0
+  P_V_ratio = 4100.0d0;  a_R0_ratio=0.33d0;      a_R0_elongation_ratio_exp=1.3d0
   elongation=1.3d0
 
   !! set default edgprof parameters
@@ -187,7 +187,7 @@ subroutine edgprof_readcon(self,pnumerics,kin)
   end if
 
   if (pnumerics%ledgprof) then
-     !!read edgprof parameters
+     !! read edgprof parameters
      read(ninep,nml=edgprofparameters,iostat=status)
           if(status/=0) then
         print '("Fatal error reading edgprofparameters")'
@@ -198,7 +198,7 @@ subroutine edgprof_readcon(self,pnumerics,kin)
 
   if(ANY(lambda_q_choice/='default')) THEN
   if ( ANY( lambda_q_choice=="custom-3" ) ) then
-      a_exp=7.0d0/9.0d0;	L_exp=2.0d0/9.0d0
+      a_exp=7.0d0/9.0d0;  L_exp=2.0d0/9.0d0
   end if
   read(ninep,nml=lambdaqparameters,iostat=status)
      if(status/=0) then
@@ -215,16 +215,16 @@ subroutine edgprof_readcon(self,pnumerics,kin)
      diffusion_length=pnumerics%sigma
      power_loss=pnumerics%ploss
      q_parallel0=pnumerics%qpara0
-		if (MINVAL(diffusion_length)>1.e-6_kr8) then
-			profile_formula='eich'
-		else
-			profile_formula='unset'
-		end if
+    if (MINVAL(diffusion_length)>1.e-6_kr8) then
+      profile_formula='eich'
+    else
+      profile_formula='unset'
+    end if
   end if
 
   call lowor(profile_formula,1,len_trim(profile_formula))
 
-  !!Calculates user choice of lambda_q
+  !! Calculates user choice of lambda_q
   DO i=1,4
   formula_chosen_lambda: select case (lambda_q_choice(i))
   case('custom-1') 
@@ -418,25 +418,25 @@ subroutine edgprof_factors(self,rbdry,bpbdry,btotbdry,psign)
 
   end select formula_chosen
 end do
-  !dbg write(*,*) "psign",psign,zrblfac,self%slfac,self%rblfac,self%fpfac
+  ! dbg write(*,*) "psign",psign,zrblfac,self%slfac,self%rblfac,self%fpfac
 
 end subroutine edgprof_factors
 !---------------------------------------------------------------------
 !> exponential profile
-function edgprof_exp(self,psid,j)
+function edgprof_exp(self,psid,kregion)
 
   !! arguments
   type(edgprof_t), intent(in) :: self !< type containing profile parameters
   real(kr8) :: edgprof_exp !< local variable
   real(kr8), intent(in) :: psid !< position in \f$ \psi \f$
-  integer (ki4) :: j
+  integer (ki4) :: kregion !< region of SOL 
 
   !! local variables
   character(*), parameter :: s_name='edgprof_exp' !< subroutine name
   real(kr8) :: pow !< local variable
 
   !! calculate profile
-  pow=self%fpfac(j)*exp(self%rblfac(j)*psid)
+  pow=self%fpfac(kregion)*exp(self%rblfac(kregion)*psid)
 
   !! return profile
   edgprof_exp=pow
@@ -445,21 +445,21 @@ end function edgprof_exp
 
 !---------------------------------------------------------------------
 !> double exponential profile
-function edgprof_expdouble(self,psid,j)
+function edgprof_expdouble(self,psid,kregion)
 
   !! arguments
   type(edgprof_t), intent(in) :: self !< type containing profile parameters
   real(kr8) :: edgprof_expdouble !< local variable
   real(kr8), intent(in) :: psid !< position in \f$ \psi \f$
-  integer (ki4) :: j
+  integer (ki4) :: kregion !< region of SOL 
   
   !! local variables
   character(*), parameter :: s_name='edgprof_expdouble' !< subroutine name
   real(kr8) :: pow !< local variable
   
     !! calculate profile
-	pow=self%fpfac(j)*exp(self%rblfac(j)*psid) &
- &+self%fpfacnr(j)*exp(self%rblfacnr(j)*psid)
+  pow=self%fpfac(kregion)*exp(self%rblfac(kregion)*psid) &
+ &+self%fpfacnr(kregion)*exp(self%rblfacnr(kregion)*psid)
 
   !! return profile
   edgprof_expdouble=pow
@@ -468,22 +468,22 @@ end function edgprof_expdouble
 
 !---------------------------------------------------------------------
 !> Eich profile
-function edgprof_eich(self,psid,j)
+function edgprof_eich(self,psid,kregion)
 
   !! arguments
   type(edgprof_t), intent(in) :: self !< type containing profile parameters
   real(kr8) :: edgprof_eich !< local variable
   real(kr8), intent(in) :: psid !< position in \f$ \psi \f$
-  integer (ki4) :: j
+  integer (ki4) :: kregion !< region of SOL 
     
   !! local variables
   character(*), parameter :: s_name='edgprof_eich' !< subroutine name
   real(kr8) :: pow !< local variable
 
   !! calculate profile
-  pow=self%fpfac(j)*&
-  exp(self%slfac(j)**2+self%rblfac(j)*psid)*&
-  erfc(self%slfac(j)+self%rblfac(j)*psid/(2*self%slfac(j)))
+  pow=self%fpfac(kregion)*&
+  exp(self%slfac(kregion)**2+self%rblfac(kregion)*psid)*&
+  erfc(self%slfac(kregion)+self%rblfac(kregion)*psid/(2*self%slfac(kregion)))
 
   !! return profile
   edgprof_eich=pow
@@ -492,13 +492,13 @@ end function edgprof_eich
 
 !---------------------------------------------------------------------
 !> userdefined profile
-function edgprof_userdefined(self,psid,j)
+function edgprof_userdefined(self,psid,kregion)
 
   !! arguments
   type(edgprof_t), intent(in) :: self !< type containing profile parameters
   real(kr8) :: edgprof_userdefined !< local variable
   real(kr8), intent(in) :: psid !< position in \f$ \psi \f$
-  integer (ki4) :: j
+  integer (ki4) :: kregion !< region of SOL 
 
   !! local variables
   character(*), parameter :: s_name='edgprof_userdefined' !< subroutine name
@@ -509,11 +509,11 @@ function edgprof_userdefined(self,psid,j)
   !! user defines profile here
 
   ! convert to r if necessary
-  zpos=self%rblfac(j)*psid
+  zpos=self%rblfac(kregion)*psid
   ! must define f(zpos)
   ! integral of f over r to normalise
   zfint=1
-  pow=self%fpfac(j)/zfint
+  pow=self%fpfac(kregion)/zfint
 
   !! return profile
   edgprof_userdefined=pow
@@ -522,13 +522,13 @@ end function edgprof_userdefined
 
 !---------------------------------------------------------------------
 !> profile from samples
-function edgprof_samples(self,psid,j)
+function edgprof_samples(self,psid,kregion)
 
   !! arguments
   type(edgprof_t), intent(in) :: self !< type containing profile parameters
   real(kr8) :: edgprof_samples !< local variable
   real(kr8), intent(in) :: psid !< position in \f$ \psi \f$
-  integer (ki4) :: j
+  integer (ki4) :: kregion !< region of SOL 
     
   !! local variables
   character(*), parameter :: s_name='edgprof_samples' !< subroutine name
@@ -541,7 +541,7 @@ function edgprof_samples(self,psid,j)
 
   !! calculate profile
   ! convert to r if necessary
-  zpos=self%rblfac(j)*psid
+  zpos=self%rblfac(kregion)*psid
   call interv(self%pos,self%npos,zpos,ip,iflag)
   if (iflag/=0) then
      call log_error(m_name,s_name,1,error_warning,'Point not in range of positions')
@@ -556,7 +556,7 @@ function edgprof_samples(self,psid,j)
 end function edgprof_samples
 !---------------------------------------------------------------------
 !> Determines the region needed for edgprof
-function edgprof_region(R,Z,cenz,rxpt,psi,psid,psixpt)
+function edgprof_region(R,Z,cenz,rxpt,psi,psid, psixpt)
 
   !! arguments
   integer(ki4) :: edgprof_region !< local variable
@@ -565,61 +565,59 @@ function edgprof_region(R,Z,cenz,rxpt,psi,psid,psixpt)
   real(kr8) :: cenz !< position centre of plasma \f$ Z \f$
   real(kr8) :: rxpt(2)   !<  position x point \f$ R \f$
   real(kr8), intent(in) :: psi !<  \f$ \psi \f$
-  real(kr8), intent(in) :: psid !<  \f$ \psi - \psi_b \f$
+  real(kr8), intent(in) :: psi !<  \f$ \psi - \psi_b \f$
   real(kr8) :: psixpt(2) !<  flux xpoints
   
   !! local variables
   character(*), parameter :: s_name='edgprof_region' !< subroutine name
   integer(ki4) :: rxpt_hemi !< r for xpoint in hemisphere being considered
-  integer(ki4) :: pow !< local variable
+  integer(ki4) :: iregion !< local variable
   
-  !Determine whether above or below the midplane and set reference rxpt accordingly
+  ! Determine whether above or below the midplane and set reference rxpt accordingly
   IF(Z<=cenz) rxpt_hemi=rxpt(1) 
   IF(Z>cenz)  rxpt_hemi=rxpt(2) 
-
   !Choose depending on sign of psi
   IF(psi>0) THEN
         !Chose depending on whether negative of positive slop for psi
 		IF(psid>0) THEN
             !Determine whether the point is to the left or right of the xpoint
 			IF(R<=rxpt_hemi) THEN
-				IF(psi<=MINVAL(psixpt)) pow=1
-				IF(psi>MINVAL(psixpt)) pow=2
+				IF(psi<=MINVAL(psixpt)) iregion=1
+				IF(psi>MINVAL(psixpt)) iregion=2
 			ELSE
-				IF(psi<=MINVAL(psixpt)) pow=4
-				IF(psi>MINVAL(psixpt)) pow=3	
+				IF(psi<=MINVAL(psixpt)) iregion=4
+				IF(psi>MINVAL(psixpt)) iregion=3	
 			END IF
 		ELSE
 			IF(R<=rxpt_hemi) THEN
-				IF(psi<=MAXVAL(psixpt)) pow=1
-				IF(psi>MAXVAL(psixpt)) pow=2
+				IF(psi<=MAXVAL(psixpt)) iregion=1
+				IF(psi>MAXVAL(psixpt)) iregion=2
 			ELSE
-				IF(psi<=MAXVAL(psixpt)) pow=4
-				IF(psi>MAXVAL(psixpt)) pow=3	
+				IF(psi<=MAXVAL(psixpt)) iregion=4
+				IF(psi>MAXVAL(psixpt)) iregion=3	
 			END IF		
 		END IF
   ELSE
 		IF(psid>0) THEN
 			IF(R<=rxpt_hemi) THEN
-				IF(psi<=MINVAL(psixpt)) pow=1
-				IF(psi>MINVAL(psixpt)) pow=2
+				IF(psi<=MINVAL(psixpt)) iregion=1
+				IF(psi>MINVAL(psixpt)) iregion=2
 			ELSE
-				IF(psi<=MINVAL(psixpt)) pow=4
-				IF(psi>MINVAL(psixpt)) pow=3	
+				IF(psi<=MINVAL(psixpt)) iregion=4
+				IF(psi>MINVAL(psixpt)) iregion=3	
 			END IF
 		ELSE
 			IF(R<=rxpt_hemi) THEN
-				IF(psi<=MAXVAL(psixpt)) pow=1
-				IF(psi>MAXVAL(psixpt)) pow=2
+				IF(psi<=MAXVAL(psixpt)) iregion=1
+				IF(psi>MAXVAL(psixpt)) iregion=2
 			ELSE
-				IF(psi<=MAXVAL(psixpt)) pow=4
-				IF(psi>MAXVAL(psixpt)) pow=3	
+				IF(psi<=MAXVAL(psixpt)) iregion=4
+				IF(psi>MAXVAL(psixpt)) iregion=3	
 			END IF		
 		END IF  
   END IF
-  
-  !!return region
-  edgprof_region=pow
+  !! return region
+  edgprof_region=iregion
  end function edgprof_region
 !---------------------------------------------------------------------
 !> profile from samples
@@ -635,27 +633,27 @@ function edgprof_fn(self,psi,psid,R,Z,cenz,rxpt,psixpt)
   real(kr8) :: cenz !< position centre of plasma \f$ Z \f$
   real(kr8) :: rxpt(2)   !<  position x point \f$ R \f$
   real(kr8) :: psixpt(2) !<  flux xpoints
-  integer(ki4) :: i   !<  local variable
   
   !! local variables
   character(*), parameter :: s_name='edgprof_fn' !< subroutine name
   real(kr8) :: pow !< local variable
+  integer(ki4) :: iregion   !<  region where point lies
 
-  i=edgprof_region(R,Z,cenz,rxpt,psi,psid,psixpt)
+  iregion=edgprof_region(R,Z,cenz,rxpt,psi,psid,psixpt)
   !! select profile
-  formula_chosen: select case (self%formula(i))
+  formula_chosen: select case (self%formula(iregion))
   case('unset','exp')
-	pow=edgprof_exp(self,psid,i)
+  pow=edgprof_exp(self,psid,iregion)
   case('expdouble')
-	pow=edgprof_expdouble(self,psid,i)
+  pow=edgprof_expdouble(self,psid,iregion)
   case('eich')
-    pow=edgprof_eich(self,psid,i)
+    pow=edgprof_eich(self,psid,iregion)
   case('userdefined')
-	pow=edgprof_userdefined(self,psid,i)
+  pow=edgprof_userdefined(self,psid,iregion)
   case('samples')
-    pow=edgprof_samples(self,psid,i)
+    pow=edgprof_samples(self,psid,iregion)
   end select formula_chosen
-	
+  
   !! return profile
   edgprof_fn=pow
 end function edgprof_fn
