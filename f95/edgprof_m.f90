@@ -578,7 +578,7 @@ function edgprof_region(R,Z,cenz,rxpt,psi,psid, psixpt)
   !Determine whether above or below the midplane and set reference rxpt accordingly
   if(Z<=cenz) rxpt_hemi=rxpt(1) 
   if(Z>cenz)  rxpt_hemi=rxpt(2) 
-  !set reference psixpt_ref depedent on sign and slope of psi(R)
+  !set reference psixpt_ref dependent on sign and slope of psi(R)
   if(psi>0 .and. psid>0) psixpt_ref=MINVAL(psixpt)
   if(psi>0 .and. psid<0) psixpt_ref=MAXVAL(psixpt)
   if(psi<0 .and. psid>0) psixpt_ref=MAXVAL(ABS(psixpt))
