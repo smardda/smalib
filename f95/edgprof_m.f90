@@ -570,53 +570,28 @@ function edgprof_region(R,Z,cenz,rxpt,psi,psid, psixpt)
   
   !! local variables
   character(*), parameter :: s_name='edgprof_region' !< subroutine name
-  real(kr4) :: rxpt_hemi !< r for xpoint in hemisphere being considered
-  real(kr4) :: psixpt_ref !< reference psixpt value
+  real(kr8) :: rxpt_hemi !< r for xpoint in hemisphere being considered
+  real(kr8) :: psixpt_ref !< reference psixpt value
   integer(ki4) :: iregion !< local variable
   
-  ! Determine whether above or below the midplane and set reference rxpt accordingly
-  IF(Z<=cenz) rxpt_hemi=rxpt(1) 
-  IF(Z>cenz)  rxpt_hemi=rxpt(2) 
-  !Choose depending on sign of psi
-  IF(psi>0) THEN
-        !Chose depending on whether negative of positive slop for psi
-		IF(psid>0) THEN
-            !Determine whether the point is to the left or right of the xpoint
-			IF(R<=rxpt_hemi) THEN
-				IF(psi<=MINVAL(psixpt)) iregion=1
-				IF(psi>MINVAL(psixpt)) iregion=2
-			ELSE
-				IF(psi<=MINVAL(psixpt)) iregion=4
-				IF(psi>MINVAL(psixpt)) iregion=3	
-			END IF
-		ELSE
-			IF(R<=rxpt_hemi) THEN
-				IF(psi<=MAXVAL(psixpt)) iregion=1
-				IF(psi>MAXVAL(psixpt)) iregion=2
-			ELSE
-				IF(psi<=MAXVAL(psixpt)) iregion=4
-				IF(psi>MAXVAL(psixpt)) iregion=3	
-			END IF		
-		END IF
-  ELSE
-		IF(psid>0) THEN
-			IF(R<=rxpt_hemi) THEN
-				IF(ABS(psi)<=MAXVAL(ABS(psixpt))) iregion=1
-				IF(ABS(psi)>MAXVAL(ABS(psixpt))) iregion=2
-			ELSE
-				IF(ABS(psi)<=MAXVAL(ABS(psixpt)) iregion=4
-				IF(ABS(psi)>MAXVAL(ABS(psixpt))) iregion=3	
-			END IF
-		ELSE
-			IF(R<=rxpt_hemi) THEN
-				IF(ABS(psi)<=MINVAL(ABS(psixpt))) iregion=1
-				IF(ABS(psi)>MINVAL(ABS(psixpt))) iregion=2
-			ELSE
-				IF(ABS(psi)<=MINVAL(ABS(psixpt))) iregion=4
-				IF(ABS(psi)>MINVAL(ABS(psixpt))) iregion=3	
-			END IF		
-		END IF  
-  END IF
+  !Determine whether above or below the midplane and set reference rxpt accordingly
+  if(Z<=cenz) rxpt_hemi=rxpt(1) 
+  if(Z>cenz)  rxpt_hemi=rxpt(2) 
+  !set reference psixpt_ref depedent on sign and slope of psi(R)
+  if(psi>0 .and. psid>0) psixpt_ref=MINVAL(psixpt)
+  if(psi>0 .and. psid<0) psixpt_ref=MAXVAL(psixpt)
+  if(psi<0 .and. psid>0) psixpt_ref=MAXVAL(ABS(psixpt))
+  if(psi<0 .and. psid<0) psixpt_ref=MINVAL(ABS(psixpt))
+  !Flip sign of psi if negative
+  if(psi<0) psi=abs(psi) 
+  !Determine whether the point is to the left or right of the xpoint
+  if(R<=rxpt_hemi) then
+	if(psi<=psixpt_ref) iregion=1
+    if(psi>psixpt_ref) iregion=2
+  else
+    if(psi<=psixpt_ref) iregion=4
+    if(psi>psixpt_ref) iregion=3	
+  end if
   !! return region
   edgprof_region=iregion
  end function edgprof_region
