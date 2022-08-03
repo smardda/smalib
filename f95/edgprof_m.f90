@@ -556,7 +556,7 @@ function edgprof_samples(self,psid,j)
 end function edgprof_samples
 !---------------------------------------------------------------------
 !> Determines the region needed for edgprof
-function edgprof_region(R,Z,cenz,rxpt,psi,psixpt)
+function edgprof_region(R,Z,cenz,rxpt,psi,psid,psixpt)
 
   !! arguments
   integer(ki4) :: edgprof_region !< local variable
@@ -565,6 +565,7 @@ function edgprof_region(R,Z,cenz,rxpt,psi,psixpt)
   real(kr8) :: cenz !< position centre of plasma \f$ Z \f$
   real(kr8) :: rxpt(2)   !<  position x point \f$ R \f$
   real(kr8), intent(in) :: psi !<  \f$ \psi \f$
+  real(kr8), intent(in) :: psid !<  \f$ \psi - \psi_b \f$
   real(kr8) :: psixpt(2) !<  flux xpoints
   
   !! local variables
@@ -575,7 +576,12 @@ function edgprof_region(R,Z,cenz,rxpt,psi,psixpt)
   !Determine whether above or below the midplane and set reference rxpt accordingly
   IF(Z<=cenz) rxpt_hemi=rxpt(1) 
   IF(Z>cenz)  rxpt_hemi=rxpt(2) 
-  !Determine whether the point is to the left or right of the xpointx
+
+  !Choose depending on sign of psi
+  IF(psi>0) THEN
+        !Chose depending on whether negative of positive slop for psi
+		IF(psid>0) THEN
+            !Determine whether the point is to the left or right of the xpoint
 			IF(R<=rxpt_hemi) THEN
 				IF(psi<=MINVAL(psixpt)) pow=1
 				IF(psi>MINVAL(psixpt)) pow=2
@@ -583,6 +589,35 @@ function edgprof_region(R,Z,cenz,rxpt,psi,psixpt)
 				IF(psi<=MINVAL(psixpt)) pow=4
 				IF(psi>MINVAL(psixpt)) pow=3	
 			END IF
+		ELSE
+			IF(R<=rxpt_hemi) THEN
+				IF(psi<=MAXVAL(psixpt)) pow=1
+				IF(psi>MAXVAL(psixpt)) pow=2
+			ELSE
+				IF(psi<=MAXVAL(psixpt)) pow=4
+				IF(psi>MAXVAL(psixpt)) pow=3	
+			END IF		
+		END IF
+  ELSE
+		IF(psid>0) THEN
+			IF(R<=rxpt_hemi) THEN
+				IF(psi<=MINVAL(psixpt)) pow=1
+				IF(psi>MINVAL(psixpt)) pow=2
+			ELSE
+				IF(psi<=MINVAL(psixpt)) pow=4
+				IF(psi>MINVAL(psixpt)) pow=3	
+			END IF
+		ELSE
+			IF(R<=rxpt_hemi) THEN
+				IF(psi<=MAXVAL(psixpt)) pow=1
+				IF(psi>MAXVAL(psixpt)) pow=2
+			ELSE
+				IF(psi<=MAXVAL(psixpt)) pow=4
+				IF(psi>MAXVAL(psixpt)) pow=3	
+			END IF		
+		END IF  
+  END IF
+  
   !!return region
   edgprof_region=pow
  end function edgprof_region
@@ -606,7 +641,7 @@ function edgprof_fn(self,psi,psid,R,Z,cenz,rxpt,psixpt)
   character(*), parameter :: s_name='edgprof_fn' !< subroutine name
   real(kr8) :: pow !< local variable
 
-  i=edgprof_region(R,Z,cenz,rxpt,psi,psixpt)
+  i=edgprof_region(R,Z,cenz,rxpt,psi,psid,psixpt)
   !! select profile
   formula_chosen: select case (self%formula(i))
   case('unset','exp')
