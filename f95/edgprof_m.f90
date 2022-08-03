@@ -565,7 +565,7 @@ function edgprof_region(R,Z,cenz,rxpt,psi,psid, psixpt)
   real(kr8) :: cenz !< position centre of plasma \f$ Z \f$
   real(kr8) :: rxpt(2)   !<  position x point \f$ R \f$
   real(kr8), intent(in) :: psi !<  \f$ \psi \f$
-  real(kr8), intent(in) :: psi !<  \f$ \psi - \psi_b \f$
+  real(kr8), intent(in) :: psid !<  \f$ \psi - \psi_b \f$
   real(kr8) :: psixpt(2) !<  flux xpoints
   
   !! local variables
