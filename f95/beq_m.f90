@@ -3738,6 +3738,7 @@ subroutine beq_psix(self)
         self%zxpt_temp(jhemi+1) = self%n%zcen+zsrxpt*sin(self%thetaxpt)
         self%psixpt_temp(jhemi+1) = self%psixpt
   end do do_hemi
+  
   if (ixf==0) then
      call log_error(m_name,s_name,80,error_fatal,'no X-point found')
   else

@@ -393,10 +393,10 @@ subroutine edgprof_factors(self,rbdry,bpbdry,btotbdry,psign)
      self%fpfacnr(i)=self%rqpara0*self%fpfac(i)
 
   case('eich')
-     zrblfac=zrbfac/self%lmid
-     self%slfac=self%sigma/(2*self%lmid)
-     self%rblfac=2*const_pid*zrblfac*((-1.)*psign)
-     self%fpfac=(self%f/2)*self%ploss*zrblfac
+     zrblfac(i)=zrbfac(i)/self%lmid(i)
+     self%slfac(i)=self%sigma(i)/(2*self%lmid(i))
+     self%rblfac(i)=2*const_pid*zrblfac(i)*((-1.)*psign)
+     self%fpfac(i)=(self%f/2)*self%ploss*zrblfac(i)
 
   case('samples')
      position_type: select case (self%postype)
@@ -482,8 +482,8 @@ function edgprof_eich(self,psid,kregion)
 
   !! calculate profile
   pow=self%fpfac(kregion)*&
-  exp(self%slfac(kregion)**2+self%rblfac(kregion)*psid)*&
-  erfc(self%slfac(kregion)+self%rblfac(kregion)*psid/(2*self%slfac(kregion)))
+  exp(self%slfac(kregion)**2 +self%rblfac(kregion)*psid)*&
+  erfc(self%slfac(kregion) +self%rblfac(kregion)*psid/(2*self%slfac(kregion)))
 
   !! return profile
   edgprof_eich=pow
@@ -620,13 +620,13 @@ function edgprof_fn(self,psi,psid,R,Z,cenz,rxpt,psixpt)
   !! select profile
   formula_chosen: select case (self%formula(iregion))
   case('unset','exp')
-  pow=edgprof_exp(self,psid,iregion)
+    pow=edgprof_exp(self,psid,iregion)
   case('expdouble')
-  pow=edgprof_expdouble(self,psid,iregion)
+    pow=edgprof_expdouble(self,psid,iregion)
   case('eich')
     pow=edgprof_eich(self,psid,iregion)
   case('userdefined')
-  pow=edgprof_userdefined(self,psid,iregion)
+    pow=edgprof_userdefined(self,psid,iregion)
   case('samples')
     pow=edgprof_samples(self,psid,iregion)
   end select formula_chosen
