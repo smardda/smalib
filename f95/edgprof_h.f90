@@ -31,6 +31,8 @@ module edgprof_h
      real(kr8),dimension(4) :: rblfacnr !< factor \f$ \frac{1}{2 \pi \lambda_{mid,near} R_m B_{pm}} \f$
      real(kr8),dimension(4) :: fpfacnr !< factor \f$ \frac{F P_{loss}}}{2 \pi \lambda_{mid,near} R_m B_{pm}} \f$
      real(kr8),dimension(4) :: slfac !< factor \f$ \frac{\sigma}{2 \lambda_{mid}} \f$
+     
+     logical :: multi_region !< tests if multiple regions are being used
 
   end type edgprof_t
 

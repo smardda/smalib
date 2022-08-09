@@ -125,10 +125,11 @@ subroutine edgprof_readcon(self,pnumerics,kin)
   integer(ki4), dimension(MAX_NUMBER_OF_PARAMETERS) :: general_integer_parameters  !< local variable
   integer(ki4) :: number_of_real_parameters  !< local variable
   integer(ki4) :: number_of_integer_parameters  !< local variable
-  
+  logical :: multi_region !< tests if multiple regions are being used
+    
   !! edgprof parameters
   namelist /edgprofparameters/ &
- &profile_formula, &
+ &profile_formula, multi_region, &
  &power_split, decay_length, power_loss, &
  &q_parallel0, &
  &ratio_of_q_parallel0_near, &
@@ -169,6 +170,7 @@ subroutine edgprof_readcon(self,pnumerics,kin)
   q_parallel0=-1_kr8
   ratio_of_q_parallel0_near=0
 
+  multi_region=.FALSE.
   lambda_q_choice='default'
   profile_formula='unset'
   decay_length_near=0
@@ -195,8 +197,11 @@ subroutine edgprof_readcon(self,pnumerics,kin)
         write(ilog,nml=edgprofparameters)
         call log_error(m_name,s_name,1,error_fatal,'Error reading edgprofparameters')
      end if
-
-  if(ANY(lambda_q_choice/='default')) THEN
+  if(multi_region .eqv. .FALSE.) then
+    decay_length(2:4)=decay_length(1)
+    profile_formula(2:4)=profile_formula(1)
+  end if
+  if(ANY(lambda_q_choice/='default')) then
   if ( ANY( lambda_q_choice=="custom-3" ) ) then
       a_exp=7.0d0/9.0d0;  L_exp=2.0d0/9.0d0
   end if
@@ -312,6 +317,7 @@ DO j=1,4
   end select formula_chosen
 end do
   !! store values
+  self%multi_region=multi_region
   self%formula=profile_formula
   self%lmid=decay_length
   self%f=power_split
@@ -355,19 +361,30 @@ end  subroutine edgprof_readcon
 
 !---------------------------------------------------------------------
 !> factors for power deposition
-subroutine edgprof_factors(self,rbdry,bpbdry,btotbdry,psign)
+subroutine edgprof_factors(self,rbdry,bpbdry,btotbdry,psign,psixpt,psib)
   !! arguments
   type(edgprof_t), intent(inout) :: self !< type containing profile parameters
   real(kr8), intent(in) :: rbdry !< boundary value
   real(kr8), intent(in) :: bpbdry !< boundary value
   real(kr8), intent(in) :: btotbdry!< boundary value
   real(kr8), intent(in) :: psign !< adjust sign of exponential factor
+  real(kr8) :: psixpt(2) !<  flux xpoints
+  real(kr8) :: psib !<  flux at the boundary
 
   !! local variables
   character(*), parameter :: s_name='edgprof_factors' !< subroutine name
   real(kr8) :: zrbfac(4) !< power factor in \f$ B \f$ only
   real(kr8),dimension(4) :: zrblfac !< power factor scaled by lmid
+  real(kr8) :: psixpt_out !< value of psixpt closest to boundary value
+  real(kr8) :: psixpt_in !<  value of psixpt furthers away from boundary value
 
+  !set psixpt_ref to the outer flux value (value closest to psi at the boundary)
+  if(ABS(psib-psixpt(1)) < ABS(psib-psixpt(2)) ) THEN
+    psixpt_out=psixpt(1); psixpt_in=psixpt(2)
+  else
+    psixpt_out=psixpt(2); psixpt_in=psixpt(1)
+  end if
+  
   self%fpfacnr=0.0
   self%rblfacnr=0.0
   
