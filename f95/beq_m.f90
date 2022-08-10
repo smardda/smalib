@@ -1946,6 +1946,20 @@ subroutine beq_readplus(self,infile)
      call log_read_check(m_name,s_name,80,status)
      read(nin,*,iostat=status) self%psixpt_temp(1),self%psixpt_temp(2)
      call log_read_check(m_name,s_name,81,status)
+     read(nin,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,82,status)
+     read(nin,*,iostat=status) self%rbdry_temp
+     call log_read_check(m_name,s_name,83,status)
+     read(nin,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,84,status)
+     read(nin,*,iostat=status) self%btotbdry_temp
+     call log_read_check(m_name,s_name,85,status)
+     read(nin,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,86,status)
+     read(nin,*,iostat=status) self%bpbdry_temp
+     call log_read_check(m_name,s_name,87,status)
+     
+     
      
   call log_error(m_name,s_name,90,log_info,'beq read in from data file')
 
@@ -2809,6 +2823,19 @@ subroutine beq_writeplus(self,kout)
      call log_write_check(m_name,s_name,80,status)
      write(kout,*,iostat=status) self%psixpt_temp(1),self%psixpt_temp(2)
      call log_write_check(m_name,s_name,81,status)
+     write(kout,*,iostat=status) 'rbdry_double_null'
+     call log_write_check(m_name,s_name,82,status)
+     write(kout,*,iostat=status) self%rbdry_temp
+     call log_write_check(m_name,s_name,83,status)
+     write(kout,*,iostat=status) 'btotbdry_double_null'
+     call log_write_check(m_name,s_name,84,status)
+     write(kout,*,iostat=status) self%btotbdry_temp
+     call log_write_check(m_name,s_name,85,status)
+     write(kout,*,iostat=status) 'bpbdry_double_null'
+     call log_write_check(m_name,s_name,86,status)
+     write(kout,*,iostat=status) self%bpbdry_temp
+     call log_write_check(m_name,s_name,87,status)
+
 
 end subroutine beq_writeplus
 !---------------------------------------------------------------------
@@ -3181,7 +3208,7 @@ subroutine beq_readcon(selfn,kin)
   if(beq_psiopt==1.AND.beq_psimin<=0) &
  &call log_error(m_name,s_name,3,error_fatal,'beq_psimin must be > 0')
 
-  if(beq_bdryopt<=0.OR.beq_bdryopt>=17) &
+  if(beq_bdryopt<=0.OR.beq_bdryopt>=18) &
  &call log_error(m_name,s_name,6,error_fatal,'beq_bdryopt must be small positive integer')
   if(beq_nopt<=0.OR.beq_nopt>=4) &
  &call log_error(m_name,s_name,4,error_fatal,'beq_nopt must be small positive integer')
@@ -3801,8 +3828,14 @@ subroutine beq_bdryrb(self)
   pick_angle : select case (self%n%bdryopt)
   case(4,5,7,11,14) ! inboard point selected
      ztheta=const_pid
+  case(16) ! second inboard point selected
+     ztheta=const_pid
+     self%rmin=self%rbdry_temp(2)
   case(8,9,10,12,15) ! outboard point selected
      ztheta=0.0_kr8
+  case(17) ! outboard point selected
+     ztheta=0.0_kr8
+     self%rmin=self%rbdry_temp(3)
   case(1,3,13)
      ! check for replacement
      if (self%replasi) then
@@ -3980,6 +4013,28 @@ subroutine beq_bdryrb(self)
   ! evaluate I aka f at psi
   call spleval(self%f,self%mr,self%psiaxis,self%psiqbdry,zpsi,zf,1)
   self%btotbdry=sqrt( max(0.,(self%bpbdry**2+(zf/re)**2)) )
+
+  set_rbdry_and_btotbdry_dn : select case (self%n%bdryopt)
+  case(4,5,7,11,14) ! inboard point selected
+     self%rbdry_temp(2)=self%rbdry
+     self%btotbdry_temp(2)=self%btotbdry
+     self%bpbdry_temp(2)=self%bpbdry
+  case(16) ! second inboard point selected
+     self%rbdry_temp(1)=self%rbdry
+     self%btotbdry_temp(1)=self%btotbdry
+      self%bpbdry_temp(1)=self%bpbdry
+  case(8,9,10,12,15) ! outboard point selected
+     self%rbdry_temp(3)=self%rbdry
+     self%btotbdry_temp(3)=self%btotbdry
+     self%bpbdry_temp(3)=self%bpbdry
+  case(17) ! second outboard point selected
+     self%rbdry_temp(4)=self%rbdry
+     self%btotbdry_temp(4)=self%btotbdry
+     self%bpbdry_temp(4)=self%bpbdry
+  case default ! do nothing (assuming psiqbdry OK in eqdsk)
+     return
+  end select set_rbdry_and_btotbdry_dn
+
 
   call log_error(m_name,s_name,2,log_info,'Reference boundary values')
   call log_value("SMITER-GEOQ psibdry ",self%psibdry)

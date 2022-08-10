@@ -197,8 +197,11 @@ module beq_h
      real(kr8) :: rqcen !< \f$ R \f$ at central extremum of \f$ \psi \f$
      real(kr8) :: zqcen !< \f$ Z \f$ at central extremum of \f$ \psi \f$
      real(kr8) :: rbdry !< \f$ R \f$ at reference boundary
+     real(kr8) :: rbdry_temp(4) !< \f$ R \f$ at reference boundary
      real(kr8) :: bpbdry !< \f$ B_p \f$ at reference boundary, \f$ B_{pm} \f$
+     real(kr8) :: bpbdry_temp(4) !< \f$ B_p \f$ at reference boundary, \f$ B_{pm} \f$
      real(kr8) :: btotbdry !< Total \f$ B \f$ at reference boundary \f$ B_m \f$
+     real(kr8) :: btotbdry_temp(4) !< Total \f$ B \f$ at reference boundary \f$ B_m \f$
      real(kr8) :: ximaxm !< maximum \f$ \xi \f$ value \f$ -\epsilon \f$
      real(kr8) :: ximinp !< minimum \f$ \xi \f$ value \f$ +\epsilon \f$
      real(kr8), dimension(3) :: domlen !< dimensions of domain (quantised)

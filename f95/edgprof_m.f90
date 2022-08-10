@@ -200,6 +200,7 @@ subroutine edgprof_readcon(self,pnumerics,kin)
   if(multi_region .eqv. .FALSE.) then
     decay_length(2:4)=decay_length(1)
     profile_formula(2:4)=profile_formula(1)
+    diffusion_length(2:4)=diffusion_length(1)
   end if
   if(ANY(lambda_q_choice/='default')) then
   if ( ANY( lambda_q_choice=="custom-3" ) ) then
@@ -361,15 +362,20 @@ end  subroutine edgprof_readcon
 
 !---------------------------------------------------------------------
 !> factors for power deposition
-subroutine edgprof_factors(self,rbdry,bpbdry,btotbdry,psign,psixpt,psib)
+subroutine edgprof_factors(self,rbdry,bpbdry,btotbdry,psign,psixpt,psib,&
+                           btotbdry_temp,rbdry_temp,bpbdry_temp,rcen)
   !! arguments
   type(edgprof_t), intent(inout) :: self !< type containing profile parameters
   real(kr8), intent(in) :: rbdry !< boundary value
+  real(kr8), intent(in) :: rbdry_temp(4) !< boundary value
   real(kr8), intent(in) :: bpbdry !< boundary value
+  real(kr8), intent(in) :: bpbdry_temp(4) !< boundary value
   real(kr8), intent(in) :: btotbdry!< boundary value
+  real(kr8), intent(in) :: btotbdry_temp(4) !< boundary value
   real(kr8), intent(in) :: psign !< adjust sign of exponential factor
   real(kr8) :: psixpt(2) !<  flux xpoints
   real(kr8) :: psib !<  flux at the boundary
+  real(kr8) :: rcen !<  R value for centre of plasma
 
   !! local variables
   character(*), parameter :: s_name='edgprof_factors' !< subroutine name
@@ -377,6 +383,7 @@ subroutine edgprof_factors(self,rbdry,bpbdry,btotbdry,psign,psixpt,psib)
   real(kr8),dimension(4) :: zrblfac !< power factor scaled by lmid
   real(kr8) :: psixpt_out !< value of psixpt closest to boundary value
   real(kr8) :: psixpt_in !<  value of psixpt furthers away from boundary value
+  real(kr8) :: rprime !<  R' in documentation
 
   !set psixpt_ref to the outer flux value (value closest to psi at the boundary)
   if(ABS(psib-psixpt(1)) < ABS(psib-psixpt(2)) ) THEN
@@ -418,26 +425,93 @@ subroutine edgprof_factors(self,rbdry,bpbdry,btotbdry,psign,psixpt,psib)
   
     case('samples')
        position_type: select case (self%postype)
-    case('radius')
-       self%rblfac=2*const_pid*zrbfac*((-1.)*psign)
-    case default
-       self%rblfac=1
-    end select position_type
-      self%fpfac=self%f*self%ploss*zrbfac
+         case('radius')
+           self%rblfac=2*const_pid*zrbfac*((-1.)*psign)
+         case default
+           self%rblfac=1
+         end select position_type
+       self%fpfac=self%f*self%ploss*zrbfac
   
     case('userdefined')
       usrposition_type: select case (self%postype)
-    case('radius')
-      self%rblfac=2*const_pid*zrbfac*((-1.)*psign)
-    case default
-      self%rblfac=1
-    end select usrposition_type
-      self%fpfac=self%f*self%ploss*zrbfac/self%fint
+        case('radius')
+          self%rblfac=2*const_pid*zrbfac*((-1.)*psign)
+        case default
+          self%rblfac=1
+        end select usrposition_type
+          self%fpfac=self%f*self%ploss*zrbfac/self%fint
 
     end select formula_chosen
   
     end do
   else
+    ! 4 regions case
+    DO i=1,4
+    ! power normalisation factor
+    zrbfac=1/(2*const_pid*rbdry_temp(i)*bpbdry_temp(i))
+    ! default diffusion factor
+    self%slfac=0
+    ! pick R' acccording to region under consideration       
+    if(i==1) rprime=abs(rcen - rbdry_temp(1))
+    if(i==2) rprime=abs(rbdry_temp(1)-rbdry_temp(2))
+    if(i==3) rprime=abs(rbdry_temp(4)-rbdry_temp(3))
+    formula_chosen_multi_region: select case (self%formula(i))
+    case('unset','exp')
+       if(i==1 .or. i==2 .or. i==3) then
+         zrblfac(i)=zrbfac(i)/(self%lmid(i)*(1-exp(-rprime/self%lmid(i))))
+       else
+         zrblfac(i)=zrbfac(i)/self%lmid(i)
+       end if
+       self%rblfac(i)=2*const_pid*zrblfac(i)*((-1.)*psign)
+       if (self%qpara0>0) then
+          self%fpfac(i)=self%f*self%qpara0/btotbdry_temp(i)
+       else
+          self%fpfac(i)=self%f*self%ploss*zrblfac(i)
+       end if
+    case('expdouble')
+       if(i==1 .or. i==2 .or. i==3) then
+       zrblfac(i)=zrbfac(i)/(self%lmid(i)*(1-exp(-rprime/self%lmid(i)))&
+	                        +self%rqpara0*self%lmidnr(i)*(1-exp(-rprime/self%lmidnr(i))))
+	   self%rblfac(i)=2*const_pid*zrbfac(i)*((-1.)*psign)/&
+	                  (self%lmid(i)*(1-exp(-rprime/self%lmid(i))))
+       self%rblfacnr(i)=2*const_pid*zrbfac(i)*((-1.)*psign)/&
+                        (self%lmidnr(i)*(1-exp(-rprime/self%lmidnr(i))))
+	   else
+       zrblfac(i)=zrbfac(i)/(self%lmid(i) +self%rqpara0*self%lmidnr(i))	  
+       self%rblfac(i)=2*const_pid*zrbfac(i)*((-1.)*psign)/self%lmid(i)
+       self%rblfacnr(i)=2*const_pid*zrbfac(i)*((-1.)*psign)/self%lmidnr(i) 
+	   end if
+
+       self%fpfac(i)=self%f*self%ploss*zrblfac(i)
+       self%fpfacnr(i)=self%rqpara0*self%fpfac(i)
+  
+    case('eich')
+       zrblfac(i)=zrbfac(i)/self%lmid(i)
+       self%slfac(i)=self%sigma(i)/(2*self%lmid(i))
+       self%rblfac(i)=2*const_pid*zrblfac(i)*((-1.)*psign)
+       self%fpfac(i)=(self%f/2)*self%ploss*zrblfac(i)
+  
+    case('samples')
+       position_type2: select case (self%postype)
+         case('radius')
+           self%rblfac=2*const_pid*zrbfac*((-1.)*psign)
+         case default
+           self%rblfac=1
+         end select position_type2
+       self%fpfac=self%f*self%ploss*zrbfac
+  
+    case('userdefined')
+      usrposition_type2: select case (self%postype)
+        case('radius')
+          self%rblfac=2*const_pid*zrbfac*((-1.)*psign)
+        case default
+          self%rblfac=1
+        end select usrposition_type2
+          self%fpfac=self%f*self%ploss*zrbfac/self%fint
+
+    end select formula_chosen_multi_region
+  
+    end do
   
   end if
   ! dbg write(*,*) "psign",psign,zrblfac,self%slfac,self%rblfac,self%fpfac
