@@ -388,53 +388,58 @@ subroutine edgprof_factors(self,rbdry,bpbdry,btotbdry,psign,psixpt,psib)
   self%fpfacnr=0.0
   self%rblfacnr=0.0
   
-  ! power normalisation factor
-  zrbfac=1/(2*const_pid*rbdry*bpbdry)
-  ! default diffusion factor
-  self%slfac=0
-  DO i=1,4
-  formula_chosen: select case (self%formula(i))
-  case('unset','exp')
-     zrblfac(i)=zrbfac(i)/self%lmid(i)
-     self%rblfac(i)=2*const_pid*zrblfac(i)*((-1.)*psign)
-     if (self%qpara0>0) then
-        self%fpfac(i)=self%f*self%qpara0/btotbdry
-     else
-        self%fpfac(i)=self%f*self%ploss*zrblfac(i)
-     end if
-  case('expdouble')
-     zrblfac(i)=zrbfac(i)/(self%lmid(i)+self%rqpara0*self%lmidnr(i))
-     self%rblfac(i)=2*const_pid*zrbfac(i)*((-1.)*psign)/self%lmid(i)
-     self%rblfacnr(i)=2*const_pid*zrbfac(i)*((-1.)*psign)/self%lmidnr(i)
-     self%fpfac(i)=self%f*self%ploss*zrblfac(i)
-     self%fpfacnr(i)=self%rqpara0*self%fpfac(i)
+  if(self%multi_region .eqv. .false. ) then
+    ! power normalisation factor
+    zrbfac=1/(2*const_pid*rbdry*bpbdry)
+    ! default diffusion factor
+    self%slfac=0
+    DO i=1,4
+    formula_chosen: select case (self%formula(i))
+    case('unset','exp')
+       zrblfac(i)=zrbfac(i)/self%lmid(i)
+       self%rblfac(i)=2*const_pid*zrblfac(i)*((-1.)*psign)
+       if (self%qpara0>0) then
+          self%fpfac(i)=self%f*self%qpara0/btotbdry
+       else
+          self%fpfac(i)=self%f*self%ploss*zrblfac(i)
+       end if
+    case('expdouble')
+       zrblfac(i)=zrbfac(i)/(self%lmid(i)+self%rqpara0*self%lmidnr(i))
+       self%rblfac(i)=2*const_pid*zrbfac(i)*((-1.)*psign)/self%lmid(i)
+       self%rblfacnr(i)=2*const_pid*zrbfac(i)*((-1.)*psign)/self%lmidnr(i)
+       self%fpfac(i)=self%f*self%ploss*zrblfac(i)
+       self%fpfacnr(i)=self%rqpara0*self%fpfac(i)
+  
+    case('eich')
+       zrblfac(i)=zrbfac(i)/self%lmid(i)
+       self%slfac(i)=self%sigma(i)/(2*self%lmid(i))
+       self%rblfac(i)=2*const_pid*zrblfac(i)*((-1.)*psign)
+       self%fpfac(i)=(self%f/2)*self%ploss*zrblfac(i)
+  
+    case('samples')
+       position_type: select case (self%postype)
+    case('radius')
+       self%rblfac=2*const_pid*zrbfac*((-1.)*psign)
+    case default
+       self%rblfac=1
+    end select position_type
+      self%fpfac=self%f*self%ploss*zrbfac
+  
+    case('userdefined')
+      usrposition_type: select case (self%postype)
+    case('radius')
+      self%rblfac=2*const_pid*zrbfac*((-1.)*psign)
+    case default
+      self%rblfac=1
+    end select usrposition_type
+      self%fpfac=self%f*self%ploss*zrbfac/self%fint
 
-  case('eich')
-     zrblfac(i)=zrbfac(i)/self%lmid(i)
-     self%slfac(i)=self%sigma(i)/(2*self%lmid(i))
-     self%rblfac(i)=2*const_pid*zrblfac(i)*((-1.)*psign)
-     self%fpfac(i)=(self%f/2)*self%ploss*zrblfac(i)
-
-  case('samples')
-     position_type: select case (self%postype)
-     case('radius')
-        self%rblfac=2*const_pid*zrbfac*((-1.)*psign)
-     case default
-        self%rblfac=1
-     end select position_type
-     self%fpfac=self%f*self%ploss*zrbfac
-
-  case('userdefined')
-     usrposition_type: select case (self%postype)
-     case('radius')
-        self%rblfac=2*const_pid*zrbfac*((-1.)*psign)
-     case default
-        self%rblfac=1
-     end select usrposition_type
-     self%fpfac=self%f*self%ploss*zrbfac/self%fint
-
-  end select formula_chosen
-end do
+    end select formula_chosen
+  
+    end do
+  else
+  
+  end if
   ! dbg write(*,*) "psign",psign,zrblfac,self%slfac,self%rblfac,self%fpfac
 
 end subroutine edgprof_factors
