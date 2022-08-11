@@ -362,7 +362,7 @@ end  subroutine edgprof_readcon
 
 !---------------------------------------------------------------------
 !> factors for power deposition
-subroutine edgprof_factors(self,rbdry,bpbdry,btotbdry,psign,psixpt,psib,&
+subroutine edgprof_factors(self,rbdry,bpbdry,btotbdry,psign,&
                            btotbdry_temp,rbdry_temp,bpbdry_temp,rcen)
   !! arguments
   type(edgprof_t), intent(inout) :: self !< type containing profile parameters
@@ -373,24 +373,15 @@ subroutine edgprof_factors(self,rbdry,bpbdry,btotbdry,psign,psixpt,psib,&
   real(kr8), intent(in) :: btotbdry!< boundary value
   real(kr8), intent(in) :: btotbdry_temp(4) !< boundary value
   real(kr8), intent(in) :: psign !< adjust sign of exponential factor
-  real(kr8) :: psixpt(2) !<  flux xpoints
-  real(kr8) :: psib !<  flux at the boundary
-  real(kr8) :: rcen !<  R value for centre of plasma
+  real(kr8), intent(in):: rcen !<  R value for centre of plasma
 
   !! local variables
   character(*), parameter :: s_name='edgprof_factors' !< subroutine name
   real(kr8) :: zrbfac(4) !< power factor in \f$ B \f$ only
   real(kr8),dimension(4) :: zrblfac !< power factor scaled by lmid
-  real(kr8) :: psixpt_out !< value of psixpt closest to boundary value
-  real(kr8) :: psixpt_in !<  value of psixpt furthers away from boundary value
   real(kr8) :: rprime !<  R' in documentation
-
-  !set psixpt_ref to the outer flux value (value closest to psi at the boundary)
-  if(ABS(psib-psixpt(1)) < ABS(psib-psixpt(2)) ) THEN
-    psixpt_out=psixpt(1); psixpt_in=psixpt(2)
-  else
-    psixpt_out=psixpt(2); psixpt_in=psixpt(1)
-  end if
+  real(kr8) :: g !< Used for f2(R_2-R_1) and f3(R_4 - R_3)
+  real(kr8) :: h !< Used for f1(0) and f4(0)
   
   self%fpfacnr=0.0
   self%rblfacnr=0.0
@@ -457,35 +448,62 @@ subroutine edgprof_factors(self,rbdry,bpbdry,btotbdry,psign,psixpt,psib,&
     if(i==3) rprime=abs(rbdry_temp(4)-rbdry_temp(3))
     formula_chosen_multi_region: select case (self%formula(i))
     case('unset','exp')
+       !1/(2*pi*R_i int f(x) dx)
        if(i==1 .or. i==2 .or. i==3) then
          zrblfac(i)=zrbfac(i)/(self%lmid(i)*(1-exp(-rprime/self%lmid(i))))
        else
          zrblfac(i)=zrbfac(i)/self%lmid(i)
        end if
        self%rblfac(i)=2*const_pid*zrblfac(i)*((-1.)*psign)
+       !f1(0) and f4(0)
+       if(i==2 .or. i==3) h=1
+       !f2(R_2 - R_1) used for rectifying discontinuity in power deposition profile
+       if(i==2) g=exp((rbdry_temp(2)-rbdry_temp(1))/self%lmid(i))
+       !f3(R_4 - R_3) used for rectifying discontinuity in power deposition profile
+       if(i==3) g=exp((rbdry_temp(4)-rbdry_temp(3))/self%lmid(i))
        if (self%qpara0>0) then
-          self%fpfac(i)=self%f*self%qpara0/btotbdry_temp(i)
+          if(i==1 .or. i==4)self%fpfac(i)=self%f*self%qpara0/btotbdry_temp(i)
+          !discontinuity correction in power deposition profile
+          if(i==2)self%fpfac(i)=self%fpfac(i-1)*h/(2.0d0*g)
+          if(i==4)self%fpfac(i-1)=self%fpfac(i)*h/(2.0d0*g)
        else
-          self%fpfac(i)=self%f*self%ploss*zrblfac(i)
+          if(i==1 .or. i==4)self%fpfac(i)=self%f*self%ploss*zrblfac(i)
+          !discontinuity correction in power deposition profile
+          if(i==2)self%fpfac(i)=self%fpfac(i-1)*h/(2.0d0*g)
+          if(i==4)self%fpfac(i-1)=self%fpfac(i)*h/(2.0d0*g)
        end if
     case('expdouble')
-       if(i==1 .or. i==2 .or. i==3) then
+       if(i==1) then
        zrblfac(i)=zrbfac(i)/(self%lmid(i)*(1-exp(-rprime/self%lmid(i)))&
 	                        +self%rqpara0*self%lmidnr(i)*(1-exp(-rprime/self%lmidnr(i))))
-	   self%rblfac(i)=2*const_pid*zrbfac(i)*((-1.)*psign)/&
-	                  (self%lmid(i)*(1-exp(-rprime/self%lmid(i))))
-       self%rblfacnr(i)=2*const_pid*zrbfac(i)*((-1.)*psign)/&
-                        (self%lmidnr(i)*(1-exp(-rprime/self%lmidnr(i))))
-	   else
+	   else if (i==4) then
        zrblfac(i)=zrbfac(i)/(self%lmid(i) +self%rqpara0*self%lmidnr(i))	  
-       self%rblfac(i)=2*const_pid*zrbfac(i)*((-1.)*psign)/self%lmid(i)
-       self%rblfacnr(i)=2*const_pid*zrbfac(i)*((-1.)*psign)/self%lmidnr(i) 
 	   end if
 
-       self%fpfac(i)=self%f*self%ploss*zrblfac(i)
-       self%fpfacnr(i)=self%rqpara0*self%fpfac(i)
+       self%rblfac(i)=2*const_pid*zrbfac(i)*((-1.)*psign)/self%lmid(i)
+       self%rblfacnr(i)=2*const_pid*zrbfac(i)*((-1.)*psign)/self%lmidnr(i) 
+       !f1(0) and f4(0)
+       if(i==2 .or. i==3) h=2
+       !f2(R_2 - R_1) used for rectifying discontinuity in power deposition profile
+       if(i==2) g=exp((rbdry_temp(2)-rbdry_temp(1))/self%lmid(i))
+       !f3(R_4 - R_3) used for rectifying discontinuity in power deposition profile
+       if(i==3) g=exp((rbdry_temp(4)-rbdry_temp(3))/self%lmid(i))
+       if(i==1 .or. i==4) then
+         self%fpfac(i)=self%f*self%ploss*zrblfac(i)
+         self%fpfacnr(i)=self%rqpara0*self%fpfac(i)
+       end if
+       !discontinuity correction in power deposition profile
+       if(i==2) then
+         self%fpfac(i)=self%fpfac(i-1)*h/(2.0d0*g)
+         self%fpfacnr(i)=self%fpfacnr(i-1)*h/(2.0d0*g)
+       end if
+       if(i==4)then
+         self%fpfac(i-1)=self%fpfac(i)*h/(2.0d0*g)
+         self%fpfacnr(i-1)=self%fpfacnr(i)*h/(2.0d0*g)
+       end if
   
     case('eich')
+    !l (erf(R/(2 l s)) + e^(s^2) (erfc(s) - e^(-R/l) erfc(-R/(2 l s) + s)))
        zrblfac(i)=zrbfac(i)/self%lmid(i)
        self%slfac(i)=self%sigma(i)/(2*self%lmid(i))
        self%rblfac(i)=2*const_pid*zrblfac(i)*((-1.)*psign)
