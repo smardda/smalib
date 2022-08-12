@@ -83,20 +83,20 @@ subroutine edgprof_readcon(self,pnumerics,kin)
 
   !! local
   character(*), parameter :: s_name='edgprof_readcon' !< subroutine name
-  character(len=80) :: profile_formula(4) !< formula to be used
   integer(ki4), parameter :: MAX_NUMBER_OF_POSITIONS=100 !< maximum number of positions allowed
   integer(ki4), parameter :: MAX_NUMBER_OF_PARAMETERS=10 !< maximum number of parameters allowed
+  character(len=80) :: profile_formula(MAX_NUMBER_OF_REGIONS) !< formula to be used
   real(kr8) :: power_split !< power split ion to electron direction
-  real(kr8), dimension(4) :: decay_length !< power decay length at midplane (m)
+  real(kr8), dimension(MAX_NUMBER_OF_REGIONS) :: decay_length !< power decay length at midplane (m)
   real(kr8) :: power_loss !< power crossing the separatrix (W)
-  real(kr8),dimension(4) :: diffusion_length !< (m)
+  real(kr8),dimension(MAX_NUMBER_OF_REGIONS) :: diffusion_length !< (m)
   real(kr8) :: q_parallel0 !< parallel reference flux (W/sqm)
   real(kr8) :: ratio_of_q_parallel0_near !< near-SOL parallel relative reference flux (dimensionless)
   real(kr8) :: decay_length_near !< near-SOL power decay length at midplane (m)
 
   real(kr8), dimension(MAX_NUMBER_OF_POSITIONS) :: positions  !< local variable
   real(kr8), dimension(MAX_NUMBER_OF_POSITIONS) :: deposition_profile  !< local variable
-  real(kr8):: c_prop(4)  !< Constant of proportionality for lambda_q custom
+  real(kr8):: c_prop(MAX_NUMBER_OF_REGIONS)  !< Constant of proportionality for lambda_q custom
   real(kr8):: power_loss_exp !< Exponent for power loss in lambda_q custom
   real(kr8):: k_0_exp !< Exponent for k_0 in lambda_q custom
   real(kr8):: q_exp !< Exponent for q in lambda_q custom
@@ -108,25 +108,25 @@ subroutine edgprof_readcon(self,pnumerics,kin)
   real(kr8):: a_R0_elongation_ratio_exp !< Exponent for a_R0_elogation_ratio in lambda_q custom
   integer(ki4) :: number_of_positions  !< local variable
   character(len=80) :: coord_of_positions !< whether in distance or flux from SOL
-  character(len=80), dimension(4) :: lambda_q_choice !< Choice of calculation of lambda_q
+  character(len=80), dimension(MAX_NUMBER_OF_REGIONS) :: lambda_q_choice !< Choice of calculation of lambda_q
 
   real(kr8), dimension(MAX_NUMBER_OF_PARAMETERS) :: general_real_parameters  !< local variable
   real(kr8) :: n_u!< Plasma upstream density
   real(kr8) :: k_0 !< Electron conductivity
   real(kr8) :: q !< Safety factor
-  real(kr8) :: R !< 
-  real(kr8) :: a !< 
+  real(kr8) :: R !< Major radius
+  real(kr8) :: a !< Minor radius
   real(kr8) :: L !< Length of the scrape off layer
-  real(kr8) :: ratio_B !< 
-  real(kr8) :: P_V_ratio !<
-  real(kr8) :: a_R0_ratio !<
-  real(kr8) :: elongation !<
-  real(kr8) :: x_perpendicular  !< 
+  real(kr8) :: ratio_B !< .
+  real(kr8) :: P_V_ratio !< .
+  real(kr8) :: a_R0_ratio !< .
+  real(kr8) :: elongation !< .
+  real(kr8) :: x_perpendicular  !< .
   integer(ki4), dimension(MAX_NUMBER_OF_PARAMETERS) :: general_integer_parameters  !< local variable
   integer(ki4) :: number_of_real_parameters  !< local variable
   integer(ki4) :: number_of_integer_parameters  !< local variable
   logical :: multi_region !< tests if multiple regions are being used
-    
+
   !! edgprof parameters
   namelist /edgprofparameters/ &
  &profile_formula, multi_region, &
@@ -138,19 +138,19 @@ subroutine edgprof_readcon(self,pnumerics,kin)
  &positions, deposition_profile, coord_of_positions, number_of_positions,&
  &general_real_parameters, number_of_real_parameters, &
  &general_integer_parameters, number_of_integer_parameters, lambda_q_choice
- 
+
   !! lambdaq parameters
   namelist /lambdaqparameters/ &
  &c_prop, power_loss_exp, n_u, &
  &k_0, k_0_exp, q, q_exp, R, &
  &R_exp, a, a_exp, x_perpendicular, &
  &L, L_exp, ratio_B, ratio_B_exp, &
- &P_V_ratio_exp, P_V_ratio, a_R0_ratio, & 
+ &P_V_ratio_exp, P_V_ratio, a_R0_ratio, &
  &a_R0_elongation_ratio_exp, elongation
 
   !! Set default lambdaqparameters
-  c_prop(1) = ((7.0d0/8.0d0)**(2.0d0/9.0d0))*((8.0d0*(const_pid**2.0d0)/7.0d0)**(7.0d0/9.0d0))  
-  c_prop(2) = ((8.0d0*(const_pid**2.0d0)/7.0d0)**(7.0d0/9.0d0))  
+  c_prop(1) = ((7.0d0/8.0d0)**(2.0d0/9.0d0))*((8.0d0*(const_pid**2.0d0)/7.0d0)**(7.0d0/9.0d0))
+  c_prop(2) = ((8.0d0*(const_pid**2.0d0)/7.0d0)**(7.0d0/9.0d0))
   c_prop(3) = (8**(5.0d0/9.0d0))*(const_pid**(4.0d0/3.0d0))/(7.0d0**(5.0d0/9.0d0))
   c_prop(4) = 10.0d0;  power_loss_exp=-5.0d0/9.0d0
   n_u=1E+19;      k_0=2000.0d0;        k_0_exp=-2.0d0/9.0d0
@@ -191,29 +191,29 @@ subroutine edgprof_readcon(self,pnumerics,kin)
   if (pnumerics%ledgprof) then
      !! read edgprof parameters
      read(ninep,nml=edgprofparameters,iostat=status)
-          if(status/=0) then
+     if(status/=0) then
         print '("Fatal error reading edgprofparameters")'
         call log_getunit(ilog)
         write(ilog,nml=edgprofparameters)
         call log_error(m_name,s_name,1,error_fatal,'Error reading edgprofparameters')
      end if
-  if(multi_region .eqv. .FALSE.) then
-    decay_length(2:4)=decay_length(1)
-    profile_formula(2:4)=profile_formula(1)
-    diffusion_length(2:4)=diffusion_length(1)
-  end if
-  if(ANY(lambda_q_choice/='default')) then
-  if ( ANY( lambda_q_choice=="custom-3" ) ) then
-      a_exp=7.0d0/9.0d0;  L_exp=2.0d0/9.0d0
-  end if
-  read(ninep,nml=lambdaqparameters,iostat=status)
-     if(status/=0) then
-        print '("Fatal error reading lambdaqparameters")'
-        call log_getunit(ilog)
-        write(ilog,nml=lambdaqparameters)
-        call log_error(m_name,s_name,1,error_fatal,'Error reading lambdaqparameters')
+     if(.NOT.multi_region) then
+        decay_length(2:4)=decay_length(1)
+        profile_formula(2:4)=profile_formula(1)
+        diffusion_length(2:4)=diffusion_length(1)
      end if
-  end if
+     if(ANY(lambda_q_choice/='default')) then
+        if ( ANY( lambda_q_choice=="custom-3" ) ) then
+           a_exp=7.0d0/9.0d0;  L_exp=2.0d0/9.0d0
+        end if
+        read(ninep,nml=lambdaqparameters,iostat=status)
+        if(status/=0) then
+           print '("Fatal error reading lambdaqparameters")'
+           call log_getunit(ilog)
+           write(ilog,nml=lambdaqparameters)
+           call log_error(m_name,s_name,1,error_fatal,'Error reading lambdaqparameters')
+        end if
+     end if
   else
      !! set edgprof parameters using values from powcalparameters
      power_split=pnumerics%f
@@ -221,102 +221,102 @@ subroutine edgprof_readcon(self,pnumerics,kin)
      diffusion_length=pnumerics%sigma
      power_loss=pnumerics%ploss
      q_parallel0=pnumerics%qpara0
-    if (MINVAL(diffusion_length)>1.e-6_kr8) then
-      profile_formula='eich'
-    else
-      profile_formula='unset'
-    end if
+     if (MINVAL(diffusion_length)>1.e-6_kr8) then
+        profile_formula='eich'
+     else
+        profile_formula='unset'
+     end if
   end if
 
   call lowor(profile_formula,1,len_trim(profile_formula))
 
   !! Calculates user choice of lambda_q
-  DO i=1,4
-  formula_chosen_lambda: select case (lambda_q_choice(i))
-  case('custom-1') 
-    decay_length(i)=c_prop(1)*(power_loss**power_loss_exp)*&
-                 (k_0**k_0_exp)*(q**q_exp)*R*(a**a_exp)*&
-                 ((const_charge*n_u*x_perpendicular)**(7.0d0/9.0d0))
-                 
-  case('custom-2') 
-    decay_length(i)=c_prop(2)*(power_loss**power_loss_exp)*&
-                 (k_0**k_0_exp)*(R**R_exp)*(a**a_exp)*&
-                 ((const_charge*n_u*x_perpendicular)**(7.0d0/9.0d0))*(L**L_exp)
-                 
-  case('custom-3') 
-    decay_length(i)=c_prop(3)*(power_loss**power_loss_exp)*&
-                 (k_0**k_0_exp)*(q**q_exp)*(R**R_exp)*(a**a_exp)*&
-                 ((const_charge*n_u*x_perpendicular)**(7.0d0/9.0d0))*(L**L_exp)*&
-                 (ratio_B**ratio_B_exp)
-  case('custom-4') 
-    decay_length(i)=c_prop(4)*((P_V_ratio)**P_V_ratio_exp)*((a_R0_ratio/elongation)**a_R0_elongation_ratio_exp)
-  end select formula_chosen_lambda
+  do i=1,MAX_NUMBER_OF_REGIONS
+     formula_chosen_lambda: select case (lambda_q_choice(i))
+     case('custom-1')
+        decay_length(i)=c_prop(1)*(power_loss**power_loss_exp)*&
+        (k_0**k_0_exp)*(q**q_exp)*R*(a**a_exp)*&
+        ((const_charge*n_u*x_perpendicular)**(7.0d0/9.0d0))
+
+     case('custom-2')
+        decay_length(i)=c_prop(2)*(power_loss**power_loss_exp)*&
+        (k_0**k_0_exp)*(R**R_exp)*(a**a_exp)*&
+        ((const_charge*n_u*x_perpendicular)**(7.0d0/9.0d0))*(L**L_exp)
+
+     case('custom-3')
+        decay_length(i)=c_prop(3)*(power_loss**power_loss_exp)*&
+        (k_0**k_0_exp)*(q**q_exp)*(R**R_exp)*(a**a_exp)*&
+        ((const_charge*n_u*x_perpendicular)**(7.0d0/9.0d0))*(L**L_exp)*&
+        (ratio_B**ratio_B_exp)
+     case('custom-4')
+        decay_length(i)=c_prop(4)*((P_V_ratio)**P_V_ratio_exp)*((a_R0_ratio/elongation)**a_R0_elongation_ratio_exp)
+     end select formula_chosen_lambda
   end do
   !! check for valid data
-DO j=1,4
-  formula_chosen: select case (profile_formula(j))
-  case('unset','exp')
-     if(power_split<0.OR.power_split>1) &
- &   call log_error(m_name,s_name,11,error_fatal,'power_split must be >=0 and <=1')
-     if(decay_length(j)<=0) &
- &   call log_error(m_name,s_name,12,error_fatal,'decay_length (m) must be >0')
-     if(q_parallel0<=0.AND.power_loss<=0) &
- &   call log_error(m_name,s_name,14,error_fatal,'power_loss (W) must be >0')
+  do j=1,MAX_NUMBER_OF_REGIONS
+     formula_chosen: select case (profile_formula(j))
+     case('unset','exp')
+        if(power_split<0.OR.power_split>1) &
+ &      call log_error(m_name,s_name,11,error_fatal,'power_split must be >=0 and <=1')
+        if(decay_length(j)<=0) &
+ &      call log_error(m_name,s_name,12,error_fatal,'decay_length (m) must be >0')
+        if(q_parallel0<=0.AND.power_loss<=0) &
+ &      call log_error(m_name,s_name,14,error_fatal,'power_loss (W) must be >0')
 
-  case('expdouble')
-     if(power_split<0.OR.power_split>1) &
- &   call log_error(m_name,s_name,21,error_fatal,'power_split must be >=0 and <=1')
-     if(decay_length(j)<=0) &
- &   call log_error(m_name,s_name,22,error_fatal,'decay_length (m) must be >0')
-     if(q_parallel0<=0.AND.power_loss<=0) &
- &   call log_error(m_name,s_name,24,error_fatal,'power_loss (W) must be >0')
-     if(ratio_of_q_parallel0_near<=0.AND.power_loss<=0) &
- &   call log_error(m_name,s_name,25,error_fatal,'ratio_of_q_parallel0_near (W) must be >=0')
-     if(decay_length_near<0) &
- &   call log_error(m_name,s_name,22,error_fatal,'decay_length_near (m) must be >=0')
+     case('expdouble')
+        if(power_split<0.OR.power_split>1) &
+ &      call log_error(m_name,s_name,21,error_fatal,'power_split must be >=0 and <=1')
+        if(decay_length(j)<=0) &
+ &      call log_error(m_name,s_name,22,error_fatal,'decay_length (m) must be >0')
+        if(q_parallel0<=0.AND.power_loss<=0) &
+ &      call log_error(m_name,s_name,24,error_fatal,'power_loss (W) must be >0')
+        if(ratio_of_q_parallel0_near<=0.AND.power_loss<=0) &
+ &      call log_error(m_name,s_name,25,error_fatal,'ratio_of_q_parallel0_near (W) must be >=0')
+        if(decay_length_near<0) &
+ &      call log_error(m_name,s_name,22,error_fatal,'decay_length_near (m) must be >=0')
 
-  case('eich')
-     if(power_split<0.OR.power_split>1) &
- &   call log_error(m_name,s_name,31,error_fatal,'power_split must be >=0 and <=1')
-     if(decay_length(j)<=0) &
- &   call log_error(m_name,s_name,32,error_fatal,'decay_length (m) must be >0')
-     if(diffusion_length(j)<0) &
- &   call log_error(m_name,s_name,33,error_fatal,'diffusion_length (m) must be >=0')
-     if(q_parallel0<=0.AND.power_loss<=0) &
- &   call log_error(m_name,s_name,34,error_fatal,'power_loss (W) must be >0')
+     case('eich')
+        if(power_split<0.OR.power_split>1) &
+ &      call log_error(m_name,s_name,31,error_fatal,'power_split must be >=0 and <=1')
+        if(decay_length(j)<=0) &
+ &      call log_error(m_name,s_name,32,error_fatal,'decay_length (m) must be >0')
+        if(diffusion_length(j)<0) &
+ &      call log_error(m_name,s_name,33,error_fatal,'diffusion_length (m) must be >=0')
+        if(q_parallel0<=0.AND.power_loss<=0) &
+ &      call log_error(m_name,s_name,34,error_fatal,'power_loss (W) must be >0')
 
-  case('samples')
-     if(coord_of_positions/='radius'.AND.coord_of_positions/='flux') &
- &   call log_error(m_name,s_name,39,error_fatal,'position type not recognised')
-     if(q_parallel0<=0.AND.power_loss<=0) &
- &   call log_error(m_name,s_name,40,error_fatal,'power_loss (W) must be >0')
-     if(number_of_positions<=0) &
- &   call log_error(m_name,s_name,41,error_fatal,'number of positions must be >0')
-     if(number_of_positions>MAX_NUMBER_OF_POSITIONS) then
-        call log_value("max number of positions",MAX_NUMBER_OF_POSITIONS)
-        call log_error(m_name,s_name,42,error_fatal,'too many positions: increase MAX_NUMBER_OF_POSITIONS')
-     end if
+     case('samples')
+        if(coord_of_positions/='radius'.AND.coord_of_positions/='flux') &
+ &      call log_error(m_name,s_name,39,error_fatal,'position type not recognised')
+        if(q_parallel0<=0.AND.power_loss<=0) &
+ &      call log_error(m_name,s_name,40,error_fatal,'power_loss (W) must be >0')
+        if(number_of_positions<=0) &
+ &      call log_error(m_name,s_name,41,error_fatal,'number of positions must be >0')
+        if(number_of_positions>MAX_NUMBER_OF_POSITIONS) then
+           call log_value("max number of positions",MAX_NUMBER_OF_POSITIONS)
+           call log_error(m_name,s_name,42,error_fatal,'too many positions: increase MAX_NUMBER_OF_POSITIONS')
+        end if
 
-  case('userdefined')
-     if(q_parallel0<=0.AND.power_loss<=0) &
- &   call log_error(m_name,s_name,43,error_fatal,'power_loss (W) must be >0')
-     if(number_of_real_parameters<0) &
- &   call log_error(m_name,s_name,44,error_fatal,'number of real parameters must be >=0')
-     if(number_of_real_parameters>MAX_NUMBER_OF_PARAMETERS) then
-        call log_value("max number of real parameters",MAX_NUMBER_OF_PARAMETERS)
-        call log_error(m_name,s_name,45,error_fatal,'too many parameters: increase MAX_NUMBER_OF_PARAMETERS')
-     end if
-     if(number_of_integer_parameters<0) &
- &   call log_error(m_name,s_name,46,error_fatal,'number of integer parameters must be >=0')
-     if(number_of_integer_parameters>MAX_NUMBER_OF_PARAMETERS) then
-        call log_value("max number of integer parameters",MAX_NUMBER_OF_PARAMETERS)
-        call log_error(m_name,s_name,47,error_fatal,'too many parameters: increase MAX_NUMBER_OF_PARAMETERS')
-     end if
-     if(number_of_integer_parameters==0.AND.number_of_real_parameters==0) &
- &   call log_error(m_name,s_name,48,error_fatal,'no parameters set')
+     case('userdefined')
+        if(q_parallel0<=0.AND.power_loss<=0) &
+ &      call log_error(m_name,s_name,43,error_fatal,'power_loss (W) must be >0')
+        if(number_of_real_parameters<0) &
+ &      call log_error(m_name,s_name,44,error_fatal,'number of real parameters must be >=0')
+        if(number_of_real_parameters>MAX_NUMBER_OF_PARAMETERS) then
+           call log_value("max number of real parameters",MAX_NUMBER_OF_PARAMETERS)
+           call log_error(m_name,s_name,45,error_fatal,'too many parameters: increase MAX_NUMBER_OF_PARAMETERS')
+        end if
+        if(number_of_integer_parameters<0) &
+ &      call log_error(m_name,s_name,46,error_fatal,'number of integer parameters must be >=0')
+        if(number_of_integer_parameters>MAX_NUMBER_OF_PARAMETERS) then
+           call log_value("max number of integer parameters",MAX_NUMBER_OF_PARAMETERS)
+           call log_error(m_name,s_name,47,error_fatal,'too many parameters: increase MAX_NUMBER_OF_PARAMETERS')
+        end if
+        if(number_of_integer_parameters==0.AND.number_of_real_parameters==0) &
+ &      call log_error(m_name,s_name,48,error_fatal,'no parameters set')
 
-  end select formula_chosen
-end do
+     end select formula_chosen
+  end do
   !! store values
   self%multi_region=multi_region
   self%formula=profile_formula
@@ -363,174 +363,174 @@ end  subroutine edgprof_readcon
 !---------------------------------------------------------------------
 !> factors for power deposition
 subroutine edgprof_factors(self,rbdry,bpbdry,btotbdry,psign,&
-                           btotbdry_temp,rbdry_temp,bpbdry_temp,rcen)
+  btotbdryarr,rbdryarr,bpbdryarr,rcen)
   !! arguments
   type(edgprof_t), intent(inout) :: self !< type containing profile parameters
   real(kr8), intent(in) :: rbdry !< boundary value
-  real(kr8), intent(in) :: rbdry_temp(4) !< boundary value
+  real(kr8), intent(in) :: rbdryarr(MAX_NUMBER_OF_REGIONS) !< boundary value
   real(kr8), intent(in) :: bpbdry !< boundary value
-  real(kr8), intent(in) :: bpbdry_temp(4) !< boundary value
+  real(kr8), intent(in) :: bpbdryarr(MAX_NUMBER_OF_REGIONS) !< boundary value
   real(kr8), intent(in) :: btotbdry!< boundary value
-  real(kr8), intent(in) :: btotbdry_temp(4) !< boundary value
+  real(kr8), intent(in) :: btotbdryarr(MAX_NUMBER_OF_REGIONS) !< boundary value
   real(kr8), intent(in) :: psign !< adjust sign of exponential factor
   real(kr8), intent(in):: rcen !<  R value for centre of plasma
 
   !! local variables
   character(*), parameter :: s_name='edgprof_factors' !< subroutine name
-  real(kr8) :: zrbfac(4) !< power factor in \f$ B \f$ only
-  real(kr8),dimension(4) :: zrblfac !< power factor scaled by lmid
+  real(kr8) :: zrbfac(MAX_NUMBER_OF_REGIONS) !< power factor in \f$ B \f$ only
+  real(kr8),dimension(MAX_NUMBER_OF_REGIONS) :: zrblfac !< power factor scaled by lmid
   real(kr8) :: rprime !<  R' in documentation
   real(kr8) :: g !< Used for f2(R_2-R_1) and f3(R_4 - R_3)
   real(kr8) :: h !< Used for f1(0) and f4(0)
-  
+
   self%fpfacnr=0.0
   self%rblfacnr=0.0
-  
-  if(self%multi_region .eqv. .false. ) then
-    ! power normalisation factor
-    zrbfac=1/(2*const_pid*rbdry*bpbdry)
-    ! default diffusion factor
-    self%slfac=0
-    DO i=1,4
-    formula_chosen: select case (self%formula(i))
-    case('unset','exp')
-       zrblfac(i)=zrbfac(i)/self%lmid(i)
-       self%rblfac(i)=2*const_pid*zrblfac(i)*((-1.)*psign)
-       if (self%qpara0>0) then
-          self%fpfac(i)=self%f*self%qpara0/btotbdry
-       else
-          self%fpfac(i)=self%f*self%ploss*zrblfac(i)
-       end if
-    case('expdouble')
-       zrblfac(i)=zrbfac(i)/(self%lmid(i)+self%rqpara0*self%lmidnr(i))
-       self%rblfac(i)=2*const_pid*zrbfac(i)*((-1.)*psign)/self%lmid(i)
-       self%rblfacnr(i)=2*const_pid*zrbfac(i)*((-1.)*psign)/self%lmidnr(i)
-       self%fpfac(i)=self%f*self%ploss*zrblfac(i)
-       self%fpfacnr(i)=self%rqpara0*self%fpfac(i)
-  
-    case('eich')
-       zrblfac(i)=zrbfac(i)/self%lmid(i)
-       self%slfac(i)=self%sigma(i)/(2*self%lmid(i))
-       self%rblfac(i)=2*const_pid*zrblfac(i)*((-1.)*psign)
-       self%fpfac(i)=(self%f/2)*self%ploss*zrblfac(i)
-  
-    case('samples')
-       position_type: select case (self%postype)
-         case('radius')
-           self%rblfac=2*const_pid*zrbfac*((-1.)*psign)
-         case default
-           self%rblfac=1
-         end select position_type
-       self%fpfac=self%f*self%ploss*zrbfac
-  
-    case('userdefined')
-      usrposition_type: select case (self%postype)
-        case('radius')
-          self%rblfac=2*const_pid*zrbfac*((-1.)*psign)
-        case default
-          self%rblfac=1
-        end select usrposition_type
-          self%fpfac=self%f*self%ploss*zrbfac/self%fint
 
-    end select formula_chosen
-  
-    end do
+  if(.NOT.self%multi_region) then
+     ! power normalisation factor
+     zrbfac=1/(2*const_pid*rbdry*bpbdry)
+     ! default diffusion factor
+     self%slfac=0
+     do i=1,MAX_NUMBER_OF_REGIONS
+        formula_chosen: select case (self%formula(i))
+        case('unset','exp')
+           zrblfac(i)=zrbfac(i)/self%lmid(i)
+           self%rblfac(i)=2*const_pid*zrblfac(i)*((-1.)*psign)
+           if (self%qpara0>0) then
+              self%fpfac(i)=self%f*self%qpara0/btotbdry
+           else
+              self%fpfac(i)=self%f*self%ploss*zrblfac(i)
+           end if
+        case('expdouble')
+           zrblfac(i)=zrbfac(i)/(self%lmid(i)+self%rqpara0*self%lmidnr(i))
+           self%rblfac(i)=2*const_pid*zrbfac(i)*((-1.)*psign)/self%lmid(i)
+           self%rblfacnr(i)=2*const_pid*zrbfac(i)*((-1.)*psign)/self%lmidnr(i)
+           self%fpfac(i)=self%f*self%ploss*zrblfac(i)
+           self%fpfacnr(i)=self%rqpara0*self%fpfac(i)
+
+        case('eich')
+           zrblfac(i)=zrbfac(i)/self%lmid(i)
+           self%slfac(i)=self%sigma(i)/(2*self%lmid(i))
+           self%rblfac(i)=2*const_pid*zrblfac(i)*((-1.)*psign)
+           self%fpfac(i)=(self%f/2)*self%ploss*zrblfac(i)
+
+        case('samples')
+           position_type: select case (self%postype)
+           case('radius')
+              self%rblfac=2*const_pid*zrbfac*((-1.)*psign)
+           case default
+              self%rblfac=1
+           end select position_type
+           self%fpfac=self%f*self%ploss*zrbfac
+
+        case('userdefined')
+           usrposition_type: select case (self%postype)
+           case('radius')
+              self%rblfac=2*const_pid*zrbfac*((-1.)*psign)
+           case default
+              self%rblfac=1
+           end select usrposition_type
+           self%fpfac=self%f*self%ploss*zrbfac/self%fint
+
+        end select formula_chosen
+
+     end do
   else
-    ! 4 regions case
-    DO i=1,4
-    ! power normalisation factor
-    zrbfac=1/(2*const_pid*rbdry_temp(i)*bpbdry_temp(i))
-    ! default diffusion factor
-    self%slfac=0
-    ! pick R' acccording to region under consideration       
-    if(i==1) rprime=abs(rcen - rbdry_temp(1))
-    if(i==2) rprime=abs(rbdry_temp(1)-rbdry_temp(2))
-    if(i==3) rprime=abs(rbdry_temp(4)-rbdry_temp(3))
-    formula_chosen_multi_region: select case (self%formula(i))
-    case('unset','exp')
-       !1/(2*pi*R_i int f(x) dx)
-       if(i==1 .or. i==2 .or. i==3) then
-         zrblfac(i)=zrbfac(i)/(self%lmid(i)*(1-exp(-rprime/self%lmid(i))))
-       else
-         zrblfac(i)=zrbfac(i)/self%lmid(i)
-       end if
-       self%rblfac(i)=2*const_pid*zrblfac(i)*((-1.)*psign)
-       !f1(0) and f4(0)
-       if(i==2 .or. i==3) h=1
-       !f2(R_2 - R_1) used for rectifying discontinuity in power deposition profile
-       if(i==2) g=exp((rbdry_temp(2)-rbdry_temp(1))/self%lmid(i))
-       !f3(R_4 - R_3) used for rectifying discontinuity in power deposition profile
-       if(i==3) g=exp((rbdry_temp(4)-rbdry_temp(3))/self%lmid(i))
-       if (self%qpara0>0) then
-          if(i==1 .or. i==4)self%fpfac(i)=self%f*self%qpara0/btotbdry_temp(i)
-          !discontinuity correction in power deposition profile
-          if(i==2)self%fpfac(i)=self%fpfac(i-1)*h/(2.0d0*g)
-          if(i==4)self%fpfac(i-1)=self%fpfac(i)*h/(2.0d0*g)
-       else
-          if(i==1 .or. i==4)self%fpfac(i)=self%f*self%ploss*zrblfac(i)
-          !discontinuity correction in power deposition profile
-          if(i==2)self%fpfac(i)=self%fpfac(i-1)*h/(2.0d0*g)
-          if(i==4)self%fpfac(i-1)=self%fpfac(i)*h/(2.0d0*g)
-       end if
-    case('expdouble')
-       if(i==1) then
-       zrblfac(i)=zrbfac(i)/(self%lmid(i)*(1-exp(-rprime/self%lmid(i)))&
-	                        +self%rqpara0*self%lmidnr(i)*(1-exp(-rprime/self%lmidnr(i))))
-	   else if (i==4) then
-       zrblfac(i)=zrbfac(i)/(self%lmid(i) +self%rqpara0*self%lmidnr(i))	  
-	   end if
+     ! 4 regions case
+     do i=1,MAX_NUMBER_OF_REGIONS
+        ! power normalisation factor
+        zrbfac=1/(2*const_pid*rbdryarr(i)*bpbdryarr(i))
+        ! default diffusion factor
+        self%slfac=0
+        ! pick R' acccording to region under consideration
+        if(i==1) rprime=abs(rcen - rbdryarr(1))
+        if(i==2) rprime=abs(rbdryarr(1)-rbdryarr(2))
+        if(i==3) rprime=abs(rbdryarr(4)-rbdryarr(3))
+        formula_chosen_multi_region: select case (self%formula(i))
+        case('unset','exp')
+           !1/(2*pi*R_i int f(x) dx)
+           if(i==1 .or. i==2 .or. i==3) then
+              zrblfac(i)=zrbfac(i)/(self%lmid(i)*(1-exp(-rprime/self%lmid(i))))
+           else
+              zrblfac(i)=zrbfac(i)/self%lmid(i)
+           end if
+           self%rblfac(i)=2*const_pid*zrblfac(i)*((-1.)*psign)
+           !f1(0) and f4(0)
+           if(i==2 .or. i==3) h=1
+           !f2(R_2 - R_1) used for rectifying discontinuity in power deposition profile
+           if(i==2) g=exp((rbdryarr(2)-rbdryarr(1))/self%lmid(i))
+           !f3(R_4 - R_3) used for rectifying discontinuity in power deposition profile
+           if(i==3) g=exp((rbdryarr(4)-rbdryarr(3))/self%lmid(i))
+           if (self%qpara0>0) then
+              if(i==1 .or. i==4)self%fpfac(i)=self%f*self%qpara0/btotbdryarr(i)
+              !discontinuity correction in power deposition profile
+              if(i==2)self%fpfac(i)=self%fpfac(i-1)*h/(2.0d0*g)
+              if(i==4)self%fpfac(i-1)=self%fpfac(i)*h/(2.0d0*g)
+           else
+              if(i==1 .or. i==4)self%fpfac(i)=self%f*self%ploss*zrblfac(i)
+              !discontinuity correction in power deposition profile
+              if(i==2)self%fpfac(i)=self%fpfac(i-1)*h/(2.0d0*g)
+              if(i==4)self%fpfac(i-1)=self%fpfac(i)*h/(2.0d0*g)
+           end if
+        case('expdouble')
+           if(i==1) then
+              zrblfac(i)=zrbfac(i)/(self%lmid(i)*(1-exp(-rprime/self%lmid(i)))&
+              +self%rqpara0*self%lmidnr(i)*(1-exp(-rprime/self%lmidnr(i))))
+           else if (i==4) then
+              zrblfac(i)=zrbfac(i)/(self%lmid(i) +self%rqpara0*self%lmidnr(i))
+           end if
 
-       self%rblfac(i)=2*const_pid*zrbfac(i)*((-1.)*psign)/self%lmid(i)
-       self%rblfacnr(i)=2*const_pid*zrbfac(i)*((-1.)*psign)/self%lmidnr(i) 
-       !f1(0) and f4(0)
-       if(i==2 .or. i==3) h=2
-       !f2(R_2 - R_1) used for rectifying discontinuity in power deposition profile
-       if(i==2) g=exp((rbdry_temp(2)-rbdry_temp(1))/self%lmid(i))
-       !f3(R_4 - R_3) used for rectifying discontinuity in power deposition profile
-       if(i==3) g=exp((rbdry_temp(4)-rbdry_temp(3))/self%lmid(i))
-       if(i==1 .or. i==4) then
-         self%fpfac(i)=self%f*self%ploss*zrblfac(i)
-         self%fpfacnr(i)=self%rqpara0*self%fpfac(i)
-       end if
-       !discontinuity correction in power deposition profile
-       if(i==2) then
-         self%fpfac(i)=self%fpfac(i-1)*h/(2.0d0*g)
-         self%fpfacnr(i)=self%fpfacnr(i-1)*h/(2.0d0*g)
-       end if
-       if(i==4)then
-         self%fpfac(i-1)=self%fpfac(i)*h/(2.0d0*g)
-         self%fpfacnr(i-1)=self%fpfacnr(i)*h/(2.0d0*g)
-       end if
-  
-    case('eich')
-    !l (erf(R/(2 l s)) + e^(s^2) (erfc(s) - e^(-R/l) erfc(-R/(2 l s) + s)))
-       zrblfac(i)=zrbfac(i)/self%lmid(i)
-       self%slfac(i)=self%sigma(i)/(2*self%lmid(i))
-       self%rblfac(i)=2*const_pid*zrblfac(i)*((-1.)*psign)
-       self%fpfac(i)=(self%f/2)*self%ploss*zrblfac(i)
-  
-    case('samples')
-       position_type2: select case (self%postype)
-         case('radius')
-           self%rblfac=2*const_pid*zrbfac*((-1.)*psign)
-         case default
-           self%rblfac=1
-         end select position_type2
-       self%fpfac=self%f*self%ploss*zrbfac
-  
-    case('userdefined')
-      usrposition_type2: select case (self%postype)
-        case('radius')
-          self%rblfac=2*const_pid*zrbfac*((-1.)*psign)
-        case default
-          self%rblfac=1
-        end select usrposition_type2
-          self%fpfac=self%f*self%ploss*zrbfac/self%fint
+           self%rblfac(i)=2*const_pid*zrbfac(i)*((-1.)*psign)/self%lmid(i)
+           self%rblfacnr(i)=2*const_pid*zrbfac(i)*((-1.)*psign)/self%lmidnr(i)
+           !f1(0) and f4(0)
+           if(i==2 .or. i==3) h=2
+           !f2(R_2 - R_1) used for rectifying discontinuity in power deposition profile
+           if(i==2) g=exp((rbdryarr(2)-rbdryarr(1))/self%lmid(i))
+           !f3(R_4 - R_3) used for rectifying discontinuity in power deposition profile
+           if(i==3) g=exp((rbdryarr(4)-rbdryarr(3))/self%lmid(i))
+           if(i==1 .or. i==4) then
+              self%fpfac(i)=self%f*self%ploss*zrblfac(i)
+              self%fpfacnr(i)=self%rqpara0*self%fpfac(i)
+           end if
+           !discontinuity correction in power deposition profile
+           if(i==2) then
+              self%fpfac(i)=self%fpfac(i-1)*h/(2.0d0*g)
+              self%fpfacnr(i)=self%fpfacnr(i-1)*h/(2.0d0*g)
+           end if
+           if(i==4)then
+              self%fpfac(i-1)=self%fpfac(i)*h/(2.0d0*g)
+              self%fpfacnr(i-1)=self%fpfacnr(i)*h/(2.0d0*g)
+           end if
 
-    end select formula_chosen_multi_region
-  
-    end do
-  
+        case('eich')
+           !l (erf(R/(2 l s)) + e^(s^2) (erfc(s) - e^(-R/l) erfc(-R/(2 l s) + s)))
+           zrblfac(i)=zrbfac(i)/self%lmid(i)
+           self%slfac(i)=self%sigma(i)/(2*self%lmid(i))
+           self%rblfac(i)=2*const_pid*zrblfac(i)*((-1.)*psign)
+           self%fpfac(i)=(self%f/2)*self%ploss*zrblfac(i)
+
+        case('samples')
+           position_type2: select case (self%postype)
+           case('radius')
+              self%rblfac=2*const_pid*zrbfac*((-1.)*psign)
+           case default
+              self%rblfac=1
+           end select position_type2
+           self%fpfac=self%f*self%ploss*zrbfac
+
+        case('userdefined')
+           usrposition_type2: select case (self%postype)
+           case('radius')
+              self%rblfac=2*const_pid*zrbfac*((-1.)*psign)
+           case default
+              self%rblfac=1
+           end select usrposition_type2
+           self%fpfac=self%f*self%ploss*zrbfac/self%fint
+
+        end select formula_chosen_multi_region
+
+     end do
+
   end if
   ! dbg write(*,*) "psign",psign,zrblfac,self%slfac,self%rblfac,self%fpfac
 
@@ -543,7 +543,7 @@ function edgprof_exp(self,psid,kregion)
   type(edgprof_t), intent(in) :: self !< type containing profile parameters
   real(kr8) :: edgprof_exp !< local variable
   real(kr8), intent(in) :: psid !< position in \f$ \psi \f$
-  integer (ki4) :: kregion !< region of SOL 
+  integer (ki4) :: kregion !< region of SOL
 
   !! local variables
   character(*), parameter :: s_name='edgprof_exp' !< subroutine name
@@ -565,13 +565,13 @@ function edgprof_expdouble(self,psid,kregion)
   type(edgprof_t), intent(in) :: self !< type containing profile parameters
   real(kr8) :: edgprof_expdouble !< local variable
   real(kr8), intent(in) :: psid !< position in \f$ \psi \f$
-  integer (ki4) :: kregion !< region of SOL 
-  
+  integer (ki4) :: kregion !< region of SOL
+
   !! local variables
   character(*), parameter :: s_name='edgprof_expdouble' !< subroutine name
   real(kr8) :: pow !< local variable
-  
-    !! calculate profile
+
+  !! calculate profile
   pow=self%fpfac(kregion)*exp(self%rblfac(kregion)*psid) &
  &+self%fpfacnr(kregion)*exp(self%rblfacnr(kregion)*psid)
 
@@ -588,8 +588,8 @@ function edgprof_eich(self,psid,kregion)
   type(edgprof_t), intent(in) :: self !< type containing profile parameters
   real(kr8) :: edgprof_eich !< local variable
   real(kr8), intent(in) :: psid !< position in \f$ \psi \f$
-  integer (ki4) :: kregion !< region of SOL 
-    
+  integer (ki4) :: kregion !< region of SOL
+
   !! local variables
   character(*), parameter :: s_name='edgprof_eich' !< subroutine name
   real(kr8) :: pow !< local variable
@@ -612,7 +612,7 @@ function edgprof_userdefined(self,psid,kregion)
   type(edgprof_t), intent(in) :: self !< type containing profile parameters
   real(kr8) :: edgprof_userdefined !< local variable
   real(kr8), intent(in) :: psid !< position in \f$ \psi \f$
-  integer (ki4) :: kregion !< region of SOL 
+  integer (ki4) :: kregion !< region of SOL
 
   !! local variables
   character(*), parameter :: s_name='edgprof_userdefined' !< subroutine name
@@ -642,8 +642,8 @@ function edgprof_samples(self,psid,kregion)
   type(edgprof_t), intent(in) :: self !< type containing profile parameters
   real(kr8) :: edgprof_samples !< local variable
   real(kr8), intent(in) :: psid !< position in \f$ \psi \f$
-  integer (ki4) :: kregion !< region of SOL 
-    
+  integer (ki4) :: kregion !< region of SOL
+
   !! local variables
   character(*), parameter :: s_name='edgprof_samples' !< subroutine name
   real(kr8) :: pow !< local variable
@@ -681,7 +681,7 @@ function edgprof_region(R,Z,cenz,rxpt,psi,psid, psixpt)
   real(kr8), intent(in) :: psi !<  \f$ \psi \f$
   real(kr8), intent(in) :: psid !<  \f$ \psi - \psi_b \f$
   real(kr8) :: psixpt(2) !<  flux xpoints
-  
+
   !! local variables
   character(*), parameter :: s_name='edgprof_region' !< subroutine name
   real(kr8) :: rxpt_hemi !< r for xpoint in hemisphere being considered
@@ -690,26 +690,26 @@ function edgprof_region(R,Z,cenz,rxpt,psi,psid, psixpt)
   integer(ki4) :: iregion !< local variable
   psi2=psi
   !Determine whether above or below the midplane and set reference rxpt accordingly
-  if(Z<=cenz) rxpt_hemi=rxpt(1) 
-  if(Z>cenz)  rxpt_hemi=rxpt(2) 
+  if(Z<=cenz) rxpt_hemi=rxpt(1)
+  if(Z>cenz)  rxpt_hemi=rxpt(2)
   !set reference psixpt_ref dependent on sign and slope of psi(R)
   if(psi>0 .and. psid>0) psixpt_ref=MINVAL(psixpt)
   if(psi>0 .and. psid<0) psixpt_ref=MAXVAL(psixpt)
   if(psi<0 .and. psid>0) psixpt_ref=MAXVAL(ABS(psixpt))
   if(psi<0 .and. psid<0) psixpt_ref=MINVAL(ABS(psixpt))
   !Flip sign of psi if negative
-  if(psi2<0) psi2=abs(psi2) 
+  if(psi2<0) psi2=abs(psi2)
   !Determine whether the point is to the left or right of the xpoint
   if(R<=rxpt_hemi) then
-	if(psi2<=psixpt_ref) iregion=1
-    if(psi2>psixpt_ref) iregion=2
+     if(psi2<=psixpt_ref) iregion=1
+     if(psi2>psixpt_ref) iregion=2
   else
-    if(psi2<=psixpt_ref) iregion=4
-    if(psi2>psixpt_ref) iregion=3	
+     if(psi2<=psixpt_ref) iregion=4
+     if(psi2>psixpt_ref) iregion=3
   end if
   !! return region
   edgprof_region=iregion
- end function edgprof_region
+end function edgprof_region
 !---------------------------------------------------------------------
 !> profile from samples
 function edgprof_fn(self,psi,psid,R,Z,cenz,rxpt,psixpt)
@@ -724,7 +724,7 @@ function edgprof_fn(self,psi,psid,R,Z,cenz,rxpt,psixpt)
   real(kr8) :: cenz !< position centre of plasma \f$ Z \f$
   real(kr8) :: rxpt(2)   !<  position x point \f$ R \f$
   real(kr8) :: psixpt(2) !<  flux xpoints
-  
+
   !! local variables
   character(*), parameter :: s_name='edgprof_fn' !< subroutine name
   real(kr8) :: pow !< local variable
@@ -734,17 +734,17 @@ function edgprof_fn(self,psi,psid,R,Z,cenz,rxpt,psixpt)
   !! select profile
   formula_chosen: select case (self%formula(iregion))
   case('unset','exp')
-    pow=edgprof_exp(self,psid,iregion)
+     pow=edgprof_exp(self,psid,iregion)
   case('expdouble')
-    pow=edgprof_expdouble(self,psid,iregion)
+     pow=edgprof_expdouble(self,psid,iregion)
   case('eich')
-    pow=edgprof_eich(self,psid,iregion)
+     pow=edgprof_eich(self,psid,iregion)
   case('userdefined')
-    pow=edgprof_userdefined(self,psid,iregion)
+     pow=edgprof_userdefined(self,psid,iregion)
   case('samples')
-    pow=edgprof_samples(self,psid,iregion)
+     pow=edgprof_samples(self,psid,iregion)
   end select formula_chosen
-  
+
   !! return profile
   edgprof_fn=pow
 end function edgprof_fn
@@ -919,8 +919,8 @@ subroutine edgprof_delete(self)
   type(edgprof_t), intent(inout) :: self !< type containing profile parameters
   !! local
   character(*), parameter :: s_name='edgprof_delete' !< subroutine name
-   integer(ki4) :: i  !< local variable
-   
+  integer(ki4) :: i  !< local variable
+
   formula_deallocate: select case (self%formula(1))
   case('samples')
      deallocate(self%pos)

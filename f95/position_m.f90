@@ -686,7 +686,7 @@ end subroutine position_readonlylis
 subroutine position_readveclis(self,infile,kcname,kin,kfmt,kopt)
 
   use smitermpi_h
- 
+
   !! arguments
   type(posveclis_t), intent(inout) :: self !< vector list data
   character(*),intent(in) :: infile !< name of input file
@@ -802,12 +802,12 @@ subroutine position_readveclis(self,infile,kcname,kin,kfmt,kopt)
 
   !! read coordinates
   call position_readonlylis(self,nin,kfmt)
-  if(myrank_log .eq. 0) then
+  if(myrank_log==0) then
      print '("number of vectors read = ",i10)',self%np
      call log_value("number of vectors read ",self%np)
   endif
-  
-!  close(nin) ! Added HJL
+
+  !  close(nin) ! Added HJL
 end subroutine position_readveclis
 !---------------------------------------------------------------------
 !> delete list of vectors

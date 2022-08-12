@@ -132,7 +132,7 @@ module beq_m
 subroutine beq_read(self,infile)
 
   use smitermpi_h
-  
+
   !! arguments
   type(beq_t), intent(out) :: self   !< object data structure
   character(*),intent(in) :: infile !< name of input file
@@ -150,7 +150,7 @@ subroutine beq_read(self,infile)
      !! error opening file
      call log_error(m_name,s_name,1,error_fatal,'Error opening beq data structure file')
   else
-     if(myrank_log .eq. 0) call log_error(m_name,s_name,2,log_info,'beq data structure file opened')
+     if(myrank_log==0) call log_error(m_name,s_name,2,log_info,'beq data structure file opened')
   end if
 
   read(nin,*,iostat=status) ibuff
@@ -844,7 +844,7 @@ subroutine beq_readequil(self,infile,numerics)
   print '("EQDSK file ended status ",i10," but may have got enough data.")',status
   call log_error(m_name,s_name,80,error_warning,'Unexpected end of EQDSK file')
   call log_value("May have got enough data. Termination status ",status)
-  go to 2  
+  go to 2
 
 end subroutine beq_readequil
 !---------------------------------------------------------------------
@@ -878,7 +878,7 @@ subroutine beq_readequ(self,infile,numerics)
      call log_error(m_name,s_name,1,error_fatal,'Error opening file')
   end if
   cfmtd=cfmt1
-1000 continue
+1000  continue
   ! skip header data
   do
      read(iin,fmt='(a)',iostat=status) ibuff
@@ -936,7 +936,7 @@ subroutine beq_readequ(self,infile,numerics)
      read(iin,*,iostat=status)(workr1(i),i=1,jm)
   else
      read(iin,cfmtd,iostat=status)(workr1(i),i=1,jm)
-  end if 
+  end if
   if(status/=0) then
      if(cfmtd(1:1)/='*') then
         call log_value("Format statement used ",cfmtd)
@@ -1013,7 +1013,7 @@ subroutine beq_readequ(self,infile,numerics)
 
   deallocate(workr1) ! Added for combined smiter runs HJL
   deallocate(workz1) ! Added for combined smiter runs HJL
-  
+
   ! set up fpol
   !! allocate fpol storage
   allocate(self%f(jm), stat=status)
@@ -1123,8 +1123,8 @@ subroutine beq_readequ(self,infile,numerics)
            call log_error(m_name,s_name,49,log_info,'override for ITER')
            ! special for ITER to align current and toroidal field
            if (psic>psib) then
-           workr2=-workr2
-           workz2=-workz2
+              workr2=-workr2
+              workz2=-workz2
            end if
         end if
      end if
@@ -1146,7 +1146,7 @@ subroutine beq_readequ(self,infile,numerics)
   print '("Equ file ended status ",i10," but may have got enough data.")',status
   call log_error(m_name,s_name,80,error_warning,'Unexpected end of equ file')
   call log_value("May have got enough data. Termination status ",status)
-  go to 2  
+  go to 2
 
 end subroutine beq_readequ
 !---------------------------------------------------------------------
@@ -1257,7 +1257,7 @@ subroutine beq_readana(self,beqan,kfldspec)
 
   deallocate(workr1) ! Added for smiter combined runs HJL
   deallocate(workz1) ! Added for smiter combined runs HJL
-  
+
   self%psiaxis=psic
   self%psibdry=psib
   self%psiqbdry=self%psibdry
@@ -1564,7 +1564,7 @@ end subroutine beq_readv
 subroutine beq_readcheck(self,infile,kextra)
 
   use smitermpi_h
-  
+
   !! arguments
   type(beq_t), intent(out) :: self   !< object data structure
   character(*),intent(in) :: infile !< name of input file
@@ -1584,7 +1584,7 @@ subroutine beq_readcheck(self,infile,kextra)
      !! error opening file
      call log_error(m_name,s_name,1,error_fatal,'Error opening beq data structure file')
   else
-     if(myrank_log .eq. 0) call log_error(m_name,s_name,2,log_info,'beq data structure file opened')
+     if(myrank_log==0) call log_error(m_name,s_name,2,log_info,'beq data structure file opened')
   end if
 
   ! skip header data
@@ -1918,7 +1918,7 @@ subroutine beq_readplus(self,infile)
   else
      self%n%skylpsi=.FALSE.
      ! dummy definitions
-    self%rxpt=0
+     self%rxpt=0
      self%zxpt=0
      self%psixpt=0
      self%zmin=0
@@ -1934,33 +1934,32 @@ subroutine beq_readplus(self,infile)
   else
      self%n%duct=.FALSE.
   end if
-     read(nin,*,iostat=status) ibuff
-     call log_read_check(m_name,s_name,76,status)
-     read(nin,*,iostat=status) self%rxpt_temp(1),self%rxpt_temp(2)
-     call log_read_check(m_name,s_name,77,status)
-     read(nin,*,iostat=status) ibuff
-     call log_read_check(m_name,s_name,78,status)
-     read(nin,*,iostat=status) self%zxpt_temp(1),self%zxpt_temp(2)
-     call log_read_check(m_name,s_name,79,status)
-     read(nin,*,iostat=status) ibuff
-     call log_read_check(m_name,s_name,80,status)
-     read(nin,*,iostat=status) self%psixpt_temp(1),self%psixpt_temp(2)
-     call log_read_check(m_name,s_name,81,status)
-     read(nin,*,iostat=status) ibuff
-     call log_read_check(m_name,s_name,82,status)
-     read(nin,*,iostat=status) self%rbdry_temp
-     call log_read_check(m_name,s_name,83,status)
-     read(nin,*,iostat=status) ibuff
-     call log_read_check(m_name,s_name,84,status)
-     read(nin,*,iostat=status) self%btotbdry_temp
-     call log_read_check(m_name,s_name,85,status)
-     read(nin,*,iostat=status) ibuff
-     call log_read_check(m_name,s_name,86,status)
-     read(nin,*,iostat=status) self%bpbdry_temp
-     call log_read_check(m_name,s_name,87,status)
-     
-     
-     
+  read(nin,*,iostat=status) ibuff
+  call log_read_check(m_name,s_name,76,status)
+  read(nin,*,iostat=status) self%rxptarr(1),self%rxptarr(2)
+  call log_read_check(m_name,s_name,77,status)
+  read(nin,*,iostat=status) ibuff
+  call log_read_check(m_name,s_name,78,status)
+  read(nin,*,iostat=status) self%zxptarr(1),self%zxptarr(2)
+  call log_read_check(m_name,s_name,79,status)
+  read(nin,*,iostat=status) ibuff
+  call log_read_check(m_name,s_name,80,status)
+  read(nin,*,iostat=status) self%psixptarr(1),self%psixptarr(2)
+  call log_read_check(m_name,s_name,81,status)
+  read(nin,*,iostat=status) ibuff
+  call log_read_check(m_name,s_name,82,status)
+  read(nin,*,iostat=status) self%rbdryarr
+  call log_read_check(m_name,s_name,83,status)
+  read(nin,*,iostat=status) ibuff
+  call log_read_check(m_name,s_name,84,status)
+  read(nin,*,iostat=status) self%btotbdryarr
+  call log_read_check(m_name,s_name,85,status)
+  read(nin,*,iostat=status) ibuff
+  call log_read_check(m_name,s_name,86,status)
+  read(nin,*,iostat=status) self%bpbdryarr
+  call log_read_check(m_name,s_name,87,status)
+
+
   call log_error(m_name,s_name,90,log_info,'beq read in from data file')
 
 end subroutine beq_readplus
@@ -2810,31 +2809,31 @@ subroutine beq_writeplus(self,kout)
   if (self%n%duct) then
      call fmesh_write(self%fmesh,kout)
   end if
-  
-     write(kout,*,iostat=status) 'rxpt_double_null'
-     call log_write_check(m_name,s_name,76,status)
-     write(kout,*,iostat=status) self%rxpt_temp(1),self%rxpt_temp(2)
-     call log_write_check(m_name,s_name,77,status)
-     write(kout,*,iostat=status) 'zxpt_double_null'
-     call log_write_check(m_name,s_name,78,status)
-     write(kout,*,iostat=status) self%zxpt_temp(1),self%zxpt_temp(2)
-     call log_write_check(m_name,s_name,79,status)
-     write(kout,*,iostat=status) 'psixpt_double_null'
-     call log_write_check(m_name,s_name,80,status)
-     write(kout,*,iostat=status) self%psixpt_temp(1),self%psixpt_temp(2)
-     call log_write_check(m_name,s_name,81,status)
-     write(kout,*,iostat=status) 'rbdry_double_null'
-     call log_write_check(m_name,s_name,82,status)
-     write(kout,*,iostat=status) self%rbdry_temp
-     call log_write_check(m_name,s_name,83,status)
-     write(kout,*,iostat=status) 'btotbdry_double_null'
-     call log_write_check(m_name,s_name,84,status)
-     write(kout,*,iostat=status) self%btotbdry_temp
-     call log_write_check(m_name,s_name,85,status)
-     write(kout,*,iostat=status) 'bpbdry_double_null'
-     call log_write_check(m_name,s_name,86,status)
-     write(kout,*,iostat=status) self%bpbdry_temp
-     call log_write_check(m_name,s_name,87,status)
+
+  write(kout,*,iostat=status) 'rxpt_double_null'
+  call log_write_check(m_name,s_name,76,status)
+  write(kout,*,iostat=status) self%rxptarr(1),self%rxptarr(2)
+  call log_write_check(m_name,s_name,77,status)
+  write(kout,*,iostat=status) 'zxpt_double_null'
+  call log_write_check(m_name,s_name,78,status)
+  write(kout,*,iostat=status) self%zxptarr(1),self%zxptarr(2)
+  call log_write_check(m_name,s_name,79,status)
+  write(kout,*,iostat=status) 'psixpt_double_null'
+  call log_write_check(m_name,s_name,80,status)
+  write(kout,*,iostat=status) self%psixptarr(1),self%psixptarr(2)
+  call log_write_check(m_name,s_name,81,status)
+  write(kout,*,iostat=status) 'rbdry_double_null'
+  call log_write_check(m_name,s_name,82,status)
+  write(kout,*,iostat=status) self%rbdryarr
+  call log_write_check(m_name,s_name,83,status)
+  write(kout,*,iostat=status) 'btotbdry_double_null'
+  call log_write_check(m_name,s_name,84,status)
+  write(kout,*,iostat=status) self%btotbdryarr
+  call log_write_check(m_name,s_name,85,status)
+  write(kout,*,iostat=status) 'bpbdry_double_null'
+  call log_write_check(m_name,s_name,86,status)
+  write(kout,*,iostat=status) self%bpbdryarr
+  call log_write_check(m_name,s_name,87,status)
 
 
 end subroutine beq_writeplus
@@ -3631,9 +3630,11 @@ subroutine beq_psix(self)
   zsrlt=(zsrr**2+zszz**2)/100 !minimum r or r^2 for search
 
   if (self%n%xsearch==1) mhemi=1 !If xsearch=1 then only search top half of box
-  do_hemi: do jhemi=0,mhemi-1 !loop over both and below midplane of box if xsearch=0
+  !loop over both and below midplane of box if xsearch=0
+  do_hemi: do jhemi=0,mhemi-1
 
-     if (self%n%xsearch==1) then !If only search the top half of the box
+     if (self%n%xsearch==1) then
+        ! only search the top half of the box
         zt2=-const_pid ; zt1=const_pid !theta_1 and theta_2
         i1=1+max(int((self%n%xrsta-self%rmin)/self%dr),0) !R_1
         i2=2+min(int((self%n%xrend-self%rmin)/self%dr),self%mr-2) !R_2
@@ -3652,26 +3653,29 @@ subroutine beq_psix(self)
 
      ! step one, limiting r and theta for minimum of \f$ |\nabla\psi|^2 \f$
      ! one-a find mesh-point with smallest \f$ |\nabla\psi|^2 \f$
-     do_meshj: do j=j1,j2 !Search over z
+     do_meshz: do j=j1,j2
         ! note, skip edges of computational rectangle and avoid centre
         ze=self%zmin+(j-1)*self%dz !sets value of z
-        do_meshi: do i=i1,i2 !loop over r
+        do_meshr: do i=i1,i2
            re=self%rmin+(i-1)*self%dr !sets value of r
            zsrsq=(re-self%n%rcen)**2+(ze-self%n%zcen)**2 !length^2
-           if (zsrsq>zsrlt) then !if length^2 > minium length^2 value
+           if (zsrsq>zsrlt) then
+              ! length^2 > minium length^2 value
               call spl2d_evaln(self%dpsidr,re,ze,1,zdpdr) !\f$ \frac{\partial\psi}{\partial R} \f$
               call spl2d_evaln(self%dpsidz,re,ze,2,zdpdz) !\f$ \frac{\partial\psi}{\partial Z} \f$
-              if (zdpdr*zdpdz<0.) then !If derivatives have opposite signs
-                 zgpsi=zdpdr**2+zdpdz**2 !\f$ |\nabla\psi|^2 
-                 if (zgpsi<zgpsimin) then ! if \f$ |\nabla\psi|^2 \f$ is smaller than smallest value so far
+              if (zdpdr*zdpdz<0.) then
+                 ! derivatives have opposite signs
+                 zgpsi=zdpdr**2+zdpdz**2 !\f$ |\nabla\psi|^2
+                 if (zgpsi<zgpsimin) then
+                    ! \f$ |\nabla\psi|^2 \f$ is smaller than smallest value so far
                     zgpsimin=zgpsi
                     isrmin=i
                     jsrmin=j
                  end if
               end if
            end if
-        end do do_meshi
-     end do do_meshj
+        end do do_meshr
+     end do do_meshz
 
      if (isrmin==0) then
         call log_error(m_name,s_name,1+jhemi,error_warning,'hemisphere: no X-point detected')
@@ -3683,11 +3687,13 @@ subroutine beq_psix(self)
         ze=self%zmin+(jsrmin+j-3)*self%dz ! caculates z at various points around minium grad psi value
         do i=1,3
            re=self%rmin+(isrmin+i-3)*self%dr ! caculates z at various points around minium grad psi value
-           zthet=atan2( ze-self%n%zcen, re-self%n%rcen ) !calculates angle the r,z co-ordinates makes with origin at centre of plasma
+           !calculates angle the r,z co-ordinates makes with origin at centre of plasm
+           zthet=atan2( ze-self%n%zcen, re-self%n%rcen )
            ! no shift if (zthet<-const_pid/2) zthet=2*const_pid+zthet
            zt1=min(zthet,zt1) !compares evaluted theta in comparison to minimum value
            zt2=max(zthet,zt2) !compares evaulate threa in comparison to maximum value
-           zsrsq=(re-self%n%rcen)**2+(ze-self%n%zcen)**2 ! calculates value of r^2 for each point around minimum grad psi value
+           ! calculates value of r^2 for each point around minimum grad psi value
+           zsrsq=(re-self%n%rcen)**2+(ze-self%n%zcen)**2
            zsr1=min(zsrsq,zsr1) !compares evaluated r^2 in comparison to minimum value
            zsr2=max(zsrsq,zsr2) !compares evaluated r^2 in comparison to maximum value
         end do
@@ -3761,11 +3767,11 @@ subroutine beq_psix(self)
            zsrxpt=(zsr1+zsr2)/2
         end if
      end if
-        self%rxpt_temp(jhemi+1) = self%n%rcen+zsrxpt*cos(self%thetaxpt)
-        self%zxpt_temp(jhemi+1) = self%n%zcen+zsrxpt*sin(self%thetaxpt)
-        self%psixpt_temp(jhemi+1) = self%psixpt
+     self%rxptarr(jhemi+1) = self%n%rcen+zsrxpt*cos(self%thetaxpt)
+     self%zxptarr(jhemi+1) = self%n%zcen+zsrxpt*sin(self%thetaxpt)
+     self%psixptarr(jhemi+1) = self%psixpt
   end do do_hemi
-  
+
   if (ixf==0) then
      call log_error(m_name,s_name,80,error_fatal,'no X-point found')
   else
@@ -3830,12 +3836,12 @@ subroutine beq_bdryrb(self)
      ztheta=const_pid
   case(16) ! second inboard point selected
      ztheta=const_pid
-     self%rmin=self%rbdry_temp(2)
+     self%rmin=self%rbdryarr(2)
   case(8,9,10,12,15) ! outboard point selected
      ztheta=0.0_kr8
   case(17) ! outboard point selected
      ztheta=0.0_kr8
-     self%rmin=self%rbdry_temp(3)
+     self%rmin=self%rbdryarr(3)
   case(1,3,13)
      ! check for replacement
      if (self%replasi) then
@@ -4016,21 +4022,21 @@ subroutine beq_bdryrb(self)
 
   set_rbdry_and_btotbdry_dn : select case (self%n%bdryopt)
   case(4,5,7,11,14) ! inboard point selected
-     self%rbdry_temp(2)=self%rbdry
-     self%btotbdry_temp(2)=self%btotbdry
-     self%bpbdry_temp(2)=self%bpbdry
+     self%rbdryarr(2)=self%rbdry
+     self%btotbdryarr(2)=self%btotbdry
+     self%bpbdryarr(2)=self%bpbdry
   case(16) ! second inboard point selected
-     self%rbdry_temp(1)=self%rbdry
-     self%btotbdry_temp(1)=self%btotbdry
-      self%bpbdry_temp(1)=self%bpbdry
+     self%rbdryarr(1)=self%rbdry
+     self%btotbdryarr(1)=self%btotbdry
+     self%bpbdryarr(1)=self%bpbdry
   case(8,9,10,12,15) ! outboard point selected
-     self%rbdry_temp(3)=self%rbdry
-     self%btotbdry_temp(3)=self%btotbdry
-     self%bpbdry_temp(3)=self%bpbdry
+     self%rbdryarr(3)=self%rbdry
+     self%btotbdryarr(3)=self%btotbdry
+     self%bpbdryarr(3)=self%bpbdry
   case(17) ! second outboard point selected
-     self%rbdry_temp(4)=self%rbdry
-     self%btotbdry_temp(4)=self%btotbdry
-     self%bpbdry_temp(4)=self%bpbdry
+     self%rbdryarr(4)=self%rbdry
+     self%btotbdryarr(4)=self%btotbdry
+     self%bpbdryarr(4)=self%bpbdry
   case default ! do nothing (assuming psiqbdry OK in eqdsk)
      return
   end select set_rbdry_and_btotbdry_dn

@@ -312,71 +312,71 @@ subroutine bods_writex(self,geobjl,fileroot,kctyp,kcname,kheader)
   ! write out all points
   inptsmall=geobjl%np
 
-     !! construct small geobjl, first allocate storage
+  !! construct small geobjl, first allocate storage
 
-     inobjsmall=0
-     innodsmall=0
-     do j=1,geobjl%ng
+  inobjsmall=0
+  innodsmall=0
+  do j=1,geobjl%ng
 
-        if (self%mark(j)==1) then
-           ioend=j
-           inobjsmall=inobjsmall+1
-           !     iobj=geobjl%obj2(j)%ptr
-           ityp=geobjl%obj2(j)%typ
-           inumpts=geobj_entry_table_fn(ityp)
-           innodsmall=innodsmall+inumpts
-        end if
-     end do
-     iostart=ioend+1-inobjsmall
+     if (self%mark(j)==1) then
+        ioend=j
+        inobjsmall=inobjsmall+1
+        !     iobj=geobjl%obj2(j)%ptr
+        ityp=geobjl%obj2(j)%typ
+        inumpts=geobj_entry_table_fn(ityp)
+        innodsmall=innodsmall+inumpts
+     end if
+  end do
+  iostart=ioend+1-inobjsmall
 
-     !! make sure there are objects corresponding to this id
-     if (inobjsmall==0) return
+  !! make sure there are objects corresponding to this id
+  if (inobjsmall==0) return
 
-     !! make up icplot from fileroot, iched from fileroot
-     icplot=trim(fileroot)//'_ext'
-     iched='root was '//fileroot
-     call geobjlist_makehedline(geobjl,iched,vtkdesc)
-     call vfile_init(icplot,vtkdesc,iplot)
+  !! make up icplot from fileroot, iched from fileroot
+  icplot=trim(fileroot)//'_ext'
+  iched='root was '//fileroot
+  call geobjlist_makehedline(geobjl,iched,vtkdesc)
+  call vfile_init(icplot,vtkdesc,iplot)
 
-     call geobjlist_iinit(glsmall,inptsmall,inobjsmall,innodsmall,2,1)
+  call geobjlist_iinit(glsmall,inptsmall,inobjsmall,innodsmall,2,1)
 
-     !! fill small geobjl with data
+  !! fill small geobjl with data
   allocate(iwork(inobjsmall), stat=status)
   call log_alloc_check(m_name,s_name,1,status)
 
-     !! copy all points
-     glsmall%posl=geobjl%posl
+  !! copy all points
+  glsmall%posl=geobjl%posl
 
-     inobj=0
-     innd=1
-     do j=1,geobjl%ng
+  inobj=0
+  innd=1
+  do j=1,geobjl%ng
 
-        if (self%mark(j)==1) then
-           inobj=inobj+1
-           iobj=geobjl%obj2(j)%ptr
-           ityp=geobjl%obj2(j)%typ
-           inumpts=geobj_entry_table_fn(ityp)
-           do k=1,inumpts
-              glsmall%nodl(innd-1+k)=geobjl%nodl(iobj-1+k)
-           end do
-           glsmall%obj2(inobj)%ptr=innd
-           glsmall%obj2(inobj)%typ=ityp
-           iwork(inobj)=self%list(j)
-           innd=innd+inumpts
-        end if
-     end do
+     if (self%mark(j)==1) then
+        inobj=inobj+1
+        iobj=geobjl%obj2(j)%ptr
+        ityp=geobjl%obj2(j)%typ
+        inumpts=geobj_entry_table_fn(ityp)
+        do k=1,inumpts
+           glsmall%nodl(innd-1+k)=geobjl%nodl(iobj-1+k)
+        end do
+        glsmall%obj2(inobj)%ptr=innd
+        glsmall%obj2(inobj)%typ=ityp
+        iwork(inobj)=self%list(j)
+        innd=innd+inumpts
+     end if
+  end do
 
-     call geobjlist_ptcompress(glsmall)
+  call geobjlist_ptcompress(glsmall)
 
-     call geobjlist_writev(glsmall,'geometry',iplot)
+  call geobjlist_writev(glsmall,'geometry',iplot)
 
-     call vfile_iscalarwrite(iwork,inobjsmall,kcname,'CELL',iplot,kheader)
+  call vfile_iscalarwrite(iwork,inobjsmall,kcname,'CELL',iplot,kheader)
 
-     call vfile_close
+  call vfile_close
 
-     call geobjlist_delete(glsmall)
+  call geobjlist_delete(glsmall)
 
-   deallocate(iwork)
+  deallocate(iwork)
 
 end subroutine bods_writex
 !---------------------------------------------------------------------

@@ -289,7 +289,8 @@ end subroutine misc_fileafter
 !> read 3D array in matlab format
 subroutine misc_readmlab(pwork,kn1,kn2,kn3,layout,koff,kzetap,kcpt,infile,kin)
 
-  use smitermpi_h ! For log message control
+  use smitermpi_h
+  !< For log message control
 
   !! arguments
   real(kr8), dimension(:,:,:,:), intent(out) :: pwork   !< input samples

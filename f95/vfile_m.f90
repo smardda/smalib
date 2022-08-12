@@ -100,7 +100,7 @@ subroutine vfile_rscalarread(self,kp,infile,kcname,kin,kopt)
   !> if positive on input, assume unit open and do not terminate execution if
   !! data is missing, return positive code if trouble, else zero
   !! if zero on input, missing data is a fatal error
-  integer(ki4), intent(inout) :: kopt   !< 
+  integer(ki4), intent(inout) :: kopt   !< .
 
   !! local
   character(*), parameter :: s_name='vfile_rscalarread' !< subroutine name
@@ -225,7 +225,7 @@ end subroutine vfile_rscalarread
 !> read vtk real vectors
 subroutine vfile_rvectorread(self,kp,kadim,infile,kcname,kin,kopt)
 
-  use smitermpi_h  
+  use smitermpi_h
 
   !! arguments
   real(kr4), dimension(:), allocatable, intent(inout) :: self !< real vector list data
@@ -237,7 +237,7 @@ subroutine vfile_rvectorread(self,kp,kadim,infile,kcname,kin,kopt)
   !> if positive on input, assume unit open and do not terminate execution if
   !! data is missing, return positive code if trouble, else zero
   !! if zero on input, missing data is a fatal error
-  integer(ki4), intent(inout) :: kopt   !< 
+  integer(ki4), intent(inout) :: kopt   !< .
 
   !! local
   character(*), parameter :: s_name='vfile_rvectorread' !< subroutine name
@@ -362,7 +362,7 @@ subroutine vfile_rvectorread(self,kp,kadim,infile,kcname,kin,kopt)
   read(nin,*,iostat=status) (self(j),j=1,3*kp)
   call log_read_check(m_name,s_name,7,status)
 
-  if(myrank_log .eq. 0) then
+  if(myrank_log==0) then
      print '("number of vectors read = ",i10)',kp
      call log_value("number of vectors read ",kp)
   endif
@@ -381,7 +381,7 @@ subroutine vfile_dscalarread(self,kp,infile,kcname,kin,kopt)
   !> if positive on input, assume unit open and do not terminate execution if
   !! data is missing, return positive code if trouble, else zero
   !! if zero on input, missing data is a fatal error
-  integer(ki4), intent(inout) :: kopt   !< 
+  integer(ki4), intent(inout) :: kopt   !< .
 
   !! local
   character(*), parameter :: s_name='vfile_dscalarread' !< subroutine name
@@ -514,7 +514,7 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt,kcdata)
   !> if positive on input, assume unit open and do not terminate execution if
   !! data is missing, return positive code if trouble, else zero
   !! if zero on input, missing data is a fatal error
-  integer(ki4), intent(inout) :: kopt   !< 
+  integer(ki4), intent(inout) :: kopt   !< .
   character(*),intent(in), optional :: kcdata !< nonblank, must match POINT_ or CELL_ DATA
 
   !! local
@@ -627,9 +627,9 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt,kcdata)
         ibuf2=adjustl(ibuf1)
         if(ibuf2(1:7)=='SCALARS'.OR.imeta==-2) then
            if (imeta==-2) then
-           ibuf1=ibuf2
+              ibuf1=ibuf2
            else
-           ibuf1=adjustl(ibuf2(8:))
+              ibuf1=adjustl(ibuf2(8:))
            end if
            islen=max(2,scan(ibuf1,' '))-1
            sname=ibuf1(:islen)
@@ -708,7 +708,7 @@ subroutine vfile_rfieldread(self,kp,infile,kcname,kin,kopt)
   !! data is missing, return positive code if trouble, else zero
   !! kopt=2, assume at start point of field
   !! if zero on input, missing data is a fatal error
-  integer(ki4), intent(inout) :: kopt   !< 
+  integer(ki4), intent(inout) :: kopt   !< .
 
   !! local
   character(*), parameter :: s_name='vfile_rfieldread' !< subroutine name

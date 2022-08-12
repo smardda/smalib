@@ -344,9 +344,9 @@ subroutine dcontrol_readnum(numerics,kunit,klfile)
   if(cell_type==VTK_TRIANGLE) then
      if (number_of_divisions/=2*((number_of_divisions)/2))  then
         call log_error(m_name,s_name,30,error_warning,'number of divisions made even')
-     end if 
+     end if
      number_of_divisions=2*((number_of_divisions+1)/2)
-  end if 
+  end if
   if(coordinate_system/=1) then
      call log_error(m_name,s_name,31,error_fatal,'coordinate system must be positive, unity for polars')
   end if

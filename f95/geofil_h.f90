@@ -11,8 +11,8 @@ module geofil_h
   type, public :: geofil_t
      type(geobjlist_t) :: geobjl !< geometrical objects
      type(gfnumerics_t)  :: n  !< numerical parameters
-     !> integer scalar describing geometry such as triangles
-     !! denoting e.g. array of bodies
+   !> integer scalar describing geometry such as triangles
+   !! denoting e.g. array of bodies
      integer(ki4), dimension(:), allocatable :: scag !< .
      integer(ki4) :: nscag !< number of geometry scalars in array, e.g. number of body entries
 

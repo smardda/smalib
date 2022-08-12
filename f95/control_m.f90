@@ -389,7 +389,7 @@ subroutine control_dread(file,numerics,plot)
      print '("Fatal error: Unable to find geobj data file, ",a)',vtk_input_file
      call log_error(m_name,s_name,2,error_fatal,'Objectg data file not found')
   end if
-  
+
   call log_value("HDS data file, hds_input_file",trim(file%hdsdata))
   inquire(file=hds_input_file,exist=filefound)
   if(.not.filefound) then

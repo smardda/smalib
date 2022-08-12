@@ -1,6 +1,6 @@
 !> @addtogroup groupname222
 !> @{
-!> @defgroup groupname3 SMARDDA-lib 
+!> @defgroup groupname3 SMARDDA-lib
 !> @{
 module beq_h
 !> @}
@@ -18,11 +18,11 @@ module beq_h
    !> number of points for gnuplot
    !! display in direction of invariant coordinate \f$ \zeta \f$,
    !! if equal to unity, output plane at \f$ \zeta=0 \f$
-     integer(ki4) :: mzetag !< 
+     integer(ki4) :: mzetag !< .
    !> number of points for vtk
    !! display in direction of invariant coordinate \f$ \zeta \f$,
    !! if equal to unity, output plane at \f$ \zeta=0 \f$
-     integer(ki4) :: mzetav !< 
+     integer(ki4) :: mzetav !< .
    !> \f$ C_{opt} \f$. Set position of plasma centre \f$ R_{cen}, Z_{cen} \f$
    !! 1. User input of \f$ R_{cen}, Z_{cen} \f$
    !! 2. Find mesh-point with extremal psi value, start search at
@@ -30,14 +30,14 @@ module beq_h
    !! 3. Find mesh-point with extremal psi value, start search at
    !!  user-specified position rcen,zcen
    !! 4. Use values rqcen,zqcen from EQDSK file
-     integer(ki4) :: cenopt !< 
+     integer(ki4) :: cenopt !< .
    !> \f$ \psi{opt} \f$. Set range of flux to be used in flux mapping (if flux-mapped case)
    !! 1. User input of normalised \f$ \psi{\min}\f$ and \f$ \psi_{\max}\f$ for mapping.
    !! normalised by X-point or limiter value, no margin \f$ \delta \psi\f$.
    !! 2. \f$ \psi{\min}\f$ and \f$ \psi_{\max}\f$ are calculated from input geometry,
    !! with margin \f$ \delta \psi = \f$ beq_delpsi \f$ \times (\psi{\max}-\psi_{\min}) \f$
    !! 3. User input of \f$ \psi{\min}\f$ and \f$ \psi_{\max}\f$ for mapping.
-     integer(ki4) :: psiopt !< 
+     integer(ki4) :: psiopt !< .
    !> \f$ m_{opt} \f$. Set value of flux at plasma boundary psim.
    !! rsig is important rsig>0 -> plasma centre at a minimum of psi
    !! 1. User input of psim=psiref
@@ -52,12 +52,12 @@ module beq_h
    !! 7. Invalid
    !! 8. as 4.
    !! 9. psim=psiref with outboard limiting assumed
-     integer(ki4) :: bdryopt !< 
+     integer(ki4) :: bdryopt !< .
    !> \f$ N_{opt} \f$. Set numbers of points  \f$ N_{\psi}, N_{\theta} \f$ to be used in flux mapping
    !! 1. User input of \f$ N{\min}\f$ and \f$ N_{\max}\f$
    !! 2. Estimate sensible values of \f$ N_{\psi}, N_{\theta} \f$ proportional
    !! to \f$ N_R, N_Z \f$ from equilibrium file
-     integer(ki4) :: nopt !< 
+     integer(ki4) :: nopt !< .
    !> \f$ \theta_{opt} \f$. Set range of \f$ \theta \f$ to be used in flux mapping.
    !! Origin of theta may be set using thetaref
    !! 1. User input of \f$ \theta{\min}\f$ and \f$ \theta_{\max}\f$ in coordinate
@@ -65,7 +65,7 @@ module beq_h
    !! outboard is positive, no margin \f$ \delta \theta\f$.
    !! 2. \f$ \theta{\min}\f$ and \f$ \theta_{\max}\f$ are calculated from input geometry,
    !! with margin \f$ \delta \theta = \f$ beq_deltheta \f$ \times (\theta{\max}-\theta_{\min}) \f$
-     integer(ki4) :: thetaopt !< 
+     integer(ki4) :: thetaopt !< .
    !> \f$ \zeta_{opt} \f$. Set range of \f$ \zeta \f$ to be used in mapping to cylindricals
    !! 1. User input of \f$ \zeta{\min}\f$ and \f$ \zeta_{\max}\f$, must be
    !! positive angles, default unit radians. Note \f$ \zeta = -\phi\f$.
@@ -78,7 +78,7 @@ module beq_h
    !! \f$ -3\pi/2 \f$ and \f$  +\pi/2 \f$ regardless
    !! 5. \f$ \zeta{\min}\f$ and \f$ \zeta_{\max}\f$ are calculated as
    !! \f$ -\pi/2 \f$ and \f$  +3\pi/2 \f$ regardless
-     integer(ki4) :: zetaopt !< 
+     integer(ki4) :: zetaopt !< .
    !> \f$ \xi_{opt} \f$. Set range of \f$ \xi \f$ to be used in mapping to cylindricals
    !! 1. \f$ \xi{\min}\f$ and \f$ \xi_{\max}\f$ = \f$ \zeta{\min}\f$ and \f$ \zeta_{\max}\f$
    !! 2. \f$ \xi{\min}\f$ and \f$ \xi_{\max}\f$ are calculated as
@@ -88,7 +88,7 @@ module beq_h
    !! \f$ -3\pi/2 \f$ and \f$  +\pi/2 \f$ regardless, also  nzets=nzetp (if nzetp>0) or nzets=mrip
    !! 5. \f$ \xi{\min}\f$ and \f$ \xi_{\max}\f$ are calculated as
    !! \f$ -\pi/2 \f$ and \f$  +3\pi/2 \f$ regardless, also  nzets=nzetp (if nzetp>0) or nzets=mrip
-     integer(ki4) :: xiopt !< 
+     integer(ki4) :: xiopt !< .
      real(kr8) :: rcen !< \f$ R_{cen} \f$
      real(kr8) :: zcen !< \f$ Z_{cen} \f$
      real(kr8) :: psimin !< \f$ \psi_{\min} \f$
@@ -118,7 +118,7 @@ module beq_h
    !! 1. R/J implies mapped case (axisymmetric) -> move
    !! 2. psi gradients
    !! 3. R/J x psi gradients (axisymmetric) -> move1
-     integer(ki4) :: fldspec !< 
+     integer(ki4) :: fldspec !< .
      integer(ki4):: fiesta !< flag equil file in modified FIESTA output format
      integer(ki4) :: psibig !< normally 0, 1 if \f$ \psi=\Psi \f$ has \f$ 2\pi \f$ factor
      integer(ki4) :: xsearch !< how to search for X-point (1 = within box)
@@ -136,12 +136,12 @@ module beq_h
    !! - 'eqdsk' for EQDSK input
    !! - 'equ' for FIESTA input
    !! - 'ana' for analytic
-     character(len=80) :: eqtype !< 
+     character(len=80) :: eqtype !< .
      character(len=80) :: vacfile !< specifies file containing vacuum field
    !> format within vacfile
    !! - 'sp3' for magtfm produced
    !! - 'txt' for fmesh format
-     character(len=3) :: vactype !< 
+     character(len=3) :: vactype !< .
      integer(ki4) :: mrip !< \f$ N \f$ number of ripple coils
      real(kr8) :: irip !< unused parameter of ripple coils
      real(kr8) :: arip !< \f$ a \f$ for ripple coils
@@ -184,10 +184,10 @@ module beq_h
      real(kr8) :: psiltr !< \f$ \psi \f$ at limiter
      real(kr8) :: rxpt !< \f$ R \f$ at X-point (\f$ R=0 \f$ implies no X-point defined)
      real(kr8) :: zxpt !< \f$ Z \f$ at X-point
-     real(kr8) :: rxpt_temp(2) !< \f$ R \f$ at X-point (\f$ R=0 \f$ implies no X-point defined)
-     real(kr8) :: zxpt_temp(2) !< \f$ Z \f$ at X-point
+     real(kr8) :: rxptarr(2) !< \f$ R \f$ at X-point (\f$ R=0 \f$ implies no X-point defined)
+     real(kr8) :: zxptarr(2) !< \f$ Z \f$ at X-point
      real(kr8) :: psixpt !< \f$ \psi \f$ at X-point
-     real(kr8) :: psixpt_temp(2) !< \f$ \psi \f$ at X-point
+     real(kr8) :: psixptarr(2) !< \f$ \psi \f$ at X-point
      real(kr8) :: thetaxpt !< \f$ \theta \f$ at X-point
      real(kr8) :: psiotr !< Extreme value of \f$ \psi \f$ for geometry which is not limiter extremum
      real(kr8) :: psinorm !< normalisation of \f$ \psi \f$, i.e. a representative magnitude
@@ -197,11 +197,11 @@ module beq_h
      real(kr8) :: rqcen !< \f$ R \f$ at central extremum of \f$ \psi \f$
      real(kr8) :: zqcen !< \f$ Z \f$ at central extremum of \f$ \psi \f$
      real(kr8) :: rbdry !< \f$ R \f$ at reference boundary
-     real(kr8) :: rbdry_temp(4) !< \f$ R \f$ at reference boundary
+     real(kr8) :: rbdryarr(4) !< \f$ R \f$ at reference boundary
      real(kr8) :: bpbdry !< \f$ B_p \f$ at reference boundary, \f$ B_{pm} \f$
-     real(kr8) :: bpbdry_temp(4) !< \f$ B_p \f$ at reference boundary, \f$ B_{pm} \f$
+     real(kr8) :: bpbdryarr(4) !< \f$ B_p \f$ at reference boundary, \f$ B_{pm} \f$
      real(kr8) :: btotbdry !< Total \f$ B \f$ at reference boundary \f$ B_m \f$
-     real(kr8) :: btotbdry_temp(4) !< Total \f$ B \f$ at reference boundary \f$ B_m \f$
+     real(kr8) :: btotbdryarr(4) !< Total \f$ B \f$ at reference boundary \f$ B_m \f$
      real(kr8) :: ximaxm !< maximum \f$ \xi \f$ value \f$ -\epsilon \f$
      real(kr8) :: ximinp !< minimum \f$ \xi \f$ value \f$ +\epsilon \f$
      real(kr8), dimension(3) :: domlen !< dimensions of domain (quantised)
