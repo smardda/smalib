@@ -28,9 +28,12 @@ module const_numphys_h
  &const_massp = 1.6726219e-27_kr8,     & !< proton mass in kg.
  &const_masse = 9.10938e-31_kr8,           & !< mass of electron in kg.
  &const_slite  = 299.7925_kr8,                 & !< Speed of light in Mm/s (NB factor of 1e6)
+ &const_clight  =  299792458_kr8, & !< speed of light
  &const_epsilon0  = 8.8542e-12_kr8,                 & !< Permeability of free space
  &const_mu0  = 4*const_pid*1.e-7_kr8,                 & !< Permittivity of free space
- &const_kb = 1.38064852e-23_kr8      !< boltzmann constant
+ &const_kb = 1.38064852e-23_kr8,     &  !< boltzmann constant
+ &const_rydberg = 10973731.6_kr8,  & !< Rydberg constant
+ &const_hbar = 1.054571817e-34_kr8 !< Planck's reduced constant h/2pi
 
   real(kr4) , parameter, public :: const_pushinf = 1.e+8_kr4 !<  infinity for particle push
 
