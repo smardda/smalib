@@ -8,9 +8,9 @@ if [[ -z "$SMALIB_DIR" ]] ; then
 else
    cd $SMALIB_DIR
 fi
-(cd fortd;make -j -f makefile > /dev/null 2>&1)
+(cd fortd;make -f makefile)
 cd f95
 ln -sf ../fortd LIB
-for i in lib geofil move vtktfm datvtk hdsgen ctlgen parse; do make -j -f Makefile.lib $i > /dev/null 2>&1 ;done
+for i in lib geofil move vtktfm datvtk hdsgen ctlgen parse; do make -f Makefile.lib $i ;done
 for i in geofil move vtktfm datvtk hdsgen ctlgen parse; do mv -f $i ../exec ;done
 cd $swd
