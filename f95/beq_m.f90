@@ -125,6 +125,7 @@ module beq_m
   character(len=80) :: ibuf1 !< buffer for input/output
   character(len=15) :: cfmtd !< fixed format for body
   logical :: iltest !< logical flag
+  integer(ki4) :: n_regions !< number of regions (used for double null case)
 
   contains
 !---------------------------------------------------------------------
@@ -3115,7 +3116,7 @@ subroutine beq_readcon(selfn,kin)
  &equil_mastequ,&
  &beq_xsearch,beq_xrsta,beq_xrend,beq_xzsta,beq_xzend,&
  &limiter_search,search_r_start,search_r_end,search_z_start,search_z_end,&
- &beq_vacuum_field_file
+ &beq_vacuum_field_file, n_regions
 
   !! set default beq parameters
   mzeta_vtk=193
@@ -3177,6 +3178,8 @@ subroutine beq_readcon(selfn,kin)
   search_z_start=0
   search_z_end=0
   beq_vacuum_field_file='null'
+  
+  n_regions=1
 
   !!read beq parameters
   read(kin,nml=beqparameters,iostat=status)
@@ -3796,6 +3799,7 @@ subroutine beq_bdryrb(self)
   !! local
   character(*), parameter :: s_name='beq_bdryrb' !< subroutine name
   integer(ki4) :: nsrsamp    !< number of samples in \f$ r \f$
+  integer(ki4) :: m   !< counter to allow for multi regions
   real(kr8) :: ztheta    !< angle in  \f$ \theta \f$ of boundary point
   real(kr8) :: zdsrmin    !< floor to \f$ \Delta r_i \f$
   real(kr8) :: zp    !< \f$ \psi \f$
@@ -3830,18 +3834,21 @@ subroutine beq_bdryrb(self)
   real(kr8) :: zbr    !<  radial field component
   real(kr8) :: zbz    !<  vertical field component
   real(kr8) :: zbt    !<  toroidal field component
-
+  m=1
+  100 continue
+  if(m==2) self%n%bdryopt=9
+  if(m==3) self%n%bdryopt=16
+  if(m==4) self%n%bdryopt=17
   pick_angle : select case (self%n%bdryopt)
   case(4,5,7,11,14) ! inboard point selected
      ztheta=const_pid
   case(16) ! second inboard point selected
+     self%psibdry=self%psixptarr(1)
      ztheta=const_pid
-     self%rmin=self%rbdryarr(2)
   case(8,9,10,12,15) ! outboard point selected
      ztheta=0.0_kr8
-  case(17) ! outboard point selected
+  case(17) ! second outboard point selected
      ztheta=0.0_kr8
-     self%rmin=self%rbdryarr(3)
   case(1,3,13)
      ! check for replacement
      if (self%replasi) then
@@ -4041,7 +4048,6 @@ subroutine beq_bdryrb(self)
      return
   end select set_rbdry_and_btotbdry_dn
 
-
   call log_error(m_name,s_name,2,log_info,'Reference boundary values')
   call log_value("SMITER-GEOQ psibdry ",self%psibdry)
   call log_value("SMITER-GEOQ rbdry ",self%rbdry)
@@ -4061,7 +4067,10 @@ subroutine beq_bdryrb(self)
   deallocate(wvextn)
   deallocate(wvext)
   deallocate(wvextd)
-
+  if(m<4 .and. n_regions>1) then
+    m=m+1
+    goto 100
+  end if
 end subroutine beq_bdryrb
 !---------------------------------------------------------------------
 !> calculate \f$ r_{min} \f$ and \f$ r_{min} \f$ as functions of \f$ \theta_j \f$
