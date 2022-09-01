@@ -523,15 +523,15 @@ subroutine edgprof_factors(self,rbdry,bpbdry,btotbdry,psign,&
            self%rblfac(i)=2*const_pid*zrblfac(i)*((-1.)*psign)
 
            !f1(0) and f4(0)
-           if(i==2 .or. i==3) h=exp(self%simga(i)**2.0d0)*erfc(self%sigma(i))
+           if(i==2 .or. i==3) h=exp(self%sigma(i)**2.0d0)*erfc(self%sigma(i))
            !f2(R_2 - R_1) used for rectifying discontinuity in power deposition profile
-           if(i==2) g=exp(self%simga(i)**2.0d0 - (rbdryarr(2)-rbdryarr(1))/self%lmid(i) )*&
+           if(i==2) g=exp(self%sigma(i)**2.0d0 - (rbdryarr(2)-rbdryarr(1))/self%lmid(i) )*&
                       erfc(self%sigma(i) - (rbdryarr(2)-rbdryarr(1))/(2.0d0*self%lmid(i)*self%sigma(i)) )
-           if(i==2 .and. self%sigma(i) < 10E-9) g = 2.0d0*exp(self%simga(i)**2.0d0 - (rbdryarr(2)-rbdryarr(1))/self%lmid(i) )
+           if(i==2 .and. self%sigma(i) < 10E-9) g = 2.0d0*exp(self%sigma(i)**2.0d0 - (rbdryarr(2)-rbdryarr(1))/self%lmid(i) )
            !f3(R_4 - R_3) used for rectifying discontinuity in power deposition profile
-           if(i==3) g=exp(self%simga(i)**2.0d0 - (rbdryarr(4)-rbdryarr(3))/self%lmid(i) )*&
+           if(i==3) g=exp(self%sigma(i)**2.0d0 - (rbdryarr(4)-rbdryarr(3))/self%lmid(i) )*&
                       erfc(self%sigma(i) - (rbdryarr(4)-rbdryarr(3))/(2.0d0*self%lmid(i)*self%sigma(i)) )
-           if(i==3 .and. self%sigma(i) < 10E-9) g = 2.0d0*exp(self%simga(i)**2.0d0 - (rbdryarr(4)-rbdryarr(3))/self%lmid(i) )
+           if(i==3 .and. self%sigma(i) < 10E-9) g = 2.0d0*exp(self%sigma(i)**2.0d0 - (rbdryarr(4)-rbdryarr(3))/self%lmid(i) )
            
            if(i==1 .or. i==4) self%fpfac(i)=(self%f/2)*self%ploss(i)*zrblfac(i)
            !discontinuity correction in power deposition profile
