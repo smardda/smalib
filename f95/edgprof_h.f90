@@ -14,7 +14,7 @@ module edgprof_h
      character(len=80) :: formula(MAX_NUMBER_OF_REGIONS) !< profile formula
      real(kr8) :: f !< power split
      real(kr8),dimension(MAX_NUMBER_OF_REGIONS) :: lmid !< decay length
-     real(kr8) :: ploss !< power loss
+     real(kr8) :: ploss(MAX_NUMBER_OF_REGIONS) !< power loss
      real(kr8),dimension(MAX_NUMBER_OF_REGIONS) :: sigma !< diffusion length
      real(kr8) :: qpara0 !< parallel power flux (W/sqm)
      real(kr8) :: lmidnr(MAX_NUMBER_OF_REGIONS) !< decay length near SOL
