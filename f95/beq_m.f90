@@ -3618,6 +3618,7 @@ subroutine beq_psix(self)
   real(kr8) :: zpsi3    !< \f$ \psi_3 \f$ search result
   real(kr8) :: zpsi4    !< \f$ \psi_4 \f$ search result
   real(kr8) :: zpsi5    !< \f$ \psi_5 \f$ search result
+  real(kr8) :: temp
   integer(ki4) :: is3chnged    !< \f$ \psi_3 \f$ needs changing to meet new tolerance
   integer(ki4) :: ierr    !< error code returned by r-extremum
   integer(ki4) :: ixf    !< code describing X-point find
@@ -3628,21 +3629,33 @@ subroutine beq_psix(self)
   zepsr=epsr*self%psinorm !normalised value of epsilon_r tolerance
   ixf=0 !counts number of x points found
   self%psixpt=rsig*100*self%psinorm
-  zsrr=max( abs(self%rmax-self%n%rcen), abs(self%rmin-self%n%rcen) ) !estimate for maximum \f$ |R-R_c| \f$ in domain
-  zszz=max( abs(self%zmax-self%n%zcen), abs(self%zmin-self%n%zcen) ) !estimate for maximum \f$ |Z-Z_c| \f$ in domain
+  zsrr=max( abs(self%rmax-self%n%rcen), abs(self%rmin-self%n%rcen) )!estimate for maximum \f$ |R-R_c| \f$ in domain
+  zszz=max( abs(self%zmax-self%n%zcen), abs(self%zmin-self%n%zcen) )!estimate for maximum \f$ |Z-Z_c| \f$ in domain
   zsrlt=(zsrr**2+zszz**2)/100 !minimum r or r^2 for search
-
-  if (self%n%xsearch==1) mhemi=1 !If xsearch=1 then only search top half of box
+  temp=self%n%xzend
+ ! if (self%n%xsearch==1) mhemi=1 !If xsearch=1 then only search top half of box
   !loop over both and below midplane of box if xsearch=0
   do_hemi: do jhemi=0,mhemi-1
-
      if (self%n%xsearch==1) then
         ! only search the top half of the box
-        zt2=-const_pid ; zt1=const_pid !theta_1 and theta_2
-        i1=1+max(int((self%n%xrsta-self%rmin)/self%dr),0) !R_1
-        i2=2+min(int((self%n%xrend-self%rmin)/self%dr),self%mr-2) !R_2
-        j1=1+max(int((self%n%xzsta-self%zmin)/self%dz),0) !z_1
-        j2=2+min(int((self%n%xzend-self%zmin)/self%dz),self%mz-2) !z_2
+    !    zt2=-const_pid ; zt1=const_pid !theta_1 and theta_2
+    !    i1=1+max(int((self%n%xrsta-self%rmin)/self%dr),0) !R_1
+    !    i2=2+min(int((self%n%xrend-self%rmin)/self%dr),self%mr-2) !R_2
+    !    j1=1+max(int((self%n%xzsta-self%zmin)/self%dz),0) !z_1
+    !    j2=2+min(int((self%n%xzend-self%zmin)/self%dz),self%mz-2) !z_2
+        if(jhemi==1) self%n%xzend=temp
+		if(jhemi==1) self%n%xzsta=(self%n%xzsta+self%n%xzend)/2.0d0
+        if(jhemi==0) self%n%xzend=(self%n%xzsta+self%n%xzend)/2.0d0
+        zt1=(jhemi-1)*const_pid ; zt2=jhemi*const_pid
+        j1=2+(int((self%n%xzsta-self%zmin)/self%dz))
+        j2=2+(int((self%n%xzsta-self%zmin)/self%dz)) +(int((self%n%xzend-self%n%xzsta)/self%dz))
+        i1=2+(int((self%n%xrsta-self%rmin)/self%dr))
+        i2=2+(int((self%n%xrsta-self%rmin)/self%dr)) +(int((self%n%xrend-self%n%xrsta)/self%dr)) 
+     !   j1=(int((self%n%xzsta-self%zmin)/self%dz)) +(int((self%n%xzend-self%n%xzsta)/self%dz)/2)*jhemi
+     !   j2=(int((self%n%xzsta-self%zmin)/self%dz)) +(int((self%n%xzend-self%n%xzsta)/self%dz)/2)*(jhemi+1)
+     !   i1=2+(int((self%n%xrsta-self%rmin)/self%dr))
+     !   i2=2+(int((self%n%xrsta-self%rmin)/self%dr))+(int((self%n%xrend-self%n%xrsta)/self%dr)) 
+        WRITE(6,*) j1,j2,i1,i2,jhemi,self%mz,self%mr,self%n%xzsta
      else
         zt2=(jhemi-1)*const_pid ; zt1=jhemi*const_pid
         j1=2+(self%mz/2)*jhemi
@@ -3689,7 +3702,7 @@ subroutine beq_psix(self)
      do j=1,3
         ze=self%zmin+(jsrmin+j-3)*self%dz ! caculates z at various points around minium grad psi value
         do i=1,3
-           re=self%rmin+(isrmin+i-3)*self%dr ! caculates z at various points around minium grad psi value
+           re=self%rmin+(isrmin+i-3)*self%dr ! caculates z at various points around minimum grad psi value
            !calculates angle the r,z co-ordinates makes with origin at centre of plasm
            zthet=atan2( ze-self%n%zcen, re-self%n%rcen )
            ! no shift if (zthet<-const_pid/2) zthet=2*const_pid+zthet
@@ -3770,9 +3783,20 @@ subroutine beq_psix(self)
            zsrxpt=(zsr1+zsr2)/2
         end if
      end if
-     self%rxptarr(jhemi+1) = self%n%rcen+zsrxpt*cos(self%thetaxpt)
-     self%zxptarr(jhemi+1) = self%n%zcen+zsrxpt*sin(self%thetaxpt)
-     self%psixptarr(jhemi+1) = self%psixpt
+     self%rxptarr(jhemi+1) = self%n%rcen+((zsr1+zsr2)/2)*cos(zt3)
+     self%zxptarr(jhemi+1) = self%n%zcen+((zsr1+zsr2)/2)*sin(zt3)
+     self%psixptarr(jhemi+1) = zpsi3
+     IF(jhemi==0) THEN
+		WRITE(*,*) "Lower Hemisphere SMITER-GEOQ psi-xpt ", self%psixptarr(jhemi+1)
+		WRITE(*,*) "Lower Hemisphere SMITER-GEOQ theta-xpt ",zt3
+		WRITE(*,*) "Lower Hemisphere SMITER-GEOQ R-xpt ",self%rxptarr(jhemi+1)
+		WRITE(*,*) "Lower Hemisphere SMITER-GEOQ Z-xpt ",self%zxptarr(jhemi+1)
+     ELSE IF(jhemi==1) THEN
+		WRITE(*,*) "Upper Hemisphere SMITER-GEOQ psi-xpt ", self%psixptarr(jhemi+1)
+		WRITE(*,*) "Upper Hemisphere SMITER-GEOQ theta-xpt ",zt3
+		WRITE(*,*) "Upper Hemisphere SMITER-GEOQ R-xpt ",self%rxptarr(jhemi+1)
+		WRITE(*,*) "Upper Hemisphere SMITER-GEOQ Z-xpt ",self%zxptarr(jhemi+1)
+     END IF
   end do do_hemi
 
   if (ixf==0) then
@@ -3843,7 +3867,7 @@ subroutine beq_bdryrb(self)
   case(4,5,7,11,14) ! inboard point selected
      ztheta=const_pid
   case(16) ! second inboard point selected
-     self%psibdry=self%psixptarr(1)
+     self%psibdry=self%psixptarr(2)
      ztheta=const_pid
   case(8,9,10,12,15) ! outboard point selected
      ztheta=0.0_kr8

@@ -721,19 +721,33 @@ function edgprof_region(R,Z,cenz,rxpt,psi,psid, psixpt)
   if(Z<=cenz) rxpt_hemi=rxpt(1)
   if(Z>cenz)  rxpt_hemi=rxpt(2)
   !set reference psixpt_ref dependent on sign and slope of psi(R)
-  if(psi>0 .and. psid>0) psixpt_ref=MINVAL(psixpt)
+  if(psi>0 .and. psid>0) psixpt_ref=MINVAL(psixpt) 
   if(psi>0 .and. psid<0) psixpt_ref=MAXVAL(psixpt)
   if(psi<0 .and. psid>0) psixpt_ref=MAXVAL(ABS(psixpt))
   if(psi<0 .and. psid<0) psixpt_ref=MINVAL(ABS(psixpt))
   !Flip sign of psi if negative
   if(psi2<0) psi2=abs(psi2)
   !Determine whether the point is to the left or right of the xpoint
+ ! if(R<=rxpt_hemi) then
+ !    if(psi2<=psixpt_ref) iregion=1
+ !    if(psi2>psixpt_ref) iregion=2
+ ! else
+ !    if(psi2<=psixpt_ref) iregion=4
+ !    if(psi2>psixpt_ref) iregion=3
+ ! end if
+  
   if(R<=rxpt_hemi) then
-     if(psi2<=psixpt_ref) iregion=1
-     if(psi2>psixpt_ref) iregion=2
+  iregion=1
+    if(psi>0 .and. psid>0 .and. psi2<=psixpt_ref) iregion=2 
+    if(psi>0 .and. psid<0 .and. psi2>=psixpt_ref) iregion=2 
+    if(psi<0 .and. psid>0 .and. psi2>=psixpt_ref) iregion=2
+    if(psi<0 .and. psid<0 .and. psi2<=psixpt_ref) iregion=2
   else
-     if(psi2<=psixpt_ref) iregion=4
-     if(psi2>psixpt_ref) iregion=3
+  iregion=4
+    if(psi>0 .and. psid>0 .and. psi2<=psixpt_ref) iregion=3 
+    if(psi>0 .and. psid<0 .and. psi2>=psixpt_ref) iregion=3 
+    if(psi<0 .and. psid>0 .and. psi2>=psixpt_ref) iregion=3
+    if(psi<0 .and. psid<0 .and. psi2<=psixpt_ref) iregion=3
   end if
   !! return region
   edgprof_region=iregion
@@ -756,23 +770,22 @@ function edgprof_fn(self,psi,psid,R,Z,cenz,rxpt,psixpt)
   !! local variables
   character(*), parameter :: s_name='edgprof_fn' !< subroutine name
   real(kr8) :: pow !< local variable
-  integer(ki4) :: iregion   !<  region where point lies
-
-  iregion=edgprof_region(R,Z,cenz,rxpt,psi,psid,psixpt)
+  integer(ki4) :: mregion   !<  region where point lies
+  mregion=edgprof_region(R,Z,cenz,rxpt,psi,psid,psixpt)
   !! select profile
-  formula_chosen: select case (self%formula(iregion))
+  formula_chosen: select case (self%formula(mregion))
   case('unset','exp')
-     pow=edgprof_exp(self,psid,iregion)
+     pow=edgprof_exp(self,psid,mregion)
   case('expdouble')
-     pow=edgprof_expdouble(self,psid,iregion)
+     pow=edgprof_expdouble(self,psid,mregion)
   case('eich')
-     pow=edgprof_eich(self,psid,iregion)
+     pow=edgprof_eich(self,psid,mregion)
   case('userdefined')
-     pow=edgprof_userdefined(self,psid,iregion)
+     pow=edgprof_userdefined(self,psid,mregion)
   case('samples')
-     pow=edgprof_samples(self,psid,iregion)
+     pow=edgprof_samples(self,psid,mregion)
   end select formula_chosen
-
+   ! WRITE(*,*) R,Z,mregion,pow,self%fpfac(mregion),self%rblfac(mregion),psid,psi
   !! return profile
   edgprof_fn=pow
 end function edgprof_fn
