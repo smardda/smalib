@@ -5,8 +5,8 @@
 EXEDIR = ../exec
 
 # Fortran compiler
-F90 ?= gfortran-mp-11
-FC = gfortran-mp-11
+F90 ?= gfortran
+FC = gfortran
 
 # Fortran compiler flags
 F90FLAGS = -O -cpp
