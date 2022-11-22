@@ -744,7 +744,7 @@ function edgprof_region(R,Z,cenz,rxpt,psi,psid, psixpt)
     if(psi<0 .and. psid<0 .and. psi2<=psixpt_ref) iregion=2
   else
   iregion=4
-    if(psi>0 .and. psid>0 .and. psi2<=psixpt_ref) iregion=3 
+    if(psi>0 .and. psid>0 .and. psi2<=psixpt_ref) iregion=3
     if(psi>0 .and. psid<0 .and. psi2>=psixpt_ref) iregion=3 
     if(psi<0 .and. psid>0 .and. psi2>=psixpt_ref) iregion=3
     if(psi<0 .and. psid<0 .and. psi2<=psixpt_ref) iregion=3

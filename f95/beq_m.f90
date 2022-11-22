@@ -3808,6 +3808,11 @@ subroutine beq_psix(self)
      call log_value("psixpt find code",ixf)
      self%rxpt=self%n%rcen+zsrxpt*cos(self%thetaxpt)
      self%zxpt=self%n%zcen+zsrxpt*sin(self%thetaxpt)
+     if(n_regions > 1) then
+     self%rxpt=self%rxptarr(1)
+     self%zxpt=self%zxptarr(1)
+     self%psixpt=self%zxptarr(1)
+     end if
      call log_value("SMITER-GEOQ R-xpt ",self%rxpt)
      call log_value("SMITER-GEOQ Z-xpt ",self%zxpt)
   end if
@@ -3867,7 +3872,7 @@ subroutine beq_bdryrb(self)
   case(4,5,7,11,14) ! inboard point selected
      ztheta=const_pid
   case(16) ! second inboard point selected
-     self%psibdry=self%psixptarr(2)
+     if(self%psibdry-self%psixptarr(1) < 1E-5) self%psibdry=self%psixptarr(2)
      ztheta=const_pid
   case(8,9,10,12,15) ! outboard point selected
      ztheta=0.0_kr8
@@ -4050,7 +4055,8 @@ subroutine beq_bdryrb(self)
   ! evaluate I aka f at psi
   call spleval(self%f,self%mr,self%psiaxis,self%psiqbdry,zpsi,zf,1)
   self%btotbdry=sqrt( max(0.,(self%bpbdry**2+(zf/re)**2)) )
-
+  
+  if(self%psibdry-self%psixptarr(1) < 1E-5 .or. self%psibdry-self%psixptarr(2) < 1E-5) then
   set_rbdry_and_btotbdry_dn : select case (self%n%bdryopt)
   case(4,5,7,11,14) ! inboard point selected
      self%rbdryarr(2)=self%rbdry
@@ -4071,6 +4077,7 @@ subroutine beq_bdryrb(self)
   case default ! do nothing (assuming psiqbdry OK in eqdsk)
      return
   end select set_rbdry_and_btotbdry_dn
+  end if
 
   call log_error(m_name,s_name,2,log_info,'Reference boundary values')
   call log_value("SMITER-GEOQ psibdry ",self%psibdry)
@@ -4095,6 +4102,7 @@ subroutine beq_bdryrb(self)
     m=m+1
     goto 100
   end if
+  self%psibdry=self%psixptarr(1)
 end subroutine beq_bdryrb
 !---------------------------------------------------------------------
 !> calculate \f$ r_{min} \f$ and \f$ r_{min} \f$ as functions of \f$ \theta_j \f$
