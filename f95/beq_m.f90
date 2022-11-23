@@ -3863,13 +3863,19 @@ subroutine beq_bdryrb(self)
   real(kr8) :: zbr    !<  radial field component
   real(kr8) :: zbz    !<  vertical field component
   real(kr8) :: zbt    !<  toroidal field component
-  real(kr8) :: psibdry_start_value   !<  
-  psibdry_start_value=self%psibdry
+  integer(ki4) :: bdryopt_start
+  bdryopt_start=self%n%bdryopt
   m=1
   100 continue
-  if(m==2) self%n%bdryopt=9
-  if(m==3) self%n%bdryopt=16
-  if(m==4) self%n%bdryopt=17
+  if(n_regions >1) then
+     if(m==1) then
+         self%n%bdryopt=4
+         self%psibdry=self%psixptarr(1)
+     end if
+     if(m==2) self%n%bdryopt=9
+     if(m==3) self%n%bdryopt=16
+     if(m==4) self%n%bdryopt=17
+  end if
   pick_angle : select case (self%n%bdryopt)
   case(4,5,7,11,14) ! inboard point selected
      ztheta=const_pid
@@ -4058,7 +4064,6 @@ subroutine beq_bdryrb(self)
   call spleval(self%f,self%mr,self%psiaxis,self%psiqbdry,zpsi,zf,1)
   self%btotbdry=sqrt( max(0.,(self%bpbdry**2+(zf/re)**2)) )
   
-  if(self%psibdry-self%psixptarr(1) < 1E-5 .or. self%psibdry-self%psixptarr(2) < 1E-5) then
   set_rbdry_and_btotbdry_dn : select case (self%n%bdryopt)
   case(4,5,7,11,14) ! inboard point selected
      self%rbdryarr(2)=self%rbdry
@@ -4079,7 +4084,6 @@ subroutine beq_bdryrb(self)
   case default ! do nothing (assuming psiqbdry OK in eqdsk)
      return
   end select set_rbdry_and_btotbdry_dn
-  end if
 
   call log_error(m_name,s_name,2,log_info,'Reference boundary values')
   call log_value("SMITER-GEOQ psibdry ",self%psibdry)
@@ -4104,8 +4108,14 @@ subroutine beq_bdryrb(self)
     m=m+1
     goto 100
   end if
-  self%psibdry=psibdry_start_value
-  if(n_regions>1)  self%psibdry=self%psixptarr(1)
+  pick_boundary_psi : select case (bdryopt_start)
+  case(4) ! inboard point selected
+     self%psibdry=self%psixptarr(1)
+  case(12) ! second inboard point selected
+     self%psibdry=self%psiqbdry
+  case default ! do nothing (assuming psiqbdry OK in eqdsk)
+     return
+  end select pick_boundary_psi
 end subroutine beq_bdryrb
 !---------------------------------------------------------------------
 !> calculate \f$ r_{min} \f$ and \f$ r_{min} \f$ as functions of \f$ \theta_j \f$
