@@ -3874,7 +3874,7 @@ subroutine beq_bdryrb(self)
   case(4,5,7,11,14) ! inboard point selected
      ztheta=const_pid
   case(16) ! second inboard point selected
-     if(self%psibdry-self%psixptarr(1) < 1E-5) self%psibdry=self%psixptarr(2)
+     self%psibdry=self%psixptarr(2)
      ztheta=const_pid
   case(8,9,10,12,15) ! outboard point selected
      ztheta=0.0_kr8
@@ -4105,6 +4105,7 @@ subroutine beq_bdryrb(self)
     goto 100
   end if
   self%psibdry=psibdry_start_value
+  if(n_regions>1)  self%psibdry=self%psixptarr(1)
 end subroutine beq_bdryrb
 !---------------------------------------------------------------------
 !> calculate \f$ r_{min} \f$ and \f$ r_{min} \f$ as functions of \f$ \theta_j \f$
