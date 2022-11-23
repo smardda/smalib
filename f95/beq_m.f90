@@ -3863,6 +3863,8 @@ subroutine beq_bdryrb(self)
   real(kr8) :: zbr    !<  radial field component
   real(kr8) :: zbz    !<  vertical field component
   real(kr8) :: zbt    !<  toroidal field component
+  real(kr8) :: psibdry_start_value   !<  
+  psibdry_start_value=self%psibdry
   m=1
   100 continue
   if(m==2) self%n%bdryopt=9
@@ -4102,7 +4104,7 @@ subroutine beq_bdryrb(self)
     m=m+1
     goto 100
   end if
-  self%psibdry=self%psixptarr(1)
+  self%psibdry=psibdry_start_value
 end subroutine beq_bdryrb
 !---------------------------------------------------------------------
 !> calculate \f$ r_{min} \f$ and \f$ r_{min} \f$ as functions of \f$ \theta_j \f$
