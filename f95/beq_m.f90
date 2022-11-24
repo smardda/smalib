@@ -126,6 +126,7 @@ module beq_m
   character(len=15) :: cfmtd !< fixed format for body
   logical :: iltest !< logical flag
   integer(ki4) :: n_regions !< number of regions (used for double null case)
+  integer(ki4) :: same_rmbpmbm !< Set R_m,B_{bm} and B_m in the multi region case
 
   contains
 !---------------------------------------------------------------------
@@ -3116,7 +3117,7 @@ subroutine beq_readcon(selfn,kin)
  &equil_mastequ,&
  &beq_xsearch,beq_xrsta,beq_xrend,beq_xzsta,beq_xzend,&
  &limiter_search,search_r_start,search_r_end,search_z_start,search_z_end,&
- &beq_vacuum_field_file, n_regions
+ &beq_vacuum_field_file, n_regions, same_rmbpmbm
 
   !! set default beq parameters
   mzeta_vtk=193
@@ -3180,6 +3181,7 @@ subroutine beq_readcon(selfn,kin)
   beq_vacuum_field_file='null'
   
   n_regions=1
+  same_rmbpmbm=0
 
   !!read beq parameters
   read(kin,nml=beqparameters,iostat=status)
@@ -3210,7 +3212,7 @@ subroutine beq_readcon(selfn,kin)
   if(beq_psiopt==1.AND.beq_psimin<=0) &
  &call log_error(m_name,s_name,3,error_fatal,'beq_psimin must be > 0')
 
-  if(beq_bdryopt<=0.OR.beq_bdryopt>=18) &
+  if(beq_bdryopt<=0.OR. beq_bdryopt>=18) &
  &call log_error(m_name,s_name,6,error_fatal,'beq_bdryopt must be small positive integer')
   if(beq_nopt<=0.OR.beq_nopt>=4) &
  &call log_error(m_name,s_name,4,error_fatal,'beq_nopt must be small positive integer')
@@ -3339,11 +3341,11 @@ subroutine beq_readcon(selfn,kin)
      selfn%rcen=beq_rcen
      selfn%zcen=beq_zcen
   end if
-  if(selfn%psiopt==1.OR.selfn%psiopt==3) then
+  if(selfn%psiopt==1.OR. selfn%psiopt==3) then
      selfn%psimin=beq_psimin
      selfn%psimax=beq_psimax
   end if
-  if(selfn%bdryopt==1.OR.selfn%bdryopt==5.OR.selfn%bdryopt==9) then
+  if(selfn%bdryopt==1.OR. selfn%bdryopt==5.OR. selfn%bdryopt==9) then
      selfn%psiref=beq_psiref
   end if
   if(selfn%nopt==1) then
@@ -3655,7 +3657,7 @@ subroutine beq_psix(self)
      !   j2=(int((self%n%xzsta-self%zmin)/self%dz)) +(int((self%n%xzend-self%n%xzsta)/self%dz)/2)*(jhemi+1)
      !   i1=2+(int((self%n%xrsta-self%rmin)/self%dr))
      !   i2=2+(int((self%n%xrsta-self%rmin)/self%dr))+(int((self%n%xrend-self%n%xrsta)/self%dr)) 
-        WRITE(6,*) j1,j2,i1,i2,jhemi,self%mz,self%mr,self%n%xzsta
+  !      WRITE(6,*) j1,j2,i1,i2,jhemi,self%mz,self%mr,self%n%xzsta
      else
         zt2=(jhemi-1)*const_pid ; zt1=jhemi*const_pid
         j1=2+(self%mz/2)*jhemi
@@ -4109,13 +4111,99 @@ subroutine beq_bdryrb(self)
     goto 100
   end if
   pick_boundary_psi : select case (bdryopt_start)
-  case(4) ! inboard point selected
+  case(4) ! First inboard point selected
      self%psibdry=self%psixptarr(1)
-  case(12) ! second inboard point selected
+     if(n_regions > 1 .and. same_rmbpmbm==1) then
+       self%rbdryarr=self%rbdryarr(2)
+       self%btotbdryarr=self%btotbdryarr(2)
+       self%bpbdryarr=self%bpbdryarr(2)
+     end if 
+  case(5) ! First inboard point selected
+     self%beq%psibdry=self%beq%n%psiref
+     if(n_regions > 1 .and. same_rmbpmbm==1) then
+       self%rbdryarr=self%rbdryarr(2)
+       self%btotbdryarr=self%btotbdryarr(2)
+       self%bpbdryarr=self%bpbdryarr(2)
+     end if 
+  case(6) ! First inboard point selected
+     if (beq_rsig()>0) then
+        self%beq%psibdry=min(self%beq%psiqbdry,self%beq%psiltr)
+     else
+        self%beq%psibdry=max(self%beq%psiqbdry,self%beq%psiltr)
+     end if
+     if(n_regions > 1 .and. same_rmbpmbm==1) then
+       self%rbdryarr=self%rbdryarr(2)
+       self%btotbdryarr=self%btotbdryarr(2)
+       self%bpbdryarr=self%bpbdryarr(2)
+     end if  
+  case(7) ! First inboard point selected
+     if (beq_rsig()>0) then
+        self%beq%psibdry=min(self%beq%psiqbdry,self%beq%psixpt)
+     else
+        self%beq%psibdry=max(self%beq%psiqbdry,self%beq%psixpt)
+     end if
+     if(n_regions > 1 .and. same_rmbpmbm==1) then
+       self%rbdryarr=self%rbdryarr(2)
+       self%btotbdryarr=self%btotbdryarr(2)
+       self%bpbdryarr=self%bpbdryarr(2)
+     end if    
+  case(8) ! First Outboard point selected
+     self%psibdry=self%psixptarr(1)
+     if(n_regions > 1 .and. same_rmbpmbm==1) then
+       self%rbdryarr=self%rbdryarr(3)
+       self%btotbdryarr=self%btotbdryarr(3)
+       self%bpbdryarr=self%bpbdryarr(3)
+     end if
+  case(9) ! First Outboard point selected
+     self%beq%psibdry=self%beq%n%psiref
+     if(n_regions > 1 .and. same_rmbpmbm==1) then
+       self%rbdryarr=self%rbdryarr(3)
+       self%btotbdryarr=self%btotbdryarr(3)
+       self%bpbdryarr=self%bpbdryarr(3)
+     end if
+  case(10) ! First Outboard point selected
+     if (beq_rsig()>0) then
+        self%beq%psibdry=min(self%beq%psiqbdry,self%beq%psixpt)
+     else
+        self%beq%psibdry=max(self%beq%psiqbdry,self%beq%psixpt)
+     end if
+     if(n_regions > 1 .and. same_rmbpmbm==1) then
+       self%rbdryarr=self%rbdryarr(3)
+       self%btotbdryarr=self%btotbdryarr(3)
+       self%bpbdryarr=self%bpbdryarr(3)
+     end if
+  case(11) ! First inboard point selected
+     self%beq%psibdry=self%beq%psiqbdry
+     if(n_regions > 1 .and. same_rmbpmbm==1) then
+       self%rbdryarr=self%rbdryarr(2)
+       self%btotbdryarr=self%btotbdryarr(2)
+       self%bpbdryarr=self%bpbdryarr(2)
+     end if 
+  case(12) ! First Onboard point selected
      self%psibdry=self%psiqbdry
+     if(n_regions > 1 .and. same_rmbpmbm==1) then
+       self%rbdryarr=self%rbdryarr(3)
+       self%btotbdryarr=self%btotbdryarr(3)
+       self%bpbdryarr=self%bpbdryarr(3)
+     end if
+  case(16) ! Second Inboard point selected
+     self%psibdry=self%psixptarr(2)
+     if(n_regions > 1 .and. same_rmbpmbm==1) then
+       self%rbdryarr=self%rbdryarr(1)
+       self%btotbdryarr=self%btotbdryarr(1)
+       self%bpbdryarr=self%bpbdryarr(1)
+     end if
+  case(17) ! Second Outboard point selected
+     self%psibdry=self%psixptarr(2)
+     if(n_regions > 1 .and. same_rmbpmbm==1) then
+       self%rbdryarr=self%rbdryarr(4)
+       self%btotbdryarr=self%btotbdryarr(4)
+       self%bpbdryarr=self%bpbdryarr(4)
+     end if
   case default ! do nothing (assuming psiqbdry OK in eqdsk)
      return
   end select pick_boundary_psi
+self%n%bdryopt=bdryopt_start 
 end subroutine beq_bdryrb
 !---------------------------------------------------------------------
 !> calculate \f$ r_{min} \f$ and \f$ r_{min} \f$ as functions of \f$ \theta_j \f$
