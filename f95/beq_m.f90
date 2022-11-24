@@ -4119,7 +4119,7 @@ subroutine beq_bdryrb(self)
        self%bpbdryarr=self%bpbdryarr(2)
      end if 
   case(5) ! First inboard point selected
-     self%beq%psibdry=self%beq%n%psiref
+     self%psibdry=self%n%psiref
      if(n_regions > 1 .and. same_rmbpmbm==1) then
        self%rbdryarr=self%rbdryarr(2)
        self%btotbdryarr=self%btotbdryarr(2)
@@ -4127,9 +4127,9 @@ subroutine beq_bdryrb(self)
      end if 
   case(6) ! First inboard point selected
      if (beq_rsig()>0) then
-        self%beq%psibdry=min(self%beq%psiqbdry,self%beq%psiltr)
+        self%psibdry=min(self%psiqbdry,self%psiltr)
      else
-        self%beq%psibdry=max(self%beq%psiqbdry,self%beq%psiltr)
+        self%psibdry=max(self%psiqbdry,self%psiltr)
      end if
      if(n_regions > 1 .and. same_rmbpmbm==1) then
        self%rbdryarr=self%rbdryarr(2)
@@ -4138,9 +4138,9 @@ subroutine beq_bdryrb(self)
      end if  
   case(7) ! First inboard point selected
      if (beq_rsig()>0) then
-        self%beq%psibdry=min(self%beq%psiqbdry,self%beq%psixpt)
+        self%psibdry=min(self%psiqbdry,self%psixpt)
      else
-        self%beq%psibdry=max(self%beq%psiqbdry,self%beq%psixpt)
+        self%psibdry=max(self%psiqbdry,self%psixpt)
      end if
      if(n_regions > 1 .and. same_rmbpmbm==1) then
        self%rbdryarr=self%rbdryarr(2)
@@ -4155,7 +4155,7 @@ subroutine beq_bdryrb(self)
        self%bpbdryarr=self%bpbdryarr(3)
      end if
   case(9) ! First Outboard point selected
-     self%beq%psibdry=self%beq%n%psiref
+     self%psibdry=self%n%psiref
      if(n_regions > 1 .and. same_rmbpmbm==1) then
        self%rbdryarr=self%rbdryarr(3)
        self%btotbdryarr=self%btotbdryarr(3)
@@ -4163,9 +4163,9 @@ subroutine beq_bdryrb(self)
      end if
   case(10) ! First Outboard point selected
      if (beq_rsig()>0) then
-        self%beq%psibdry=min(self%beq%psiqbdry,self%beq%psixpt)
+        self%psibdry=min(self%psiqbdry,self%psixpt)
      else
-        self%beq%psibdry=max(self%beq%psiqbdry,self%beq%psixpt)
+        self%psibdry=max(self%psiqbdry,self%psixpt)
      end if
      if(n_regions > 1 .and. same_rmbpmbm==1) then
        self%rbdryarr=self%rbdryarr(3)
@@ -4173,7 +4173,7 @@ subroutine beq_bdryrb(self)
        self%bpbdryarr=self%bpbdryarr(3)
      end if
   case(11) ! First inboard point selected
-     self%beq%psibdry=self%beq%psiqbdry
+     self%psibdry=self%psiqbdry
      if(n_regions > 1 .and. same_rmbpmbm==1) then
        self%rbdryarr=self%rbdryarr(2)
        self%btotbdryarr=self%btotbdryarr(2)
