@@ -392,8 +392,10 @@ subroutine beq_readequil(self,infile,numerics)
   real(kr8) :: rmaxis !< EFIT plasma centre (magnetic axis) in metre
   real(kr8) :: rzero !< EFIT variable ignored
   real(kr8) :: ssibry1 !< EFIT poloidal flux at the boundary (Wb/rad)
+  real(kr8) :: ssibry1_temp !< EFIT poloidal flux at the boundary (Wb/rad) temp for switch
   real(kr8) :: ssibry2 !< EFIT poloidal flux at the boundary (Wb/rad) ignored
   real(kr8) :: ssimag1 !< EFIT poloidal flux at the magnetic axis (Wb/rad)
+  real(kr8) :: ssimag1_temp !< EFIT poloidal flux at the magnetic axis (Wb/rad) temp for switch
   real(kr8) :: ssimag2 !< EFIT poloidal flux at the magnetic axis (Wb/rad) ignored
   real(kr8) :: xdim !< EFIT Horizontal dimension in metre of computational box
   real(kr8) :: xdum !< EFIT variable ignored
@@ -630,7 +632,7 @@ subroutine beq_readequil(self,infile,numerics)
   if (cfmtd=='*') then
      read(iin,*,iostat=status) ((work2(i,j),i=1,nw),j=1,nh)
   else
-     if (iffiesta>0) then
+     if (iffiesta==1) then
         do j=1,nh
            read(iin,cfmtd,iostat=status) (work2(i,j),i=1,nw)
         end do
