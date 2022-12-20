@@ -8,6 +8,7 @@ module edgprof_m
   use const_numphys_h
   use const_kind_m
   use pcontrol_h
+  use beq_m
 
   implicit none
   private
@@ -146,10 +147,12 @@ subroutine edgprof_readcon(self,pnumerics,kin,number_of_regions)
  &L, L_exp, ratio_B, ratio_B_exp, &
  &P_V_ratio_exp, P_V_ratio, a_R0_ratio, &
  &a_R0_elongation_ratio_exp, elongation
+ !Allocate arrays dependent on the number of regions
  allocate(self%lmid(number_of_regions),self%ploss(number_of_regions),self%sigma(number_of_regions),&
           self%lmidnr(number_of_regions),self%formula(number_of_regions),profile_formula(number_of_regions),&
           decay_length(number_of_regions),power_loss(number_of_regions),diffusion_length(number_of_regions),&
           decay_length_near(number_of_regions),lambda_q_choice(number_of_regions))
+          
   !! Set default lambdaqparameters
   c_prop(1) = ((7.0d0/8.0d0)**(2.0d0/9.0d0))*((8.0d0*(const_pid**2.0d0)/7.0d0)**(7.0d0/9.0d0))
   c_prop(2) = ((8.0d0*(const_pid**2.0d0)/7.0d0)**(7.0d0/9.0d0))
@@ -613,7 +616,7 @@ function edgprof_samples(self,psid,kregion)
 end function edgprof_samples
 !---------------------------------------------------------------------
 !> Determines the region needed for edgprof
-function edgprof_region(R,Z,cenz,rxpt,psi,psid, psixpt)
+function edgprof_region(R,Z,cenz,rxpt,psi,psid, psixpt,number_of_regions,outer_xpoint)
 
   !! arguments
   integer(ki4) :: edgprof_region !< local variable
@@ -624,52 +627,59 @@ function edgprof_region(R,Z,cenz,rxpt,psi,psid, psixpt)
   real(kr8), intent(in) :: psi !<  \f$ \psi \f$
   real(kr8), intent(in) :: psid !<  \f$ \psi - \psi_b \f$
   real(kr8) :: psixpt(2) !<  flux xpoints
+  integer(ki4) :: number_of_regions   !<  number of regions
+  integer(ki4) :: outer_xpoint   !<  array location of outer xpoint psixpt
 
   !! local variables
   character(*), parameter :: s_name='edgprof_region' !< subroutine name
   real(kr8) :: rxpt_hemi !< r for xpoint in hemisphere being considered
-  real(kr8) :: psi2 !<  Internal \f$ \psi \f$
-  real(kr8) :: psixpt_ref !< reference psixpt value
   integer(ki4) :: iregion !< local variable
-  psi2=psi
-  !Determine whether above or below the midplane and set reference rxpt accordingly
-  if(Z<=cenz) rxpt_hemi=rxpt(1)
-  if(Z>cenz)  rxpt_hemi=rxpt(2)
-  !set reference psixpt_ref dependent on sign and slope of psi(R)
-  if(psi>0 .and. psid>0) psixpt_ref=MINVAL(psixpt) 
-  if(psi>0 .and. psid<0) psixpt_ref=MAXVAL(psixpt)
-  if(psi<0 .and. psid>0) psixpt_ref=MAXVAL(ABS(psixpt))
-  if(psi<0 .and. psid<0) psixpt_ref=MINVAL(ABS(psixpt))
-  !Flip sign of psi if negative
-  if(psi2<0) psi2=abs(psi2)
-  !Determine whether the point is to the left or right of the xpoint
- ! if(R<=rxpt_hemi) then
- !    if(psi2<=psixpt_ref) iregion=1
- !    if(psi2>psixpt_ref) iregion=2
- ! else
- !    if(psi2<=psixpt_ref) iregion=4
- !    if(psi2>psixpt_ref) iregion=3
- ! end if
   
-  if(R<=rxpt_hemi) then
-  iregion=1
-    if(psi>0 .and. psid>0 .and. psi2<=psixpt_ref) iregion=2 
-    if(psi>0 .and. psid<0 .and. psi2>=psixpt_ref) iregion=2 
-    if(psi<0 .and. psid>0 .and. psi2>=psixpt_ref) iregion=2
-    if(psi<0 .and. psid<0 .and. psi2<=psixpt_ref) iregion=2
-  else
-  iregion=4
-    if(psi>0 .and. psid>0 .and. psi2<=psixpt_ref) iregion=3
-    if(psi>0 .and. psid<0 .and. psi2>=psixpt_ref) iregion=3 
-    if(psi<0 .and. psid>0 .and. psi2>=psixpt_ref) iregion=3
-    if(psi<0 .and. psid<0 .and. psi2<=psixpt_ref) iregion=3
+  if(number_of_regions==1) then 
+     iregion=1
+  else if(number_of_regions==2) then
+     !Determine whether above or below the midplane and set reference rxpt accordingly
+     if(Z<=cenz) rxpt_hemi=rxpt(1)
+     if(Z>cenz)  rxpt_hemi=rxpt(2)
+     !If left of xpoint R then set to inboard value
+     if(R<=rxpt_hemi) then
+       iregion=1 
+     else
+        iregion=2
+     end if
+  else if(number_of_regions==4) then
+     !Determine whether above or below the midplane and set reference rxpt accordingly
+     if(Z<=cenz) rxpt_hemi=rxpt(1)
+     if(Z>cenz)  rxpt_hemi=rxpt(2)
+     
+     if(R<=rxpt_hemi) then
+        !Set default region to region furthest from plasma center
+        iregion=1
+           !if psi decreases
+           if(beq_rsig()<0) then
+              if(psi>psixpt(outer_xpoint)) iregion=2
+           !if psi increases
+           else
+              if(psi<psixpt(outer_xpoint)) iregion=2    
+           end if
+     else
+        iregion=4
+           !if psi decreases
+           if(beq_rsig()<0) then
+              if(psi>psixpt(outer_xpoint)) iregion=3
+           !if psi increases
+           else
+              if(psi<psixpt(outer_xpoint)) iregion=3    
+           end if
+     end if     
   end if
+  write(*,*) R,Z,psi,iregion
   !! return region
   edgprof_region=iregion
 end function edgprof_region
 !---------------------------------------------------------------------
 !> profile from samples
-function edgprof_fn(self,psi,psid,R,Z,cenz,rxpt,psixpt)
+function edgprof_fn(self,psi,psid,R,Z,cenz,rxpt,psixpt,number_of_regions,outer_xpoint)
 
   !! arguments
   type(edgprof_t), intent(in) :: self !< type containing profile parameters
@@ -681,13 +691,14 @@ function edgprof_fn(self,psi,psid,R,Z,cenz,rxpt,psixpt)
   real(kr8) :: cenz !< position centre of plasma \f$ Z \f$
   real(kr8) :: rxpt(2)   !<  position x point \f$ R \f$
   real(kr8) :: psixpt(2) !<  flux xpoints
+  integer(ki4) :: number_of_regions   !<  number of regions
+  integer(ki4) :: outer_xpoint   !<  array location of outer xpoint psixpt
 
   !! local variables
   character(*), parameter :: s_name='edgprof_fn' !< subroutine name
   real(kr8) :: pow !< local variable
   integer(ki4) :: mregion   !<  region where point lies
-  !mregion=edgprof_region(R,Z,cenz,rxpt,psi,psid,psixpt)
-  mregion=1
+  mregion=edgprof_region(R,Z,cenz,rxpt,psi,psid,psixpt,number_of_regions,outer_xpoint)
   !! select profile
   formula_chosen: select case (self%formula(mregion))
   case('unset','exp')

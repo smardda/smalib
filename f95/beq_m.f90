@@ -126,7 +126,7 @@ module beq_m
   character(len=80) :: ibuf1 !< buffer for input/output
   character(len=15) :: cfmtd !< fixed format for body
   logical :: iltest !< logical flag
-  integer(ki4) :: n_regions=1 !< number of regions (used for double null case)
+  integer(ki4) :: n_regions !< number of regions (used for double null case)
   integer(ki4) :: n_xpoints !< number of active xpoints (used for double null case)
   integer(ki4) :: same_rmbpmbm !< Set R_m,B_{bm} and B_m in the multi region case
 
@@ -1941,7 +1941,7 @@ subroutine beq_readplus(self,infile)
      self%n%duct=.FALSE.
   end if
   
-  if(n_xpoints > 1) then
+!  if(n_xpoints > 1) then
      read(nin,*,iostat=status) ibuff
      call log_read_check(m_name,s_name,76,status)
      read(nin,*,iostat=status) self%rxptarr(1),self%rxptarr(2)
@@ -1974,7 +1974,11 @@ subroutine beq_readplus(self,infile)
      call log_read_check(m_name,s_name,90,status)
      read(nin,*,iostat=status) self%number_xpoints
      call log_read_check(m_name,s_name,91,status)
-  end if
+     read(nin,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,92,status)
+     read(nin,*,iostat=status) self%outer_xpoint
+     call log_write_check(m_name,s_name,93,status)
+!  end if
 
   call log_error(m_name,s_name,90,log_info,'beq read in from data file')
 
@@ -2826,7 +2830,7 @@ subroutine beq_writeplus(self,kout)
      call fmesh_write(self%fmesh,kout)
   end if
 
-  if(n_xpoints > 1) then
+!  if(n_xpoints > 1) then
      write(kout,*,iostat=status) 'rxpt_double_null'
      call log_write_check(m_name,s_name,76,status)
      write(kout,*,iostat=status) self%rxptarr(1),self%rxptarr(2)
@@ -2855,11 +2859,15 @@ subroutine beq_writeplus(self,kout)
      call log_write_check(m_name,s_name,88,status)
      write(kout,*,iostat=status) self%number_regions
      call log_write_check(m_name,s_name,89,status)
-      write(kout,*,iostat=status) 'number_of_xpoints'
+     write(kout,*,iostat=status) 'number_of_xpoints'
      call log_write_check(m_name,s_name,90,status)
      write(kout,*,iostat=status) self%number_xpoints
      call log_write_check(m_name,s_name,91,status)
-  end if
+     write(kout,*,iostat=status) 'location of outer x-point'
+     call log_write_check(m_name,s_name,92,status)
+     write(kout,*,iostat=status) self%outer_xpoint
+     call log_write_check(m_name,s_name,93,status)
+!  end if
 
 end subroutine beq_writeplus
 !---------------------------------------------------------------------
@@ -3808,6 +3816,7 @@ subroutine beq_psix(self)
            zsrxpt=(zsr1+zsr2)/2
         end if
      end if
+     n_regions=1
      !******************************************************************
      !If dealing with more than one x-point
      !******************************************************************
@@ -3853,9 +3862,10 @@ subroutine beq_psix(self)
            end if
         end if
      end if
-  self%number_xpoints=n_xpoints
-  self%number_xpoints=n_regions
   end do do_hemi
+
+  self%number_xpoints=n_xpoints
+  self%number_regions=n_regions
 
   if (ixf==0) then
      call log_error(m_name,s_name,80,error_fatal,'no X-point found')
@@ -4165,6 +4175,7 @@ subroutine beq_bdryrb_dn(self)
   real(kr8) :: zbr    !<  radial field component
   real(kr8) :: zbz    !<  vertical field component
   real(kr8) :: zbt    !<  toroidal field component
+  real(kr8) :: swap    !<  Used to swap R_1,R_2,R_3 and R_4 into order
   integer(ki4) :: bdryopt_start
   !Set bdryopt_start to user chosen value, so that self%n%bdryopt can 
   !be set back to original value at end of subroutine
@@ -4188,7 +4199,7 @@ subroutine beq_bdryrb_dn(self)
          self%n%bdryopt=4
          self%psibdry=self%psixptarr(1)
      end if
-     if(m==2) self%n%bdryopt=9
+     if(m==2) self%n%bdryopt=8
      if(m==3) self%n%bdryopt=16
      if(m==4) self%n%bdryopt=17
      pick_angle : select case (self%n%bdryopt)
@@ -4375,7 +4386,7 @@ subroutine beq_bdryrb_dn(self)
      !Set rbdryarr,btotbdryarr,bpbdryarr for each region dependent on
      !psi of xpoint
      !******************************************************************
-     if(m>=1 .and. m<=4) then
+     if(m>0) then
         set_rbdry_and_btotbdry_dn : select case (self%n%bdryopt)
         case(4) ! inboard point selected
            self%rbdryarr(2)=self%rbdry
@@ -4427,7 +4438,22 @@ subroutine beq_bdryrb_dn(self)
      deallocate(wvext)
      deallocate(wvextd)
   end do
-  
+  !*********************************************************************
+  !Swap around values if psixpt(1) represents the outer x-point
+  !**********************************************************************
+  write(*,*) 'I am in the double null version of beq_bdryrb and n_regions=',n_regions
+  if(n_regions==4) then
+     self%outer_xpoint=2
+     if(self%rbdryarr(4)-self%rbdryarr(3)<0.0) then
+        self%outer_xpoint=1
+        swap=self%rbdryarr(3);self%rbdryarr(3)=self%rbdryarr(4);self%rbdryarr(4)=swap
+        swap=self%rbdryarr(1);self%rbdryarr(1)=self%rbdryarr(2);self%rbdryarr(2)=swap
+        swap=self%btotbdryarr(3);self%btotbdryarr(3)=self%btotbdryarr(4);self%btotbdryarr(4)=swap
+        swap=self%btotbdryarr(1);self%btotbdryarr(1)=self%btotbdryarr(2);self%btotbdryarr(2)=swap
+        swap=self%bpbdryarr(3);self%bpbdryarr(3)=self%bpbdryarr(4);self%bpbdryarr(4)=swap
+        swap=self%bpbdryarr(1);self%bpbdryarr(1)=self%bpbdryarr(2);self%bpbdryarr(2)=swap
+     end if
+  end if
   !*********************************************************************
   !Set psibdry back to value chosen by bdryopt
   !*********************************************************************

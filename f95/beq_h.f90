@@ -204,8 +204,9 @@ module beq_h
      real(kr8) :: btotbdryarr(0:4) !< Total \f$ B \f$ at reference boundary \f$ B_m \f$
      real(kr8) :: ximaxm !< maximum \f$ \xi \f$ value \f$ -\epsilon \f$
      real(kr8) :: ximinp !< minimum \f$ \xi \f$ value \f$ +\epsilon \f$
-     integer(ki4) :: number_regions=1 !< number of regions (used for double null case)
+     integer(ki4) :: number_regions !< number of regions (used for double null case)
      integer(ki4) :: number_xpoints !< number of active xpoints (used for double null case)
+     integer(ki4) :: outer_xpoint !< array location of outer xpoint
      real(kr8), dimension(3) :: domlen !< dimensions of domain (quantised)
      integer(ki4) :: nzets !< \f$ N_{\zeta s} \f$ such that \f$ \xi = N_{\zeta s} \zeta \f$
      integer(ki4) :: ntmin !< minimum valid value of \f$ N_\theta \f$
