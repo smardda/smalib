@@ -436,11 +436,11 @@ subroutine edgprof_factors_2_region(self,rbdry,bpbdry,btotbdry,psign,&
   !! arguments
   type(edgprof_t), intent(inout) :: self !< type containing profile parameters
   real(kr8), intent(in) :: rbdry !< boundary value
-  real(kr8), intent(in) :: rbdryarr(0:4) !< boundary value
+  real(kr8), intent(in) :: rbdryarr(0:2) !< boundary value
   real(kr8), intent(in) :: bpbdry !< boundary value
-  real(kr8), intent(in) :: bpbdryarr(0:4) !< boundary value
+  real(kr8), intent(in) :: bpbdryarr(0:2) !< boundary value
   real(kr8), intent(in) :: btotbdry!< boundary value
-  real(kr8), intent(in) :: btotbdryarr(0:4) !< boundary value
+  real(kr8), intent(in) :: btotbdryarr(0:2) !< boundary value
   real(kr8), intent(in) :: psign !< adjust sign of exponential factor
   real(kr8), intent(in):: rcen !<  R value for centre of plasma
 
@@ -448,11 +448,43 @@ subroutine edgprof_factors_2_region(self,rbdry,bpbdry,btotbdry,psign,&
   character(*), parameter :: s_name='edgprof_factors' !< subroutine name
   real(kr8) :: zrbfac(2) !< power factor in \f$ B \f$ only
   real(kr8) :: zrblfac(2) !< power factor scaled by lmid
-  real(kr8) :: rprime !<  R' in documentation
+  integer (ki4) :: l,m !< internal variables for looping
+  
   allocate(self%rblfac(2),self%fpfac(2),self%rblfacnr(2),self%fpfacnr(2), self%slfac(2))
   self%fpfacnr=0.0
   self%rblfacnr=0.0
+  
+    ! power normalisation factor
+  zrbfac=1/(2*const_pid*rbdry*bpbdry)
+  ! default diffusion factor
+  self%slfac=0
+  !loop over inboard and outboard
+  do l=1,2 
+     formula_chosen: select case (self%formula(l))
+     case('unset','exp')
+        zrblfac=zrbfac/self%lmid
+        self%rblfac=2*const_pid*zrblfac*((-1.)*psign)
+        if (self%qpara0>0) then
+           self%fpfac=self%f*self%qpara0/btotbdry
+        else
+           self%fpfac=self%f*self%ploss*zrblfac
+        end if
 
+     case('expdouble')
+        zrblfac=zrbfac/(self%lmid+self%rqpara0*self%lmidnr)
+        self%rblfac=2*const_pid*zrbfac*((-1.)*psign)/self%lmid
+        self%rblfacnr=2*const_pid*zrbfac*((-1.)*psign)/self%lmidnr
+        self%fpfac=self%f*self%ploss*zrblfac
+        self%fpfacnr=self%rqpara0*self%fpfac
+
+     case('eich')
+        zrblfac=zrbfac/self%lmid
+        self%slfac=self%sigma/(2*self%lmid)
+        self%rblfac=2*const_pid*zrblfac*((-1.)*psign)
+        self%fpfac=(self%f/2)*self%ploss*zrblfac
+
+     end select formula_chosen
+  end do
   
 end subroutine edgprof_factors_2_region
 !---------------------------------------------------------------------
@@ -673,7 +705,7 @@ function edgprof_region(R,Z,cenz,rxpt,psi,psid, psixpt,number_of_regions,outer_x
            end if
      end if     
   end if
-  write(*,*) R,Z,psi,iregion
+ ! write(*,*) R,Z,psi,iregion
   !! return region
   edgprof_region=iregion
 end function edgprof_region

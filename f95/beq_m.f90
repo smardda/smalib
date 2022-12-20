@@ -1952,23 +1952,25 @@ subroutine beq_readplus(self,infile)
      call log_read_check(m_name,s_name,79,status)
      read(nin,*,iostat=status) ibuff
      call log_read_check(m_name,s_name,80,status)
-     read(nin,*,iostat=status) self%psixptarr(1),self%psixptarr(2)
+     read(nin,*,iostat=status) self%psixptarr(1),self%psixptarr(2)    
      call log_read_check(m_name,s_name,81,status)
      read(nin,*,iostat=status) ibuff
      call log_read_check(m_name,s_name,82,status)
-     read(nin,*,iostat=status) self%rbdryarr
+     read(nin,*,iostat=status) self%number_regions
      call log_read_check(m_name,s_name,83,status)
+     allocate(self%rbdryarr(0:self%number_regions),self%bpbdryarr(0:self%number_regions),&
+              self%btotbdryarr(0:self%number_regions))
      read(nin,*,iostat=status) ibuff
      call log_read_check(m_name,s_name,84,status)
-     read(nin,*,iostat=status) self%btotbdryarr
+     read(nin,*,iostat=status) self%rbdryarr
      call log_read_check(m_name,s_name,85,status)
      read(nin,*,iostat=status) ibuff
      call log_read_check(m_name,s_name,86,status)
-     read(nin,*,iostat=status) self%bpbdryarr
+     read(nin,*,iostat=status) self%btotbdryarr
      call log_read_check(m_name,s_name,87,status)
      read(nin,*,iostat=status) ibuff
      call log_read_check(m_name,s_name,88,status)
-     read(nin,*,iostat=status) self%number_regions
+     read(nin,*,iostat=status) self%bpbdryarr
      call log_read_check(m_name,s_name,89,status)
      read(nin,*,iostat=status) ibuff
      call log_read_check(m_name,s_name,90,status)
@@ -2843,21 +2845,21 @@ subroutine beq_writeplus(self,kout)
      call log_write_check(m_name,s_name,80,status)
      write(kout,*,iostat=status) self%psixptarr(1),self%psixptarr(2)
      call log_write_check(m_name,s_name,81,status)
-     write(kout,*,iostat=status) 'rbdry_double_null'
-     call log_write_check(m_name,s_name,82,status)
-     write(kout,*,iostat=status) self%rbdryarr
-     call log_write_check(m_name,s_name,83,status)
-     write(kout,*,iostat=status) 'btotbdry_double_null'
-     call log_write_check(m_name,s_name,84,status)
-     write(kout,*,iostat=status) self%btotbdryarr
-     call log_write_check(m_name,s_name,85,status)
-     write(kout,*,iostat=status) 'bpbdry_double_null'
-     call log_write_check(m_name,s_name,86,status)
-     write(kout,*,iostat=status) self%bpbdryarr
-     call log_write_check(m_name,s_name,87,status)
      write(kout,*,iostat=status) 'number_of_regions'
-     call log_write_check(m_name,s_name,88,status)
+     call log_write_check(m_name,s_name,82,status)
      write(kout,*,iostat=status) self%number_regions
+     call log_write_check(m_name,s_name,83,status)
+     write(kout,*,iostat=status) 'rbdry_double_null'
+     call log_write_check(m_name,s_name,84,status)
+     write(kout,*,iostat=status) self%rbdryarr
+     call log_write_check(m_name,s_name,85,status)
+     write(kout,*,iostat=status) 'btotbdry_double_null'
+     call log_write_check(m_name,s_name,86,status)
+     write(kout,*,iostat=status) self%btotbdryarr
+     call log_write_check(m_name,s_name,87,status)
+     write(kout,*,iostat=status) 'bpbdry_double_null'
+     call log_write_check(m_name,s_name,88,status)
+     write(kout,*,iostat=status) self%bpbdryarr
      call log_write_check(m_name,s_name,89,status)
      write(kout,*,iostat=status) 'number_of_xpoints'
      call log_write_check(m_name,s_name,90,status)
@@ -4182,6 +4184,7 @@ subroutine beq_bdryrb_dn(self)
   bdryopt_start=self%n%bdryopt 
   !Exit subroutine if the user selected certain boundary options
   !to be consistent with non double null case
+  allocate(self%rbdryarr(0:n_regions),self%bpbdryarr(0:n_regions),self%btotbdryarr(0:n_regions))
   if(bdryopt_start==1 .or. bdryopt_start==3 .or. bdryopt_start==13) then
      ! check for replacement
      if (self%replasi) then
@@ -4194,7 +4197,7 @@ subroutine beq_bdryrb_dn(self)
      return
   end if  
   !Loop over regions
-  Do m=0,4
+  Do m=0,n_regions
      if(m==1) then
          self%n%bdryopt=4
          self%psibdry=self%psixptarr(1)
@@ -4386,27 +4389,46 @@ subroutine beq_bdryrb_dn(self)
      !Set rbdryarr,btotbdryarr,bpbdryarr for each region dependent on
      !psi of xpoint
      !******************************************************************
-     if(m>0) then
-        set_rbdry_and_btotbdry_dn : select case (self%n%bdryopt)
-        case(4) ! inboard point selected
-           self%rbdryarr(2)=self%rbdry
-           self%btotbdryarr(2)=self%btotbdry
-           self%bpbdryarr(2)=self%bpbdry
-        case(16) ! second inboard point selected
-           self%rbdryarr(1)=self%rbdry
-           self%btotbdryarr(1)=self%btotbdry
-           self%bpbdryarr(1)=self%bpbdry
-        case(8) ! outboard point selected
-           self%rbdryarr(3)=self%rbdry
-           self%btotbdryarr(3)=self%btotbdry
-           self%bpbdryarr(3)=self%bpbdry
-        case(17) ! second outboard point selected
-           self%rbdryarr(4)=self%rbdry
-           self%btotbdryarr(4)=self%btotbdry
-           self%bpbdryarr(4)=self%bpbdry
-        case default ! do nothing (assuming psiqbdry OK in eqdsk)
-           return
-        end select set_rbdry_and_btotbdry_dn
+     if(n_regions==4) then
+        if(m>0) then
+           set_rbdry_and_btotbdry_dn_4_regions : select case (self%n%bdryopt)
+           case(4) ! inboard point selected
+              self%rbdryarr(2)=self%rbdry
+              self%btotbdryarr(2)=self%btotbdry
+              self%bpbdryarr(2)=self%bpbdry
+           case(16) ! second inboard point selected
+              self%rbdryarr(1)=self%rbdry
+              self%btotbdryarr(1)=self%btotbdry
+              self%bpbdryarr(1)=self%bpbdry
+           case(8) ! outboard point selected
+              self%rbdryarr(3)=self%rbdry
+              self%btotbdryarr(3)=self%btotbdry
+              self%bpbdryarr(3)=self%bpbdry
+           case(17) ! second outboard point selected
+              self%rbdryarr(4)=self%rbdry
+              self%btotbdryarr(4)=self%btotbdry
+              self%bpbdryarr(4)=self%bpbdry
+           case default ! do nothing (assuming psiqbdry OK in eqdsk)
+              return
+           end select set_rbdry_and_btotbdry_dn_4_regions
+        end if
+     end if
+     
+     if(n_regions==2) then
+        if(m>0) then
+           set_rbdry_and_btotbdry_dn_2_regions : select case (self%n%bdryopt)
+           case(4) ! inboard point selected
+              self%rbdryarr(1)=self%rbdry
+              self%btotbdryarr(1)=self%btotbdry
+              self%bpbdryarr(1)=self%bpbdry
+           case(8) ! outboard point selected
+              self%rbdryarr(2)=self%rbdry
+              self%btotbdryarr(2)=self%btotbdry
+              self%bpbdryarr(2)=self%bpbdry
+           case default ! do nothing (assuming psiqbdry OK in eqdsk)
+              return
+           end select set_rbdry_and_btotbdry_dn_2_regions
+        end if
      end if
      !******************************************************************
      !Store values of rbdry,btotbdry and bpbdry calculated from users
