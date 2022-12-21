@@ -229,7 +229,6 @@ subroutine edgprof_readcon(self,pnumerics,kin,number_of_regions)
   end if
 
   call lowor(profile_formula,1,len_trim(profile_formula))
-
   !! Calculates user choice of lambda_q
   do i=1,NUMBER_OF_REGIONS
      formula_chosen_lambda: select case (lambda_q_choice(i))
