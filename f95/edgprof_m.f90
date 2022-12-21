@@ -453,35 +453,35 @@ subroutine edgprof_factors_2_region(self,rbdry,bpbdry,btotbdry,psign,&
   allocate(self%rblfac(2),self%fpfac(2),self%rblfacnr(2),self%fpfacnr(2), self%slfac(2))
   self%fpfacnr=0.0
   self%rblfacnr=0.0
-  
-    ! power normalisation factor
-  zrbfac=1/(2*const_pid*rbdry*bpbdry)
   ! default diffusion factor
   self%slfac=0
+
   !loop over inboard and outboard
-  do l=1,2 
+  DO l=1,2
+     ! power normalisation factor
+     zrbfac(l)=1/(2*const_pid*rbdryarr(l)*bpbdryarr(l))
      formula_chosen: select case (self%formula(l))
      case('unset','exp')
-        zrblfac=zrbfac/self%lmid
-        self%rblfac=2*const_pid*zrblfac*((-1.)*psign)
+        zrblfac(l)=zrbfac(l)/self%lmid(l)
+        self%rblfac=2*const_pid*zrblfac(l)*((-1.)*psign)
         if (self%qpara0>0) then
-           self%fpfac=self%f*self%qpara0/btotbdry
+           self%fpfac(l)=self%f*self%qpara0/btotbdryarr(l)
         else
-           self%fpfac=self%f*self%ploss*zrblfac
+           self%fpfac(l)=self%f*self%ploss(l)*zrblfac(l)
         end if
 
      case('expdouble')
-        zrblfac=zrbfac/(self%lmid+self%rqpara0*self%lmidnr)
-        self%rblfac=2*const_pid*zrbfac*((-1.)*psign)/self%lmid
-        self%rblfacnr=2*const_pid*zrbfac*((-1.)*psign)/self%lmidnr
-        self%fpfac=self%f*self%ploss*zrblfac
-        self%fpfacnr=self%rqpara0*self%fpfac
+        zrblfac(l)=zrbfac(l)/(self%lmid(l)+self%rqpara0*self%lmidnr(l))
+        self%rblfac(l)=2*const_pid*zrbfac(l)*((-1.)*psign)/self%lmid(l)
+        self%rblfacnr(l)=2*const_pid*zrbfac(l)*((-1.)*psign)/self%lmidnr(l)
+        self%fpfac(l)=self%f*self%ploss(l)*zrblfac(l)
+        self%fpfacnr(l)=self%rqpara0*self%fpfac(l)
 
      case('eich')
-        zrblfac=zrbfac/self%lmid
-        self%slfac=self%sigma/(2*self%lmid)
-        self%rblfac=2*const_pid*zrblfac*((-1.)*psign)
-        self%fpfac=(self%f/2)*self%ploss*zrblfac
+        zrblfac(l)=zrbfac(l)/self%lmid(l)
+        self%slfac(l)=self%sigma(l)/(2*self%lmid(l))
+        self%rblfac(l)=2*const_pid*zrblfac(l)*((-1.)*psign)
+        self%fpfac(l)=(self%f/2)*self%ploss(l)*zrblfac(l)
 
      end select formula_chosen
   end do
