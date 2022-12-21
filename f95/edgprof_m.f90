@@ -46,6 +46,7 @@ module edgprof_m
   integer(ki4) :: k !< loop counter
   integer(ki4) :: l !< loop counter
   integer(ki4) :: ij !< loop counter
+  real(kr8) :: slope !< sign of  \f$ d \psi/dr \f$, value  \f$ \pm 1 \f$
 
   contains
 !---------------------------------------------------------------------
@@ -152,7 +153,7 @@ subroutine edgprof_readcon(self,pnumerics,kin,number_of_regions)
           self%lmidnr(number_of_regions),self%formula(number_of_regions),profile_formula(number_of_regions),&
           decay_length(number_of_regions),power_loss(number_of_regions),diffusion_length(number_of_regions),&
           decay_length_near(number_of_regions),lambda_q_choice(number_of_regions))
-          
+  
   !! Set default lambdaqparameters
   c_prop(1) = ((7.0d0/8.0d0)**(2.0d0/9.0d0))*((8.0d0*(const_pid**2.0d0)/7.0d0)**(7.0d0/9.0d0))
   c_prop(2) = ((8.0d0*(const_pid**2.0d0)/7.0d0)**(7.0d0/9.0d0))
@@ -376,7 +377,6 @@ subroutine edgprof_factors(self,rbdry,bpbdry,btotbdry,psign)
   allocate(self%rblfac(1),self%fpfac(1),self%rblfacnr(1),self%fpfacnr(1), self%slfac(1))
   self%fpfacnr=0.0
   self%rblfacnr=0.0
-  
   ! power normalisation factor
   zrbfac=1/(2*const_pid*rbdry*bpbdry)
   ! default diffusion factor
@@ -510,7 +510,38 @@ subroutine edgprof_factors_4_region(self,rbdry,bpbdry,btotbdry,psign,&
   allocate(self%rblfac(4),self%fpfac(4),self%rblfacnr(4),self%fpfacnr(4), self%slfac(4))
   self%fpfacnr=0.0
   self%rblfacnr=0.0
+ !Set slope to beq_rsig for use within edgprof_region
+  slope=beq_rsig()
 
+  !loop over inboard and outboard
+  DO l=1,4
+     ! power normalisation factor
+     zrbfac(l)=1/(2*const_pid*rbdryarr(l)*bpbdryarr(l))
+     formula_chosen: select case (self%formula(l))
+     case('unset','exp')
+        zrblfac(l)=zrbfac(l)/self%lmid(l)
+        self%rblfac=2*const_pid*zrblfac(l)*((-1.)*psign)
+        if (self%qpara0>0) then
+           self%fpfac(l)=self%f*self%qpara0/btotbdryarr(l)
+        else
+           self%fpfac(l)=self%f*self%ploss(l)*zrblfac(l)
+        end if
+
+     case('expdouble')
+        zrblfac(l)=zrbfac(l)/(self%lmid(l)+self%rqpara0*self%lmidnr(l))
+        self%rblfac(l)=2*const_pid*zrbfac(l)*((-1.)*psign)/self%lmid(l)
+        self%rblfacnr(l)=2*const_pid*zrbfac(l)*((-1.)*psign)/self%lmidnr(l)
+        self%fpfac(l)=self%f*self%ploss(l)*zrblfac(l)
+        self%fpfacnr(l)=self%rqpara0*self%fpfac(l)
+
+     case('eich')
+        zrblfac(l)=zrbfac(l)/self%lmid(l)
+        self%slfac(l)=self%sigma(l)/(2*self%lmid(l))
+        self%rblfac(l)=2*const_pid*zrblfac(l)*((-1.)*psign)
+        self%fpfac(l)=(self%f/2)*self%ploss(l)*zrblfac(l)
+
+     end select formula_chosen
+  end do
   
 end subroutine edgprof_factors_4_region
 !---------------------------------------------------------------------
@@ -685,27 +716,13 @@ function edgprof_region(R,Z,cenz,rxpt,psi,psid, psixpt,number_of_regions,outer_x
      if(Z>cenz)  rxpt_hemi=rxpt(2)
      
      if(R<=rxpt_hemi) then
-        !Set default region to region furthest from plasma center
         iregion=1
-           !if psi decreases
-           if(beq_rsig()<0) then
-              if(psi>psixpt(outer_xpoint)) iregion=2
-           !if psi increases
-           else
-              if(psi<psixpt(outer_xpoint)) iregion=2    
-           end if
+         if(slope*(psi-psixpt(outer_xpoint))<0) iregion=2    
      else
         iregion=4
-           !if psi decreases
-           if(beq_rsig()<0) then
-              if(psi>psixpt(outer_xpoint)) iregion=3
-           !if psi increases
-           else
-              if(psi<psixpt(outer_xpoint)) iregion=3    
-           end if
+         if(slope*(psi-psixpt(outer_xpoint))<0) iregion=3
      end if     
   end if
- ! write(*,*) R,Z,psi,iregion
   !! return region
   edgprof_region=iregion
 end function edgprof_region

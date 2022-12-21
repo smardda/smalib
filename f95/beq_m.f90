@@ -3338,6 +3338,10 @@ subroutine beq_readcon(selfn,kin)
      search_z_end=z2
   end if
 
+  if(n_xpoints<=0.OR. n_xpoints>=3) &
+ &call log_error(m_name,s_name,21,error_fatal,'n_regions must be either 1 or 2')
+
+
   !! store values
   selfn%cenopt=beq_cenopt
   selfn%mzetav=mzeta_vtk
@@ -3847,20 +3851,17 @@ subroutine beq_psix(self)
         if(jhemi==1) then
            if(abs(self%psixptarr(2)-self%psixptarr(1))<1E-5) then
                n_regions=2
-               write(*,*) 'Given the n_xpoint=2 and the value of psi'
-               write(*,*) 'at the difference between the 2 xpoints is <1E-5'
+               write(*,*) 'Given the n_xpoint=2 and that the difference between the values'
+               write(*,*) 'of psi at the 2 xpoints is <1E-5'
                write(*,*) 'geoq has determined that it is dealing with a'
-               write(*,*) 'symmetric double null and the number of regions'
-               write(*,*) 'has been set to 2'
-               
+               write(*,*) 'case where there are 2 regions'               
            end if    
            if(abs(self%psixptarr(2)-self%psixptarr(1))>1E-5) then
                n_regions=4  
-               write(*,*) 'Given the n_xpoint=2 and the value of psi'
-               write(*,*) 'at the difference between the 2 xpoints is >1E-5'
-               write(*,*) 'geoq has determined that it is dealing with an'
-               write(*,*) 'asymmetric double null and the number of regions'
-               write(*,*) 'has been set to 4'
+               write(*,*) 'Given the n_xpoint=2 and that the difference between the values'
+               write(*,*) 'of psi at the 2 xpoints is >1E-5'
+               write(*,*) 'geoq has determined that it is dealing with a'
+               write(*,*) 'case where there are 4 regions'
            end if
         end if
      end if
@@ -4463,7 +4464,6 @@ subroutine beq_bdryrb_dn(self)
   !*********************************************************************
   !Swap around values if psixpt(1) represents the outer x-point
   !**********************************************************************
-  write(*,*) 'I am in the double null version of beq_bdryrb and n_regions=',n_regions
   if(n_regions==4) then
      self%outer_xpoint=2
      if(self%rbdryarr(4)-self%rbdryarr(3)<0.0) then
