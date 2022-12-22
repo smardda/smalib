@@ -1944,15 +1944,15 @@ subroutine beq_readplus(self,infile)
 !  if(n_xpoints > 1) then
      read(nin,*,iostat=status) ibuff
      call log_read_check(m_name,s_name,76,status)
-     read(nin,*,iostat=status) self%rxptarr(1),self%rxptarr(2)
+     read(nin,*,iostat=status) self%rxptarr
      call log_read_check(m_name,s_name,77,status)
      read(nin,*,iostat=status) ibuff
      call log_read_check(m_name,s_name,78,status)
-     read(nin,*,iostat=status) self%zxptarr(1),self%zxptarr(2)
+     read(nin,*,iostat=status) self%zxptarr
      call log_read_check(m_name,s_name,79,status)
      read(nin,*,iostat=status) ibuff
      call log_read_check(m_name,s_name,80,status)
-     read(nin,*,iostat=status) self%psixptarr(1),self%psixptarr(2)    
+     read(nin,*,iostat=status) self%psixptarr  
      call log_read_check(m_name,s_name,81,status)
      read(nin,*,iostat=status) ibuff
      call log_read_check(m_name,s_name,82,status)

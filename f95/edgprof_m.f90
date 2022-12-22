@@ -255,7 +255,7 @@ subroutine edgprof_readcon(self,pnumerics,kin,number_of_regions)
   do j=1,NUMBER_OF_REGIONS
      formula_chosen: select case (profile_formula(j))
      case('unset','exp')
-        if(power_split<0.OR. power_split>1) &
+        if(power_split<0 .OR. power_split>1) &
  &      call log_error(m_name,s_name,11,error_fatal,'power_split must be >=0 and <=1')
         if(decay_length(j)<=0) &
  &      call log_error(m_name,s_name,12,error_fatal,'decay_length (m) must be >0')
