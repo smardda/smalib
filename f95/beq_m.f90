@@ -1958,20 +1958,22 @@ subroutine beq_readplus(self,infile)
      call log_read_check(m_name,s_name,82,status)
      read(nin,*,iostat=status) self%number_regions
      call log_read_check(m_name,s_name,83,status)
-     allocate(self%rbdryarr(0:self%number_regions),self%bpbdryarr(0:self%number_regions),&
-              self%btotbdryarr(0:self%number_regions))
-     read(nin,*,iostat=status) ibuff
-     call log_read_check(m_name,s_name,84,status)
-     read(nin,*,iostat=status) self%rbdryarr
-     call log_read_check(m_name,s_name,85,status)
-     read(nin,*,iostat=status) ibuff
-     call log_read_check(m_name,s_name,86,status)
-     read(nin,*,iostat=status) self%btotbdryarr
-     call log_read_check(m_name,s_name,87,status)
-     read(nin,*,iostat=status) ibuff
-     call log_read_check(m_name,s_name,88,status)
-     read(nin,*,iostat=status) self%bpbdryarr
-     call log_read_check(m_name,s_name,89,status)
+     if(self%number_regions/=1) then
+        allocate(self%rbdryarr(0:self%number_regions),self%bpbdryarr(0:self%number_regions),&
+                 self%btotbdryarr(0:self%number_regions))
+        read(nin,*,iostat=status) ibuff
+        call log_read_check(m_name,s_name,84,status)
+        read(nin,*,iostat=status) self%rbdryarr
+        call log_read_check(m_name,s_name,85,status)
+        read(nin,*,iostat=status) ibuff
+        call log_read_check(m_name,s_name,86,status)
+        read(nin,*,iostat=status) self%btotbdryarr
+        call log_read_check(m_name,s_name,87,status)
+        read(nin,*,iostat=status) ibuff
+        call log_read_check(m_name,s_name,88,status)
+        read(nin,*,iostat=status) self%bpbdryarr
+        call log_read_check(m_name,s_name,89,status)
+     end if
      read(nin,*,iostat=status) ibuff
      call log_read_check(m_name,s_name,90,status)
      read(nin,*,iostat=status) self%number_xpoints
@@ -2835,32 +2837,34 @@ subroutine beq_writeplus(self,kout)
 !  if(n_xpoints > 1) then
      write(kout,*,iostat=status) 'rxpt_double_null'
      call log_write_check(m_name,s_name,76,status)
-     write(kout,*,iostat=status) self%rxptarr(1),self%rxptarr(2)
+     write(kout,*,iostat=status) self%rxptarr
      call log_write_check(m_name,s_name,77,status)
      write(kout,*,iostat=status) 'zxpt_double_null'
      call log_write_check(m_name,s_name,78,status)
-     write(kout,*,iostat=status) self%zxptarr(1),self%zxptarr(2)
+     write(kout,*,iostat=status) self%zxptarr
      call log_write_check(m_name,s_name,79,status)
      write(kout,*,iostat=status) 'psixpt_double_null'
      call log_write_check(m_name,s_name,80,status)
-     write(kout,*,iostat=status) self%psixptarr(1),self%psixptarr(2)
+     write(kout,*,iostat=status) self%psixptarr
      call log_write_check(m_name,s_name,81,status)
      write(kout,*,iostat=status) 'number_of_regions'
      call log_write_check(m_name,s_name,82,status)
      write(kout,*,iostat=status) self%number_regions
      call log_write_check(m_name,s_name,83,status)
-     write(kout,*,iostat=status) 'rbdry_double_null'
-     call log_write_check(m_name,s_name,84,status)
-     write(kout,*,iostat=status) self%rbdryarr
-     call log_write_check(m_name,s_name,85,status)
-     write(kout,*,iostat=status) 'btotbdry_double_null'
-     call log_write_check(m_name,s_name,86,status)
-     write(kout,*,iostat=status) self%btotbdryarr
-     call log_write_check(m_name,s_name,87,status)
-     write(kout,*,iostat=status) 'bpbdry_double_null'
-     call log_write_check(m_name,s_name,88,status)
-     write(kout,*,iostat=status) self%bpbdryarr
-     call log_write_check(m_name,s_name,89,status)
+     if(self%number_regions/=1) then
+        write(kout,*,iostat=status) 'rbdry_double_null'
+        call log_write_check(m_name,s_name,84,status)
+        write(kout,*,iostat=status) self%rbdryarr
+        call log_write_check(m_name,s_name,85,status)
+        write(kout,*,iostat=status) 'btotbdry_double_null'
+        call log_write_check(m_name,s_name,86,status)
+        write(kout,*,iostat=status) self%btotbdryarr
+        call log_write_check(m_name,s_name,87,status)
+        write(kout,*,iostat=status) 'bpbdry_double_null'
+        call log_write_check(m_name,s_name,88,status)
+        write(kout,*,iostat=status) self%bpbdryarr
+        call log_write_check(m_name,s_name,89,status)
+     end if
      write(kout,*,iostat=status) 'number_of_xpoints'
      call log_write_check(m_name,s_name,90,status)
      write(kout,*,iostat=status) self%number_xpoints
