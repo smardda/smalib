@@ -462,7 +462,7 @@ subroutine edgprof_factors_2_region(self,rbdry,bpbdry,btotbdry,psign,&
      formula_chosen: select case (self%formula(l))
      case('unset','exp')
         zrblfac(l)=zrbfac(l)/self%lmid(l)
-        self%rblfac=2*const_pid*zrblfac(l)*((-1.)*psign)
+        self%rblfac(l)=2*const_pid*zrblfac(l)*((-1.)*psign)
         if (self%qpara0>0) then
            self%fpfac(l)=self%f*self%qpara0/btotbdryarr(l)
         else
@@ -489,7 +489,7 @@ end subroutine edgprof_factors_2_region
 !---------------------------------------------------------------------
 !> factors for power deposition (for asymmetric double null)
 subroutine edgprof_factors_4_region(self,rbdry,bpbdry,btotbdry,psign,&
-  btotbdryarr,rbdryarr,bpbdryarr,rcen)
+  btotbdryarr,rbdryarr,bpbdryarr,r0,r5)
   !! arguments
   type(edgprof_t), intent(inout) :: self !< type containing profile parameters
   real(kr8), intent(in) :: rbdry !< boundary value
@@ -499,47 +499,182 @@ subroutine edgprof_factors_4_region(self,rbdry,bpbdry,btotbdry,psign,&
   real(kr8), intent(in) :: btotbdry!< boundary value
   real(kr8), intent(in) :: btotbdryarr(0:4) !< boundary value
   real(kr8), intent(in) :: psign !< adjust sign of exponential factor
-  real(kr8), intent(in):: rcen !<  R value for centre of plasma
+  real(kr8), intent(in):: r0 !<  inner wall R position at z=zcen
+  real(kr8), intent(in):: r5 !<  outer wall R position at z=zcen
 
   !! local variables
   character(*), parameter :: s_name='edgprof_factors' !< subroutine name
   real(kr8) :: zrbfac(4) !< power factor in \f$ B \f$ only
   real(kr8) :: zrblfac(4) !< power factor scaled by lmid
-  real(kr8) :: rprime !<  R' in documentation
+  real(kr8) :: f40 !< stores f4(0)
+  real(kr8) :: f10 !< stores f1(0)
+  real(kr8) :: f3R4_R3 !< stores f3(R4-R3)
+  real(kr8) :: f2R2_R1 !< stores f2(R2-R1)
+  real(kr8) :: intf1 !< stores int f_1 (x) dx from 0 to R_1 - R_0 (R_0=0 or in pratice the major radius of pfc at midplane, -infinity in case of eich)
+  real(kr8) :: intf2 !< stores int f_2 (x) dx from 0 to R_2 - R_1
+  real(kr8) :: intf3 !< stores int f_3 (x) dx from 0 to R_4 - R_3
+  real(kr8) :: intf4 !< stores int f_4 (x) dx from 0 to R_5 - R_4 (R_5=infinity or in pratice the major radius of pfc at midplane, infinity in case of eich)
+    
   allocate(self%rblfac(4),self%fpfac(4),self%rblfacnr(4),self%fpfacnr(4), self%slfac(4))
   self%fpfacnr=0.0
   self%rblfacnr=0.0
  !Set slope to beq_rsig for use within edgprof_region
   slope=beq_rsig()
+  !loop over all 4 regions
+  do l=1,4
+     continuity_factors: select case (self%formula(l))
+     case('unset','exp')
+        if(l==1) then 
+          f10=1
+          intf1=self%lmid(l)-self%lmid(l)*exp(-abs(rbdryarr(1)-r0)/self%lmid(l))
+        end if
+        if(l==2) then
+          f2R2_R1=exp(-(rbdryarr(2)-rbdryarr(1))/self%lmid(l))
+          intf2=self%lmid(l)-self%lmid(l)*exp(-(rbdryarr(2)-rbdryarr(1))/self%lmid(l))
+        end if
+        if(l==3) then 
+          f3R4_R3=exp(-(rbdryarr(4)-rbdryarr(3))/self%lmid(l))
+          intf3=self%lmid(l)-self%lmid(l)*exp(-(rbdryarr(4)-rbdryarr(3))/self%lmid(l))
+        end if
+        if(l==4) then
+          f40=1
+          intf4=self%lmid(l)-self%lmid(l)*exp(-abs(r5-rbdryarr(4))/self%lmid(l))
+        end if 
+     case('expdouble')
+        if(l==1) then
+          f10=1+self%rqpara0
+          intf1=self%lmid(l)-self%lmid(l)*exp(-abs(rbdryarr(1)-r0)/self%lmid(l))+&
+                self%rqpara0*(self%lmidnr(l)-self%lmidnr(l)*exp(-abs(rbdryarr(1)-r0)/self%lmidnr(l)))
+        end if
+        if(l==2) then
+          f2R2_R1=exp(-(rbdryarr(2)-rbdryarr(1))/self%lmid(l))+&
+                  self%rqpara0*exp(-(rbdryarr(2)-rbdryarr(1))/self%lmidnr(l))
+          intf2=self%lmid(l)-self%lmid(l)*exp(-(rbdryarr(2)-rbdryarr(1))/self%lmid(l))+&
+                self%rqpara0*(self%lmidnr(l)-self%lmidnr(l)*exp(-(rbdryarr(2)-rbdryarr(1))/self%lmidnr(l)))
+        end if
+        if(l==3) then
+          f3R4_R3=exp(-(rbdryarr(4)-rbdryarr(3))/self%lmid(l))+&
+                  self%rqpara0*exp(-(rbdryarr(4)-rbdryarr(3))/self%lmidnr(l))
+          intf3=self%lmid(l)-self%lmid(l)*exp(-(rbdryarr(4)-rbdryarr(3))/self%lmid(l))+&
+                self%rqpara0*(self%lmidnr(l)-self%lmidnr(l)*exp(-(rbdryarr(4)-rbdryarr(3))/self%lmidnr(l)))
+        end if
+        if(l==4) then
+          f40=1+self%rqpara0
+          intf4=self%lmid(l)-self%lmid(l)*exp(-abs(r5-rbdryarr(4))/self%lmid(l))+&
+                self%rqpara0*(self%lmidnr(l)-self%lmidnr(l)*exp(-abs(r5-rbdryarr(4))/self%lmidnr(l)))
+        end if
+     case('eich')
+        self%slfac(l)=self%sigma(l)/(2*self%lmid(l))
+        if(l==1) then
+          f10=exp(self%slfac(l)**2)*erfc(self%slfac(l))
+          intf1=-self%lmid(l)*exp(self%slfac(l)**2 -abs(rbdryarr(1)-r0)/self%lmid(l))&
+                  *erfc(self%slfac(l) - abs(rbdryarr(1)-r0)/(2.0d0*self%lmid(l)*self%slfac(l))) &
+                  +self%lmid(l)*erf(abs(rbdryarr(1)-r0)/(2.0d0*self%lmid(l)*self%slfac(l)))  &
+                  +self%lmid(l)
 
-  !loop over inboard and outboard
-  DO l=1,4
+        end if
+        if(l==2) then
+          f2R2_R1=exp(self%slfac(l)**2 -(rbdryarr(2)-rbdryarr(1))/self%lmid(l))&
+                  *erfc(self%slfac(l)-(rbdryarr(2)-rbdryarr(1))/(2.0d0*self%lmid(l)*self%slfac(l)))
+          intf2=-self%lmid(l)*exp(self%slfac(l)**2 -(rbdryarr(2)-rbdryarr(1))/self%lmid(l))&
+                  *erfc(self%slfac(l) -(rbdryarr(2)-rbdryarr(1))/(2.0d0*self%lmid(l)*self%slfac(l)))&
+                  +self%lmid(l)*erf((rbdryarr(2)-rbdryarr(1))/(2.0d0*self%lmid(l)*self%slfac(l)))  &
+                  +self%lmid(l)
+                  
+        end if
+        if(l==3) then
+          f3R4_R3=exp(self%slfac(l)**2 -(rbdryarr(4)-rbdryarr(3))/self%lmid(l))&
+                  *erfc(self%slfac(l) -(rbdryarr(4)-rbdryarr(3))/(2.0d0*self%lmid(l)*self%slfac(l)))
+         intf3=-self%lmid(l)*exp(self%slfac(l)**2 -(rbdryarr(4)-rbdryarr(3))/self%lmid(l))&
+                  *erfc(self%slfac(l) -(rbdryarr(4)-rbdryarr(3))/(2.0d0*self%lmid(l)*self%slfac(l))) &
+                  +self%lmid(l)*erf(self%slfac(l) - (rbdryarr(4)-rbdryarr(3))/(2.0d0*self%lmid(l)*self%slfac(l)))  &
+                  +self%lmid(l)
+
+
+        end if
+        if(l==4) then
+          f40=exp(self%slfac(l)**2)*erfc(self%slfac(l))
+          intf4=-self%lmid(l)*exp(self%slfac(l)**2 -abs(rbdryarr(4)-r5)/self%lmid(l))&
+                  *erfc(self%slfac(l) - abs(rbdryarr(4)-r5)/(2.0d0*self%lmid(l)*self%slfac(l))) &
+                  +self%lmid(l)*erf(abs(rbdryarr(4)-r5)/(2.0d0*self%lmid(l)*self%slfac(l)))  &
+                  +self%lmid(l)
+        end if
+     end select continuity_factors
+  end do   
+  WRITE(*,*) 'f10 = ',f10,' f2R2_R1 = ',f2R2_R1,' f3R4_R3 = ',f3R4_R3,' f40 = ',f40
+  WRITE(*,*) 'intf1 = ',intf1,' intf2 = ',intf2,' intf3 = ',intf3,' intf4 = ',intf4
+  
+  do l=1,4,3
      ! power normalisation factor
      zrbfac(l)=1/(2*const_pid*rbdryarr(l)*bpbdryarr(l))
-     formula_chosen: select case (self%formula(l))
+     
+     formula_chosen_14: select case (self%formula(l))
      case('unset','exp')
         zrblfac(l)=zrbfac(l)/self%lmid(l)
-        self%rblfac=2*const_pid*zrblfac(l)*((-1.)*psign)
-        if (self%qpara0>0) then
-           self%fpfac(l)=self%f*self%qpara0/btotbdryarr(l)
-        else
-           self%fpfac(l)=self%f*self%ploss(l)*zrblfac(l)
-        end if
+        self%rblfac(l)=2*const_pid*zrblfac(l)*((-1.)*psign)
+        if(l==1) self%fpfac(l)=self%f*self%ploss(l)/&
+                       (2.0d0*const_pid*rbdryarr(l)*intf1 &
+                         + 2.0d0*const_pid*rbdryarr(2)*intf2*(f10/(2.0d0*f2R2_R1)))
+        if(l==4) self%fpfac(l)=self%f*self%ploss(l)/&
+                       (2.0d0*const_pid*rbdryarr(l)*intf4 &
+                         + 2.0d0*const_pid*rbdryarr(3)*intf3*(f40/(2.0d0*f3R4_R3)))
+                        
+     case('expdouble')  
+        zrblfac(l)=zrbfac(l)/(self%lmid(l)+self%rqpara0*self%lmidnr(l))
+        self%rblfac(l)=2*const_pid*zrbfac(l)*((-1.)*psign)/self%lmid(l)
+        self%rblfacnr(l)=2*const_pid*zrbfac(l)*((-1.)*psign)/self%lmidnr(l)
+        if(l==1) self%fpfac(l)=self%f*self%ploss(l)/&
+                       (2.0d0*const_pid*rbdryarr(l)*intf1 &
+                        + 2.0d0*const_pid*rbdryarr(2)*intf2*(f10/(2.0d0*f2R2_R1)))
+        if(l==4) self%fpfac(l)=self%f*self%ploss(l)/&
+                       (2.0d0*const_pid*rbdryarr(l)*intf4 &
+                        + 2.0d0*const_pid*rbdryarr(3)*intf3*(f40/(2.0d0*f3R4_R3)))
+
+     case('eich')
+        zrblfac(l)=zrbfac(l)/self%lmid(l)
+        self%rblfac(l)=2*const_pid*zrblfac(l)*((-1.)*psign)
+        if(l==1) self%fpfac(l)=self%f*self%ploss(l)/&
+                       (2.0d0*const_pid*rbdryarr(l)*intf1 &
+                        + 2.0d0*const_pid*rbdryarr(2)*intf2*(f10/(2.0d0*f2R2_R1)))
+        if(l==4) self%fpfac(l)=self%f*self%ploss(l)/&
+                       (2.0d0*const_pid*rbdryarr(l)*intf4 &
+                        + 2.0d0*const_pid*rbdryarr(3)*intf3*(f40/(2.0d0*f3R4_R3)))
+
+     end select formula_chosen_14
+  end do
+ 
+   
+  do l=2,3
+     ! power normalisation factor
+     zrbfac(l)=1/(2*const_pid*rbdryarr(l)*bpbdryarr(l))
+     
+     formula_chosen_23: select case (self%formula(l))
+     case('unset','exp')
+        zrblfac(l)=zrbfac(l)/self%lmid(l)
+        self%rblfac(l)=2*const_pid*zrblfac(l)*((-1.)*psign)
+        if(l==2) self%fpfac(l)=2.0d0*self%fpfac(1)*f10/(2.0d0*f2R2_R1)
+        if(l==3) self%fpfac(l)=2.0d0*self%fpfac(4)*f40/(2.0d0*f3R4_R3)
 
      case('expdouble')
         zrblfac(l)=zrbfac(l)/(self%lmid(l)+self%rqpara0*self%lmidnr(l))
         self%rblfac(l)=2*const_pid*zrbfac(l)*((-1.)*psign)/self%lmid(l)
         self%rblfacnr(l)=2*const_pid*zrbfac(l)*((-1.)*psign)/self%lmidnr(l)
-        self%fpfac(l)=self%f*self%ploss(l)*zrblfac(l)
-        self%fpfacnr(l)=self%rqpara0*self%fpfac(l)
+        if(l==2) self%fpfac(l)=2.0d0*self%fpfac(1)*f10/(2.0d0*f2R2_R1)
+        if(l==3) self%fpfac(l)=2.0d0*self%fpfac(4)*f40/(2.0d0*f3R4_R3)
 
      case('eich')
         zrblfac(l)=zrbfac(l)/self%lmid(l)
-        self%slfac(l)=self%sigma(l)/(2*self%lmid(l))
         self%rblfac(l)=2*const_pid*zrblfac(l)*((-1.)*psign)
-        self%fpfac(l)=(self%f/2)*self%ploss(l)*zrblfac(l)
+        if(l==2) self%fpfac(l)=2.0d0*self%fpfac(1)*f10/(2.0d0*f2R2_R1)
+        if(l==3) self%fpfac(l)=2.0d0*self%fpfac(4)*f40/(2.0d0*f3R4_R3)       
 
-     end select formula_chosen
+     end select formula_chosen_23 
+     
+  end do   
+  
+  do l=1,4
+              self%fpfac(l)=self%fpfac(l)/bpbdryarr(l) 
+              self%fpfacnr(l)=self%rqpara0*self%fpfac(l)
   end do
   
 end subroutine edgprof_factors_4_region
@@ -746,22 +881,25 @@ function edgprof_fn(self,psi,psid,R,Z,cenz,rxpt,psixpt,number_of_regions,outer_x
   character(*), parameter :: s_name='edgprof_fn' !< subroutine name
   real(kr8) :: pow !< local variable
   integer(ki4) :: mregion   !<  region where point lies
+  integer(ki4) :: mregion_cont   !<  used in case of 4 regions to ensure continuity
+  integer(ki4) :: inner_xpoint   !<   array location of inner xpoint psixpt
   mregion=edgprof_region(R,Z,cenz,rxpt,psi,psid,psixpt,number_of_regions,outer_xpoint)
-  !! select profile
-  formula_chosen: select case (self%formula(mregion))
-  case('unset','exp')
-     pow=edgprof_exp(self,psid,mregion)
-  case('expdouble')
-     pow=edgprof_expdouble(self,psid,mregion)
-  case('eich')
-     pow=edgprof_eich(self,psid,mregion)
-  case('userdefined')
-     pow=edgprof_userdefined(self,psid,mregion)
-  case('samples')
-     pow=edgprof_samples(self,psid,mregion)
-  end select formula_chosen
+    !! select profile
+    formula_chosen: select case (self%formula(mregion))
+    case('unset','exp')
+       pow=edgprof_exp(self,psid,mregion)
+    case('expdouble')
+       pow=edgprof_expdouble(self,psid,mregion)
+    case('eich')
+       pow=edgprof_eich(self,psid,mregion)
+    case('userdefined')
+       pow=edgprof_userdefined(self,psid,mregion)
+    case('samples')
+       pow=edgprof_samples(self,psid,mregion)
+    end select formula_chosen
+  
    ! WRITE(*,*) R,Z,mregion,pow,self%fpfac(mregion),self%rblfac(mregion),psid,psi
-  !! return profile
+  !! return profile 
   edgprof_fn=pow
 end function edgprof_fn
 !---------------------------------------------------------------------

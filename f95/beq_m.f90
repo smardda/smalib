@@ -1005,7 +1005,7 @@ subroutine beq_readequ(self,infile,numerics)
   end if
   print '("number of psi values read = ",i10)',jm*km
   call log_value("number of psi values read ",jm*km)
-
+  
   self%psiaxis=psic
   self%psiqbdry=psib
   self%psibdry=self%psiqbdry
@@ -3853,17 +3853,18 @@ subroutine beq_psix(self)
         !null or asymmetric double null
         !***************************************************************
         if(jhemi==1) then
-           if(abs(self%psixptarr(2)-self%psixptarr(1))<1E-5) then
+           self%dpsi=(self%n%psimax-self%n%psimin)/self%n%npsi
+           if(abs(self%psixptarr(2)-self%psixptarr(1))<self%dpsi) then
                n_regions=2
                write(*,*) 'Given the n_xpoint=2 and that the difference between the values'
-               write(*,*) 'of psi at the 2 xpoints is <1E-5'
+               write(*,*) 'of psi at the 2 xpoints is <',self%dpsi
                write(*,*) 'geoq has determined that it is dealing with a'
                write(*,*) 'case where there are 2 regions'               
            end if    
-           if(abs(self%psixptarr(2)-self%psixptarr(1))>1E-5) then
+           if(abs(self%psixptarr(2)-self%psixptarr(1))>self%dpsi) then
                n_regions=4  
                write(*,*) 'Given the n_xpoint=2 and that the difference between the values'
-               write(*,*) 'of psi at the 2 xpoints is >1E-5'
+               write(*,*) 'of psi at the 2 xpoints is>',self%dpsi
                write(*,*) 'geoq has determined that it is dealing with a'
                write(*,*) 'case where there are 4 regions'
            end if
@@ -4183,6 +4184,7 @@ subroutine beq_bdryrb_dn(self)
   real(kr8) :: zbz    !<  vertical field component
   real(kr8) :: zbt    !<  toroidal field component
   real(kr8) :: swap    !<  Used to swap R_1,R_2,R_3 and R_4 into order
+    
   integer(ki4) :: bdryopt_start
   !Set bdryopt_start to user chosen value, so that self%n%bdryopt can 
   !be set back to original value at end of subroutine
@@ -4219,6 +4221,7 @@ subroutine beq_bdryrb_dn(self)
         self%psibdry=self%psixptarr(2)
         ztheta=const_pid
      case(17) ! second outboard point selected
+        self%psibdry=self%psixptarr(2)
         ztheta=0.0_kr8
      case default ! do nothing (assuming psiqbdry OK in eqdsk)
         return
@@ -4470,7 +4473,17 @@ subroutine beq_bdryrb_dn(self)
   !**********************************************************************
   if(n_regions==4) then
      self%outer_xpoint=2
-     if(self%rbdryarr(4)-self%rbdryarr(3)<0.0) then
+   !  if(self%rbdryarr(4)-self%rbdryarr(3)<0.0) then
+   !     self%outer_xpoint=1
+   !     swap=self%rbdryarr(3);self%rbdryarr(3)=self%rbdryarr(4);self%rbdryarr(4)=swap
+   !     swap=self%rbdryarr(1);self%rbdryarr(1)=self%rbdryarr(2);self%rbdryarr(2)=swap
+   !     swap=self%btotbdryarr(3);self%btotbdryarr(3)=self%btotbdryarr(4);self%btotbdryarr(4)=swap
+   !     swap=self%btotbdryarr(1);self%btotbdryarr(1)=self%btotbdryarr(2);self%btotbdryarr(2)=swap
+   !     swap=self%bpbdryarr(3);self%bpbdryarr(3)=self%bpbdryarr(4);self%bpbdryarr(4)=swap
+   !     swap=self%bpbdryarr(1);self%bpbdryarr(1)=self%bpbdryarr(2);self%bpbdryarr(2)=swap
+   !  end if
+     
+     if(rsig*(self%psixptarr(2)-self%psixptarr(1))<0) then
         self%outer_xpoint=1
         swap=self%rbdryarr(3);self%rbdryarr(3)=self%rbdryarr(4);self%rbdryarr(4)=swap
         swap=self%rbdryarr(1);self%rbdryarr(1)=self%rbdryarr(2);self%rbdryarr(2)=swap
@@ -4489,13 +4502,13 @@ subroutine beq_bdryrb_dn(self)
   case(5,9)
      self%psibdry=self%n%psiref
   case(6) 
-     if (beq_rsig()>0) then
+     if (rsig>0) then
         self%psibdry=min(self%psiqbdry,self%psiltr)
      else
         self%psibdry=max(self%psiqbdry,self%psiltr)
      end if
   case(7,10) 
-     if (beq_rsig()>0) then
+     if (rsig>0) then
         self%psibdry=min(self%psiqbdry,self%psixpt)
      else
         self%psibdry=max(self%psiqbdry,self%psixpt)
