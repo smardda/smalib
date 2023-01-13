@@ -585,9 +585,9 @@ subroutine edgprof_factors_4_region(self,rbdry,bpbdry,btotbdry,psign,&
         if(l==3) then
           f3R4_R3=exp(self%slfac(l)**2 -(rbdryarr(4)-rbdryarr(3))/self%lmid(l))&
                   *erfc(self%slfac(l) -(rbdryarr(4)-rbdryarr(3))/(2.0d0*self%lmid(l)*self%slfac(l)))
-         intf3=-self%lmid(l)*exp(self%slfac(l)**2 -(rbdryarr(4)-rbdryarr(3))/self%lmid(l))&
+          intf3=-self%lmid(l)*exp(self%slfac(l)**2 -(rbdryarr(4)-rbdryarr(3))/self%lmid(l))&
                   *erfc(self%slfac(l) -(rbdryarr(4)-rbdryarr(3))/(2.0d0*self%lmid(l)*self%slfac(l))) &
-                  +self%lmid(l)*erf(self%slfac(l) - (rbdryarr(4)-rbdryarr(3))/(2.0d0*self%lmid(l)*self%slfac(l)))  &
+                  +self%lmid(l)*erf((rbdryarr(4)-rbdryarr(3))/(2.0d0*self%lmid(l)*self%slfac(l)))  &
                   +self%lmid(l)
 
 
@@ -601,9 +601,9 @@ subroutine edgprof_factors_4_region(self,rbdry,bpbdry,btotbdry,psign,&
         end if
      end select continuity_factors
   end do   
-  WRITE(*,*) 'f10 = ',f10,' f2R2_R1 = ',f2R2_R1,' f3R4_R3 = ',f3R4_R3,' f40 = ',f40
-  WRITE(*,*) 'intf1 = ',intf1,' intf2 = ',intf2,' intf3 = ',intf3,' intf4 = ',intf4
-  
+!dbg  WRITE(*,*) 'f10 = ',f10,' f2R2_R1 = ',f2R2_R1,' f3R4_R3 = ',f3R4_R3,' f40 = ',f40
+!dbg  WRITE(*,*) 'intf1 = ',intf1,' intf2 = ',intf2,' intf3 = ',intf3,' intf4 = ',intf4
+
   do l=1,4,3
      ! power normalisation factor
      zrbfac(l)=1/(2*const_pid*rbdryarr(l)*bpbdryarr(l))
