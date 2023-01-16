@@ -516,8 +516,8 @@ subroutine edgprof_factors_4_region(self,rbdry,bpbdry,btotbdry,psign,&
   real(kr8) :: intf4 !< stores int f_4 (x) dx from 0 to R_5 - R_4 (R_5=infinity or in pratice the major radius of pfc at midplane, infinity in case of eich)
     
   allocate(self%rblfac(4),self%fpfac(4),self%rblfacnr(4),self%fpfacnr(4), self%slfac(4))
-  self%fpfacnr=0.0
-  self%rblfacnr=0.0
+  self%fpfacnr=0.0d0
+  self%rblfacnr=0.0d0
  !Set slope to beq_rsig for use within edgprof_region
   slope=beq_rsig()
   !loop over all 4 regions
@@ -564,28 +564,28 @@ subroutine edgprof_factors_4_region(self,rbdry,bpbdry,btotbdry,psign,&
                 self%rqpara0*(self%lmidnr(l)-self%lmidnr(l)*exp(-abs(r5-rbdryarr(4))/self%lmidnr(l)))
         end if
      case('eich')
-        self%slfac(l)=self%sigma(l)/(2*self%lmid(l))
+          self%slfac(l)=self%sigma(l)/(2*self%lmid(l))
         if(l==1) then
-          f10=exp(self%slfac(l)**2)*erfc(self%slfac(l))
-          intf1=-self%lmid(l)*exp(self%slfac(l)**2 -abs(rbdryarr(1)-r0)/self%lmid(l))&
+          f10=exp(self%slfac(l)**2.0d0)*erfc(self%slfac(l))
+          intf1=-self%lmid(l)*exp(self%slfac(l)**2.0d0 -abs(rbdryarr(1)-r0)/self%lmid(l))&
                   *erfc(self%slfac(l) - abs(rbdryarr(1)-r0)/(2.0d0*self%lmid(l)*self%slfac(l))) &
                   +self%lmid(l)*erf(abs(rbdryarr(1)-r0)/(2.0d0*self%lmid(l)*self%slfac(l)))  &
                   +self%lmid(l)
 
         end if
         if(l==2) then
-          f2R2_R1=exp(self%slfac(l)**2 -(rbdryarr(2)-rbdryarr(1))/self%lmid(l))&
+          f2R2_R1=exp(self%slfac(l)**2.0d0 -(rbdryarr(2)-rbdryarr(1))/self%lmid(l))&
                   *erfc(self%slfac(l)-(rbdryarr(2)-rbdryarr(1))/(2.0d0*self%lmid(l)*self%slfac(l)))
-          intf2=-self%lmid(l)*exp(self%slfac(l)**2 -(rbdryarr(2)-rbdryarr(1))/self%lmid(l))&
+          intf2=-self%lmid(l)*exp(self%slfac(l)**2.0d0 -(rbdryarr(2)-rbdryarr(1))/self%lmid(l))&
                   *erfc(self%slfac(l) -(rbdryarr(2)-rbdryarr(1))/(2.0d0*self%lmid(l)*self%slfac(l)))&
                   +self%lmid(l)*erf((rbdryarr(2)-rbdryarr(1))/(2.0d0*self%lmid(l)*self%slfac(l)))  &
                   +self%lmid(l)
                   
         end if
         if(l==3) then
-          f3R4_R3=exp(self%slfac(l)**2 -(rbdryarr(4)-rbdryarr(3))/self%lmid(l))&
+          f3R4_R3=exp(self%slfac(l)**2.0d0 -(rbdryarr(4)-rbdryarr(3))/self%lmid(l))&
                   *erfc(self%slfac(l) -(rbdryarr(4)-rbdryarr(3))/(2.0d0*self%lmid(l)*self%slfac(l)))
-          intf3=-self%lmid(l)*exp(self%slfac(l)**2 -(rbdryarr(4)-rbdryarr(3))/self%lmid(l))&
+          intf3=-self%lmid(l)*exp(self%slfac(l)**2.0d0 -(rbdryarr(4)-rbdryarr(3))/self%lmid(l))&
                   *erfc(self%slfac(l) -(rbdryarr(4)-rbdryarr(3))/(2.0d0*self%lmid(l)*self%slfac(l))) &
                   +self%lmid(l)*erf((rbdryarr(4)-rbdryarr(3))/(2.0d0*self%lmid(l)*self%slfac(l)))  &
                   +self%lmid(l)
@@ -593,16 +593,16 @@ subroutine edgprof_factors_4_region(self,rbdry,bpbdry,btotbdry,psign,&
 
         end if
         if(l==4) then
-          f40=exp(self%slfac(l)**2)*erfc(self%slfac(l))
-          intf4=-self%lmid(l)*exp(self%slfac(l)**2 -abs(rbdryarr(4)-r5)/self%lmid(l))&
+          f40=exp(self%slfac(l)**2.0d0)*erfc(self%slfac(l))
+          intf4=-self%lmid(l)*exp(self%slfac(l)**2.0d0 -abs(rbdryarr(4)-r5)/self%lmid(l))&
                   *erfc(self%slfac(l) - abs(rbdryarr(4)-r5)/(2.0d0*self%lmid(l)*self%slfac(l))) &
                   +self%lmid(l)*erf(abs(rbdryarr(4)-r5)/(2.0d0*self%lmid(l)*self%slfac(l)))  &
                   +self%lmid(l)
         end if
      end select continuity_factors
   end do   
-!dbg  WRITE(*,*) 'f10 = ',f10,' f2R2_R1 = ',f2R2_R1,' f3R4_R3 = ',f3R4_R3,' f40 = ',f40
-!dbg  WRITE(*,*) 'intf1 = ',intf1,' intf2 = ',intf2,' intf3 = ',intf3,' intf4 = ',intf4
+  WRITE(*,*) 'f10 = ',f10,' f2R2_R1 = ',f2R2_R1,' f3R4_R3 = ',f3R4_R3,' f40 = ',f40
+  WRITE(*,*) 'intf1 = ',intf1,' intf2 = ',intf2,' intf3 = ',intf3,' intf4 = ',intf4
 
   do l=1,4,3
      ! power normalisation factor
@@ -897,7 +897,7 @@ function edgprof_fn(self,psi,psid,R,Z,cenz,rxpt,psixpt,number_of_regions,outer_x
     case('samples')
        pow=edgprof_samples(self,psid,mregion)
     end select formula_chosen
-  
+   ! write(*,*)  psi,R,Z,mregion
    ! WRITE(*,*) R,Z,mregion,pow,self%fpfac(mregion),self%rblfac(mregion),psid,psi
   !! return profile 
   edgprof_fn=pow
