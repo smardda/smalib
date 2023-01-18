@@ -513,7 +513,7 @@ subroutine edgprof_factors_4_region(self,rbdry,bpbdry,btotbdry,psign,&
   real(kr8) :: intf1 !< stores int f_1 (x) dx from 0 to R_1 - R_0 (R_0=0 or in pratice the major radius of pfc at midplane, -infinity in case of eich)
   real(kr8) :: intf2 !< stores int f_2 (x) dx from 0 to R_2 - R_1
   real(kr8) :: intf3 !< stores int f_3 (x) dx from 0 to R_4 - R_3
-  real(kr8) :: intf4 !< stores int f_4 (x) dx from 0 to R_5 - R_4 (R_5=infinity or in pratice the major radius of pfc at midplane, infinity in case of eich)
+  real(kr8) :: intf4 !< stores int f_4 (x) dx from 0 to R_5 - R_4 (R_5=the major radius of pfc at midplane, infinity in case of eich)
     
   allocate(self%rblfac(4),self%fpfac(4),self%rblfacnr(4),self%fpfacnr(4), self%slfac(4))
   self%fpfacnr=0.0d0
@@ -521,6 +521,7 @@ subroutine edgprof_factors_4_region(self,rbdry,bpbdry,btotbdry,psign,&
  !Set slope to beq_rsig for use within edgprof_region
   slope=beq_rsig()
   !loop over all 4 regions
+  !get factors needed to ensure continuity
   do l=1,4
      continuity_factors: select case (self%formula(l))
      case('unset','exp')
@@ -604,8 +605,9 @@ subroutine edgprof_factors_4_region(self,rbdry,bpbdry,btotbdry,psign,&
   WRITE(*,*) 'f10 = ',f10,' f2R2_R1 = ',f2R2_R1,' f3R4_R3 = ',f3R4_R3,' f40 = ',f40
   WRITE(*,*) 'intf1 = ',intf1,' intf2 = ',intf2,' intf3 = ',intf3,' intf4 = ',intf4
 
+  !calculate power normalisation factors for regions 1 and 4
+  !using formulas in documentation 
   do l=1,4,3
-     ! power normalisation factor
      zrbfac(l)=1/(2*const_pid*rbdryarr(l)*bpbdryarr(l))
      
      formula_chosen_14: select case (self%formula(l))
@@ -643,7 +645,8 @@ subroutine edgprof_factors_4_region(self,rbdry,bpbdry,btotbdry,psign,&
      end select formula_chosen_14
   end do
  
-   
+  !calculate power normalisation factors for regions 2 and 3
+  !using formulas in documentation for continuity
   do l=2,3
      ! power normalisation factor
      zrbfac(l)=1/(2*const_pid*rbdryarr(l)*bpbdryarr(l))

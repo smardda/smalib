@@ -630,7 +630,6 @@ subroutine beq_readequil(self,infile,numerics)
   else
      call log_error(m_name,s_name,41,error_fatal,'No psi data')
   end if
-
   if (cfmtd=='*') then
      read(iin,*,iostat=status) ((work2(i,j),i=1,nw),j=1,nh)
   else
