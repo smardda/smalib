@@ -3353,7 +3353,6 @@ subroutine beq_readcon(selfn,kin)
   selfn%bdryopt=beq_bdryopt
   selfn%nopt=beq_nopt
   selfn%thetaopt=beq_thetaopt
-  self%number_xpoints=n_xpoints
   ! convert moves to metres
   selfn%rmove=.001_kr8*beq_rmove
   selfn%zmove=.001_kr8*beq_zmove
@@ -3871,7 +3870,8 @@ subroutine beq_psix(self)
         end if
      end if
   end do do_hemi
-
+  
+  self%number_xpoints=n_xpoints
   self%number_regions=n_regions
 
   if (ixf==0) then
