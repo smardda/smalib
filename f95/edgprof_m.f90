@@ -870,7 +870,7 @@ function edgprof_fn(self,psi,psid,R,Z,cenz,rxpt,psixpt,number_of_regions,outer_x
   !! arguments
   type(edgprof_t), intent(in) :: self !< type containing profile parameters
   real(kr8) :: edgprof_fn !< local variable
-  real(kr8), intent(in) :: psid !< position in \f$ \psi \f$
+  real(kr8), intent(inout) :: psid !< position in \f$ \psi \f$
   real(kr8), intent(in) :: psi !<  \f$ \psi \f$
   real(kr8) :: R !< position \f$ R \f$
   real(kr8) :: Z !< position  \f$ Z \f$
@@ -887,6 +887,7 @@ function edgprof_fn(self,psi,psid,R,Z,cenz,rxpt,psixpt,number_of_regions,outer_x
   integer(ki4) :: mregion_cont   !<  used in case of 4 regions to ensure continuity
   integer(ki4) :: inner_xpoint   !<   array location of inner xpoint psixpt
   mregion=edgprof_region(R,Z,cenz,rxpt,psi,psid,psixpt,number_of_regions,outer_xpoint)
+  if(number_of_regions==4 .and. (mregion==1 .or. mregion==4)) psid=psi-psixpt(outer_xpoint)
     !! select profile
     formula_chosen: select case (self%formula(mregion))
     case('unset','exp')
