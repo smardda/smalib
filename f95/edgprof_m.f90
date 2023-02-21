@@ -227,7 +227,6 @@ subroutine edgprof_readcon(self,pnumerics,kin,number_of_regions)
         profile_formula='unset'
      end if
   end if
-
   call lowor(profile_formula,1,len_trim(profile_formula))
   !! Calculates user choice of lambda_q
   do i=1,NUMBER_OF_REGIONS

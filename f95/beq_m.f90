@@ -1735,6 +1735,47 @@ subroutine beq_readpart(self,infile)
      call log_read_check(m_name,s_name,66,status)
   end if
 
+     read(nin,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,67,status)
+     read(nin,*,iostat=status) self%rxptarr
+     call log_read_check(m_name,s_name,68,status)
+     read(nin,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,69,status)
+     read(nin,*,iostat=status) self%zxptarr
+     call log_read_check(m_name,s_name,70,status)
+     read(nin,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,71,status)
+     read(nin,*,iostat=status) self%psixptarr  
+     call log_read_check(m_name,s_name,72,status)
+     read(nin,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,73,status)
+     read(nin,*,iostat=status) self%number_regions
+     call log_read_check(m_name,s_name,74,status)
+     if(self%number_regions/=1) then
+        allocate(self%rbdryarr(0:self%number_regions),self%bpbdryarr(0:self%number_regions),&
+                 self%btotbdryarr(0:self%number_regions))
+        read(nin,*,iostat=status) ibuff
+        call log_read_check(m_name,s_name,75,status)
+        read(nin,*,iostat=status) self%rbdryarr
+        call log_read_check(m_name,s_name,76,status)
+        read(nin,*,iostat=status) ibuff
+        call log_read_check(m_name,s_name,77,status)
+        read(nin,*,iostat=status) self%btotbdryarr
+        call log_read_check(m_name,s_name,78,status)
+        read(nin,*,iostat=status) ibuff
+        call log_read_check(m_name,s_name,79,status)
+        read(nin,*,iostat=status) self%bpbdryarr
+        call log_read_check(m_name,s_name,80,status)
+     end if
+     read(nin,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,81,status)
+     read(nin,*,iostat=status) self%number_xpoints
+     call log_read_check(m_name,s_name,82,status)
+     read(nin,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,83,status)
+     read(nin,*,iostat=status) self%outer_xpoint
+     call log_write_check(m_name,s_name,84,status)
+
   call log_error(m_name,s_name,70,log_info,'beq plus 2 read in from data file')
 
 end subroutine beq_readpart
@@ -1940,7 +1981,6 @@ subroutine beq_readplus(self,infile)
      self%n%duct=.FALSE.
   end if
   
-!  if(n_xpoints > 1) then
      read(nin,*,iostat=status) ibuff
      call log_read_check(m_name,s_name,76,status)
      read(nin,*,iostat=status) self%rxptarr
@@ -1981,7 +2021,6 @@ subroutine beq_readplus(self,infile)
      call log_read_check(m_name,s_name,92,status)
      read(nin,*,iostat=status) self%outer_xpoint
      call log_write_check(m_name,s_name,93,status)
-!  end if
 
   call log_error(m_name,s_name,90,log_info,'beq read in from data file')
 
@@ -2675,7 +2714,45 @@ subroutine beq_writepart(self,kout)
      call log_write_check(m_name,s_name,66,status)
   end if
 
-
+     write(kout,*,iostat=status) 'rxpt_double_null'
+     call log_write_check(m_name,s_name,67,status)
+     write(kout,*,iostat=status) self%rxptarr
+     call log_write_check(m_name,s_name,68,status)
+     write(kout,*,iostat=status) 'zxpt_double_null'
+     call log_write_check(m_name,s_name,69,status)
+     write(kout,*,iostat=status) self%zxptarr
+     call log_write_check(m_name,s_name,70,status)
+     write(kout,*,iostat=status) 'psixpt_double_null'
+     call log_write_check(m_name,s_name,71,status)
+     write(kout,*,iostat=status) self%psixptarr
+     call log_write_check(m_name,s_name,72,status)
+     write(kout,*,iostat=status) 'number_of_regions'
+     call log_write_check(m_name,s_name,73,status)
+     write(kout,*,iostat=status) self%number_regions
+     call log_write_check(m_name,s_name,74,status)
+     if(self%number_regions/=1) then
+        write(kout,*,iostat=status) 'rbdry_double_null'
+        call log_write_check(m_name,s_name,75,status)
+        write(kout,*,iostat=status) self%rbdryarr
+        call log_write_check(m_name,s_name,76,status)
+        write(kout,*,iostat=status) 'btotbdry_double_null'
+        call log_write_check(m_name,s_name,77,status)
+        write(kout,*,iostat=status) self%btotbdryarr
+        call log_write_check(m_name,s_name,78,status)
+        write(kout,*,iostat=status) 'bpbdry_double_null'
+        call log_write_check(m_name,s_name,79,status)
+        write(kout,*,iostat=status) self%bpbdryarr
+        call log_write_check(m_name,s_name,80,status)
+     end if
+     write(kout,*,iostat=status) 'number_of_xpoints'
+     call log_write_check(m_name,s_name,81,status)
+     write(kout,*,iostat=status) self%number_xpoints
+     call log_write_check(m_name,s_name,82,status)
+     write(kout,*,iostat=status) 'location of outer x-point'
+     call log_write_check(m_name,s_name,83,status)
+     write(kout,*,iostat=status) self%outer_xpoint
+     call log_write_check(m_name,s_name,84,status)
+     
 end subroutine beq_writepart
 !---------------------------------------------------------------------
 !> delete field data used by ITER
@@ -2833,7 +2910,6 @@ subroutine beq_writeplus(self,kout)
      call fmesh_write(self%fmesh,kout)
   end if
 
-!  if(n_xpoints > 1) then
      write(kout,*,iostat=status) 'rxpt_double_null'
      call log_write_check(m_name,s_name,76,status)
      write(kout,*,iostat=status) self%rxptarr
@@ -2872,7 +2948,6 @@ subroutine beq_writeplus(self,kout)
      call log_write_check(m_name,s_name,92,status)
      write(kout,*,iostat=status) self%outer_xpoint
      call log_write_check(m_name,s_name,93,status)
-!  end if
 
 end subroutine beq_writeplus
 !---------------------------------------------------------------------
