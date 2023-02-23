@@ -601,8 +601,8 @@ subroutine edgprof_factors_4_region(self,rbdry,bpbdry,btotbdry,psign,&
         end if
      end select continuity_factors
   end do   
-  WRITE(*,*) 'f10 = ',f10,' f2R2_R1 = ',f2R2_R1,' f3R4_R3 = ',f3R4_R3,' f40 = ',f40
-  WRITE(*,*) 'intf1 = ',intf1,' intf2 = ',intf2,' intf3 = ',intf3,' intf4 = ',intf4
+  !write(*,*) 'f10 = ',f10,' f2R2_R1 = ',f2R2_R1,' f3R4_R3 = ',f3R4_R3,' f40 = ',f40
+  !write(*,*) 'intf1 = ',intf1,' intf2 = ',intf2,' intf3 = ',intf3,' intf4 = ',intf4
 
   !calculate power normalisation factors for regions 1 and 4
   !using formulas in documentation 

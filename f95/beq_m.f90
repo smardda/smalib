@@ -3908,17 +3908,17 @@ subroutine beq_psix(self)
         self%rxptarr(jhemi+1) = self%n%rcen+((zsr1+zsr2)/2)*cos(zt3)
         self%zxptarr(jhemi+1) = self%n%zcen+((zsr1+zsr2)/2)*sin(zt3)
         self%psixptarr(jhemi+1) = zpsi3
-        if(jhemi==0) then
-		   write(*,*) "Lower Hemisphere SMITER-GEOQ psi-xpt ", self%psixptarr(jhemi+1)
-		   write(*,*) "Lower Hemisphere SMITER-GEOQ theta-xpt ",zt3
-		   write(*,*) "Lower Hemisphere SMITER-GEOQ R-xpt ",self%rxptarr(jhemi+1)
-		   write(*,*) "Lower Hemisphere SMITER-GEOQ Z-xpt ",self%zxptarr(jhemi+1)
-        else if(jhemi==1) then
-		   write(*,*) "Upper Hemisphere SMITER-GEOQ psi-xpt ", self%psixptarr(jhemi+1)
-		   write(*,*) "Upper Hemisphere SMITER-GEOQ theta-xpt ",zt3
-		   write(*,*) "Upper Hemisphere SMITER-GEOQ R-xpt ",self%rxptarr(jhemi+1)
-		   write(*,*) "Upper Hemisphere SMITER-GEOQ Z-xpt ",self%zxptarr(jhemi+1)
-        end if
+        !if(jhemi==0) then
+		!   write(*,*) "Lower Hemisphere SMITER-GEOQ psi-xpt ", self%psixptarr(jhemi+1)
+		!   write(*,*) "Lower Hemisphere SMITER-GEOQ theta-xpt ",zt3
+		!   write(*,*) "Lower Hemisphere SMITER-GEOQ R-xpt ",self%rxptarr(jhemi+1)
+		!   write(*,*) "Lower Hemisphere SMITER-GEOQ Z-xpt ",self%zxptarr(jhemi+1)
+        !else if(jhemi==1) then
+		!   write(*,*) "Upper Hemisphere SMITER-GEOQ psi-xpt ", self%psixptarr(jhemi+1)
+		!   write(*,*) "Upper Hemisphere SMITER-GEOQ theta-xpt ",zt3
+		!   write(*,*) "Upper Hemisphere SMITER-GEOQ R-xpt ",self%rxptarr(jhemi+1)
+		!   write(*,*) "Upper Hemisphere SMITER-GEOQ Z-xpt ",self%zxptarr(jhemi+1)
+        !end if
         self%rxpt=self%rxptarr(1)
         self%zxpt=self%zxptarr(1)
         self%psixpt=self%psixptarr(1)
@@ -3930,17 +3930,17 @@ subroutine beq_psix(self)
            self%dpsi=(self%n%psimax-self%n%psimin)/self%n%npsi
            if(abs(self%psixptarr(2)-self%psixptarr(1))<self%dpsi) then
                n_regions=2
-               write(*,*) 'Given the n_xpoint=2 and that the difference between the values'
-               write(*,*) 'of psi at the 2 xpoints is <',self%dpsi
-               write(*,*) 'geoq has determined that it is dealing with a'
-               write(*,*) 'case where there are 2 regions'               
+        !       write(*,*) 'Given the n_xpoint=2 and that the difference between the values'
+        !       write(*,*) 'of psi at the 2 xpoints is <',self%dpsi
+        !       write(*,*) 'geoq has determined that it is dealing with a'
+        !       write(*,*) 'case where there are 2 regions'               
            end if    
            if(abs(self%psixptarr(2)-self%psixptarr(1))>self%dpsi) then
                n_regions=4  
-               write(*,*) 'Given the n_xpoint=2 and that the difference between the values'
-               write(*,*) 'of psi at the 2 xpoints is>',self%dpsi
-               write(*,*) 'geoq has determined that it is dealing with a'
-               write(*,*) 'case where there are 4 regions'
+        !       write(*,*) 'Given the n_xpoint=2 and that the difference between the values'
+        !       write(*,*) 'of psi at the 2 xpoints is>',self%dpsi
+        !       write(*,*) 'geoq has determined that it is dealing with a'
+        !       write(*,*) 'case where there are 4 regions'
            end if
         end if
      end if
