@@ -3452,7 +3452,7 @@ subroutine beq_readcon(selfn,kin)
   selfn%delpsi=beq_delpsi
   selfn%deltheta=beq_deltheta
 
-  if(selfn%cenopt==1) then
+  if(selfn%cenopt==1.OR.selfn%cenopt==3) then
      selfn%rcen=beq_rcen
      selfn%zcen=beq_zcen
   end if
@@ -4110,6 +4110,7 @@ subroutine beq_bdryrb(self)
      call gfile_init('psidump','psi sample in R-Z space',ilog)
      call spl2d_writeg(self%psi,'sampl',ilog)
      call gfile_close
+     call log_value('Dump of psi array to file psidump.gnu on unit ',ilog)
      call log_error(m_name,s_name,1,error_fatal,'No suitable psi range exists')
   end if
 
