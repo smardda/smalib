@@ -941,8 +941,8 @@ subroutine beq_readequ(self,infile,numerics)
   end if
   if(status/=0) then
      if(cfmtd(1:1)/='*') then
-        call log_value("Format statement used ",cfmtd)
-        call log_error(m_name,s_name,12,error_warning,'Error reading R values')
+        call log_value("Format statement tried ",cfmtd)
+        call log_error(m_name,s_name,12,error_warning,'cannot read R values, trying free format')
         ! try using free format
         cfmtd='*'
         deallocate(workr1)
@@ -3982,6 +3982,9 @@ subroutine beq_bdryrb(self)
   end do radial
 
   if( (zpsiinr-zpsioutr)*rsig >= 0 ) then
+     call gfile_init('psidump','psi sample in R-Z space',ilog)
+     call spl2d_writeg(self%psi,'sampl',ilog)
+     call gfile_close
      call log_error(m_name,s_name,1,error_fatal,'No suitable psi range exists')
   end if
 
