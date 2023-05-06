@@ -197,13 +197,16 @@ module beq_h
      real(kr8) :: rqcen !< \f$ R \f$ at central extremum of \f$ \psi \f$
      real(kr8) :: zqcen !< \f$ Z \f$ at central extremum of \f$ \psi \f$
      real(kr8) :: rbdry !< \f$ R \f$ at reference boundary
-     real(kr8) :: rbdryarr(4) !< \f$ R \f$ at reference boundary
+     real(kr8), dimension(:), allocatable :: rbdryarr !< \f$ R \f$ at reference boundary
      real(kr8) :: bpbdry !< \f$ B_p \f$ at reference boundary, \f$ B_{pm} \f$
-     real(kr8) :: bpbdryarr(4) !< \f$ B_p \f$ at reference boundary, \f$ B_{pm} \f$
+     real(kr8), dimension(:), allocatable :: bpbdryarr !< \f$ B_p \f$ at reference boundary, \f$ B_{pm} \f$
      real(kr8) :: btotbdry !< Total \f$ B \f$ at reference boundary \f$ B_m \f$
-     real(kr8) :: btotbdryarr(4) !< Total \f$ B \f$ at reference boundary \f$ B_m \f$
+     real(kr8), dimension(:), allocatable :: btotbdryarr !< Total \f$ B \f$ at reference boundary \f$ B_m \f$
      real(kr8) :: ximaxm !< maximum \f$ \xi \f$ value \f$ -\epsilon \f$
      real(kr8) :: ximinp !< minimum \f$ \xi \f$ value \f$ +\epsilon \f$
+     integer(ki4) :: number_regions !< number of regions (used for double null case)
+     integer(ki4) :: number_xpoints !< number of active xpoints (used for double null case)
+     integer(ki4) :: outer_xpoint !< array location of outer xpoint
      real(kr8), dimension(3) :: domlen !< dimensions of domain (quantised)
      integer(ki4) :: nzets !< \f$ N_{\zeta s} \f$ such that \f$ \xi = N_{\zeta s} \zeta \f$
      integer(ki4) :: ntmin !< minimum valid value of \f$ N_\theta \f$
