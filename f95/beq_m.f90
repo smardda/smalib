@@ -623,7 +623,7 @@ subroutine beq_readequil(self,infile,numerics)
   if (cfmtd=='*') then
      read(iin,*,iostat=status) ((work2(i,j),i=1,nw),j=1,nh)
   else
-     if (iffiesta>0) then
+     if (iffiesta==1) then
         do j=1,nh
            read(iin,cfmtd,iostat=status) (work2(i,j),i=1,nw)
         end do
@@ -839,7 +839,7 @@ subroutine beq_readequil(self,infile,numerics)
   print '("EQDSK file ended status ",i10," but may have got enough data.")',status
   call log_error(m_name,s_name,80,error_warning,'Unexpected end of EQDSK file')
   call log_value("May have got enough data. Termination status ",status)
-  go to 2  
+  go to 2
 
 end subroutine beq_readequil
 !---------------------------------------------------------------------
@@ -873,7 +873,7 @@ subroutine beq_readequ(self,infile,numerics)
      call log_error(m_name,s_name,1,error_fatal,'Error opening file')
   end if
   cfmtd=cfmt1
-1000 continue
+1000  continue
   ! skip header data
   do
      read(iin,fmt='(a)',iostat=status) ibuff
@@ -931,11 +931,11 @@ subroutine beq_readequ(self,infile,numerics)
      read(iin,*,iostat=status)(workr1(i),i=1,jm)
   else
      read(iin,cfmtd,iostat=status)(workr1(i),i=1,jm)
-  end if 
+  end if
   if(status/=0) then
      if(cfmtd(1:1)/='*') then
-        call log_value("Format statement used ",cfmtd)
-        call log_error(m_name,s_name,12,error_warning,'Error reading R values')
+        call log_value("Format statement tried ",cfmtd)
+        call log_error(m_name,s_name,12,error_warning,'cannot read R values, trying free format')
         ! try using free format
         cfmtd='*'
         deallocate(workr1)
@@ -1008,7 +1008,7 @@ subroutine beq_readequ(self,infile,numerics)
 
   deallocate(workr1) ! Added for combined smiter runs HJL
   deallocate(workz1) ! Added for combined smiter runs HJL
-  
+
   ! set up fpol
   !! allocate fpol storage
   allocate(self%f(jm), stat=status)
@@ -1118,8 +1118,8 @@ subroutine beq_readequ(self,infile,numerics)
            call log_error(m_name,s_name,49,log_info,'override for ITER')
            ! special for ITER to align current and toroidal field
            if (psic>psib) then
-           workr2=-workr2
-           workz2=-workz2
+              workr2=-workr2
+              workz2=-workz2
            end if
         end if
      end if
@@ -1141,7 +1141,7 @@ subroutine beq_readequ(self,infile,numerics)
   print '("Equ file ended status ",i10," but may have got enough data.")',status
   call log_error(m_name,s_name,80,error_warning,'Unexpected end of equ file')
   call log_value("May have got enough data. Termination status ",status)
-  go to 2  
+  go to 2
 
 end subroutine beq_readequ
 !---------------------------------------------------------------------
@@ -1252,7 +1252,7 @@ subroutine beq_readana(self,beqan,kfldspec)
 
   deallocate(workr1) ! Added for smiter combined runs HJL
   deallocate(workz1) ! Added for smiter combined runs HJL
-  
+
   self%psiaxis=psic
   self%psibdry=psib
   self%psiqbdry=self%psibdry
@@ -1559,7 +1559,7 @@ end subroutine beq_readv
 subroutine beq_readcheck(self,infile,kextra)
 
   use smitermpi_h
-  
+
   !! arguments
   type(beq_t), intent(out) :: self   !< object data structure
   character(*),intent(in) :: infile !< name of input file
@@ -3276,7 +3276,7 @@ subroutine beq_readcon(selfn,kin)
   selfn%delpsi=beq_delpsi
   selfn%deltheta=beq_deltheta
 
-  if(selfn%cenopt==1) then
+  if(selfn%cenopt==1.OR.selfn%cenopt==3) then
      selfn%rcen=beq_rcen
      selfn%zcen=beq_zcen
   end if
