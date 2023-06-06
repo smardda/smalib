@@ -76,7 +76,7 @@ stlfile_m.f90 \
 termplane_h.f90 \
 vcontrol_h.f90 \
 vcontrol_m.f90 \
-vfile_m.f90 \
+vfile_m.f90 
  
 TGTS = geofil move vtktfm datvtk hdsgen ctlgen parse
  
@@ -115,23 +115,18 @@ txt:
 .PHONY : clean distclean libclean
 
 
-beqan_h.f90 : const_kind_m.mod
-beqan_h.f90 : const_numphys_h.mod
-beqan_m.f90 : beqan_h.mod
-beqan_m.f90 : log_m.mod
-beqan_m.f90 : misc_m.mod
-beqan_m.f90 : const_kind_m.mod
 beq_h.f90 : const_kind_m.mod
 beq_h.f90 : fmesh_h.mod
+beq_h.f90 : beqart_h.mod
 beq_h.f90 : spl2d_m.mod
 beq_h.f90 : spl3d_m.mod
-beq_h.f90 : beqart_h.mod
 beq_m.f90 : const_kind_m.mod
 beq_m.f90 : const_numphys_h.mod
 beq_m.f90 : position_h.mod
 beq_m.f90 : fmesh_h.mod
 beq_m.f90 : beq_h.mod
 beq_m.f90 : beqan_h.mod
+beq_m.f90 : beqart_h.mod
 beq_m.f90 : posang_h.mod
 beq_m.f90 : position_m.mod
 beq_m.f90 : log_m.mod
@@ -142,7 +137,15 @@ beq_m.f90 : spl3d_m.mod
 beq_m.f90 : fmesh_m.mod
 beq_m.f90 : posang_m.mod
 beq_m.f90 : beqan_m.mod
+beq_m.f90 : beqart_m.mod
 beq_m.f90 : gfile_m.mod
+beq_m.f90 : smitermpi_h.mod
+beqan_h.f90 : const_kind_m.mod
+beqan_h.f90 : const_numphys_h.mod
+beqan_m.f90 : beqan_h.mod
+beqan_m.f90 : log_m.mod
+beqan_m.f90 : misc_m.mod
+beqan_m.f90 : const_kind_m.mod
 beqart_h.f90 : const_kind_m.mod
 beqart_h.f90 : fmesh_h.mod
 beqart_m.f90 : const_kind_m.mod
@@ -314,6 +317,7 @@ gfcontrol_m.f90 : misc_m.mod
 gfile_m.f90 : const_kind_m.mod
 gfile_m.f90 : log_m.mod
 gfile_m.f90 : misc_m.mod
+gfile_m.f90 : smitermpi_h.mod
 hdsfile_m.f90 : const_kind_m.mod
 hdsfile_m.f90 : date_time_m.mod
 hdsfile_m.f90 : log_m.mod
@@ -328,6 +332,7 @@ ld_m.f90 : const_kind_m.mod
 ld_m.f90 : log_m.mod
 li_m.f90 : const_kind_m.mod
 li_m.f90 : log_m.mod
+log_h.f90 : const_kind_m.mod
 log_m.f90 : const_kind_m.mod
 log_m.f90 : date_time_m.mod
 log_m.f90 : log_h.mod
@@ -340,6 +345,7 @@ mcontrol_h.f90 : position_h.mod
 misc_m.f90 : const_kind_m.mod
 misc_m.f90 : const_numphys_h.mod
 misc_m.f90 : log_m.mod
+misc_m.f90 : smitermpi_h.mod
 moutfile_m.f90 : const_kind_m.mod
 moutfile_m.f90 : log_m.mod
 moutfile_m.f90 : misc_m.mod
@@ -359,7 +365,6 @@ nrsolve_m.f90 : log_m.mod
 nrsolve_m.f90 : misc_m.mod
 nrsolve_m.f90 : date_time_m.mod
 nrsolve_m.f90 : spl2d_m.mod
-nrsolve_m.f90 : pcontrol_h.mod
 odes_h.f90 : const_kind_m.mod
 odes_h.f90 : position_h.mod
 odes_m.f90 : const_kind_m.mod
@@ -367,6 +372,9 @@ odes_m.f90 : const_numphys_h.mod
 odes_m.f90 : log_m.mod
 odes_m.f90 : spl2d_m.mod
 odes_m.f90 : spl3d_m.mod
+odes_m.f90 : fmesh_h.mod
+odes_m.f90 : beqart_h.mod
+odes_m.f90 : beqart_m.mod
 odes_m.f90 : odes_h.mod
 odes_m.f90 : nrsolve_m.mod
 outfile_m.f90 : const_kind_m.mod
@@ -423,3 +431,38 @@ scontrol_m.f90 : log_m.mod
 scontrol_m.f90 : misc_m.mod
 scontrol_m.f90 : scontrol_h.mod
 smitermpi_h.f90 : const_kind_m.mod
+spl2d_m.f90 : const_kind_m.mod
+spl2d_m.f90 : const_numphys_h.mod
+spl2d_m.f90 : log_m.mod
+spl2d_m.f90 : misc_m.mod
+spl2d_m.f90 : position_h.mod
+spl2d_m.f90 : position_m.mod
+spl3d_m.f90 : const_kind_m.mod
+spl3d_m.f90 : const_numphys_h.mod
+spl3d_m.f90 : log_m.mod
+spl3d_m.f90 : misc_m.mod
+spl3d_m.f90 : position_h.mod
+spl3d_m.f90 : position_m.mod
+spl3d_m.f90 : spl2d_m.mod
+spl3d_m.f90 : smitermpi_h.mod
+stack_m.f90 : const_kind_m.mod
+stack_m.f90 : const_numphys_h.mod
+stack_m.f90 : log_m.mod
+stlfile_m.f90 : const_kind_m.mod
+stlfile_m.f90 : log_m.mod
+stlfile_m.f90 : misc_m.mod
+termplane_h.f90 : const_kind_m.mod
+vcontrol_h.f90 : const_kind_m.mod
+vcontrol_h.f90 : position_h.mod
+vcontrol_m.f90 : const_kind_m.mod
+vcontrol_m.f90 : const_numphys_h.mod
+vcontrol_m.f90 : log_m.mod
+vcontrol_m.f90 : misc_m.mod
+vcontrol_m.f90 : position_h.mod
+vcontrol_m.f90 : vcontrol_h.mod
+vcontrol_m.f90 : position_m.mod
+vcontrol_m.f90 : scontrol_m.mod
+vfile_m.f90 : const_kind_m.mod
+vfile_m.f90 : log_m.mod
+vfile_m.f90 : misc_m.mod
+vfile_m.f90 : smitermpi_h.mod

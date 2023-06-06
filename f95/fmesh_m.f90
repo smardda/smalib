@@ -1,5 +1,7 @@
+!> @addtogroup groupname4
+!> @{
 module fmesh_m
-
+!> @}
   use position_h
   use fmesh_h
   use log_m

@@ -1,5 +1,10 @@
+!> @addtogroup groupname333
+!> @{
+!> @defgroup groupname4 SMARDDA-lib
+!> @{
 module beq_m
-
+!> @}
+!> @}
   use const_kind_m
   use const_numphys_h
   use position_h
@@ -56,6 +61,7 @@ module beq_m
   beq_xilt, &  !< calculate \f$ \xi \f$ limits
   beq_nset, &  !< calculate \f$ N_{\theta} \f$ and \f$ N_{\psi} \f$
   beq_bdryrb, &  !< calculate \f$ R_m \f$ and \f$ B_m \f$ from \f$ \psi_m \f$
+  beq_bdryrb_dn, &  !< calculate \f$ R_m \f$ and \f$ B_m \f$ from \f$ \psi_m \f$ (double null version)
   beq_psix, &  !< calculate  \f$ \psi \f$ at separatrix
   beq_rextrema, &  !< calculate \f$ r_{min} \f$ and \f$ r_{max} \f$ as functions of \f$ \theta_j \f$
   beq_rpsi, &  !< calculate \f$ r \f$ as a function of of \f$ \psi \f$
@@ -120,6 +126,9 @@ module beq_m
   character(len=80) :: ibuf1 !< buffer for input/output
   character(len=15) :: cfmtd !< fixed format for body
   logical :: iltest !< logical flag
+  integer(ki4) :: n_regions !< number of regions (used for double null case)
+  integer(ki4) :: n_xpoints !< number of active xpoints (used for double null case)
+  integer(ki4) :: same_rmbpmbm !< Set R_m,B_{bm} and B_m in the multi region case
 
   contains
 !---------------------------------------------------------------------
@@ -127,7 +136,7 @@ module beq_m
 subroutine beq_read(self,infile)
 
   use smitermpi_h
-  
+
   !! arguments
   type(beq_t), intent(out) :: self   !< object data structure
   character(*),intent(in) :: infile !< name of input file
@@ -145,7 +154,7 @@ subroutine beq_read(self,infile)
      !! error opening file
      call log_error(m_name,s_name,1,error_fatal,'Error opening beq data structure file')
   else
-     if(myrank_log .eq. 0) call log_error(m_name,s_name,2,log_info,'beq data structure file opened')
+     if(myrank_log==0) call log_error(m_name,s_name,2,log_info,'beq data structure file opened')
   end if
 
   read(nin,*,iostat=status) ibuff
@@ -385,8 +394,10 @@ subroutine beq_readequil(self,infile,numerics)
   real(kr8) :: rmaxis !< EFIT plasma centre (magnetic axis) in metre
   real(kr8) :: rzero !< EFIT variable ignored
   real(kr8) :: ssibry1 !< EFIT poloidal flux at the boundary (Wb/rad)
+  real(kr8) :: ssibry1_temp !< EFIT poloidal flux at the boundary (Wb/rad) temp for switch
   real(kr8) :: ssibry2 !< EFIT poloidal flux at the boundary (Wb/rad) ignored
   real(kr8) :: ssimag1 !< EFIT poloidal flux at the magnetic axis (Wb/rad)
+  real(kr8) :: ssimag1_temp !< EFIT poloidal flux at the magnetic axis (Wb/rad) temp for switch
   real(kr8) :: ssimag2 !< EFIT poloidal flux at the magnetic axis (Wb/rad) ignored
   real(kr8) :: xdim !< EFIT Horizontal dimension in metre of computational box
   real(kr8) :: xdum !< EFIT variable ignored
@@ -619,7 +630,6 @@ subroutine beq_readequil(self,infile,numerics)
   else
      call log_error(m_name,s_name,41,error_fatal,'No psi data')
   end if
-
   if (cfmtd=='*') then
      read(iin,*,iostat=status) ((work2(i,j),i=1,nw),j=1,nh)
   else
@@ -994,7 +1004,7 @@ subroutine beq_readequ(self,infile,numerics)
   end if
   print '("number of psi values read = ",i10)',jm*km
   call log_value("number of psi values read ",jm*km)
-
+  
   self%psiaxis=psic
   self%psiqbdry=psib
   self%psibdry=self%psiqbdry
@@ -1579,7 +1589,7 @@ subroutine beq_readcheck(self,infile,kextra)
      !! error opening file
      call log_error(m_name,s_name,1,error_fatal,'Error opening beq data structure file')
   else
-     if(myrank_log .eq. 0) call log_error(m_name,s_name,2,log_info,'beq data structure file opened')
+     if(myrank_log==0) call log_error(m_name,s_name,2,log_info,'beq data structure file opened')
   end if
 
   ! skip header data
@@ -1724,6 +1734,47 @@ subroutine beq_readpart(self,infile)
      read(nin,*,iostat=status) self%n%arip
      call log_read_check(m_name,s_name,66,status)
   end if
+
+     read(nin,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,67,status)
+     read(nin,*,iostat=status) self%rxptarr
+     call log_read_check(m_name,s_name,68,status)
+     read(nin,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,69,status)
+     read(nin,*,iostat=status) self%zxptarr
+     call log_read_check(m_name,s_name,70,status)
+     read(nin,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,71,status)
+     read(nin,*,iostat=status) self%psixptarr  
+     call log_read_check(m_name,s_name,72,status)
+     read(nin,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,73,status)
+     read(nin,*,iostat=status) self%number_regions
+     call log_read_check(m_name,s_name,74,status)
+     if(self%number_regions/=1) then
+        allocate(self%rbdryarr(0:self%number_regions),self%bpbdryarr(0:self%number_regions),&
+                 self%btotbdryarr(0:self%number_regions))
+        read(nin,*,iostat=status) ibuff
+        call log_read_check(m_name,s_name,75,status)
+        read(nin,*,iostat=status) self%rbdryarr
+        call log_read_check(m_name,s_name,76,status)
+        read(nin,*,iostat=status) ibuff
+        call log_read_check(m_name,s_name,77,status)
+        read(nin,*,iostat=status) self%btotbdryarr
+        call log_read_check(m_name,s_name,78,status)
+        read(nin,*,iostat=status) ibuff
+        call log_read_check(m_name,s_name,79,status)
+        read(nin,*,iostat=status) self%bpbdryarr
+        call log_read_check(m_name,s_name,80,status)
+     end if
+     read(nin,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,81,status)
+     read(nin,*,iostat=status) self%number_xpoints
+     call log_read_check(m_name,s_name,82,status)
+     read(nin,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,83,status)
+     read(nin,*,iostat=status) self%outer_xpoint
+     call log_write_check(m_name,s_name,84,status)
 
   call log_error(m_name,s_name,70,log_info,'beq plus 2 read in from data file')
 
@@ -1877,7 +1928,7 @@ subroutine beq_readplus(self,infile)
      call log_error(m_name,s_name,63,ierr,'vacuum field data file has no suffix')
   end if
 
-  if (iextra==2.OR.iextra==4) then
+  if (iextra==2 .OR. iextra==4) then
      read(nin,*,iostat=status) ibuff
      read(nin,*,iostat=status) self%rxpt
      call log_read_check(m_name,s_name,64,status)
@@ -1929,6 +1980,47 @@ subroutine beq_readplus(self,infile)
   else
      self%n%duct=.FALSE.
   end if
+  
+     read(nin,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,76,status)
+     read(nin,*,iostat=status) self%rxptarr
+     call log_read_check(m_name,s_name,77,status)
+     read(nin,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,78,status)
+     read(nin,*,iostat=status) self%zxptarr
+     call log_read_check(m_name,s_name,79,status)
+     read(nin,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,80,status)
+     read(nin,*,iostat=status) self%psixptarr  
+     call log_read_check(m_name,s_name,81,status)
+     read(nin,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,82,status)
+     read(nin,*,iostat=status) self%number_regions
+     call log_read_check(m_name,s_name,83,status)
+     if(self%number_regions/=1) then
+        allocate(self%rbdryarr(0:self%number_regions),self%bpbdryarr(0:self%number_regions),&
+                 self%btotbdryarr(0:self%number_regions))
+        read(nin,*,iostat=status) ibuff
+        call log_read_check(m_name,s_name,84,status)
+        read(nin,*,iostat=status) self%rbdryarr
+        call log_read_check(m_name,s_name,85,status)
+        read(nin,*,iostat=status) ibuff
+        call log_read_check(m_name,s_name,86,status)
+        read(nin,*,iostat=status) self%btotbdryarr
+        call log_read_check(m_name,s_name,87,status)
+        read(nin,*,iostat=status) ibuff
+        call log_read_check(m_name,s_name,88,status)
+        read(nin,*,iostat=status) self%bpbdryarr
+        call log_read_check(m_name,s_name,89,status)
+     end if
+     read(nin,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,90,status)
+     read(nin,*,iostat=status) self%number_xpoints
+     call log_read_check(m_name,s_name,91,status)
+     read(nin,*,iostat=status) ibuff
+     call log_read_check(m_name,s_name,92,status)
+     read(nin,*,iostat=status) self%outer_xpoint
+     call log_write_check(m_name,s_name,93,status)
 
   call log_error(m_name,s_name,90,log_info,'beq read in from data file')
 
@@ -2622,7 +2714,45 @@ subroutine beq_writepart(self,kout)
      call log_write_check(m_name,s_name,66,status)
   end if
 
-
+     write(kout,*,iostat=status) 'rxpt_double_null'
+     call log_write_check(m_name,s_name,67,status)
+     write(kout,*,iostat=status) self%rxptarr
+     call log_write_check(m_name,s_name,68,status)
+     write(kout,*,iostat=status) 'zxpt_double_null'
+     call log_write_check(m_name,s_name,69,status)
+     write(kout,*,iostat=status) self%zxptarr
+     call log_write_check(m_name,s_name,70,status)
+     write(kout,*,iostat=status) 'psixpt_double_null'
+     call log_write_check(m_name,s_name,71,status)
+     write(kout,*,iostat=status) self%psixptarr
+     call log_write_check(m_name,s_name,72,status)
+     write(kout,*,iostat=status) 'number_of_regions'
+     call log_write_check(m_name,s_name,73,status)
+     write(kout,*,iostat=status) self%number_regions
+     call log_write_check(m_name,s_name,74,status)
+     if(self%number_regions/=1) then
+        write(kout,*,iostat=status) 'rbdry_double_null'
+        call log_write_check(m_name,s_name,75,status)
+        write(kout,*,iostat=status) self%rbdryarr
+        call log_write_check(m_name,s_name,76,status)
+        write(kout,*,iostat=status) 'btotbdry_double_null'
+        call log_write_check(m_name,s_name,77,status)
+        write(kout,*,iostat=status) self%btotbdryarr
+        call log_write_check(m_name,s_name,78,status)
+        write(kout,*,iostat=status) 'bpbdry_double_null'
+        call log_write_check(m_name,s_name,79,status)
+        write(kout,*,iostat=status) self%bpbdryarr
+        call log_write_check(m_name,s_name,80,status)
+     end if
+     write(kout,*,iostat=status) 'number_of_xpoints'
+     call log_write_check(m_name,s_name,81,status)
+     write(kout,*,iostat=status) self%number_xpoints
+     call log_write_check(m_name,s_name,82,status)
+     write(kout,*,iostat=status) 'location of outer x-point'
+     call log_write_check(m_name,s_name,83,status)
+     write(kout,*,iostat=status) self%outer_xpoint
+     call log_write_check(m_name,s_name,84,status)
+     
 end subroutine beq_writepart
 !---------------------------------------------------------------------
 !> delete field data used by ITER
@@ -2779,6 +2909,45 @@ subroutine beq_writeplus(self,kout)
   if (self%n%duct) then
      call fmesh_write(self%fmesh,kout)
   end if
+
+     write(kout,*,iostat=status) 'rxpt_double_null'
+     call log_write_check(m_name,s_name,76,status)
+     write(kout,*,iostat=status) self%rxptarr
+     call log_write_check(m_name,s_name,77,status)
+     write(kout,*,iostat=status) 'zxpt_double_null'
+     call log_write_check(m_name,s_name,78,status)
+     write(kout,*,iostat=status) self%zxptarr
+     call log_write_check(m_name,s_name,79,status)
+     write(kout,*,iostat=status) 'psixpt_double_null'
+     call log_write_check(m_name,s_name,80,status)
+     write(kout,*,iostat=status) self%psixptarr
+     call log_write_check(m_name,s_name,81,status)
+     write(kout,*,iostat=status) 'number_of_regions'
+     call log_write_check(m_name,s_name,82,status)
+     write(kout,*,iostat=status) self%number_regions
+     call log_write_check(m_name,s_name,83,status)
+     if(self%number_regions/=1) then
+        write(kout,*,iostat=status) 'rbdry_double_null'
+        call log_write_check(m_name,s_name,84,status)
+        write(kout,*,iostat=status) self%rbdryarr
+        call log_write_check(m_name,s_name,85,status)
+        write(kout,*,iostat=status) 'btotbdry_double_null'
+        call log_write_check(m_name,s_name,86,status)
+        write(kout,*,iostat=status) self%btotbdryarr
+        call log_write_check(m_name,s_name,87,status)
+        write(kout,*,iostat=status) 'bpbdry_double_null'
+        call log_write_check(m_name,s_name,88,status)
+        write(kout,*,iostat=status) self%bpbdryarr
+        call log_write_check(m_name,s_name,89,status)
+     end if
+     write(kout,*,iostat=status) 'number_of_xpoints'
+     call log_write_check(m_name,s_name,90,status)
+     write(kout,*,iostat=status) self%number_xpoints
+     call log_write_check(m_name,s_name,91,status)
+     write(kout,*,iostat=status) 'location of outer x-point'
+     call log_write_check(m_name,s_name,92,status)
+     write(kout,*,iostat=status) self%outer_xpoint
+     call log_write_check(m_name,s_name,93,status)
 
 end subroutine beq_writeplus
 !---------------------------------------------------------------------
@@ -3059,7 +3228,7 @@ subroutine beq_readcon(selfn,kin)
  &equil_mastequ,&
  &beq_xsearch,beq_xrsta,beq_xrend,beq_xzsta,beq_xzend,&
  &limiter_search,search_r_start,search_r_end,search_z_start,search_z_end,&
- &beq_vacuum_field_file
+ &beq_vacuum_field_file, n_xpoints, same_rmbpmbm
 
   !! set default beq parameters
   mzeta_vtk=193
@@ -3121,6 +3290,9 @@ subroutine beq_readcon(selfn,kin)
   search_z_start=0
   search_z_end=0
   beq_vacuum_field_file='null'
+  
+  n_xpoints=1
+  same_rmbpmbm=0
 
   !!read beq parameters
   read(kin,nml=beqparameters,iostat=status)
@@ -3151,7 +3323,7 @@ subroutine beq_readcon(selfn,kin)
   if(beq_psiopt==1.AND.beq_psimin<=0) &
  &call log_error(m_name,s_name,3,error_fatal,'beq_psimin must be > 0')
 
-  if(beq_bdryopt<=0.OR.beq_bdryopt>=16) &
+  if(beq_bdryopt<=0.OR. beq_bdryopt>=18) &
  &call log_error(m_name,s_name,6,error_fatal,'beq_bdryopt must be small positive integer')
   if(beq_nopt<=0.OR.beq_nopt>=4) &
  &call log_error(m_name,s_name,4,error_fatal,'beq_nopt must be small positive integer')
@@ -3244,6 +3416,10 @@ subroutine beq_readcon(selfn,kin)
      search_z_end=z2
   end if
 
+  if(n_xpoints<=0.OR. n_xpoints>=3) &
+ &call log_error(m_name,s_name,21,error_fatal,'n_regions must be either 1 or 2')
+
+
   !! store values
   selfn%cenopt=beq_cenopt
   selfn%mzetav=mzeta_vtk
@@ -3280,11 +3456,11 @@ subroutine beq_readcon(selfn,kin)
      selfn%rcen=beq_rcen
      selfn%zcen=beq_zcen
   end if
-  if(selfn%psiopt==1.OR.selfn%psiopt==3) then
+  if(selfn%psiopt==1.OR. selfn%psiopt==3) then
      selfn%psimin=beq_psimin
      selfn%psimax=beq_psimax
   end if
-  if(selfn%bdryopt==1.OR.selfn%bdryopt==5.OR.selfn%bdryopt==9) then
+  if(selfn%bdryopt==1.OR. selfn%bdryopt==5.OR. selfn%bdryopt==9) then
      selfn%psiref=beq_psiref
   end if
   if(selfn%nopt==1) then
@@ -3559,29 +3735,44 @@ subroutine beq_psix(self)
   real(kr8) :: zpsi3    !< \f$ \psi_3 \f$ search result
   real(kr8) :: zpsi4    !< \f$ \psi_4 \f$ search result
   real(kr8) :: zpsi5    !< \f$ \psi_5 \f$ search result
+  real(kr8) :: temp
   integer(ki4) :: is3chnged    !< \f$ \psi_3 \f$ needs changing to meet new tolerance
   integer(ki4) :: ierr    !< error code returned by r-extremum
   integer(ki4) :: ixf    !< code describing X-point find
   real(kr8) :: zsrm   !< extremal \f$ R \f$
 
-  zsrmin=1.e+16
-  zepsg=epsg*self%psinorm
-  zepsr=epsr*self%psinorm
-  ixf=0
+  zsrmin=1.e+16 !Minium r^2 for search
+  zepsg=epsg*self%psinorm !normalised value of epsilon_g tolerance
+  zepsr=epsr*self%psinorm !normalised value of epsilon_r tolerance
+  ixf=0 !counts number of x points found
   self%psixpt=rsig*100*self%psinorm
-  zsrr=max( abs(self%rmax-self%n%rcen), abs(self%rmin-self%n%rcen) )
-  zszz=max( abs(self%zmax-self%n%zcen), abs(self%zmin-self%n%zcen) )
-  zsrlt=(zsrr**2+zszz**2)/100
-
-  if (self%n%xsearch==1) mhemi=1
+  zsrr=max( abs(self%rmax-self%n%rcen), abs(self%rmin-self%n%rcen) )!estimate for maximum \f$ |R-R_c| \f$ in domain
+  zszz=max( abs(self%zmax-self%n%zcen), abs(self%zmin-self%n%zcen) )!estimate for maximum \f$ |Z-Z_c| \f$ in domain
+  zsrlt=(zsrr**2+zszz**2)/100 !minimum r or r^2 for search
+  temp=self%n%xzend
+  if (self%n%xsearch==1 .and. n_xpoints==1) mhemi=1 
+  !loop over both and below midplane of box if xsearch=0
   do_hemi: do jhemi=0,mhemi-1
-
      if (self%n%xsearch==1) then
-        zt2=-const_pid ; zt1=const_pid
-        i1=1+max(int((self%n%xrsta-self%rmin)/self%dr),0)
-        i2=2+min(int((self%n%xrend-self%rmin)/self%dr),self%mr-2)
-        j1=1+max(int((self%n%xzsta-self%zmin)/self%dz),0)
-        j2=2+min(int((self%n%xzend-self%zmin)/self%dz),self%mz-2)
+        ! only search the top half of the box
+    if(n_xpoints ==1) then
+        zt2=-const_pid ; zt1=const_pid !theta_1 and theta_2
+        i1=1+max(int((self%n%xrsta-self%rmin)/self%dr),0) !R_1
+        i2=2+min(int((self%n%xrend-self%rmin)/self%dr),self%mr-2) !R_2
+        j1=1+max(int((self%n%xzsta-self%zmin)/self%dz),0) !z_1
+        j2=2+min(int((self%n%xzend-self%zmin)/self%dz),self%mz-2) !z_2
+    end if
+    if(n_xpoints >1) then
+        if(jhemi==1) self%n%xzend=temp
+		if(jhemi==1) self%n%xzsta=(self%n%xzsta+self%n%xzend)/2.0d0
+        if(jhemi==0) self%n%xzend=(self%n%xzsta+self%n%xzend)/2.0d0
+        zt1=(jhemi-1)*const_pid ; zt2=jhemi*const_pid
+        j1=2+(int((self%n%xzsta-self%zmin)/self%dz))
+        j2=2+(int((self%n%xzsta-self%zmin)/self%dz)) +(int((self%n%xzend-self%n%xzsta)/self%dz))
+        i1=2+(int((self%n%xrsta-self%rmin)/self%dr))
+        i2=2+(int((self%n%xrsta-self%rmin)/self%dr)) +(int((self%n%xrend-self%n%xrsta)/self%dr)) 
+     end if
+  !      WRITE(6,*) j1,j2,i1,i2,jhemi,self%mz,self%mr,self%n%xzsta
      else
         zt2=(jhemi-1)*const_pid ; zt1=jhemi*const_pid
         j1=2+(self%mz/2)*jhemi
@@ -3589,32 +3780,35 @@ subroutine beq_psix(self)
         i1=2
         i2=self%mr-1
      end if
-     zsr1=zsrmin ; zsr2=-zsrmin
+     zsr1=zsrmin ; zsr2=-zsrmin !minimum and maximum value of r in search for extremus
      isrmin=0 ; jsrmin=0
-     zgpsimin=1.e+16
+     zgpsimin=1.e+16 !smallest \f$ |\nabla\psi|^2 \f$ in search
 
      ! step one, limiting r and theta for minimum of \f$ |\nabla\psi|^2 \f$
      ! one-a find mesh-point with smallest \f$ |\nabla\psi|^2 \f$
-     do_meshj: do j=j1,j2
+     do_meshz: do j=j1,j2
         ! note, skip edges of computational rectangle and avoid centre
-        ze=self%zmin+(j-1)*self%dz
-        do_meshi: do i=i1,i2
-           re=self%rmin+(i-1)*self%dr
-           zsrsq=(re-self%n%rcen)**2+(ze-self%n%zcen)**2
+        ze=self%zmin+(j-1)*self%dz !sets value of z
+        do_meshr: do i=i1,i2
+           re=self%rmin+(i-1)*self%dr !sets value of r
+           zsrsq=(re-self%n%rcen)**2+(ze-self%n%zcen)**2 !length^2
            if (zsrsq>zsrlt) then
-              call spl2d_evaln(self%dpsidr,re,ze,1,zdpdr)
-              call spl2d_evaln(self%dpsidz,re,ze,2,zdpdz)
+              ! length^2 > minium length^2 value
+              call spl2d_evaln(self%dpsidr,re,ze,1,zdpdr) !\f$ \frac{\partial\psi}{\partial R} \f$
+              call spl2d_evaln(self%dpsidz,re,ze,2,zdpdz) !\f$ \frac{\partial\psi}{\partial Z} \f$
               if (zdpdr*zdpdz<0.) then
-                 zgpsi=zdpdr**2+zdpdz**2
+                 ! derivatives have opposite signs
+                 zgpsi=zdpdr**2+zdpdz**2 !\f$ |\nabla\psi|^2
                  if (zgpsi<zgpsimin) then
+                    ! \f$ |\nabla\psi|^2 \f$ is smaller than smallest value so far
                     zgpsimin=zgpsi
                     isrmin=i
                     jsrmin=j
                  end if
               end if
            end if
-        end do do_meshi
-     end do do_meshj
+        end do do_meshr
+     end do do_meshz
 
      if (isrmin==0) then
         call log_error(m_name,s_name,1+jhemi,error_warning,'hemisphere: no X-point detected')
@@ -3623,20 +3817,22 @@ subroutine beq_psix(self)
 
      ! step one-b set r and theta limits for search using adjacent mesh-points
      do j=1,3
-        ze=self%zmin+(jsrmin+j-3)*self%dz
+        ze=self%zmin+(jsrmin+j-3)*self%dz ! caculates z at various points around minium grad psi value
         do i=1,3
-           re=self%rmin+(isrmin+i-3)*self%dr
+           re=self%rmin+(isrmin+i-3)*self%dr ! caculates z at various points around minimum grad psi value
+           !calculates angle the r,z co-ordinates makes with origin at centre of plasm
            zthet=atan2( ze-self%n%zcen, re-self%n%rcen )
            ! no shift if (zthet<-const_pid/2) zthet=2*const_pid+zthet
-           zt1=min(zthet,zt1)
-           zt2=max(zthet,zt2)
+           zt1=min(zthet,zt1) !compares evaluted theta in comparison to minimum value
+           zt2=max(zthet,zt2) !compares evaulate threa in comparison to maximum value
+           ! calculates value of r^2 for each point around minimum grad psi value
            zsrsq=(re-self%n%rcen)**2+(ze-self%n%zcen)**2
-           zsr1=min(zsrsq,zsr1)
-           zsr2=max(zsrsq,zsr2)
+           zsr1=min(zsrsq,zsr1) !compares evaluated r^2 in comparison to minimum value
+           zsr2=max(zsrsq,zsr2) !compares evaluated r^2 in comparison to maximum value
         end do
      end do
-     zsr1=sqrt(zsr1)
-     zsr2=sqrt(zsr2)
+     zsr1=sqrt(zsr1) !calculates minimum r around minimum grad psi value
+     zsr2=sqrt(zsr2) !calculates maximum r around minimum grad psi value
 
      ! step two, initialise for search
      zt3=zg1*zt1+zg2*zt2
@@ -3704,8 +3900,54 @@ subroutine beq_psix(self)
            zsrxpt=(zsr1+zsr2)/2
         end if
      end if
-
+     n_regions=1
+     !******************************************************************
+     !If dealing with more than one x-point
+     !******************************************************************
+     if(n_xpoints==2) then
+        self%rxptarr(jhemi+1) = self%n%rcen+((zsr1+zsr2)/2)*cos(zt3)
+        self%zxptarr(jhemi+1) = self%n%zcen+((zsr1+zsr2)/2)*sin(zt3)
+        self%psixptarr(jhemi+1) = zpsi3
+        !if(jhemi==0) then
+		!   write(*,*) "Lower Hemisphere SMITER-GEOQ psi-xpt ", self%psixptarr(jhemi+1)
+		!   write(*,*) "Lower Hemisphere SMITER-GEOQ theta-xpt ",zt3
+		!   write(*,*) "Lower Hemisphere SMITER-GEOQ R-xpt ",self%rxptarr(jhemi+1)
+		!   write(*,*) "Lower Hemisphere SMITER-GEOQ Z-xpt ",self%zxptarr(jhemi+1)
+        !else if(jhemi==1) then
+		!   write(*,*) "Upper Hemisphere SMITER-GEOQ psi-xpt ", self%psixptarr(jhemi+1)
+		!   write(*,*) "Upper Hemisphere SMITER-GEOQ theta-xpt ",zt3
+		!   write(*,*) "Upper Hemisphere SMITER-GEOQ R-xpt ",self%rxptarr(jhemi+1)
+		!   write(*,*) "Upper Hemisphere SMITER-GEOQ Z-xpt ",self%zxptarr(jhemi+1)
+        !end if
+        self%rxpt=self%rxptarr(1)
+        self%zxpt=self%zxptarr(1)
+        self%psixpt=self%psixptarr(1)
+        !***************************************************************
+        !If n_xpoints>1 determine whether dealing with symmetric double
+        !null or asymmetric double null
+        !***************************************************************
+        if(jhemi==1) then
+           self%dpsi=(self%n%psimax-self%n%psimin)/self%n%npsi
+           if(abs(self%psixptarr(2)-self%psixptarr(1))<self%dpsi) then
+               n_regions=2
+        !       write(*,*) 'Given the n_xpoint=2 and that the difference between the values'
+        !       write(*,*) 'of psi at the 2 xpoints is <',self%dpsi
+        !       write(*,*) 'geoq has determined that it is dealing with a'
+        !       write(*,*) 'case where there are 2 regions'               
+           end if    
+           if(abs(self%psixptarr(2)-self%psixptarr(1))>self%dpsi) then
+               n_regions=4  
+        !       write(*,*) 'Given the n_xpoint=2 and that the difference between the values'
+        !       write(*,*) 'of psi at the 2 xpoints is>',self%dpsi
+        !       write(*,*) 'geoq has determined that it is dealing with a'
+        !       write(*,*) 'case where there are 4 regions'
+           end if
+        end if
+     end if
   end do do_hemi
+  
+  self%number_xpoints=n_xpoints
+  self%number_regions=n_regions
 
   if (ixf==0) then
      call log_error(m_name,s_name,80,error_fatal,'no X-point found')
@@ -3865,6 +4107,10 @@ subroutine beq_bdryrb(self)
   end do radial
 
   if( (zpsiinr-zpsioutr)*rsig >= 0 ) then
+     call gfile_init('psidump','psi sample in R-Z space',ilog)
+     call spl2d_writeg(self%psi,'sampl',ilog)
+     call gfile_close
+     call log_value('Dump of psi array to file psidump.gnu on unit ',ilog)
      call log_error(m_name,s_name,1,error_fatal,'No suitable psi range exists')
   end if
 
@@ -3970,6 +4216,399 @@ subroutine beq_bdryrb(self)
   deallocate(wvextd)
 
 end subroutine beq_bdryrb
+!---------------------------------------------------------------------
+!> calculate \f$ R_m \f$ and \f$ B_m \f$ from \f$ \psi_m \f$ for double null casse
+subroutine beq_bdryrb_dn(self)
+
+  !! arguments
+  type(beq_t), intent(inout) :: self   !< object data structure
+
+  !! local
+  character(*), parameter :: s_name='beq_bdryrb' !< subroutine name
+  integer(ki4) :: nsrsamp    !< number of samples in \f$ r \f$
+  integer(ki4) :: m   !< counter to allow for multi regions
+  real(kr8) :: ztheta    !< angle in  \f$ \theta \f$ of boundary point
+  real(kr8) :: zdsrmin    !< floor to \f$ \Delta r_i \f$
+  real(kr8) :: zp    !< \f$ \psi \f$
+  real(kr8) :: zdpdr    !< \f$ \frac{\partial\psi}{\partial R} \f$
+  real(kr8) :: zdpdz    !< \f$ \frac{\partial\psi}{\partial Z} \f$
+  real(kr8) :: zpsiinr    !<  estimate for inner limit of \f$ \psi \f$
+  real(kr8) :: zpsioutr    !<  estimate for outer limit of \f$ \psi \f$
+  real(kr8) :: zsrr   !< estimate for maximum \f$ |R-R_c| \f$ in domain
+  real(kr8) :: zszz   !< estimate for maximum \f$ |Z-Z_c| \f$ in domain
+  real(kr8) :: zsrsta   !< estimate for starting \f$ r \f$
+  real(kr8) :: zsrmin   !< smaller \f$ r \f$ corresponding to zpsiinr
+  real(kr8) :: zsrmax   !< larger \f$ r \f$ corresponding to zpsioutr
+  real(kr8) :: zcos    !<  \f$ \cos(\theta=0) \f$
+  real(kr8) :: zsin    !<  \f$ \sin(\theta=0) \f$
+  real(kr8) :: re    !<   \f$ R_i \f$
+  real(kr8) :: ze    !<  \f$ Z_i \f$
+  real(kr8) :: zdpdsr    !<  \f$ \frac{\partial\psi}{\partial r}_i \f$
+  real(kr8) :: zsr    !< \f$  r_i \f$
+  real(kr8) :: zdsr    !< \f$ \Delta r_i \f$
+  real(kr8) :: zdpdsrl    !< \f$ \frac{\partial\psi}{\partial r}_{i-1} \f$
+  real(kr8) :: zsrinr    !<  smallest \f$ r \f$ in range
+  real(kr8) :: zsroutr    !<  largest \f$ r \f$ in range
+  integer(ki4) :: isr !< flag that value \f$ \psi < \psi_{\min} \f$ found
+  integer(ki4) :: idplset !< flag that \f$ \frac{\partial\psi}{\partial r}_{i-1}  \f$ set
+  integer(ki4) :: iext    !< maximum allowed number of knots for spline in \f$ r \f$
+  integer(ki4) :: iknot    !< actual number of knots for spline in \f$ r \f$
+  integer(ki4) :: intv    !< interval in which spline inverse found
+  real(kr8) :: cpsi    !< constant for estimating \f$ \Delta r_i \f$
+  real(kr8) :: zpsi    !<  \f$ \psi \f$
+  real(kr8) :: zf    !<   \f$ f(\psi) = RB_T \f$
+  real(kr8) :: cylj    !<  current estimated in cylindrical approx.
+  real(kr8) :: zbr    !<  radial field component
+  real(kr8) :: zbz    !<  vertical field component
+  real(kr8) :: zbt    !<  toroidal field component
+  real(kr8) :: swap    !<  Used to swap R_1,R_2,R_3 and R_4 into order
+    
+  integer(ki4) :: bdryopt_start
+  !Set bdryopt_start to user chosen value, so that self%n%bdryopt can 
+  !be set back to original value at end of subroutine
+  bdryopt_start=self%n%bdryopt 
+  !Exit subroutine if the user selected certain boundary options
+  !to be consistent with non double null case
+  allocate(self%rbdryarr(0:n_regions),self%bpbdryarr(0:n_regions),self%btotbdryarr(0:n_regions))
+  if(bdryopt_start==1 .or. bdryopt_start==3 .or. bdryopt_start==13) then
+     ! check for replacement
+     if (self%replasi) then
+        call log_value('psi plasma boundary replaced with',self%psibdry)
+        self%psiqbdry=self%psibdry
+     end if
+     return
+  end if
+  if(bdryopt_start==2) then
+     return
+  end if  
+  !Loop over regions
+  Do m=0,n_regions
+     if(m==1) then
+         self%n%bdryopt=4
+         self%psibdry=self%psixptarr(1)
+     end if
+     if(m==2) self%n%bdryopt=8
+     if(m==3) self%n%bdryopt=16
+     if(m==4) self%n%bdryopt=17
+     pick_angle : select case (self%n%bdryopt)
+     case(4,5,7,11,14) ! inboard point selected
+        ztheta=const_pid
+     case(8,9,10,12,15) ! outboard point selected
+        ztheta=0.0_kr8
+     case(16) ! second inboard point selected
+        self%psibdry=self%psixptarr(2)
+        ztheta=const_pid
+     case(17) ! second outboard point selected
+        self%psibdry=self%psixptarr(2)
+        ztheta=0.0_kr8
+     case default ! do nothing (assuming psiqbdry OK in eqdsk)
+        return
+     end select pick_angle
+
+     zpsiinr=(self%psibdry+self%psiaxis)/2
+     zsrr=max( abs(self%rmax-self%n%rcen), abs(self%rmin-self%n%rcen) )
+     zszz=max( abs(self%zmax-self%n%zcen), abs(self%zmin-self%n%zcen) )
+     zsrmax=sqrt(zsrr**2+zszz**2)
+     nsrsamp=self%mr+self%mz
+     zdsr=zsrmax/nsrsamp
+     zsrsta=zsrmax/10
+     zpsioutr=zpsiinr
+
+     zcos=cos(ztheta)
+     zsin=sin(ztheta)
+     ! loop over distance from centre
+     ! start a little way from origin
+     zsr=zsrsta
+     zsrinr=zsr
+     isr=0
+     idplset=0
+     radial:do i=1,nsrsamp
+        re=self%n%rcen+zsr*zcos
+        if (re>=self%rmax.OR.re<=self%rmin) then
+           !dbg         write(*,*) 're,ze=',re,ze
+           !extremal R reached
+           exit
+        end if
+        ze=self%n%zcen+zsr*zsin
+        if (ze>=self%zmax.OR.ze<=self%zmin) then
+           !dbg         write(*,*) 're,ze=',re,ze
+           !extremal Z reached
+           exit
+        end if
+        call spl2d_eval(self%psi,re,ze,zp)
+
+        !dbg      write(*,*) j,i,re,ze,zp
+
+        if (rsig>0) then
+           ! if (self%psiaxis<self%psiqbdry)
+           ! psi increasing outward
+           if ((zp-zpsiinr)*rsig<0) then
+              !record while psi < psi-inner
+              isr=i
+              zsrinr=zsr
+           else
+              if(isr==0) then
+                 ! sr sta is too large, reduce
+                 zsr=4*zsr/5
+                 cycle
+              end if
+           end if
+        else
+           ! psi decreasing outward
+           if ((zp-zpsiinr)*rsig<0) then
+              !if (zp>self%n%psimax)
+              !record while psi > psi-inner
+              isr=i
+              zsrinr=zsr
+           else
+              if(isr==0) then
+                 ! sr sta is too large, reduce
+                 zsr=4*zsr/5
+                 cycle
+              end if
+           end if
+        end if
+
+        ! check monotone
+        call spl2d_evaln(self%dpsidr,re,ze,1,zdpdr)
+        call spl2d_evaln(self%dpsidz,re,ze,2,zdpdz)
+        zdpdsr=zdpdr*zcos+zdpdz*zsin
+        if(idplset==1) then
+           if(zdpdsrl*zdpdsr<=0) then
+              ! extremum in psi reached
+              ! try to use the monotone range
+              exit
+           end if
+        end if
+        zsr=zsr+zdsr
+        zdpdsrl=zdpdsr
+        idplset=1
+        zsroutr=zsr
+        zpsioutr=zp
+     end do radial
+
+     if( (zpsiinr-zpsioutr)*rsig >= 0 ) then
+        call log_error(m_name,s_name,1,error_fatal,'No suitable psi range exists')
+     end if
+
+     zsrmin=zsrinr
+     zsrmax=zsroutr
+
+     ! end of beq_rextrema equivalent code
+
+     ! allocate generous amount of space for work (roughly half this should be needed, see  cpsi)
+     iext=4*self%n%npsi
+     allocate(wvextn(iext), stat=status)
+     call log_alloc_check(m_name,s_name,11,status)
+     allocate(wvext(iext), stat=status)
+     call log_alloc_check(m_name,s_name,12,status)
+     allocate(wvextd(iext), stat=status)
+     call log_alloc_check(m_name,s_name,13,status)
+     cpsi=abs(zpsioutr-zpsiinr)/(2*self%n%npsi)
+
+     zdsrmin=(zsrmax-zsrmin)/(4*self%n%npsi-0.1)
+
+     ! loop over r to define 1-D splines as a function of r
+     zsr=zsrmin
+     do i=1,iext
+        re=self%n%rcen+zsr*zcos
+        ze=self%n%zcen+zsr*zsin
+        call spl2d_evaln(self%psi,re,ze,1,zp)
+        call spl2d_evaln(self%dpsidr,re,ze,2,zdpdr)
+        call spl2d_evaln(self%dpsidz,re,ze,2,zdpdz)
+        zdpdsr=zdpdr*zcos+zdpdz*zsin
+        if(i>1.AND.zdpdsrl*zdpdsr<=0) then
+           ! should only be small non-monotone region, try to ignore
+           call log_error(m_name,s_name,20,error_warning,'Lack of monotonicity')
+           ! fix up
+           zdpdsr=zdpdsrl
+        end if
+        wvextn(i)=zsr
+        wvext(i)=zp
+        wvextd(i)=zdpdsr
+        iknot=i
+        zdsr=abs(cpsi/zdpdsr)
+        zsr=zsr+max(min(zdsr,3*zdsrmin),zdsrmin)
+        if ( i>1 .AND. (zsr-zsrmax)>0 ) goto 2
+        zdpdsrl=zdpdsr
+     end do
+
+     call log_error(m_name,s_name,25,error_fatal,'Too many nodes')
+
+   2     continue
+     !DWVS write(*,*) s_name, ' debugging arrays' !DWVS
+     !DWVS write(*,*) 'psi', self%psibdry !DWVS
+     !DWVS do i=1,iknot !DWVS
+     !DWVS write(*,*) i,wvextn(i),wvext(i),wvextd(i) !DWVS
+     !DWVS end do !DWVS
+
+     ! estimate interval where psi approx psim
+     do j=1,iknot-1
+        intv=j
+        if ( (wvext(j)-self%psibdry)*(wvext(j+1)-self%psibdry) <= 0 ) exit
+     end do
+     zsr=wvextn(intv)
+
+     zpsi=self%psibdry
+     ! tc01a changes zsr to more exact value
+     call tc01a(wvextn,wvext,wvextd,iknot,zsr,zpsi,intv)
+     if (intv<=0) then
+        call log_error(m_name,s_name,30,error_warning,'failure to improve r value')
+     end if
+
+     ! check for replacement
+     if (self%replasi) then
+        call log_value('psi plasma boundary replaced with',self%psibdry)
+        self%psiqbdry=self%psibdry
+     end if
+     re=self%n%rcen+zsr*zcos
+     ze=self%n%zcen+zsr*zsin
+     call spl2d_evaln(self%dpsidr,re,ze,1,zdpdr)
+     call spl2d_evaln(self%dpsidz,re,ze,2,zdpdz)
+     self%rbdry=re
+     self%bpbdry=(1/re)*sqrt( max(0.,(zdpdr**2+zdpdz**2)) )
+
+     ! evaluate I aka f at psi
+     call spleval(self%f,self%mr,self%psiaxis,self%psiqbdry,zpsi,zf,1)
+     self%btotbdry=sqrt( max(0.,(self%bpbdry**2+(zf/re)**2)) )
+     !******************************************************************
+     !Set rbdryarr,btotbdryarr,bpbdryarr for each region dependent on
+     !psi of xpoint
+     !******************************************************************
+     if(n_regions==4) then
+        if(m>0) then
+           set_rbdry_and_btotbdry_dn_4_regions : select case (self%n%bdryopt)
+           case(4) ! inboard point selected
+              self%rbdryarr(2)=self%rbdry
+              self%btotbdryarr(2)=self%btotbdry
+              self%bpbdryarr(2)=self%bpbdry
+           case(16) ! second inboard point selected
+              self%rbdryarr(1)=self%rbdry
+              self%btotbdryarr(1)=self%btotbdry
+              self%bpbdryarr(1)=self%bpbdry
+           case(8) ! outboard point selected
+              self%rbdryarr(3)=self%rbdry
+              self%btotbdryarr(3)=self%btotbdry
+              self%bpbdryarr(3)=self%bpbdry
+           case(17) ! second outboard point selected
+              self%rbdryarr(4)=self%rbdry
+              self%btotbdryarr(4)=self%btotbdry
+              self%bpbdryarr(4)=self%bpbdry
+           case default ! do nothing (assuming psiqbdry OK in eqdsk)
+              return
+           end select set_rbdry_and_btotbdry_dn_4_regions
+        end if
+     end if
+     
+     if(n_regions==2) then
+        if(m>0) then
+           set_rbdry_and_btotbdry_dn_2_regions : select case (self%n%bdryopt)
+           case(4) ! inboard point selected
+              self%rbdryarr(1)=self%rbdry
+              self%btotbdryarr(1)=self%btotbdry
+              self%bpbdryarr(1)=self%bpbdry
+           case(8) ! outboard point selected
+              self%rbdryarr(2)=self%rbdry
+              self%btotbdryarr(2)=self%btotbdry
+              self%bpbdryarr(2)=self%bpbdry
+           case default ! do nothing (assuming psiqbdry OK in eqdsk)
+              return
+           end select set_rbdry_and_btotbdry_dn_2_regions
+        end if
+     end if
+     !******************************************************************
+     !Store values of rbdry,btotbdry and bpbdry calculated from users
+     !choice of bdryopt 
+     !******************************************************************
+     if(m==0) then
+           self%rbdryarr(0)=self%rbdry
+           self%btotbdryarr(0)=self%btotbdry
+           self%bpbdryarr(0)=self%bpbdry
+     end if
+
+     call log_error(m_name,s_name,2,log_info,'Reference boundary values')
+     call log_value("SMITER-GEOQ psibdry ",self%psibdry)
+     call log_value("SMITER-GEOQ rbdry ",self%rbdry)
+     call log_value("SMITER-GEOQ zbdry ",ze)
+     call log_value("SMITER-GEOQ bpbdry ",self%bpbdry)
+     call log_value("SMITER-GEOQ btotbdry ",self%btotbdry)
+     cylj=abs(zsr*self%bpbdry/2.e-7)
+     call log_value("Estimated cylindrical current ",cylj)
+
+     zbr=-(1/re)*zdpdz
+     zbz=(1/re)*zdpdr
+     zbt=zf/re
+     call log_value("radial field component",zbr)
+     call log_value("vertical field component",zbz)
+     call log_value("toroidal field component",zbt)
+
+     deallocate(wvextn)
+     deallocate(wvext)
+     deallocate(wvextd)
+  end do
+  !*********************************************************************
+  !Swap around values if psixpt(1) represents the outer x-point
+  !**********************************************************************
+  if(n_regions==4) then
+     self%outer_xpoint=2
+   !  if(self%rbdryarr(4)-self%rbdryarr(3)<0.0) then
+   !     self%outer_xpoint=1
+   !     swap=self%rbdryarr(3);self%rbdryarr(3)=self%rbdryarr(4);self%rbdryarr(4)=swap
+   !     swap=self%rbdryarr(1);self%rbdryarr(1)=self%rbdryarr(2);self%rbdryarr(2)=swap
+   !     swap=self%btotbdryarr(3);self%btotbdryarr(3)=self%btotbdryarr(4);self%btotbdryarr(4)=swap
+   !     swap=self%btotbdryarr(1);self%btotbdryarr(1)=self%btotbdryarr(2);self%btotbdryarr(2)=swap
+   !     swap=self%bpbdryarr(3);self%bpbdryarr(3)=self%bpbdryarr(4);self%bpbdryarr(4)=swap
+   !     swap=self%bpbdryarr(1);self%bpbdryarr(1)=self%bpbdryarr(2);self%bpbdryarr(2)=swap
+   !  end if
+     
+     if(rsig*(self%psixptarr(2)-self%psixptarr(1))<0) then
+        self%outer_xpoint=1
+        swap=self%rbdryarr(3);self%rbdryarr(3)=self%rbdryarr(4);self%rbdryarr(4)=swap
+        swap=self%rbdryarr(1);self%rbdryarr(1)=self%rbdryarr(2);self%rbdryarr(2)=swap
+        swap=self%btotbdryarr(3);self%btotbdryarr(3)=self%btotbdryarr(4);self%btotbdryarr(4)=swap
+        swap=self%btotbdryarr(1);self%btotbdryarr(1)=self%btotbdryarr(2);self%btotbdryarr(2)=swap
+        swap=self%bpbdryarr(3);self%bpbdryarr(3)=self%bpbdryarr(4);self%bpbdryarr(4)=swap
+        swap=self%bpbdryarr(1);self%bpbdryarr(1)=self%bpbdryarr(2);self%bpbdryarr(2)=swap
+     end if
+  end if
+  !*********************************************************************
+  !Set psibdry back to value chosen by bdryopt
+  !*********************************************************************
+  pick_boundary_psi : select case (bdryopt_start)
+  case(4,8) 
+     self%psibdry=self%psixptarr(1)
+  case(5,9)
+     self%psibdry=self%n%psiref
+  case(6) 
+     if (rsig>0) then
+        self%psibdry=min(self%psiqbdry,self%psiltr)
+     else
+        self%psibdry=max(self%psiqbdry,self%psiltr)
+     end if
+  case(7,10) 
+     if (rsig>0) then
+        self%psibdry=min(self%psiqbdry,self%psixpt)
+     else
+        self%psibdry=max(self%psiqbdry,self%psixpt)
+     end if
+  case(11,12) 
+     self%psibdry=self%psiqbdry
+  case(14,15) 
+     self%psibdry=self%psiltr
+  case(16,17) 
+     self%psibdry=self%psixptarr(2)
+  end select pick_boundary_psi
+  !*********************************************************************
+  !Set all boundary values to same value if requested
+  !*********************************************************************
+  if(same_rmbpmbm==1) then 
+       self%rbdryarr=self%rbdryarr(0)
+       self%btotbdryarr=self%btotbdryarr(0)
+       self%bpbdryarr=self%bpbdryarr(0)
+  end if
+! Set boundary option back to requested value
+self%n%bdryopt=bdryopt_start 
+end subroutine beq_bdryrb_dn
 !---------------------------------------------------------------------
 !> calculate \f$ r_{min} \f$ and \f$ r_{min} \f$ as functions of \f$ \theta_j \f$
 subroutine beq_rextrema(self)

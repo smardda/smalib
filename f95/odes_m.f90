@@ -1,5 +1,7 @@
+!> @addtogroup groupname4
+!> @{
 module odes_m
-
+!> @}
   use const_kind_m
   use const_numphys_h
   use log_m
@@ -1041,7 +1043,7 @@ subroutine odes_rjstep1(self,kerr,pf,rjspl2d)
      gn=abs(g)
      gdotn=abs(gdot)
      zepst =self%n%epsr*gn+self%n%epsa
-     if (zepst .lt. gdotn**self%nsord) then
+     if (zepst<gdotn**self%nsord) then
         self%dt=(zepst/gdotn)**self%rsord
      else
         self%dt=self%n%dt0
@@ -1249,7 +1251,7 @@ subroutine odes_3rdstep1_sp3(self,kerr,pdfaca,spl3d,psi,dspldr,dspldz,kflag)
      gdotn=maxval(abs(gdot))
      !DES     zepst=self%n%epsr*gn+self%n%epsa
      zepst=self%n%epsr+self%n%epsa
-     if (zepst .lt. gdotn**self%nsord) then
+     if (zepst<gdotn**self%nsord) then
         self%dt=(zepst/gdotn)**self%rsord
      else
         self%dt=self%n%dt0
@@ -1291,7 +1293,7 @@ subroutine odes_3rdstep1_qart(self,kerr,pdfaca,beqart,psi,dspldr,dspldz,kflag)
      gn=maxval(abs(g))
      gdotn=maxval(abs(gdot))
      zepst=self%n%epsr+self%n%epsa
-     if (zepst .lt. gdotn**self%nsord) then
+     if (zepst<gdotn**self%nsord) then
         self%dt=(zepst/gdotn)**self%rsord
      else
         self%dt=self%n%dt0
@@ -1339,7 +1341,7 @@ subroutine odes_4thstep1(self,kerr,pdfaca,pf,psi,dspldr,dspldz,kflag)
      gdotn=maxval(abs(gdot))
      !DES     zepst=self%n%epsr*gn+self%n%epsa
      zepst=self%n%epsr+self%n%epsa
-     if (zepst .lt. gdotn**self%nsord) then
+     if (zepst<gdotn**self%nsord) then
         self%dt=(zepst/gdotn)**self%rsord
      else
         self%dt=self%n%dt0

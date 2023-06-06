@@ -1,5 +1,7 @@
+!> @addtogroup groupname4
+!> @{
 module vfile_m
-
+!> @}
   use const_kind_m
   use log_m
   use misc_m
@@ -223,7 +225,7 @@ end subroutine vfile_rscalarread
 !> read vtk real vectors
 subroutine vfile_rvectorread(self,kp,kadim,infile,kcname,kin,kopt)
 
-  use smitermpi_h  
+  use smitermpi_h
 
   !! arguments
   real(kr4), dimension(:), allocatable, intent(inout) :: self !< real vector list data
@@ -360,7 +362,7 @@ subroutine vfile_rvectorread(self,kp,kadim,infile,kcname,kin,kopt)
   read(nin,*,iostat=status) (self(j),j=1,3*kp)
   call log_read_check(m_name,s_name,7,status)
 
-  if(myrank_log .eq. 0) then
+  if(myrank_log==0) then
      print '("number of vectors read = ",i10)',kp
      call log_value("number of vectors read ",kp)
   endif
@@ -625,9 +627,9 @@ subroutine vfile_iscalarread(kself,kp,infile,kcname,kin,kopt,kcdata)
         ibuf2=adjustl(ibuf1)
         if(ibuf2(1:7)=='SCALARS'.OR.imeta==-2) then
            if (imeta==-2) then
-           ibuf1=ibuf2
+              ibuf1=ibuf2
            else
-           ibuf1=adjustl(ibuf2(8:))
+              ibuf1=adjustl(ibuf2(8:))
            end if
            islen=max(2,scan(ibuf1,' '))-1
            sname=ibuf1(:islen)

@@ -1,5 +1,7 @@
+!> @addtogroup groupname4
+!> @{
 module beqan_m
-
+!> @}
   use beqan_h
   use log_m
   use misc_m

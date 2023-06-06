@@ -1,5 +1,7 @@
+!> @addtogroup groupname4
+!> @{
 module li_m
-
+!> @}
   use const_kind_m
   use log_m
 

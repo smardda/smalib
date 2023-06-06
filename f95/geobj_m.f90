@@ -1,5 +1,7 @@
+!> @addtogroup groupname4
+!> @{
 module geobj_m
-
+!> @}
   use const_kind_m
   use const_numphys_h
   use log_m
@@ -52,7 +54,7 @@ module geobj_m
    !! 7. cutout
    !! 32+ptr. termination plane
    !! 64+ptr. boundary interface
-     integer(ki2) :: typ !< -
+     integer(ki2) :: typ !< .
   end type geobj2_t
 
   type, public :: geobj_t
@@ -250,19 +252,19 @@ function geobj_inbox(self,posl,nodl,box)
      end do
 
   else if (ityp==VTK_TRIANGLE) then
-        ! triangle type
-        inn=geobj_entry_table(ityp)
-        ii=self%geobj
-        do jj=1,inn
-           inod(jj)=nodl(ii+jj-1)
-           xnodes(:,jj)=posl%pos(inod(jj))%posvec
-        end do
-        xc=0.5*(box(:,1)+box(:,2))
-        hh=0.500005*abs(box(:,2)-box(:,1))
-        linbox=geobj_trihitsbox(xc,hh,xnodes)
-  else 
-        ! no intersection unless point or triangle
-        linbox=.FALSE.
+     ! triangle type
+     inn=geobj_entry_table(ityp)
+     ii=self%geobj
+     do jj=1,inn
+        inod(jj)=nodl(ii+jj-1)
+        xnodes(:,jj)=posl%pos(inod(jj))%posvec
+     end do
+     xc=0.5*(box(:,1)+box(:,2))
+     hh=0.500005*abs(box(:,2)-box(:,1))
+     linbox=geobj_trihitsbox(xc,hh,xnodes)
+  else
+     ! no intersection unless point or triangle
+     linbox=.FALSE.
   end if
 
   geobj_inbox=linbox

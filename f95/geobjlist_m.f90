@@ -1,5 +1,7 @@
+!> @addtogroup groupname4
+!> @{
 module geobjlist_m
-
+!> @}
   use const_kind_m
   use log_m
   use misc_m
@@ -159,7 +161,7 @@ subroutine geobjlist_init(self,vtkfile,numerics,noread)
   call log_alloc_check(m_name,s_name,2,status)
   if (.not.allocated(tposl%pos)) allocate(tposl%pos(2), stat=status)
   call log_alloc_check(m_name,s_name,3,status)
-  
+
   if(present(noread)) return
 
   !! read coords
@@ -244,17 +246,17 @@ subroutine geobjlist_read(self,infile,kched,kin,leave_open)
   character(len=30) :: iclabel !< label on line 2 of vtk file
 
   logical :: ilrew=.false. !< flag rewind
-  logical :: close_file = .True. !< local variable
+  logical :: close_file = .true. !< local variable
 
   logical :: isnumb !< local variable
   external isnumb
 
   if(present(leave_open)) then
-     if( leave_open ) close_file = .False.
+     if( leave_open ) close_file = .false.
   endif
 
   if(present(kin)) then
-    ilrew=(kin>0)
+     ilrew=(kin>0)
   end if
 
   if (ilrew) then
@@ -356,7 +358,7 @@ subroutine geobjlist_read(self,infile,kched,kin,leave_open)
   !     call position_readv(self%posl%pos(j),nin)
   !  end do
   ! end position_readlis
-  if( myrank_log .eq. 0 ) then
+  if( myrank_log==0 ) then
      print '("number of geobj coordinates read = ",i10)',self%np
      call log_value("number of geobj coordinates read ",self%np)
   endif
@@ -490,7 +492,7 @@ subroutine geobjlist_read(self,infile,kched,kin,leave_open)
         end if
      end do
      innd=innd-1
-     if(myrank_log .eq. 0) then
+     if(myrank_log==0) then
         print '("number of node pointers read = ",i10)',innd
         call log_value("number of node pointers read ",innd)
      endif
@@ -594,7 +596,7 @@ subroutine geobjlist_read(self,infile,kched,kin,leave_open)
         end if
      end do
      innd=innd-1
-     if(myrank_log .eq. 0) then
+     if(myrank_log==0) then
         print '("number of node pointers read = ",i10)',innd
         call log_value("number of node pointers read ",innd)
      endif
@@ -646,7 +648,7 @@ subroutine geobjlist_read(self,infile,kched,kin,leave_open)
 
   end select geobject_typer
 
-  if(myrank_log .eq. 0) then
+  if(myrank_log==0) then
      print '("number of geobj read = ",i10)',self%ng
      call log_value("number of geobj read ",self%ng)
      call log_error(m_name,s_name,70,log_info,'geobjlist read in from data file')
@@ -1621,7 +1623,7 @@ subroutine geobjlist_getbb(self,btree)
         zpow2=2.
         do j=2,31
            ij=j
-           if (zpow2.gt.zmind) exit
+           if (zpow2>zmind) exit
            zpow2=2.*zpow2
         end do
         btree%ndepth=ij
@@ -1643,10 +1645,10 @@ subroutine geobjlist_getbb(self,btree)
      ipow2=2
      do j=1,31
         ij=j
-        if (ipow2.ge.imxyz) exit
+        if (ipow2>=imxyz) exit
         ipow2=2*ipow2
      end do
-     if (self%nquant+ij.gt.ki2bits-2) then
+     if (self%nquant+ij>ki2bits-2) then
         ! too large for type ki2 integers
         call log_error(m_name,s_name,3,error_warning,'quantising number too large, reset')
         iquant=ki2bits-2-ij
@@ -1836,9 +1838,9 @@ subroutine geobjlist_paneltfm(self,bods,numerics)
      ibod=bods%list(j)
      ! object may have no associated body
      if (ibod==0) cycle
-        !dbgw iibod=ibod !dbgw
+     !dbgw iibod=ibod !dbgw
      if (bods%nindx>0) ibod=bods%indx(ibod)
-        !dbgw write(110,*) j,iibod,ibod !dbgw
+     !dbgw write(110,*) j,iibod,ibod !dbgw
      !BP      !w    ipan=ibodpan(ibod)
      ipan=indict2(inpan,numerics%panbod,ibod)
      if (ipan==0) then
@@ -1998,9 +2000,9 @@ subroutine geobjlist_paneltfm(self,bods,numerics)
      ibod=bods%list(j)
      ! object may have no associated body
      if (ibod==0) cycle
-        !dbgw iibod=ibod !dbgw
+     !dbgw iibod=ibod !dbgw
      if (bods%nindx>0) ibod=bods%indx(ibod)
-        !dbgw write(110,*) j,iibod,ibod !dbgw
+     !dbgw write(110,*) j,iibod,ibod !dbgw
      !BP      !w    ipan=ibodpan(ibod)
      ipan=indict2(inpan,numerics%panbod,ibod)
      if (ipan==0) then
@@ -4354,7 +4356,7 @@ end subroutine geobjlist_angext
 subroutine geobjlist_normal(self,pnormal)
   !! arguments
   type(geobjlist_t), intent(inout) :: self !< geobj list data
-  real(kr8), dimension(3), intent(out) :: pnormal !< normal 
+  real(kr8), dimension(3), intent(out) :: pnormal !< normal
 
   !! local
   character(*), parameter :: s_name='geobjlist_normal' !< subroutine name

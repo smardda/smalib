@@ -1,5 +1,7 @@
+!> @addtogroup groupname4
+!> @{
 module dbtree_m
-
+!> @}
   use const_kind_m
   use const_numphys_h
   use ls_m
@@ -784,7 +786,7 @@ subroutine dbtree_addobj(self,obj,posl,ktry)
   !! self%pter(2,k)   | HOC for node list \n
   !! self%pter(3,k)   |  -2 (no entries), -1 (terminal)  or pointer to first child \n
   !! self%pter(4,k)   |  Number of objects in bin
-  type(dbtree_t), intent(inout) :: self !< .
+  type(dbtree_t), intent(inout) :: self !< module object
   type(geobj_t), intent(in) :: obj   !< obj definition
   type(posveclis_t), intent(in) :: posl !< posl vector
   integer(ki4), intent(inout) :: ktry !< try for node

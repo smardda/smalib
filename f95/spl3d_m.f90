@@ -1,5 +1,7 @@
+!> @addtogroup groupname4
+!> @{
 module spl3d_m
-
+!> @}
   use const_kind_m
   use const_numphys_h
   use log_m
@@ -85,8 +87,9 @@ module spl3d_m
 !> read in data format
 subroutine spl3d_read(self,infile,kin)
 
-  use smitermpi_h ! For log message control
-  
+  use smitermpi_h
+  !< For log message control
+
   !! arguments
   type(spl3d_t), intent(out) :: self   !< object data structure
   character(len=80),intent(in) :: infile !< name of input file

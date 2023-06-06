@@ -1,5 +1,7 @@
+!> @addtogroup groupname3
+!> @{
 module dbtree_h
-
+!> @}
   use const_kind_m
   use position_h
   use ls_m

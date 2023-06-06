@@ -1,5 +1,7 @@
+!> @addtogroup groupname0
+!> @{
 program vtktfm_p
-
+!> @}
   use const_kind_m
   use const_numphys_h
   use date_time_m
@@ -112,10 +114,10 @@ program vtktfm_p
   geobjl%ngtype=2
 !dbgw  write(*,*) "fn,iopt=",file%nvtkdata, iopt  !dbgw
   if (file%nvtkdata==1) then
-     ! just one file with Body data
+! just one file with Body data
      call geobjlist_read(geobjl,file%vtkdata(1),kched=iched,leave_open=.true.)
-     !dbgw     write(*,*) 'first',(geobjl%nodl(j),j=1,20) !dbgw
-     !dbgw print*, "Read geobjlist" !dbgw
+!dbgw     write(*,*) 'first',(geobjl%nodl(j),j=1,20) !dbgw
+!dbgw print*, "Read geobjlist" !dbgw
      nin=0
      call vfile_iscalarread(bods%list,nscal,file%vtkdata(1),numerics%name,nin,iopt) !W
 !dbgw  write(*,*) "fn,iopt=",file%nvtkdata, iopt !dbgw

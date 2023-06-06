@@ -1,5 +1,7 @@
+!> @addtogroup groupname3
+!> @{
 module pcontrol_h
-
+!> @}
   use const_kind_m
   use termplane_h
 
@@ -9,9 +11,9 @@ module pcontrol_h
 !> numerical control parameters for all power calculation
   type, public :: pnumerics_t
      real(kr8) :: f !< power split ion to electron direction
-     real(kr8) :: lmid !< power decay length at outer midplane (m)
-     real(kr8) :: ploss !< power crossing the separatrix (W)
-     real(kr8) :: sigma !< diffusion length (m)
+     real(kr8), dimension(:), allocatable  :: lmid !< power decay length at outer midplane (m)
+     real(kr8), dimension(:), allocatable  :: ploss !< power crossing the separatrix (W)
+     real(kr8), dimension(:), allocatable  :: sigma !< diffusion length (m)
      integer(ki4)  :: nlevel !< refinement level
      logical  :: usepsista    !< use value of psi on termplane to evaluate Q
      integer(ki4)  :: shadow !< shadowing pcle calculation if positive

@@ -1,5 +1,7 @@
+!> @addtogroup groupname4
+!> @{
 module spl2d_m
-
+!> @}
   use const_kind_m
   use const_numphys_h
   use log_m
@@ -14,7 +16,7 @@ module spl2d_m
   public :: spl2d_read, & !< read in data structure format
   spl2d_init,   & !< create spl2d data structure and knots
   spl2d_initpart,   & !< create create dummy part of spl2d data structure
-  spl2d_initfull, &  !< create spl2d data structure from existing 
+  spl2d_initfull, &  !< create spl2d data structure from existing
   spl2d_ptlimits,   & !< get \f$ \psi,\theta \f$ limits of interpolation
   spl2d_ptscale,  &  !< scale points at which spline defined
   spl2d_ptscalinv,  &  !< inverse scale points at which spline defined
@@ -453,7 +455,7 @@ subroutine spl2d_initpart(self)
 
 end subroutine spl2d_initpart
 !---------------------------------------------------------------------
-!> create spl2d data structure from existing 
+!> create spl2d data structure from existing
 subroutine spl2d_initfull(self,selfout)
 
   !! arguments

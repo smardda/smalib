@@ -1,5 +1,7 @@
+!> @addtogroup groupname3
+!> @{
 module bods_h
-
+!> @}
   use const_kind_m
 
   type, public :: bods_t

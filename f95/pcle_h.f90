@@ -1,5 +1,7 @@
+!> @addtogroup groupname3
+!> @{
 module pcle_h
-
+!> @}
   use const_kind_m
 
 ! public types

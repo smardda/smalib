@@ -1,5 +1,7 @@
+!> @addtogroup groupname0
+!> @{
 program move_p
-
+!> @}
   use const_kind_m
   use const_numphys_h
   use control_h

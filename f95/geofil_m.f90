@@ -1,5 +1,7 @@
+!> @addtogroup groupname4
+!> @{
 module geofil_m
-
+!> @}
   use log_m
   use misc_m
   use const_numphys_h
@@ -69,13 +71,13 @@ subroutine geofil_read(self,file,numerics)
   call vfile_iscalarread(self%scag,self%nscag,file%vtk,numerics%namekey,ningf,iopt)
 
   if (4 <=iopt.AND.iopt<=9) then
-    ! no scalar data in file, fix up
-    call log_value("Fixing up file for missing body/cell labels replacement ",1)
-    allocate(self%scag(self%nscag),stat=status)
-    call log_alloc_check(m_name,s_name,1,status)
-    self%scag=1
+     ! no scalar data in file, fix up
+     call log_value("Fixing up file for missing body/cell labels replacement ",1)
+     allocate(self%scag(self%nscag),stat=status)
+     call log_alloc_check(m_name,s_name,1,status)
+     self%scag=1
   else  if (iopt/=0) then
-    call log_error(m_name,m_name,iopt,error_fatal,'Corrupt vtk file')
+     call log_error(m_name,m_name,iopt,error_fatal,'Corrupt vtk file')
   end if
 
   self%n=numerics
@@ -159,10 +161,10 @@ subroutine geofil_initwrite(fileroot,channel)
   call log_value("Control data file",trim(outputfile))
   call misc_getfileunit(noutgf)
   open(unit=noutgf,file=outputfile,status='NEW',iostat=status)
-!  uncomment these to disable lock file
-!  if(status/=0)then
-!     open(unit=noutgf,file=outputfile,status='REPLACE',iostat=status)
-!  end if
+  !  uncomment these to disable lock file
+  !  if(status/=0)then
+  !     open(unit=noutgf,file=outputfile,status='REPLACE',iostat=status)
+  !  end if
   if(status/=0)then
      !! error opening file
      print '("Fatal error: Unable to open new output file, ",a)',outputfile

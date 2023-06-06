@@ -1,4 +1,7 @@
+!> @addtogroup groupname3
+!> @{
 module beqart_h
+!> @}
   use const_kind_m
   use fmesh_h
 

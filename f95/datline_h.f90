@@ -1,5 +1,7 @@
+!> @addtogroup groupname3
+!> @{
 module datline_h
-
+!> @}
   use const_kind_m
 
 ! public types

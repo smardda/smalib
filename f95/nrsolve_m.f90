@@ -1,12 +1,14 @@
+!> @addtogroup groupname4
+!> @{
 module nrsolve_m
-
+!> @}
   use const_kind_m
   use const_numphys_h
   use log_m
   use misc_m
   use date_time_m
   use spl2d_m
-  !use pcontrol_h
+!use pcontrol_h
 !     use beq_m, only : beq_ripple_h1
 
   implicit none
