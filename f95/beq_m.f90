@@ -3753,7 +3753,7 @@ subroutine beq_psix(self)
   if (self%n%xsearch==1 .and. n_xpoints==1) mhemi=1 
   !loop over both and below midplane of box if xsearch=0
   do_hemi: do jhemi=0,mhemi-1
-     if (self%n%xsearch==1) then
+    if (self%n%xsearch==1) then
         ! only search the top half of the box
     if(n_xpoints ==1) then
         zt2=-const_pid ; zt1=const_pid !theta_1 and theta_2
@@ -3764,7 +3764,7 @@ subroutine beq_psix(self)
     end if
     if(n_xpoints >1) then
         if(jhemi==1) self%n%xzend=temp
-		if(jhemi==1) self%n%xzsta=(self%n%xzsta+self%n%xzend)/2.0d0
+        if(jhemi==1) self%n%xzsta=(self%n%xzsta+self%n%xzend)/2.0d0
         if(jhemi==0) self%n%xzend=(self%n%xzsta+self%n%xzend)/2.0d0
         zt1=(jhemi-1)*const_pid ; zt2=jhemi*const_pid
         j1=2+(int((self%n%xzsta-self%zmin)/self%dz))
@@ -3908,17 +3908,6 @@ subroutine beq_psix(self)
         self%rxptarr(jhemi+1) = self%n%rcen+((zsr1+zsr2)/2)*cos(zt3)
         self%zxptarr(jhemi+1) = self%n%zcen+((zsr1+zsr2)/2)*sin(zt3)
         self%psixptarr(jhemi+1) = zpsi3
-        !if(jhemi==0) then
-		!   write(*,*) "Lower Hemisphere SMITER-GEOQ psi-xpt ", self%psixptarr(jhemi+1)
-		!   write(*,*) "Lower Hemisphere SMITER-GEOQ theta-xpt ",zt3
-		!   write(*,*) "Lower Hemisphere SMITER-GEOQ R-xpt ",self%rxptarr(jhemi+1)
-		!   write(*,*) "Lower Hemisphere SMITER-GEOQ Z-xpt ",self%zxptarr(jhemi+1)
-        !else if(jhemi==1) then
-		!   write(*,*) "Upper Hemisphere SMITER-GEOQ psi-xpt ", self%psixptarr(jhemi+1)
-		!   write(*,*) "Upper Hemisphere SMITER-GEOQ theta-xpt ",zt3
-		!   write(*,*) "Upper Hemisphere SMITER-GEOQ R-xpt ",self%rxptarr(jhemi+1)
-		!   write(*,*) "Upper Hemisphere SMITER-GEOQ Z-xpt ",self%zxptarr(jhemi+1)
-        !end if
         self%rxpt=self%rxptarr(1)
         self%zxpt=self%zxptarr(1)
         self%psixpt=self%psixptarr(1)
