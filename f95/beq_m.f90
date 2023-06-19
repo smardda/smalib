@@ -1,10 +1,5 @@
-!> @addtogroup groupname333
-!> @{
-!> @defgroup groupname4 SMARDDA-lib
-!> @{
 module beq_m
-!> @}
-!> @}
+
   use const_kind_m
   use const_numphys_h
   use position_h

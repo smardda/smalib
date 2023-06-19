@@ -1,7 +1,4 @@
-!> @addtogroup groupname3
-!> @{
 module vcontrol_h
-!> @}
   use const_kind_m
   use position_h
 

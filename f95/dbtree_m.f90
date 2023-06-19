@@ -1,7 +1,5 @@
-!> @addtogroup groupname4
-!> @{
 module dbtree_m
-!> @}
+
   use const_kind_m
   use const_numphys_h
   use ls_m

@@ -1,7 +1,5 @@
-!> @addtogroup groupname3
-!> @{
 module odes_h
-!> @}
+
   use const_kind_m
   use position_h
 

@@ -1,7 +1,5 @@
-!> @addtogroup groupname4
-!> @{
 module beqart_m
-!> @}
+
   use const_kind_m
   use const_numphys_h
   use position_m

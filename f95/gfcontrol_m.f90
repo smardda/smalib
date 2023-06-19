@@ -1,7 +1,5 @@
-!> @addtogroup groupname4
-!> @{
 module gfcontrol_m
-!> @}
+
   use const_kind_m
   use log_m
   use gfcontrol_h

@@ -1,7 +1,5 @@
-!> @addtogroup groupname3
-!> @{
 module gfcontrol_h
-!> @}
+
   use const_kind_m
 
 !! public types

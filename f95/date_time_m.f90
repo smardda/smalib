@@ -1,7 +1,5 @@
-!> @addtogroup groupname4
-!> @{
 module date_time_m
-!> @}
+
   implicit none
   private
 

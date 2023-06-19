@@ -1,7 +1,5 @@
-!> @addtogroup groupname3
-!> @{
 module control_h
-!> @}
+
   use const_kind_m
   use position_h
 

@@ -1,7 +1,5 @@
-!> @addtogroup groupname4
-!> @{
 module log_m
-!> @}
+
   use const_kind_m
   use date_time_m
   use log_h

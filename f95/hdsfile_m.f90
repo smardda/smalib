@@ -1,7 +1,5 @@
-!> @addtogroup groupname4
-!> @{
 module hdsfile_m
-!> @}
+
   use const_kind_m
   use date_time_m
   use log_m

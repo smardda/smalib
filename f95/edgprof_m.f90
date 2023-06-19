@@ -1,7 +1,5 @@
-!> @addtogroup groupname4
-!> @{
 module edgprof_m
-!> @}
+
   use edgprof_h
   use log_m
   use misc_m

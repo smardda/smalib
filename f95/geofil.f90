@@ -1,10 +1,5 @@
-!> @addtogroup groupname111
-!> @{
-!> @defgroup groupname0 SMARDDA-lib
-!> @{
 program geofil_p
-!> @}
-!> @}
+
   use date_time_m
   use const_kind_m
   use log_m
