@@ -10,7 +10,7 @@ conversions from other mesh formats.
 For a description of the SMARDDA algorithm for ray tracing
 see http://dx.doi.org/10.1109/TPS.2015.2458897 (also http://arxiv.org/abs/1403.6750 )
 
-SMARDDA-LIB has been tested on CentOS 7.0, Ubuntu 18.04 and Red Hat 4.4 (Scientific Linux)
+SMARDDA-LIB has been tested on CentOS 7.0, Ubuntu 22.04 and Red Hat 4.4 (Scientific Linux)
 and is known to run on MacOS and WSL 1.
 Try to use the latest stable fortran compiler version available.
 
@@ -64,7 +64,7 @@ Settings->General, Click on gearwheel, untick Show Splash Screen, tick AutoApply
 See SMARDDA-LIB user manual webpages for further details of smint and smardda-lib use.
 file://$SMALIB_DIR/doc/srcdoc/html/index.html
 (assuming that doxygen doxyfile has been executed correctly in  $SMALIB_DIR/doc).
-Note that the CADfix-TM interface between CATIA-TM and SMARDDA/SMARDDA-LIB is not supported,
+Note that the CADfix-TM interface between CATIA-TM and SMARDDA/SMARDDA-LIB is not supported.
 
 The script tests.bash in $SMALIB_DIR show how SMARDDA-LIB works in detail, given the
 necessary geometry in legacy vtk format. Detailed descriptions of the namelists in the .ctl
@@ -73,8 +73,11 @@ file://$SMALIB_DIR/doc/srcdoc/html/classes.html
 (assuming that doxygen doxyfile has been executed correctly in  $SMALIB_DIR/doc).
 
 Developers should notice that SMARDDA-LIB was developed according to the principles and
-conventions set out in http://www.ccfe.ac.uk/assets/Documents/CCFE-R%20(15)34.pdf
-Production of support files and scripts for developers has been initiated.
-Users with CCFE account may access these from 
-git@git.ccfe.ac.uk:smardda/develop.git
+conventions set out in https://scientific-publications.ukaea.uk/wp-content/uploads/CCFE-R-1534.pdf
+mirrored at http://dx.doi.org/10.13140/RG.2.2.27018.41922
+Production of support files and scripts for developers has been initiated, there are
+templates at https://github.com/wayne-arter/smardda-qprog, and an example at https://github.com/wayne-arter/smardda-misc
+The PFC analysis codes SMARDDA-PFC and SMARDDA-RADN may be made available on request either via the
+smardda github organisation or users with CCFE accounts may be given access via the project
+git@git.ccfe.ac.uk:smardda
 
