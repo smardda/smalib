@@ -179,8 +179,8 @@ subroutine dbtree_readcon(selfn,channel)
 
   if(present(channel)) then
     if(channel/=0) then
-       !! assume unit already open and reading infile
-       nindbt=channel
+     !! assume unit already open and reading infile
+     nindbt=channel
     end if
   end if
 
