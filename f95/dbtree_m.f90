@@ -177,9 +177,11 @@ subroutine dbtree_readcon(selfn,channel)
   top_tree_children=(/2,2,2/) !< for special top octree default
   top_tree_spacings=(/0.1,0.1,0.1/) !< for special top octree default
 
-  if(present(channel).AND.channel/=0) then
+  if(present(channel)) then
+    if(channel/=0) then
      !! assume unit already open and reading infile
      nindbt=channel
+    end if
   end if
 
   !!read dbtree parameters
