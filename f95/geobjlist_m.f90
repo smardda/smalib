@@ -135,6 +135,11 @@ subroutine geobjlist_init(self,vtkfile,numerics,noread)
   !! local
   character(*), parameter :: s_name='geobjlist_init' !< subroutine name
 
+  !print *, ">>>>>>"
+  !print *, " >>>> In geobjlist_init Right before numerics assignment  "
+  !print *, " >>> self%ng", self%ng
+   !print *, " >>> numerics%geomtype", numerics%geomtype
+
   self%ngtype=numerics%geomtype
   self%tolerance=max(numerics%maxtolerance,0.0)
   self%nbdcub=numerics%nbdcub
@@ -152,6 +157,8 @@ subroutine geobjlist_init(self,vtkfile,numerics,noread)
   self%binbb=numerics%binbb
   self%ngunassigned=0
   self%nwset=0
+  !Francesca
+  !self%ng =0
 
   ! allocate array
   status=0
@@ -161,9 +168,26 @@ subroutine geobjlist_init(self,vtkfile,numerics,noread)
   call log_alloc_check(m_name,s_name,3,status)
 
   if(present(noread)) return
-
+  !print *, ">>>>>>"
+  !print *, " >>>> Right before geobjlist_read "
+  !print *, " >>> self%ng", self%ng
+   !print *, " >>> self%ngtype", self%ngtype
+  !print *, ">>>>>"
   !! read coords
   call geobjlist_read(self,vtkfile)
+  !print *, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+  !print *, " >>>> Right after call geobjlist_read "
+  !print *, ">>>> self%ngtype =", self%ngtype
+  !print *, " >>> self%ng", self%ng
+  !print *, ">>>> allocated(obj2)? ", allocated(self%obj2)
+  !print *, '>>> bounds obj2 =', lbound(self%obj2,1), ubound(self%obj2,1)
+  if (.not. allocated(self%obj2)) then 
+      print *, '>>>> self%obj2 not allocated!'  
+   else if (size(self%obj2) == 0) then
+      print *, '>>>>> ERROR: self%obj2 allocated but empty!'
+   end if
+   print *, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+
   numerics%ngeobj=self%ng
   call log_error(m_name,s_name,1,log_info,'geobj data read')
 
@@ -185,6 +209,7 @@ subroutine geobjlist_delete(self)
   end if
   if (self%ngtype/=1) then
      deallocate(self%nodl)
+      !print *, ">>>> DEallocate obj2 at line 188"
      deallocate(self%obj2)
   end if
 
@@ -323,6 +348,7 @@ subroutine geobjlist_read(self,infile,kched,kin,leave_open)
         else if(trim(ibuf1)=='UNSTRUCTURED_GRID') then
            !
            ivtktyp=3
+
         else
            ! error
            call log_error(m_name,s_name,4,error_fatal,'Unrecognised data set type')
@@ -336,11 +362,17 @@ subroutine geobjlist_read(self,infile,kched,kin,leave_open)
      call geobjlist_readhedline(self,ibuf1)
   end do
 
+
+   !print *, " <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+  ! print *, ">>>> I am in geobjlist_read before overwrite: self%ngtype =", self%ngtype
+  !print *,  " >>> I am in geobjlist_read before overwrite  vtktyp ",  ivtktyp
+
   if (self%ngtype==1) then
      ! overwrite ivtktyp so only points processed
      ivtktyp=1
   end if
 
+  print *, ">>>> after overwrite: self%ngtype =", self%ngtype, "ivtktyp =", ivtktyp
   !! allocate position storage
   if(self%np>0) then
      allocate(self%posl%pos(self%np), stat=status)
@@ -362,6 +394,7 @@ subroutine geobjlist_read(self,infile,kched,kin,leave_open)
   endif
 
   self%nwset=0
+
   geobject_typer : select case (ivtktyp)
   case(1)
      ! skip to POINT_DATA, ignore CELL and CELL_TYPES etc.
@@ -449,6 +482,7 @@ subroutine geobjlist_read(self,infile,kched,kin,leave_open)
      ! check geobj storage
      if(inobj>0) then
         self%ng=inobj
+        !print *, " >>>>>  allocate obj2 in line 452"
         allocate(self%obj2(self%ng), stat=status)
         call log_alloc_check(m_name,s_name,22,status)
      else
@@ -461,7 +495,7 @@ subroutine geobjlist_read(self,infile,kched,kin,leave_open)
      else
         call log_error(m_name,s_name,25,error_fatal,'No geobj data')
      end if
-
+     !print *, ">>>>>>>> self$ng", self%ng
      do j=1,self%ng
         read(nin,fmt='(a)',iostat=status) ibuf1
         if(status/=0) then
@@ -552,8 +586,10 @@ subroutine geobjlist_read(self,infile,kched,kin,leave_open)
      end do
 
      ! check geobj storage
+
      if(inobj>0) then
         self%ng=inobj
+        !print *, ">>>>>> allocate obj2 at line 558"
         allocate(self%obj2(self%ng), stat=status)
         call log_alloc_check(m_name,s_name,42,status)
      else
@@ -767,6 +803,7 @@ subroutine geobjlist_addcube(self)
   ! replace self with new
   deallocate(self%posl%pos)
   deallocate(self%nodl)
+  !rint *, ">>>> DEallocate obj2 at line 773"
   deallocate(self%obj2)
   ! reallocate geobjlist position storage
   allocate(self%posl%pos(inp), stat=status)
@@ -775,6 +812,7 @@ subroutine geobjlist_addcube(self)
   allocate(self%nodl(innod), stat=status)
   call log_alloc_check(m_name,s_name,12,status)
   ! reallocate geobjlist object type storage
+  !print *, " >>>>> Allocate obj2 line 781"
   allocate(self%obj2(ing), stat=status)
   call log_alloc_check(m_name,s_name,13,status)
   ! copy new arrays and indices
@@ -1074,6 +1112,8 @@ subroutine geobjlist_bin(self,btree)
      ! special for BSP
      call geobjlist_bbin(self,btree)
   else
+   
+     print *, "  <<<<<< btree type", btree%nttype
      call geobjlist_mbin(self,btree)
   end if
 
@@ -2390,8 +2430,29 @@ subroutine geobjlist_mbin(self,btree)
                        !AB                        iobj%geobj=inext!points
                        !AB                        iobj%objtyp=self%ngtype!points
                        inext=btree%objectls%list(inadr+l,2)
+                       !print *, ">>>>>"
+                        !print *, '>>> l = ', l
+                        !print *, '>>> inadr = ', inadr
+                        !print *, '>>> inext = ', inext
+                         !print *, '>>> bounds obj2 =', lbound(self%obj2,1), ubound(self%obj2,1)
+                         if (.not. allocated(self%obj2)) then
+                           print *, '>>>>> ERROR: self%obj2 not allocated!'
+                            !stop
+                        else if (size(self%obj2) == 0) then
+                           print *, '>>>>> ERROR: self%obj2 allocated but empty!'
+                        !stop
+                        end if
+                        !print *, " >>> self%ng = ", self%ng
+                        !print *, ">>>>>"
+
+                         if (inext < lbound(self%obj2,1) .or. inext > ubound(self%obj2,1)) then
+                           print *, '*** ERRORE: inext out of limits! ***'
+                           !stop 'Fermato per debug: inext fuori dai limiti'
+                         end if
                        iobj%geobj=self%obj2(inext)%ptr
                        iobj%objtyp=self%obj2(inext)%typ
+
+                       !stop ! Francesca
                        !DBG                       if (l==196) then !DBG
                        !DBG                         idummy=idummy+1 !DBG
                        !DBG                       end if !DBG
@@ -2711,6 +2772,7 @@ subroutine geobjlist_iinit(self,knpt,knobj,knnod,kgtype,kopt)
   if (kgtype==2) then
      allocate(self%nodl(self%nnod), stat=status)
      call log_alloc_check(m_name,s_name,4,status)
+     print *, "<<<<< Allocating obj2 at line 2732"
      allocate(self%obj2(self%ng), stat=status)
      call log_alloc_check(m_name,s_name,5,status)
      self%nwset=kopt
@@ -2790,6 +2852,7 @@ subroutine geobjlist_copy(selfin,selfout,kopt)
      allocate(selfout%nodl(selfout%nnod), stat=status)
      call log_alloc_check(m_name,s_name,3,status)
      selfout%nodl=selfin%nodl
+     print *, "<<<<< Allocating obj2 at line 2812"
      allocate(selfout%obj2(selfout%ng), stat=status)
      call log_alloc_check(m_name,s_name,4,status)
      selfout%obj2(1:selfout%ng)%ptr=selfin%obj2(1:selfout%ng)%ptr
@@ -2924,6 +2987,7 @@ subroutine geobjlist_cumulate(self,selfin,start,copy,kopt,kgcode)
            i=i+1
         end do
      end do
+     print *, " >>>>> Allocate obj2 at line 2953"
      deallocate(self%obj2)
      allocate(self%obj2(inobj), stat=status)
      call log_alloc_check(m_name,s_name,9,status)
@@ -3037,6 +3101,7 @@ subroutine geobjlist_create(self,kchar,prc,pzc,prs,pzs,knear,pdist)
      insto=inobj*(1+inumpts)
      ! create geobj storage
      self%ng=inobj
+      print *, "<<<<< Allocating obj2 at line 3060"
      allocate(self%obj2(self%ng), stat=status)
      call log_alloc_check(m_name,s_name,14,status)
      self%nnod=insto-inobj
@@ -3193,6 +3258,7 @@ subroutine geobjlist_create3d(self,numerics,kgcode)
      insto=inobj*(1+inumpts)
      ! create geobj storage
      self%ng=inobj
+     print *, "<<<<< Allocating obj2 at line 3217  VTK_LINE"
      allocate(self%obj2(self%ng), stat=status)
      call log_alloc_check(m_name,s_name,14,status)
      self%nnod=insto-inobj
@@ -3219,6 +3285,7 @@ subroutine geobjlist_create3d(self,numerics,kgcode)
      insto=inobj*(1+inumpts)
      ! create geobj storage
      self%ng=inobj
+     print *, "<<<<< Allocating obj2 at line 3244 VTK_QUAD"
      allocate(self%obj2(self%ng), stat=status)
      call log_alloc_check(m_name,s_name,14,status)
      self%nnod=insto-inobj
@@ -3249,6 +3316,7 @@ subroutine geobjlist_create3d(self,numerics,kgcode)
      insto=inobj*(1+inumpts)
      ! create geobj storage
      self%ng=inobj
+      print *, "<<<<< Allocating obj2 at line 3275 default"
      allocate(self%obj2(self%ng), stat=status)
      call log_alloc_check(m_name,s_name,16,status)
      self%nnod=insto-inobj

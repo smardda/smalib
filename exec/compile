@@ -1,16 +1,21 @@
 #! /bin/bash --norc
 swd=$PWD
-if [[ -z "$SMALIB_DIR" ]] ; then
+if [[ -z "$SMALIB_DIR" ]] ; then   # already defined , red smardda-lib then skip
    if [[ ! -z "$SMITER_DIR" ]] ; then
       cd ${SMITER_DIR%/*}/smardda-lib
       export SMALIB_DIR=${SMITER_DIR%/*}/smardda-lib
    fi
 else
-   cd $SMALIB_DIR
+   cd $SMALIB_DIR   # cd in red #smardda-lib
 fi
-(cd fortd;make -f makefile)
+(cd fortd;make -f makefile) #  numerical legacy - compile ad archive in a static library
 cd f95
-ln -sf ../fortd LIB
-for i in lib geofil move vtktfm datvtk hdsgen ctlgen parse; do make -f Makefile.lib $i ;done
-for i in geofil move vtktfm datvtk hdsgen ctlgen parse; do mv -f $i ../exec ;done
+ln -sf ../fortd LIB    # create a symbolic link LIB in f95 which points to fortd directory
+
+# 
+#Accordng  according M..lib  It compiles lib.f into lib.o and archives it into libsmarddalib$(DBG).a.
+#Then it compiles each Fortran source file (geofil.f, move.f, etc.) in f95/, linking them with the static library to produce executables (e.g., geofil, move, ...).
+#It uses the LIB symlink (pointing to fortd/) as an include path during compilation.
+for i in lib geofil move vtktfm datvtk hdsgen ctlgen parse; do make -f Makefile.lib $i ;done  
+for i in geofil move vtktfm datvtk hdsgen ctlgen parse; do mv -f $i ../exec ;done #Finally, those executables are moved from f95/ to exec/.
 cd $swd

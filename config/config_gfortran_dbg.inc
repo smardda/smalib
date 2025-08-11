@@ -1,6 +1,8 @@
 # Configuration file for compiling software on Ubuntu linux system
 # using debugging gfortran compiler
 
+$(info >>> I 'm using config_gfortran_dbg.inc <<<)
+
 # Set EXEDIR 
 EXEDIR = ../exec
 

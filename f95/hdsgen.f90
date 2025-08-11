@@ -101,6 +101,7 @@ program hdsgen_p
 !! initialise  geobjl data
 
   call clock_start(3,'geobjlist_init time')
+  print *, " <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< call to geobjlist_init number 1 "
   call geobjlist_init(geobjl,file%vtkdata,numerics)
   call clock_stop(3)
 
