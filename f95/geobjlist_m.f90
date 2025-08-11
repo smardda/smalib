@@ -372,7 +372,6 @@ subroutine geobjlist_read(self,infile,kched,kin,leave_open)
      ivtktyp=1
   end if
 
-  print *, ">>>> after overwrite: self%ngtype =", self%ngtype, "ivtktyp =", ivtktyp
   !! allocate position storage
   if(self%np>0) then
      allocate(self%posl%pos(self%np), stat=status)
@@ -1112,8 +1111,6 @@ subroutine geobjlist_bin(self,btree)
      ! special for BSP
      call geobjlist_bbin(self,btree)
   else
-   
-     print *, "  <<<<<< btree type", btree%nttype
      call geobjlist_mbin(self,btree)
   end if
 
