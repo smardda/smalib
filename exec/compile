@@ -11,6 +11,6 @@ fi
 (cd fortd;make -f makefile)
 cd f95
 ln -sf ../fortd LIB
-for i in lib geofil move vtktfm datvtk hdsgen ctlgen parse; do make -f Makefile.lib $i ;done  
-for i in geofil move vtktfm datvtk hdsgen ctlgen parse; do mv -f $i ../exec ;done #Finally, those executables are moved from f95/ to exec/.
+for i in lib geofil move vtktfm datvtk hdsgen ctlgen parse; do make -f Makefile.lib $i ;done
+for i in geofil move vtktfm datvtk hdsgen ctlgen parse; do mv -f $i ../exec ;done
 cd $swd

@@ -268,7 +268,9 @@ subroutine control_read(file,numerics,plot,combined)
   numerics%dilen = delta_inner_length
   numerics%dolen = delta_outer_length
   numerics%geobj_coord_tfm%nqtfm=type_geobj_coord_scaling
-  call control_btree(numerics,nin)  
+
+  call control_btree(numerics,nin)
+   
   call position_readcon(numerics%position_coord_tfm,nin)
 
   !! set default plot selections
