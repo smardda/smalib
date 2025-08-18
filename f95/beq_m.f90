@@ -732,6 +732,7 @@ subroutine beq_readequil(self,infile,numerics)
      call log_alloc_check(m_name,s_name,55,status)
   else
      call log_error(m_name,s_name,56,error_warning,'No limiter data')
+     allocate(workr1(1),workz1(1),stat=status)
   end if
   if (cfmtd=='*') then
      read(iin,*,iostat=status)(workr1(i),workz1(i),i=1,limitr)
