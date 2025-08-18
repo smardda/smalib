@@ -161,6 +161,7 @@ subroutine geobjlist_init(self,vtkfile,numerics,noread)
   call log_alloc_check(m_name,s_name,3,status)
 
   if(present(noread)) return
+
   !! read coords
   call geobjlist_read(self,vtkfile)
   if (.not. allocated(self%obj2)) then 
@@ -466,6 +467,7 @@ subroutine geobjlist_read(self,infile,kched,kin,leave_open)
      else
         call log_error(m_name,s_name,25,error_fatal,'No geobj data')
      end if
+
      do j=1,self%ng
         read(nin,fmt='(a)',iostat=status) ibuf1
         if(status/=0) then
@@ -556,7 +558,6 @@ subroutine geobjlist_read(self,infile,kched,kin,leave_open)
      end do
 
      ! check geobj storage
-
      if(inobj>0) then
         self%ng=inobj
         allocate(self%obj2(self%ng), stat=status)

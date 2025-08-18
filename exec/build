@@ -2,7 +2,6 @@
 #produce executables once git repository cloned
 #options compiler=intel, gfortran (default) 
 #Y/N produce documentation, default produce (Y)
-
 if [[ -z "$SMALIB_DIR" ]] ; then
    if [[ -z "$SMITER_DIR" ]] ; then
       #export SMALIB_DIR=../../smardda-lib/
@@ -63,7 +62,6 @@ if [ -f $SMALIB_DIR/../gwit/setup ] ; then
 fi
 
 #ln -sf $SMALIB_DIR/config/config_"$compiler"_dbg.inc $SMALIB_DIR/config/config.inc
- # internal link inside red lib
 ln -sf $SMALIB_DIR/config/config_"$compiler".inc $SMALIB_DIR/config/config.inc
 
 sed -e "s=SMALIB=$SMALIB_DIR=" <$SMALIB_DIR/config/path_generic.inc > $SMALIB_DIR/config/path.inc

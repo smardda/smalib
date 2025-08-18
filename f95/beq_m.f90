@@ -1635,7 +1635,6 @@ subroutine beq_readpart(self,infile)
      call log_error(m_name,s_name,2,log_info,'beq data structure file opened')
   end if
 
-
   ! skip header data
   do
      read(nin,fmt='(a)',iostat=status) ibuff
@@ -1733,9 +1732,7 @@ subroutine beq_readpart(self,infile)
 
      read(nin,*,iostat=status) ibuff
      call log_read_check(m_name,s_name,67,status)
-
      read(nin,*,iostat=status) self%rxptarr
-
      call log_read_check(m_name,s_name,68,status)
      read(nin,*,iostat=status) ibuff
      call log_read_check(m_name,s_name,69,status)
@@ -1793,6 +1790,7 @@ subroutine beq_readplus(self,infile)
   integer(ki4) :: ierr !< error flag
 
   !! get file unit do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then nin=i exit end if end do
+  
   !! open file
   call misc_getfileunit(nin)
   open(unit=nin,file=infile,status='OLD',form='FORMATTED',iostat=status)
@@ -2905,7 +2903,7 @@ subroutine beq_writeplus(self,kout)
 
   if (self%n%duct) then
      call fmesh_write(self%fmesh,kout)
-  end if             
+  end if
 
      write(kout,*,iostat=status) 'rxpt_double_null'
      call log_write_check(m_name,s_name,76,status)
@@ -3901,7 +3899,7 @@ subroutine beq_psix(self)
      !******************************************************************
      !If dealing with more than one x-point
      !******************************************************************
-     if(n_xpoints==2) then 
+     if(n_xpoints==2) then
         self%rxptarr(jhemi+1) = self%n%rcen+((zsr1+zsr2)/2)*cos(zt3)
         self%zxptarr(jhemi+1) = self%n%zcen+((zsr1+zsr2)/2)*sin(zt3)
         self%psixptarr(jhemi+1) = zpsi3
