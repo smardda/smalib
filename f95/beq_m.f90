@@ -1925,8 +1925,6 @@ subroutine beq_readplus(self,infile)
      call log_error(m_name,s_name,63,ierr,'vacuum field data file has no suffix')
   end if
 
-   print *, 'iextra  =', iextra
-
   if (iextra==2 .OR. iextra==4) then
      read(nin,*,iostat=status) ibuff
      read(nin,*,iostat=status) self%rxpt
@@ -2715,7 +2713,6 @@ subroutine beq_writepart(self,kout)
 
      write(kout,*,iostat=status) 'rxpt_double_null'
      call log_write_check(m_name,s_name,67,status)
-     
      write(kout,*,iostat=status) self%rxptarr
      call log_write_check(m_name,s_name,68,status)
      write(kout,*,iostat=status) 'zxpt_double_null'
@@ -2908,17 +2905,12 @@ subroutine beq_writeplus(self,kout)
 
   if (self%n%duct) then
      call fmesh_write(self%fmesh,kout)
-  end if
-      
-      
-      
+  end if             
 
      write(kout,*,iostat=status) 'rxpt_double_null'
      call log_write_check(m_name,s_name,76,status)
      write(kout,*,iostat=status) self%rxptarr
      call log_write_check(m_name,s_name,77,status)
-
-
      write(kout,*,iostat=status) 'zxpt_double_null'
      call log_write_check(m_name,s_name,78,status)
      write(kout,*,iostat=status) self%zxptarr
@@ -3909,8 +3901,7 @@ subroutine beq_psix(self)
      !******************************************************************
      !If dealing with more than one x-point
      !******************************************************************
-     if(n_xpoints==2) then
-        
+     if(n_xpoints==2) then 
         self%rxptarr(jhemi+1) = self%n%rcen+((zsr1+zsr2)/2)*cos(zt3)
         self%zxptarr(jhemi+1) = self%n%zcen+((zsr1+zsr2)/2)*sin(zt3)
         self%psixptarr(jhemi+1) = zpsi3

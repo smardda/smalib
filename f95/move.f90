@@ -129,7 +129,6 @@ program move_p
 !! read  geobjl data
 
   call clock_start(5,'geobjlist_init time')
-  print *, " call to geobjlist_init number 2 "
   call geobjlist_init(geobjl,file%vtkdata,numerics%n)
   call clock_stop(5)
 

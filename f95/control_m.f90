@@ -141,8 +141,6 @@ subroutine control_read(file,numerics,plot,combined)
  &plot_geoptq, &
  &plot_densitygeobj
 
-  !print *, ">>>>>>"
-  !print *, " >>>> I'm inside  control_read  "
   !! read input file names
   read(nin,nml=inputfiles,iostat=status)
   if(status/=0) then
@@ -209,8 +207,6 @@ subroutine control_read(file,numerics,plot,combined)
 
   !!read numerical parameters
   read(nin,nml=hdsgenparameters,iostat=status)
-   !print *, ">>>>>>"
-  !print *, " >>>> After read input  numerics%geomtype  ", numerics%geomtype, " geometrical_type", geometrical_type
   if(status/=0) then
      print '("Fatal error reading hdsgen parameters")'
      call log_getunit(ilog)
@@ -272,12 +268,8 @@ subroutine control_read(file,numerics,plot,combined)
   numerics%dilen = delta_inner_length
   numerics%dolen = delta_outer_length
   numerics%geobj_coord_tfm%nqtfm=type_geobj_coord_scaling
-  call control_btree(numerics,nin)
-  !print *, ">>>>>>"
-  !print *, " >>>> After control_btree numerics%geomtype  ", numerics%geomtype, " geometrical_type ", geometrical_type
-  
+  call control_btree(numerics,nin)  
   call position_readcon(numerics%position_coord_tfm,nin)
-  !print *, " >>>> After position_readcon  numerics%geomtype  ", numerics%geomtype
 
   !! set default plot selections
   plot_hds = .false.
@@ -926,8 +918,8 @@ end  subroutine control_mread
 subroutine control_btree(numerics,kin)
 
   !! arguments
-  !Francesca : error - with Fortran -O  intent(out) destroyes data already stored
-  !type(numerics_t), intent(out) :: numerics   !< binary tree numeric controls
+  ! Bugfix: changed INTENT from OUT to INOUT to preserve caller-initialized fields in numerics. 
+  !With OUT and -O optimization, some fields were overwritten/lost.
   type(numerics_t), intent(inout) :: numerics   !< binary tree numeric controls
   integer(ki4) :: kin  !< local variable
 
