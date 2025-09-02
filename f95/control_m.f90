@@ -253,7 +253,7 @@ subroutine control_read(file,numerics,plot,combined)
 
   !! store values
   call control_quantise(numerics,quantising_number,type_geobj_coord_scaling)
- 
+
 
   numerics%geomtype = geometrical_type
   numerics%mingeobjinbin = limit_geobj_in_bin
@@ -270,7 +270,7 @@ subroutine control_read(file,numerics,plot,combined)
   numerics%geobj_coord_tfm%nqtfm=type_geobj_coord_scaling
 
   call control_btree(numerics,nin)
-   
+
   call position_readcon(numerics%position_coord_tfm,nin)
 
   !! set default plot selections
