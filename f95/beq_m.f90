@@ -1791,7 +1791,7 @@ subroutine beq_readplus(self,infile)
   integer(ki4) :: ierr !< error flag
 
   !! get file unit do i=99,1,-1 inquire(i,opened=unitused) if(.not.unitused)then nin=i exit end if end do
-  
+
   !! open file
   call misc_getfileunit(nin)
   open(unit=nin,file=infile,status='OLD',form='FORMATTED',iostat=status)

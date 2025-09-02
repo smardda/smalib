@@ -164,12 +164,6 @@ subroutine geobjlist_init(self,vtkfile,numerics,noread)
 
   !! read coords
   call geobjlist_read(self,vtkfile)
-  if (.not. allocated(self%obj2)) then 
-      print *, '>>>> self%obj2 not allocated!'  
-   else if (size(self%obj2) == 0) then
-      print *, '>>>>> ERROR: self%obj2 allocated but empty!'
-   end if
-
   numerics%ngeobj=self%ng
   call log_error(m_name,s_name,1,log_info,'geobj data read')
 
@@ -2396,20 +2390,14 @@ subroutine geobjlist_mbin(self,btree)
                        !AB                        iobj%geobj=inext!points
                        !AB                        iobj%objtyp=self%ngtype!points
                        inext=btree%objectls%list(inadr+l,2)
-                       ! Bugfix: added missing check to avoid segfault when self%obj2 was
-                       ! unallocated or allocated with size 0.  
-                       ! Previously, accessing self%obj2 in this state caused a runtime crash.
+                       ! Bugfix: to avoid segfault when self%obj2 was unallocated.  
                        if (.not. allocated(self%obj2)) then
-                           print *, '>>>>> ERROR: self%obj2 not allocated!'
+                           call log_error(m_name,s_name,1,error_fatal,'self%obj2 not allocated')
                            stop
-                        else if (size(self%obj2) == 0) then
-                           print *, '>>>>> ERROR: self%obj2 allocated but empty!'
+                       else if (size(self%obj2) == 0) then
+                           call log_error(m_name,s_name,2, error_fatal,'self%obj2 is allocated but has zero size')
                            stop
-                        end if
-
-                        if (inext < lbound(self%obj2,1) .or. inext > ubound(self%obj2,1)) then
-                           print *, '*** ERRORE: inext out of limits! ***'
-                        end if
+                       end if
                        iobj%geobj=self%obj2(inext)%ptr
                        iobj%objtyp=self%obj2(inext)%typ
                        !DBG                       if (l==196) then !DBG
