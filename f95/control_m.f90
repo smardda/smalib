@@ -920,7 +920,9 @@ end  subroutine control_mread
 subroutine control_btree(numerics,kin)
 
   !! arguments
-  type(numerics_t), intent(out) :: numerics   !< binary tree numeric controls
+  ! Bugfix: changed INTENT from OUT to INOUT to preserve caller-initialized fields in numerics. 
+  !With OUT and -O optimization, some fields were overwritten/lost.
+  type(numerics_t), intent(inout) :: numerics   !< binary tree numeric controls
   integer(ki4) :: kin  !< local variable
 
 

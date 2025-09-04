@@ -2390,6 +2390,14 @@ subroutine geobjlist_mbin(self,btree)
                        !AB                        iobj%geobj=inext!points
                        !AB                        iobj%objtyp=self%ngtype!points
                        inext=btree%objectls%list(inadr+l,2)
+                       ! Bugfix: to avoid segfault when self%obj2 was unallocated.  
+                       if (.not. allocated(self%obj2)) then
+                           call log_error(m_name,s_name,1,error_fatal,'self%obj2 not allocated')
+                           stop
+                       else if (size(self%obj2) == 0) then
+                           call log_error(m_name,s_name,2, error_fatal,'self%obj2 is allocated but has zero size')
+                           stop
+                       end if
                        iobj%geobj=self%obj2(inext)%ptr
                        iobj%objtyp=self%obj2(inext)%typ
                        !DBG                       if (l==196) then !DBG
