@@ -920,7 +920,7 @@ end  subroutine control_mread
 subroutine control_btree(numerics,kin)
 
   !! arguments
-  type(numerics_t), intent(out) :: numerics   !< binary tree numeric controls
+  type(numerics_t), intent(inout) :: numerics   !< binary tree numeric controls
   integer(ki4) :: kin  !< local variable
 
 
