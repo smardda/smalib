@@ -517,9 +517,7 @@ subroutine spl2d_initpart(self)
   allocate(self%val1_c2(self%nord_c2), stat=status)
   call log_alloc_check(m_name,s_name,31,status)
   !! allocate value 2 storage
-  allocate(self%val2(self%nord_c1), stat=status)
-  call log_alloc_check(m_name,s_name,32,status)
-  allocate(self%val2(self%nord_c2), stat=status)
+  allocate(self%val2(self%nord), stat=status)
   call log_alloc_check(m_name,s_name,32,status)
 
 end subroutine spl2d_initpart
@@ -536,10 +534,9 @@ subroutine spl2d_initfull(self,selfout)
 
   selfout%lunif=self%lunif
 
-  !---selfout%nord=self%nord---removed---needs to be %nord_c1 and %nord_c2---!
+  selfout%nord=self%nord
   selfout%nord_c1=self%nord_c1
   selfout%nord_c2=self%nord_c2
-  !---selfout%noff=self%noff---removed---needs to be %noff_c1 and %noff_c2---!
   selfout%noff_c1=self%noff_c1
   selfout%noff_c2=self%noff_c2
 
@@ -1210,16 +1207,6 @@ subroutine spl2d_eval(self,p1,p2,pe)
   real(kr8) :: p1f   !< fractional part of p1
   real(kr8) :: p2f   !< fractional part of p2
   !dbgwval1  real(kr8), dimension(4) :: zwork   !< workspace !dbgwval1
-
-  ! Add boundary check
-  if (p1 < self%pos1(1) .or. p1 > self%pos1(self%n1p)) then
-    write(*,*) 'WARNING: p1=', p1, 'outside range [', self%pos1(1), ',', self%pos1(self%n1p), ']'
-  end if
-  if (p2 < self%pos2(1) .or. p2 > self%pos2(self%n2p)) then
-    write(*,*) 'WARNING: p2=', p2, 'outside range [', self%pos2(1), ',', self%pos2(self%n2p), ']'
-  end if
-  
-  ! Your existing spl2d_eval code...
 
   zz=0
   if (self%lunif==0) then
