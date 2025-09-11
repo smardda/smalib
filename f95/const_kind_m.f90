@@ -20,7 +20,7 @@ module const_kind_m
   integer, parameter, public :: kr4 = selected_real_kind(6)  !< .
 
 !> 8 byte real kind
-  integer, parameter, public :: kr8 = selected_int_kind(15)  !< .
+  integer, parameter, public :: kr8 = selected_real_kind(15)  !< .
 
 !! real output format
   character(len=5), parameter, public :: cfmtr = 'G15.8' !< real output format

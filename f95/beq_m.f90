@@ -5680,6 +5680,14 @@ subroutine beq_rextremum(self,psr1,psr2,ptheta,psim,psrm,peps,kerr)
 
   end do do_count
 
+  call log_value('debug output from beq_rextremum self%n%rcen+zsr5*zcos',self%n%rcen+zsr5*zcos)
+  call log_value('debug output from beq_rextremum self%n%zcen+zsr5*zsin',self%n%zcen+zsr5*zsin)
+
+  call log_value('debug output from beq_rextremum zpsi1', zpsi1)
+  call log_value('debug output from beq_rextremum zpsi2', zpsi2)
+  call log_value('debug output from beq_rextremum zpsi3', zpsi3)
+  call log_value('debug output from beq_rextremum peps', peps)
+
   if (jicount>=micount) then
      kerr=1
   end if
