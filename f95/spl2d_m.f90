@@ -357,7 +357,7 @@ subroutine spl2d_init(self,pwork,kn1,kn2,porg1,porg2,ph1,ph2,korder1,korder2)
   !              Initialise knots
   ! knot 1 array
   !! allocate knot 1 storage
-  allocate(self%knot1(self%n1p+self%nord), stat=status)
+  allocate(self%knot1(self%n1p+self%nord), stat=status)  ! temp solution to read-write compatability issues
   call log_alloc_check(m_name,s_name,3,status)
 
   do i=1,self%n1p-self%nord_c1
@@ -371,7 +371,7 @@ subroutine spl2d_init(self,pwork,kn1,kn2,porg1,porg2,ph1,ph2,korder1,korder2)
 
   ! knot 2 array
   !! allocate knot 2 storage
-  allocate(self%knot2(self%n2p+self%nord), stat=status)
+  allocate(self%knot2(self%n2p+self%nord), stat=status)  ! temp solution to read-write compatability issues
   call log_alloc_check(m_name,s_name,4,status)
 
   do j=1,self%n2p-self%nord_c2
@@ -1461,7 +1461,7 @@ subroutine spl2d_deriv(self,dself,kcoo)
       end do
       work2(:self%n1p,j)=self%wv2(:self%n1p)
     end do
-    nord1=self%nord_c1  !-1 temp removal
+    nord1=self%nord_c1-1
     nord2=self%nord_c1
 
   else
@@ -1480,7 +1480,7 @@ subroutine spl2d_deriv(self,dself,kcoo)
       work2(i,:self%n2p)=self%wv2(:self%n2p)
     end do
     nord1=self%nord_c2
-    nord2=self%nord_c2 !-1 temp removal
+    nord2=self%nord_c2-1
   end if
 
   call spl2d_init(dself,work2,self%n1,self%n2,&
