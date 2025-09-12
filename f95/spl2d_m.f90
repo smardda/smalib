@@ -203,7 +203,7 @@ subroutine spl2d_read(self,infile,kin)
   self%noff_c1=noffdum  !default for backwards compatibility
   self%noff_c2=noffdum  !default for backwards compatibility
 
-  ! After your backward compatibility assignment
+  ! After backward compatibility assignment
   call log_value('DEBUG: nord_c1=', self%nord_c1)
   call log_value('DEBUG: nord_c2=', self%nord_c2)
   call log_value('DEBUG: noff_c1=', self%noff_c1)
@@ -301,7 +301,7 @@ subroutine spl2d_init(self,pwork,kn1,kn2,porg1,porg2,ph1,ph2,korder1,korder2)
   !self%pad2=0
   !self%nord=4
 
-  self%lunif=0  !---for now make no assumptions for optimisation---!
+  self%lunif=2  !---for now make no assumptions for optimisation---!
 
   self%nord_c1=korder1
 
@@ -357,7 +357,7 @@ subroutine spl2d_init(self,pwork,kn1,kn2,porg1,porg2,ph1,ph2,korder1,korder2)
   !              Initialise knots
   ! knot 1 array
   !! allocate knot 1 storage
-  allocate(self%knot1(self%n1p+self%nord_c1), stat=status)
+  allocate(self%knot1(self%n1p+self%nord), stat=status)
   call log_alloc_check(m_name,s_name,3,status)
 
   do i=1,self%n1p-self%nord_c1
@@ -371,7 +371,7 @@ subroutine spl2d_init(self,pwork,kn1,kn2,porg1,porg2,ph1,ph2,korder1,korder2)
 
   ! knot 2 array
   !! allocate knot 2 storage
-  allocate(self%knot2(self%n2p+self%nord_c2), stat=status)
+  allocate(self%knot2(self%n2p+self%nord), stat=status)
   call log_alloc_check(m_name,s_name,4,status)
 
   do j=1,self%n2p-self%nord_c2
@@ -964,7 +964,6 @@ subroutine spl2d_delete(self)
   deallocate(self%val1)
   deallocate(self%val1_c2)
   deallocate(self%val2)
-  deallocate(self%val2)
 
 end subroutine spl2d_delete
 !---------------------------------------------------------------------
@@ -1095,25 +1094,15 @@ subroutine spl2d_write(self,kout)
   if(status/=0) then
      call log_error(m_name,s_name,17,error_fatal,'Error writing object data')
   end if
-  write(kout,*,iostat=status) 'nord_c1'
-  write(kout,*,iostat=status) self%nord_c1
+  write(kout,*,iostat=status) 'nord'
+  write(kout,*,iostat=status) self%nord
   if(status/=0) then
      call log_error(m_name,s_name,18,error_fatal,'Error writing object data')
-  end if
-  write(kout,*,iostat=status) '%nord_c2'
-  write(kout,*,iostat=status) self%nord_c2
-  if(status/=0) then
-     call log_error(m_name,s_name,19,error_fatal,'Error writing object data')
   end if
   write(kout,*,iostat=status) '%noff_c1'
   write(kout,*,iostat=status) self%noff_c1
   if(status/=0) then
-     call log_error(m_name,s_name,20,error_fatal,'Error writing object data')
-  end if
-  write(kout,*,iostat=status) '%noff_c2'
-  write(kout,*,iostat=status) self%noff_c2
-  if(status/=0) then
-     call log_error(m_name,s_name,21,error_fatal,'Error writing object data')
+     call log_error(m_name,s_name,19,error_fatal,'Error writing object data')
   end if
   write(kout,*,iostat=status) 'sampl'
   write(kout,*,iostat=status) self%sampl
@@ -1472,7 +1461,7 @@ subroutine spl2d_deriv(self,dself,kcoo)
       end do
       work2(:self%n1p,j)=self%wv2(:self%n1p)
     end do
-    nord1=self%nord_c1-1
+    nord1=self%nord_c1  !-1 temp removal
     nord2=self%nord_c1
 
   else
@@ -1491,7 +1480,7 @@ subroutine spl2d_deriv(self,dself,kcoo)
       work2(i,:self%n2p)=self%wv2(:self%n2p)
     end do
     nord1=self%nord_c2
-    nord2=self%nord_c2-1
+    nord2=self%nord_c2 !-1 temp removal
   end if
 
   call spl2d_init(dself,work2,self%n1,self%n2,&
