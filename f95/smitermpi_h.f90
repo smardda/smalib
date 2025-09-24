@@ -22,7 +22,7 @@ module smitermpi_h
      integer(ki4) :: nprochdsgen = 1 !< Number of processes in hdsgen powcal group
      integer(ki4) :: nprocshadhds = 1 !< Number of processes in shadow hdsgen group
      integer(ki4) :: firstpowe !< First track number
-     integer(ki4) :: lastpowe !< Last and last track number
+     integer(ki4) :: lastpowe !< Last track number
      integer(ki4) :: firstng !< First geometry index
      integer(ki4) :: lastng !< Last geometry index
      integer(ki4) :: mynpowe !< The local number of tracks
