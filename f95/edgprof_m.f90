@@ -353,8 +353,8 @@ subroutine edgprof_readcon(self,pnumerics,kin,number_of_regions)
      self%npar=general_integer_parameters(:number_of_integer_parameters)
   case default
   end select formula_allocate
-end  subroutine edgprof_readcon
 
+end  subroutine edgprof_readcon
 
 !---------------------------------------------------------------------
 !> factors for power deposition

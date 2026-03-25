@@ -35,43 +35,37 @@ module spl2d_m
 ! public types
 !> data structure for 2D splines
   type, public :: spl2d_t
-    real(kr8), dimension(:,:), allocatable :: sampl !< values sampled on mesh
-    real(kr8), dimension(:,:), allocatable :: coeff !< coefficients of 2-D splines
-    real(kr8), dimension(:), allocatable :: pos1 !< padded list of positions, coordinate 1
-    real(kr8), dimension(:), allocatable :: pos2 !< padded list of positions, coordinate 2
-    real(kr8), dimension(:), allocatable :: knot1 !< padded list of knots, coordinate 1
-    real(kr8), dimension(:), allocatable :: knot2 !< padded list of knots, coordinate 2
-    real(kr8), dimension(:), allocatable :: wv1 !< 1-D spline work vector (used in TB06A ~ F)
-    real(kr8), dimension(:), allocatable :: wv2 !< 1-D spline work vector (used in TB06A ~ A)
-    real(kr8), dimension(:), allocatable :: wv3 !< 1-D spline work vector (used in TB06A ~ WK)
-    real(kr8), dimension(:), allocatable :: wv3_c2 !< 1-D spline work vector (used in TB06A ~ WK)
-    real(kr8), dimension(:,:), allocatable :: wa1k !< 1-D \f$ x \f$ (order) spline preserved work vector
-    real(kr8), dimension(:,:), allocatable :: wa2k !< 1-D \f$ x \f$ (order) spline preserved work vector
-    real(kr8), dimension(:), allocatable :: wv2k !< 1-D \f$ x \f$ (order) spline work vector (used in TB06A ~ WK0)
-    real(kr8), dimension(:), allocatable :: wv2k_c2 !< (order) spline work vector for coordinate 1
-    real(kr8), dimension(:), allocatable :: val1 !< (order) spline work vector
-    real(kr8), dimension(:), allocatable :: val1_c2 !< (order) spline work vector for coordinate 1
-    real(kr8), dimension(:), allocatable :: val2 !< (order) spline work vector for coordinate 1
-    integer(ki4), dimension(:), allocatable :: iwa1 !< 1-D spline preserved work vector
-    integer(ki4), dimension(:), allocatable :: iwa2 !< 1-D spline preserved work vector
-    integer(ki4) :: lunif !< if unity, knots are quasi-uniform
-    real(kr8) :: h1 !< mesh spacing, coordinate 1
-    real(kr8) :: h2 !< mesh spacing, coordinate 2
-    real(kr8) :: rh1 !< reciprocal mesh spacing, coordinate 1
-    real(kr8) :: rh2 !< reciprocal mesh spacing, coordinate 2
-    integer(ki4) :: n1   !< unpadded array dimension in coordinate 1
-    integer(ki4) :: n2   !< unpadded array dimension in coordinate 2
-    integer(ki4) :: n1p   !< padded array dimension in coordinate 1
-    integer(ki4) :: n2p   !< padded array dimension in coordinate 2
-    integer(ki4) :: pad1=0   !< array padding in coordinate 1
-    integer(ki4) :: pad2=0   !< array padding in coordinate 2
-    integer(ki4) :: nord=4   !< order of splines
-    integer(ki4) :: nord_c1=4   !< order of splines in coordinate 1
-    integer(ki4) :: nord_c2=4   !< order of splines in coordinate 2
-    integer(ki4) :: noff_c1=2   !< fixup offset (might need to be four) in coordinate 1
-    integer(ki4) :: noff_c2=2   !< fixup offset (might need to be four) in coordinate 2
-    real(kr8) :: org1 !< origin (minimum value) in coordinate 1
-    real(kr8) :: org2 !< origin (minimum value) in coordinate 2
+     real(kr8), dimension(:,:), allocatable :: sampl !< values sampled on mesh
+     real(kr8), dimension(:,:), allocatable :: coeff !< coefficients of 2-D splines
+     real(kr8), dimension(:), allocatable :: pos1 !< padded list of positions, coordinate 1
+     real(kr8), dimension(:), allocatable :: pos2 !< padded list of positions, coordinate 2
+     real(kr8), dimension(:), allocatable :: knot1 !< padded list of knots, coordinate 1
+     real(kr8), dimension(:), allocatable :: knot2 !< padded list of knots, coordinate 2
+     real(kr8), dimension(:), allocatable :: wv1 !< 1-D spline work vector
+     real(kr8), dimension(:), allocatable :: wv2 !< 1-D spline work vector
+     real(kr8), dimension(:), allocatable :: wv3 !< 1-D spline work vector
+     real(kr8), dimension(:,:), allocatable :: wa1k !< 1-D \f$ x \f$ (order) spline preserved work vector
+     real(kr8), dimension(:,:), allocatable :: wa2k !< 1-D \f$ x \f$ (order) spline preserved work vector
+     real(kr8), dimension(:), allocatable :: wv2k !< 1-D \f$ x \f$ (order) spline work vector
+     real(kr8), dimension(:), allocatable :: val1 !< (order) spline work vector
+     real(kr8), dimension(:), allocatable :: val2 !< (order) spline work vector
+     integer(ki4), dimension(:), allocatable :: iwa1 !< 1-D spline preserved work vector
+     integer(ki4), dimension(:), allocatable :: iwa2 !< 1-D spline preserved work vector
+     integer(ki4) :: lunif !< if unity, knots are quasi-uniform
+     real(kr8) :: h1 !< mesh spacing, coordinate 1
+     real(kr8) :: h2 !< mesh spacing, coordinate 2
+     real(kr8) :: rh1 !< reciprocal mesh spacing, coordinate 1
+     real(kr8) :: rh2 !< reciprocal mesh spacing, coordinate 2
+     integer(ki4) :: n1   !< unpadded array dimension in coordinate 1
+     integer(ki4) :: n2   !< unpadded array dimension in coordinate 2
+     integer(ki4) :: n1p   !< padded array dimension in coordinate 1
+     integer(ki4) :: n2p   !< padded array dimension in coordinate 2
+     integer(ki4) :: pad1=0   !< array padding in coordinate 1
+     integer(ki4) :: pad2=0   !< array padding in coordinate 2
+     integer(ki4) :: nord=4   !< order of splines
+     integer(ki4) :: noff=2   !< fixup offset (might need to be four)
+     real(kr8) :: org1 !< origin (minimum value) in coordinate 1
+     real(kr8) :: org2 !< origin (minimum value) in coordinate 2
   end type spl2d_t
 
 ! public variables
@@ -86,14 +80,10 @@ module spl2d_m
   integer(ki4) :: j !< loop counter
   integer(ki4) :: k !< loop counter
   integer(ki4) :: l !< loop counter
-  !---removed---integer(ki4) :: i12k !< max 1D index times spline order---!
-  integer(ki4) :: i12k_c1 !< max 1D index times spline order, coordinate 1
-  integer(ki4) :: i12k_c2 !< max 1D index times spline order, coordinate 2
+  integer(ki4) :: i12k !< max 1D index times spline order
   integer(ki4) :: i12m !< max 1D index
   integer(ki4) :: isw !< max 1D index
-  !---removed---integer(ki4) :: iswm !< max 1D index---!
-  integer(ki4) :: iswm_c1 !< max 1D index, coordinate 1
-  integer(ki4) :: iswm_c2 !< max 1D index, coordinate 2
+  integer(ki4) :: iswm !< max 1D index
   integer(ki4) :: idum !< dummy integer
   character(len=80) :: ibuff !< buffer for input/output
   logical :: iltest !< logical flag
@@ -105,13 +95,11 @@ subroutine spl2d_read(self,infile,kin)
 
   !! arguments
   type(spl2d_t), intent(out) :: self   !< object data structure
-  character(len=20),intent(in) :: infile !< name of input file
+  character(len=80),intent(in) :: infile !< name of input file
   integer, intent(in),optional :: kin   !< input channel for object data structure
 
   !! local
   character(*), parameter :: s_name='spl2d_read' !< subroutine name
-  integer(ki4) :: norddum !< dummy norder
-  integer(ki4) :: noffdum !< dummy noffset
   !! logical :: unitused !< flag to test unit is available
 
   if(present(kin).AND.kin/=0) then
@@ -189,27 +177,15 @@ subroutine spl2d_read(self,infile,kin)
      call log_error(m_name,s_name,17,error_fatal,'Error reading object data')
   end if
   read(nin,*,iostat=status) ibuff
-  read(nin,*,iostat=status) norddum
+  read(nin,*,iostat=status) self%nord
   if(status/=0) then
      call log_error(m_name,s_name,18,error_fatal,'Error reading object data')
   end if
-  self%nord_c1=norddum  !default for backwards compatibility
-  self%nord_c2=norddum  !default for backwards compatibility
   read(nin,*,iostat=status) ibuff
-  read(nin,*,iostat=status) noffdum
+  read(nin,*,iostat=status) self%noff
   if(status/=0) then
      call log_error(m_name,s_name,19,error_fatal,'Error reading object data')
   end if
-  self%noff_c1=noffdum  !default for backwards compatibility
-  self%noff_c2=noffdum  !default for backwards compatibility
-
-  ! After backward compatibility assignment
-  call log_value('DEBUG: nord_c1=', self%nord_c1)
-  call log_value('DEBUG: nord_c2=', self%nord_c2)
-  call log_value('DEBUG: noff_c1=', self%noff_c1)
-  call log_value('DEBUG: noff_c2=', self%noff_c2)
-  call log_value('DEBUG: norddum=', norddum)
-  call log_value('DEBUG: noffdum=', noffdum)
 
   !-----------------------------------------------------------------------
   !              Allocate 2D storage and read
@@ -257,7 +233,7 @@ subroutine spl2d_read(self,infile,kin)
   end if
   ! knot 1 array
   !! allocate knot 1 storage
-  allocate(self%knot1(self%n1p+self%nord_c1), stat=status)
+  allocate(self%knot1(self%n1p+self%nord), stat=status)
   call log_alloc_check(m_name,s_name,54,status)
 
   read(nin,*,iostat=status) ibuff
@@ -267,7 +243,7 @@ subroutine spl2d_read(self,infile,kin)
   end if
   ! knot 2 array
   !! allocate knot 2 storage
-  allocate(self%knot2(self%n2p+self%nord_c2), stat=status)
+  allocate(self%knot2(self%n2p+self%nord), stat=status)
   call log_alloc_check(m_name,s_name,56,status)
 
   read(nin,*,iostat=status) ibuff
@@ -279,7 +255,7 @@ subroutine spl2d_read(self,infile,kin)
 end subroutine spl2d_read
 !---------------------------------------------------------------------
 !> create spl2d data structure and knots
-subroutine spl2d_init(self,pwork,kn1,kn2,porg1,porg2,ph1,ph2,korder1,korder2)
+subroutine spl2d_init(self,pwork,kn1,kn2,porg1,porg2,ph1,ph2,korder)
 
   !! arguments
   type(spl2d_t), intent(inout) :: self   !< object data structure
@@ -290,8 +266,7 @@ subroutine spl2d_init(self,pwork,kn1,kn2,porg1,porg2,ph1,ph2,korder1,korder2)
   real(kr8), intent(in) :: porg2   !< minimum mesh value in coordinate 2
   real(kr8), intent(in) :: ph1   !< mesh spacing, coordinate 1
   real(kr8), intent(in) :: ph2   !< mesh spacing, coordinate 2
-  integer(ki4), intent(in) :: korder1   !< spline order, coordinate 1
-  integer(ki4), intent(inout), optional :: korder2   !< spline order, coordinate 2
+  integer(ki4), intent(in) :: korder   !< spline order
 
   !! local
   character(*), parameter :: s_name='spl2d_init' !< subroutine name
@@ -301,20 +276,10 @@ subroutine spl2d_init(self,pwork,kn1,kn2,porg1,porg2,ph1,ph2,korder1,korder2)
   !self%pad2=0
   !self%nord=4
 
-  self%lunif=2  !---for now make no assumptions for optimisation---!
+  self%lunif=2
 
-  self%nord_c1=korder1
-
-  if(present(korder2)) then
-    self%nord_c2=korder2
-    self%nord=max(korder1,korder2)
-  else
-    self%nord_c2=korder1
-    self%nord=korder1
-  end if
-
-  self%noff_c1=1+(self%nord_c1-1)/2
-  self%noff_c2=1+(self%nord_c2-1)/2
+  self%nord=korder
+  self%noff=1+(korder-1)/2
 
   self%n1=kn1
   self%n2=kn2
@@ -357,28 +322,28 @@ subroutine spl2d_init(self,pwork,kn1,kn2,porg1,porg2,ph1,ph2,korder1,korder2)
   !              Initialise knots
   ! knot 1 array
   !! allocate knot 1 storage
-  allocate(self%knot1(self%n1p+self%nord), stat=status)  ! temp solution to read-write compatability issues
+  allocate(self%knot1(self%n1p+self%nord), stat=status)
   call log_alloc_check(m_name,s_name,3,status)
 
-  do i=1,self%n1p-self%nord_c1
-    self%knot1(i+self%nord_c1)=self%pos1(i+self%noff_c1+self%pad1)
+  do i=1,self%n1p-self%nord
+     self%knot1(i+self%nord)=self%pos1(i+self%noff+self%pad1)
   end do
 
-  do k=1,self%nord_c1
+  do k=1,self%nord
      self%knot1(k)=self%pos1(1)
      self%knot1(self%n1p+k)=self%pos1(self%n1p)
   end do
 
   ! knot 2 array
   !! allocate knot 2 storage
-  allocate(self%knot2(self%n2p+self%nord), stat=status)  ! temp solution to read-write compatability issues
+  allocate(self%knot2(self%n2p+self%nord), stat=status)
   call log_alloc_check(m_name,s_name,4,status)
 
-  do j=1,self%n2p-self%nord_c2
-     self%knot2(j+self%nord_c2)=self%pos2(j+self%noff_c2+self%pad2)
+  do j=1,self%n2p-self%nord
+     self%knot2(j+self%nord)=self%pos2(j+self%noff+self%pad2)
   end do
 
-  do k=1,self%nord_c2
+  do k=1,self%nord
      self%knot2(k)=self%pos2(1)
      self%knot2(self%n2p+k)=self%pos2(self%n2p)
   end do
@@ -409,45 +374,26 @@ subroutine spl2d_init(self,pwork,kn1,kn2,porg1,porg2,ph1,ph2,korder1,korder2)
   allocate(self%iwa2(self%n2p), stat=status)
   call log_alloc_check(m_name,s_name,15,status)
   self%iwa2=0
-  allocate(self%wa1k(self%n1p,self%nord_c1), stat=status)
+  allocate(self%wa1k(self%n1p,self%nord), stat=status)
   call log_alloc_check(m_name,s_name,16,status)
-  allocate(self%wa2k(self%n2p,self%nord_c2), stat=status)
+  allocate(self%wa2k(self%n2p,self%nord), stat=status)
   call log_alloc_check(m_name,s_name,17,status)
-
-  !---making changes here---!
-  !---removed---iswm=2*i12m+3*self%nord+1  !---need to assess what wv3 is used for to choose noord value---!
-  !---removed---allocate(self%wv3(iswm), stat=status)
-  !---removed---call log_alloc_check(m_name,s_name,18,status)
-  iswm_c1=2*i12m+3*self%nord_c1+1
-  allocate(self%wv3(iswm_c1), stat=status)
-  call log_alloc_check(m_name,s_name,19,status)
-  iswm_c2=2*i12m+3*self%nord_c2+1
-  allocate(self%wv3_c2(iswm_c2), stat=status)
+  iswm=2*i12m+3*self%nord+1
+  allocate(self%wv3(iswm), stat=status)
+  call log_alloc_check(m_name,s_name,18,status)
+  i12k=i12m*self%nord
+  allocate(self%wv2k(i12k), stat=status)
   call log_alloc_check(m_name,s_name,20,status)
-  !---removed---i12k=i12m*self%nord
-  !---removed---allocate(self%wv2k(i12k), stat=status)
-  !---removed---call log_alloc_check(m_name,s_name,20,status)
-  i12k_c1=i12m*self%nord_c1
-  allocate(self%wv2k(i12k_c1), stat=status)
-  call log_alloc_check(m_name,s_name,21,status)
-  i12k_c2=i12m*self%nord_c2
-  allocate(self%wv2k_c2(i12k_c2), stat=status)
-  call log_alloc_check(m_name,s_name,22,status)
-  !-------------------------!
-
   !-----------------------------------------------------------------------
   !              Initialise spline look up arrays
   ! value arrays
   !! allocate value 1 storage
-  allocate(self%val1(self%nord_c1), stat=status)
+  allocate(self%val1(self%nord), stat=status)
   call log_alloc_check(m_name,s_name,30,status)
   self%val1=0
-  allocate(self%val1_c2(self%nord_c2), stat=status)
-  call log_alloc_check(m_name,s_name,31,status)
-  self%val1_c2=0
   !! allocate value 2 storage
   allocate(self%val2(self%nord), stat=status)
-  call log_alloc_check(m_name,s_name,32,status)
+  call log_alloc_check(m_name,s_name,31,status)
   !-----------------------------------------------------------------------
   !            Finally copy over input data and evaluate coefficients
 
@@ -492,33 +438,18 @@ subroutine spl2d_initpart(self)
   call log_alloc_check(m_name,s_name,16,status)
   allocate(self%wa2k(idum,idum), stat=status)
   call log_alloc_check(m_name,s_name,17,status)
-
-  !---making changes here---!
-  !---removed---allocate(self%wv3(idum), stat=status)
-  !---removed---call log_alloc_check(m_name,s_name,18,status)
-  !---removed---allocate(self%wv2k(idum), stat=status)
-  !---removed---call log_alloc_check(m_name,s_name,20,status)
   allocate(self%wv3(idum), stat=status)
   call log_alloc_check(m_name,s_name,18,status)
-  allocate(self%wv3_c2(idum), stat=status)
-  call log_alloc_check(m_name,s_name,19,status)
   allocate(self%wv2k(idum), stat=status)
   call log_alloc_check(m_name,s_name,20,status)
-  allocate(self%wv2k_c2(idum), stat=status)
-  call log_alloc_check(m_name,s_name,21,status)
-  !-------------------------!
-
-
   !-----------------------------------------------------------------------
   !              Allocate value arrays
   !! allocate value 1 storage
-  allocate(self%val1(self%nord_c1), stat=status)
+  allocate(self%val1(self%nord), stat=status)
   call log_alloc_check(m_name,s_name,30,status)
-  allocate(self%val1_c2(self%nord_c2), stat=status)
-  call log_alloc_check(m_name,s_name,31,status)
   !! allocate value 2 storage
   allocate(self%val2(self%nord), stat=status)
-  call log_alloc_check(m_name,s_name,32,status)
+  call log_alloc_check(m_name,s_name,31,status)
 
 end subroutine spl2d_initpart
 !---------------------------------------------------------------------
@@ -535,10 +466,7 @@ subroutine spl2d_initfull(self,selfout)
   selfout%lunif=self%lunif
 
   selfout%nord=self%nord
-  selfout%nord_c1=self%nord_c1
-  selfout%nord_c2=self%nord_c2
-  selfout%noff_c1=self%noff_c1
-  selfout%noff_c2=self%noff_c2
+  selfout%noff=self%noff
 
   selfout%n1=self%n1
   selfout%n2=self%n2
@@ -575,13 +503,13 @@ subroutine spl2d_initfull(self,selfout)
   !              Initialise knots
   ! knot 1 array
   !! allocate and assign knot 1 storage
-  allocate(selfout%knot1(self%n1p+self%nord_c1), stat=status)
+  allocate(selfout%knot1(self%n1p+self%nord), stat=status)
   call log_alloc_check(m_name,s_name,3,status)
   selfout%knot1=self%knot1
 
   ! knot 2 array
   !! allocate and assign knot 2 storage
-  allocate(selfout%knot2(self%n2p+self%nord_c2), stat=status)
+  allocate(selfout%knot2(self%n2p+self%nord), stat=status)
   call log_alloc_check(m_name,s_name,4,status)
   selfout%knot2=self%knot2
 
@@ -610,40 +538,27 @@ subroutine spl2d_initfull(self,selfout)
   allocate(selfout%iwa2(self%n2p), stat=status)
   call log_alloc_check(m_name,s_name,15,status)
   selfout%iwa2=0
-  allocate(selfout%wa1k(self%n1p,self%nord_c1), stat=status)
+  allocate(selfout%wa1k(self%n1p,self%nord), stat=status)
   call log_alloc_check(m_name,s_name,16,status)
-  allocate(selfout%wa2k(self%n2p,self%nord_c2), stat=status)
+  allocate(selfout%wa2k(self%n2p,self%nord), stat=status)
   call log_alloc_check(m_name,s_name,17,status)
-  iswm_c1=2*i12m+3*self%nord_c1+1
-  allocate(selfout%wv3(iswm_c1), stat=status)
+  iswm=2*i12m+3*self%nord+1
+  allocate(selfout%wv3(iswm), stat=status)
   call log_alloc_check(m_name,s_name,18,status)
-  iswm_c2=2*i12m+3*self%nord_c2+1
-  allocate(selfout%wv3_c2(iswm_c2), stat=status)
-  call log_alloc_check(m_name,s_name,18,status)
-  i12k_c1=i12m*self%nord_c1
-  allocate(selfout%wv2k(i12k_c1), stat=status)
-  call log_alloc_check(m_name,s_name,20,status)
-  i12k_c2=i12m*self%nord_c2
-  allocate(selfout%wv2k_c2(i12k_c2), stat=status)
+  i12k=i12m*self%nord
+  allocate(selfout%wv2k(i12k), stat=status)
   call log_alloc_check(m_name,s_name,20,status)
   !-----------------------------------------------------------------------
   !              Initialise spline look up arrays
   ! value arrays
   !! allocate value 1 storage
-  allocate(selfout%val1(self%nord_c1), stat=status)
+  allocate(selfout%val1(self%nord), stat=status)
   call log_alloc_check(m_name,s_name,30,status)
   selfout%val1=0
-  allocate(selfout%val1_c2(self%nord_c2), stat=status)
-  call log_alloc_check(m_name,s_name,30,status)
-  selfout%val1_c2=0
   !! allocate value 2 storage
   allocate(selfout%val2(self%nord_c1), stat=status)
   call log_alloc_check(m_name,s_name,31,status)
   selfout%val2=0
-!  allocate(selfout%val2(self%nord_c2), stat=status)
-!  call log_alloc_check(m_name,s_name,31,status)
-!  selfout%val2=0
-
 
 end subroutine spl2d_initfull
 !---------------------------------------------------------------------
@@ -666,7 +581,7 @@ subroutine spl2d_ptlimits(self,p1min,p1max,p2min,p2max)
   p2max=self%pos2(self%n2p)
 
 end subroutine spl2d_ptlimits
-!>--------------------------------------------------------------------
+!---------------------------------------------------------------------
 !> scale points at which spline defined
 subroutine spl2d_ptscale(self,qtfmdata)
 
@@ -708,8 +623,8 @@ subroutine spl2d_ptscale(self,qtfmdata)
   qtfmdata%nqtfm=inqtfm
 
   ! knots
-  inkn1=self%n1p+self%nord_c1
-  inkn2=self%n2p+self%nord_c2
+  inkn1=self%n1p+self%nord
+  inkn2=self%n2p+self%nord
 
   inkn=max(inkn1,inkn2)
   allocate(zposl%pos(inkn),stat=status)
@@ -779,8 +694,8 @@ subroutine spl2d_ptscalinv(selfin,selfout,qtfmdata)
   qtfmdata%nqtfm=inqtfm
 
   ! knots
-  inkn1=selfin%n1p+selfin%nord_c1
-  inkn2=selfin%n2p+selfin%nord_c2
+  inkn1=selfin%n1p+selfin%nord
+  inkn2=selfin%n2p+selfin%nord
 
   inkn=max(inkn1,inkn2)
   allocate(zposl%pos(inkn),stat=status)
@@ -839,37 +754,37 @@ subroutine spl2d_specoffscale(self, &
   !! local
   character(*), parameter :: s_name='spl2d_specoffscale' !< subroutine name
   real(kr8) :: zpsi !< position in \f$ \psi \f$
-  real(kr8) :: zpos_c1 !< value of \f$ R \f$
-  real(kr8) :: zpos_c2 !< value of \f$ Z \f$
+  real(kr8) :: zpos1 !< value of \f$ R \f$
+  real(kr8) :: zpos2 !< value of \f$ Z \f$
 
   call spl2d_initfull(self,selfout)
 
   selfout%sampl=1
 
   if (lplasbox) then
-    do j=1,self%n2p
-      zpos_c2=self%pos2(j)
-      if ( (zpos_c2-plasbox(2))*(zpos_c2-plasbox(4)) < 0 ) then
-        do i=1,self%n1p
-          zpos_c1=self%pos1(i)
-          if ( (zpos_c1-plasbox(1))*(zpos_c1-plasbox(3)) < 0 ) then
-            zpsi=self%sampl(i,j)
-            if ( (zpsi-psicen)*(zpsi-psibdry) <= 0 ) then
-              selfout%sampl(i,j)=(zpsi-psicen)/(psibdry-psicen)
-            end if
-          end if
-        end do
-      end if
-    end do
-  else
-    do j=1,self%n2p
-      do i=1,self%n1p
-        zpsi=self%sampl(i,j)
-        if ( (zpsi-psicen)*(zpsi-psibdry) <= 0 ) then
-          selfout%sampl(i,j)=(zpsi-psicen)/(psibdry-psicen)
+     do j=1,self%n2p
+        zpos2=self%pos2(j)
+        if ( (zpos2-plasbox(2))*(zpos2-plasbox(4)) < 0 ) then
+           do i=1,self%n1p
+              zpos1=self%pos1(i)
+              if ( (zpos1-plasbox(1))*(zpos1-plasbox(3)) < 0 ) then
+                 zpsi=self%sampl(i,j)
+                 if ( (zpsi-psicen)*(zpsi-psibdry) <= 0 ) then
+                    selfout%sampl(i,j)=(zpsi-psicen)/(psibdry-psicen)
+                 end if
+              end if
+           end do
         end if
-      end do
-    end do
+     end do
+  else
+     do j=1,self%n2p
+        do i=1,self%n1p
+           zpsi=self%sampl(i,j)
+           if ( (zpsi-psicen)*(zpsi-psibdry) <= 0 ) then
+              selfout%sampl(i,j)=(zpsi-psicen)/(psibdry-psicen)
+           end if
+        end do
+     end do
   end if
 
   call spl2d_coeff(selfout)
@@ -894,14 +809,14 @@ subroutine spl2d_sumint(self,pint,kwt)
   zfacz=0.5
 
   do j=1,self%n2p
-    zfacr=0.5
-    do i=1,self%n1p
-      zsum=zsum+zfacr*zfacz*self%pos1(i)**kwt*self%sampl(i,j)
-      zfacr=1
-      if (i==self%n1p) zfacr=0.5
-    end do
-    zfacz=1
-    if (j==self%n2p) zfacz=0.5
+     zfacr=0.5
+     do i=1,self%n1p
+        zsum=zsum+zfacr*zfacz*self%pos1(i)**kwt*self%sampl(i,j)
+        zfacr=1
+        if (i==self%n1p) zfacr=0.5
+     end do
+     zfacz=1
+     if (j==self%n2p) zfacz=0.5
   end do
 
   pint=zsum*self%h1*self%h2
@@ -919,18 +834,16 @@ subroutine spl2d_offscale(selfin,selfout,poff,pfac)
 
   !! local
   character(*), parameter :: s_name='spl2d_offscale' !< subroutine name
-  integer(ki4) :: iorder_c1   !< order of splines in coord 1
-  integer(ki4) :: iorder_c2   !< order of splines in coord 2
+  integer(ki4) :: iorder   !< order of splines
 
   allocate(work2(selfin%n1p,selfin%n2p), stat=status)
   call log_alloc_check(m_name,s_name,1,status)
 
   work2=pfac*(selfin%sampl-poff)
-  iorder_c1=selfin%nord_c1
-  iorder_c2=selfin%nord_c2
+  iorder=selfin%nord
 
   call spl2d_init(selfout,work2,selfin%n1,selfin%n2,  &
- &selfin%org1,selfin%org2,selfin%h1,selfin%h2,iorder_c1,iorder_c2)
+ &selfin%org1,selfin%org2,selfin%h1,selfin%h2,iorder)
 
   call spl2d_coeff(selfout)
 
@@ -956,13 +869,10 @@ subroutine spl2d_delete(self)
   deallocate(self%iwa1)
   deallocate(self%iwa2)
   deallocate(self%wv3)
-  deallocate(self%wv3_c2)
   deallocate(self%wa1k)
   deallocate(self%wa2k)
   deallocate(self%wv2k)
-  deallocate(self%wv2k_c2)
   deallocate(self%val1)
-  deallocate(self%val1_c2)
   deallocate(self%val2)
 
 end subroutine spl2d_delete
@@ -982,16 +892,16 @@ subroutine spl2d_writeg(self,kchar,kout)
   plot_type: select case (kchar)
   case('sampl')
 
-    do j=1,self%n2p
-      do i=1,self%n1p
-        write(kout,'(2(1x,i4),'//cfmt2v,iostat=status) &
- &      i-1,j-1,self%pos1(i),self%pos2(j),self%sampl(i,j)
-      end do
-      write(kout,*,iostat=status) ' '
-    end do
-    if(status/=0) then
-      call log_error(m_name,s_name,1,error_fatal,'Error writing sampl')
-    end if
+     do j=1,self%n2p
+        do i=1,self%n1p
+           write(kout,'(2(1x,i4),'//cfmt2v,iostat=status) &
+ &         i-1,j-1,self%pos1(i),self%pos2(j),self%sampl(i,j)
+        end do
+        write(kout,*,iostat=status) ' '
+     end do
+     if(status/=0) then
+        call log_error(m_name,s_name,1,error_fatal,'Error writing sampl')
+     end if
 
   case default
 
@@ -1005,7 +915,8 @@ subroutine spl2d_writev(self,kchar,kout)
   !! arguments
   type(spl2d_t), intent(in) :: self   !< object data structure
   character(*), intent(in) :: kchar  !< case
-  integer(ki4), intent(in) :: kout   !< output channel for object data structure
+  integer, intent(in) :: kout   !< output channel for object data structure
+
 
   !! local
   character(*), parameter :: s_name='spl2d_writev' !< subroutine name
@@ -1013,14 +924,14 @@ subroutine spl2d_writev(self,kchar,kout)
   plot_type: select case (kchar)
   case('sampl')
 
-    do j=1,self%n2p
-      do i=1,self%n1p
-        write(kout,cfmtbs1,iostat=status) self%sampl(i,j)
-      end do
-    end do
-    if(status/=0) then
-      call log_error(m_name,s_name,1,error_fatal,'Error writing sampl')
-    end if
+     do j=1,self%n2p
+        do i=1,self%n1p
+           write(kout,cfmtbs1,iostat=status) self%sampl(i,j)
+        end do
+     end do
+     if(status/=0) then
+        call log_error(m_name,s_name,1,error_fatal,'Error writing sampl')
+     end if
 
   case default
 
@@ -1099,8 +1010,8 @@ subroutine spl2d_write(self,kout)
   if(status/=0) then
      call log_error(m_name,s_name,18,error_fatal,'Error writing object data')
   end if
-  write(kout,*,iostat=status) '%noff_c1'
-  write(kout,*,iostat=status) self%noff_c1
+  write(kout,*,iostat=status) 'noff'
+  write(kout,*,iostat=status) self%noff
   if(status/=0) then
      call log_error(m_name,s_name,19,error_fatal,'Error writing object data')
   end if
@@ -1152,24 +1063,24 @@ subroutine spl2d_coeff(self)
   !       note that arrays iwa,wa aka IL,AN are saved from one call to the next,
   !       only recalculated when last calling argument changes
   !
-  !! first work in 1st coordinate
-  isw=2*self%n1p+3*self%nord_c1+1
+  !! first work in 1 coordinate
+  isw=2*self%n1p+3*self%nord+1
   do j=1,self%n2p
-    self%wv1(:self%n1p)=self%sampl(:,j)
-    call tb06a(self%n1p,self%pos1,self%wv1,self%nord_c1,self%n1p, &
- &  self%knot1(self%nord_c1+1),self%iwa1,self%wa1k,self%wv2k,isw,self%wv3, &
- &  self%wv2,1)
-    self%coeff(:self%n1p,j)=self%wv2(:self%n1p)
+     self%wv1(:self%n1p)=self%sampl(:,j)
+     call tb06a(self%n1p,self%pos1,self%wv1,self%nord,self%n1p, &
+ &   self%knot1(self%nord+1),self%iwa1,self%wa1k,self%wv2k,isw,self%wv3, &
+ &   self%wv2,1)
+     self%coeff(:self%n1p,j)=self%wv2(:self%n1p)
   end do
 
-  !! then in 2nd coordinate
-  isw=2*self%n2p+3*self%nord_c2+1
+  !!  then in 2 coordinate
+  isw=2*self%n2p+3*self%nord+1
   do i=1,self%n1p
-    self%wv1(:self%n2p)=self%coeff(i,:)
-    call tb06a(self%n2p,self%pos2,self%wv1,self%nord_c2,self%n2p, &
- &  self%knot2(self%nord_c2+1),self%iwa2,self%wa2k,self%wv2k_c2,isw,self%wv3_c2, &
- &  self%wv2,2)
-    self%coeff(i,:self%n2p)=self%wv2(:self%n2p)
+     self%wv1(:self%n2p)=self%coeff(i,:)
+     call tb06a(self%n2p,self%pos2,self%wv1,self%nord,self%n2p, &
+ &   self%knot2(self%nord+1),self%iwa2,self%wa2k,self%wv2k,isw,self%wv3, &
+ &   self%wv2,2)
+     self%coeff(i,:self%n2p)=self%wv2(:self%n2p)
   end do
 
 end subroutine spl2d_coeff
@@ -1199,85 +1110,83 @@ subroutine spl2d_eval(self,p1,p2,pe)
 
   zz=0
   if (self%lunif==0) then
-    ! assumes points non-uniformly distributed
-    call interv(self%knot1,self%n1p+self%nord_c1,p1,ipp,iflag)
-    if (iflag>0) then
-      call log_error(m_name,s_name,1,error_warning,'Point not in range of spline')
-      iflag=0
-    end if
-    call interv(self%knot2,self%n2p+self%nord_c2,p2,iqq,iflag)
-    if (iflag>0) then
-      call log_error(m_name,s_name,2,error_warning,'Point not in range of spline')
-      iflag=0
-    end if
+     ! assumes points non-uniformly distributed
+     call interv(self%knot1,self%n1p+self%nord,p1,ipp,iflag)
+     if (iflag>0) then
+        call log_error(m_name,s_name,1,error_warning,'Point not in range of spline')
+        iflag=0
+     end if
+     call interv(self%knot2,self%n2p+self%nord,p2,iqq,iflag)
+     if (iflag>0) then
+        call log_error(m_name,s_name,2,error_warning,'Point not in range of spline')
+        iflag=0
+     end if
+     ip=ipp-self%nord
+     iq=iqq-self%nord
+     call bsplvn(self%knot1,self%nord,1,p1,ipp,self%val1)
+     do i=1,self%nord
+        ii=i+iq
+        self%val2(i)=0
+        do j=1,self%nord
+           self%val2(i)=self%val2(i)+self%val1(j)*self%coeff(j+ip,ii)
+        end do
+     end do
 
-    !!-----Going to be an issue with the correct order of the splines-----!!
-    ip=ipp-self%nord_c1!---?which order?---guessing 1 as iqq is second-int-coord---!
-    iq=iqq-self%nord_c2!---?which order?---guessing 2 as iqq is second-int-coord---!
-    call bsplvn(self%knot1,self%nord_c1,1,p1,ipp,self%val1)
-    do i=1,self%nord_c2!---?which order?---!
-      ii=i+iq
-      self%val2(i)=0
-      do j=1,self%nord_c1!---?which order?---!
-        self%val2(i)=self%val2(i)+self%val1(j)*self%coeff(j+ip,ii)
-      end do
-    end do
-
-    call bsplvn(self%knot2,self%nord_c2,1,p2,iqq,self%val1_c2)
-    do i=1,self%nord_c2!---?which order?---!
-      zz=zz+self%val2(i)*self%val1_c2(i)
-    end do
+     call bsplvn(self%knot2,self%nord,1,p2,iqq,self%val1)
+     do i=1,self%nord
+        zz=zz+self%val2(i)*self%val1(i)
+     end do
 
   else if (self%lunif==1) then
-    ! assume uniform distribution for point location, not for final evaluation
-    call interu(self%rh1,self%n1p,p1-self%org1,ipp,self%pad1,self%noff_c1,self%nord_c1)
-    call interu(self%rh2,self%n2p,p2-self%org2,iqq,self%pad2,self%noff_c2,self%nord_c2)
-    ip=ipp-self%nord_c1
-    iq=iqq-self%nord_c2
-    call bsplvn(self%knot1,self%nord_c1,1,p1,ipp,self%val1)
-    !dbgwval1     write(121,*) 'val1 array 1',ip,(self%val1(i),i=1,4) !dbgwval1
-    do i=1,self%nord_c2
-      ii=i+iq
-      self%val2(i)=0
-      do j=1,self%nord_c1
-        self%val2(i)=self%val2(i)+self%val1(j)*self%coeff(j+ip,ii)
-      end do
-    end do
+     ! assume uniform distribution for point location, not for final evaluation
+     call interu(self%rh1,self%n1p,p1-self%org1,ipp,self%pad1,self%noff,self%nord)
+     call interu(self%rh2,self%n2p,p2-self%org2,iqq,self%pad2,self%noff,self%nord)
+     ip=ipp-self%nord
+     iq=iqq-self%nord
+     call bsplvn(self%knot1,self%nord,1,p1,ipp,self%val1)
+     !dbgwval1     write(121,*) 'val1 array 1',ip,(self%val1(i),i=1,4) !dbgwval1
+     do i=1,self%nord
+        ii=i+iq
+        self%val2(i)=0
+        do j=1,self%nord
+           self%val2(i)=self%val2(i)+self%val1(j)*self%coeff(j+ip,ii)
+        end do
+     end do
 
-    call bsplvn(self%knot2,self%nord_c2,1,p2,iqq,self%val1_c2)
-    !dbgwval1     write(121,*) 'val1 array 2',iq,(self%val1(i),i=1,4) !dbgwval1
-    do i=1,self%nord_c2
-      zz=zz+self%val2(i)*self%val1_c2(i)
-    end do
+     call bsplvn(self%knot2,self%nord,1,p2,iqq,self%val1)
+     !dbgwval1     write(121,*) 'val1 array 2',iq,(self%val1(i),i=1,4) !dbgwval1
+     do i=1,self%nord
+        zz=zz+self%val2(i)*self%val1(i)
+     end do
 
   else if (self%lunif==2) then
-    ! assume uniform distribution for both point location and final evaluation
-    call interw(self%rh1,self%n1p,p1-self%org1,self%pad1,self%noff_c1,self%nord_c1,ipp,p1f)
-    call interw(self%rh2,self%n2p,p2-self%org2,self%pad2,self%noff_c2,self%nord_c2,iqq,p2f)
-    ip=ipp-self%nord_c1
-    iq=iqq-self%nord_c2
-    call bsplwn(ipp,p1f,self%n1p,self%val1)
-    !dbgwval1     zwork(1:4)=self%val1 !dbgwval1
-    !dbgwval1     write(122,*) 'val1 array 1',ip,(zwork(i),i=1,4) !dbgwval1
-    !optw     ii=iq
-    !optw     do i=1,self%nord
-    !optw        ii=ii+1
-    !optw        self%val2(i)=0
-    !optw        ij=ip
-    !optw        do j=1,self%nord
-    !optw           ij=ij+1
-    !optw           self%val2(i)=self%val2(i)+self%val1(j)*self%coeff(ij,ii)
-    !optw        end do
-    !optw     end do
-    self%val2=matmul(self%val1,self%coeff(ip+1:ipp,iq+1:iqq))
+     ! assume uniform distribution for both point location and final evaluation
+     call interw(self%rh1,self%n1p,p1-self%org1,self%pad1,self%noff,self%nord,ipp,p1f)
+     call interw(self%rh2,self%n2p,p2-self%org2,self%pad2,self%noff,self%nord,iqq,p2f)
+     ip=ipp-self%nord
+     iq=iqq-self%nord
+     call bsplwn(ipp,p1f,self%n1p,self%val1)
+     !dbgwval1     zwork(1:4)=self%val1 !dbgwval1
+     !dbgwval1     write(122,*) 'val1 array 1',ip,(zwork(i),i=1,4) !dbgwval1
+     !optw     ii=iq
+     !optw     do i=1,self%nord
+     !optw        ii=ii+1
+     !optw        self%val2(i)=0
+     !optw        ij=ip
+     !optw        do j=1,self%nord
+     !optw           ij=ij+1
+     !optw           self%val2(i)=self%val2(i)+self%val1(j)*self%coeff(ij,ii)
+     !optw        end do
+     !optw     end do
+     self%val2=matmul(self%val1,self%coeff(ip+1:ipp,iq+1:iqq))
 
-    call bsplwn(iqq,p2f,self%n2p,self%val1_c2)
-    !dbgwval1     zwork(1:4)=self%val1 !dbgwval1
-    !dbgwval1     write(122,*) 'val1 array 2',iq,(zwork(i),i=1,4) !dbgwval1
-    !optw     do i=1,self%nord
-    !optw        zz=zz+self%val2(i)*self%val1(i)
-    !optw     end do
-    zz=dot_product(self%val2,self%val1_c2)
+     call bsplwn(iqq,p2f,self%n2p,self%val1)
+     !dbgwval1     zwork(1:4)=self%val1 !dbgwval1
+     !dbgwval1     write(122,*) 'val1 array 2',iq,(zwork(i),i=1,4) !dbgwval1
+     !optw     do i=1,self%nord
+     !optw        zz=zz+self%val2(i)*self%val1(i)
+     !optw     end do
+     zz=dot_product(self%val2,self%val1)
   end if
 
   pe=zz
@@ -1316,68 +1225,68 @@ subroutine spl2d_evaln(self,p1,p2,kcall,pe)
 
   zz=0
   if (self%lunif==0) then
-    ! assumes points non-uniformly distributed
-    call interv(self%knot1,self%n1p+self%nord_c1,p1,ipp,iflag)
-    if (iflag>0) then
-      call log_error(m_name,s_name,1,error_warning,'Point not in range of spline')
-      iflag=0
-    end if
-    call interv(self%knot2,self%n2p+self%nord_c2,p2,iqq,iflag)
-    if (iflag>0) then
-      call log_error(m_name,s_name,2,error_warning,'Point not in range of spline')
-      iflag=0
-    end if
-    ip=ipp-self%nord_c1!---?which order?---guessing 1 as ipp is first-int-coord---!
-    iq=iqq-self%nord_c2!---?which order?---guessing 2 as iqq is second-int-coord---!
-    call bsplvn(self%knot1,self%nord_c1,1,p1,ipp,self%val1)
-    do i=1,self%nord_c2
-      ii=i+iq
-      self%val2(i)=0
-      do j=1,self%nord_c1
-        self%val2(i)=self%val2(i)+self%val1(j)*self%coeff(j+ip,ii)
-      end do
-    end do
+     ! assumes points non-uniformly distributed
+     call interv(self%knot1,self%n1p+self%nord,p1,ipp,iflag)
+     if (iflag>0) then
+        call log_error(m_name,s_name,1,error_warning,'Point not in range of spline')
+        iflag=0
+     end if
+     call interv(self%knot2,self%n2p+self%nord,p2,iqq,iflag)
+     if (iflag>0) then
+        call log_error(m_name,s_name,2,error_warning,'Point not in range of spline')
+        iflag=0
+     end if
+     ip=ipp-self%nord
+     iq=iqq-self%nord
+     call bsplvn(self%knot1,self%nord,1,p1,ipp,self%val1)
+     do i=1,self%nord
+        ii=i+iq
+        self%val2(i)=0
+        do j=1,self%nord
+           self%val2(i)=self%val2(i)+self%val1(j)*self%coeff(j+ip,ii)
+        end do
+     end do
 
-    call bsplvn(self%knot2,self%nord_c2,1,p2,iqq,self%val1_c2)
-    do i=1,self%nord_c2
-      zz=zz+self%val2(i)*self%val1_c2(i)
-    end do
+     call bsplvn(self%knot2,self%nord,1,p2,iqq,self%val1)
+     do i=1,self%nord
+        zz=zz+self%val2(i)*self%val1(i)
+     end do
 
   else if (self%lunif==1) then
-    ! assume uniform distribution for point location, not for final evaluation
-    call interu(self%rh1,self%n1p,p1-self%org1,ipp,self%pad1,self%noff_c1,self%nord_c1)
-    call interu(self%rh2,self%n2p,p2-self%org2,iqq,self%pad2,self%noff_c2,self%nord_c2)
-    ip=ipp-self%nord_c1
-    iq=iqq-self%nord_c2
-    call bsplvn(self%knot1,self%nord_c1,1,p1,ipp,self%val1)
-    !dbgwval1     write(121,*) 'val1 array 1',ip,(self%val1(i),i=1,4) !dbgwval1
-    do i=1,self%nord_c2
-      ii=i+iq
-      self%val2(i)=0
-      do j=1,self%nord_c1
-        self%val2(i)=self%val2(i)+self%val1(j)*self%coeff(j+ip,ii)
-      end do
-    end do
+     ! assume uniform distribution for point location, not for final evaluation
+     call interu(self%rh1,self%n1p,p1-self%org1,ipp,self%pad1,self%noff,self%nord)
+     call interu(self%rh2,self%n2p,p2-self%org2,iqq,self%pad2,self%noff,self%nord)
+     ip=ipp-self%nord
+     iq=iqq-self%nord
+     call bsplvn(self%knot1,self%nord,1,p1,ipp,self%val1)
+     !dbgwval1     write(121,*) 'val1 array 1',ip,(self%val1(i),i=1,4) !dbgwval1
+     do i=1,self%nord
+        ii=i+iq
+        self%val2(i)=0
+        do j=1,self%nord
+           self%val2(i)=self%val2(i)+self%val1(j)*self%coeff(j+ip,ii)
+        end do
+     end do
 
-    call bsplvn(self%knot2,self%nord_c2,1,p2,iqq,self%val1_c2)
-    !dbgwval1     write(121,*) 'val1 array 2',iq,(self%val1(i),i=1,4) !dbgwval1
-    do i=1,self%nord_c2
-      zz=zz+self%val2(i)*self%val1_c2(i)
-    end do
+     call bsplvn(self%knot2,self%nord,1,p2,iqq,self%val1)
+     !dbgwval1     write(121,*) 'val1 array 2',iq,(self%val1(i),i=1,4) !dbgwval1
+     do i=1,self%nord
+        zz=zz+self%val2(i)*self%val1(i)
+     end do
 
   else if (self%lunif==2) then
-    ! assume uniform distribution for both point location and final evaluation
-    if (kcall==1) then
-      call interw(self%rh1,self%n1p,p1-self%org1,self%pad1,self%noff_c1,self%nord_c1,ipp,p1f)
-      call interw(self%rh2,self%n2p,p2-self%org2,self%pad2,self%noff_c2,self%nord_c2,iqq,p2f)
-      ip=ipp-self%nord_c1
-      iq=iqq-self%nord_c2
-      call bsplwn(ipp,p1f,self%n1p,scoef1)
-      call bsplwn(iqq,p2f,self%n2p,scoef2)
-      sip=ip;sipp=ipp;siq=iq;siqq=iqq
-    end if
-    self%val2=matmul(scoef1,self%coeff(sip+1:sipp,siq+1:siqq))
-    zz=dot_product(self%val2,scoef2)
+     ! assume uniform distribution for both point location and final evaluation
+     if (kcall==1) then
+        call interw(self%rh1,self%n1p,p1-self%org1,self%pad1,self%noff,self%nord,ipp,p1f)
+        call interw(self%rh2,self%n2p,p2-self%org2,self%pad2,self%noff,self%nord,iqq,p2f)
+        ip=ipp-self%nord
+        iq=iqq-self%nord
+        call bsplwn(ipp,p1f,self%n1p,scoef1)
+        call bsplwn(iqq,p2f,self%n2p,scoef2)
+        sip=ip;sipp=ipp;siq=iq;siqq=iqq
+     end if
+     self%val2=matmul(scoef1,self%coeff(sip+1:sipp,siq+1:siqq))
+     zz=dot_product(self%val2,scoef2)
   end if
 
   pe=zz
@@ -1401,28 +1310,28 @@ subroutine spl2d_locpos(self,p1,p2,kp1,kp2)
   integer(ki4) :: iflag   !<  warning flag
 
   if (self%lunif==0) then
-    call interv(self%knot1,self%n1p+self%nord_c1,p1,ipp,iflag)
-    if (iflag>0) then
-      call log_error(m_name,s_name,1,error_warning,'Point not in range of spline')
-      iflag=0
-    end if
-    call interv(self%knot2,self%n2p+self%nord_c2,p2,iqq,iflag)
-    if (iflag>0) then
-      call log_error(m_name,s_name,2,error_warning,'Point not in range of spline')
-      iflag=0
-    end if
-    kp1=ipp-self%nord_c1  !-which order?---guessing 1 as ipp is first-int-coord---!
-    kp2=iqq-self%nord_c2  !-which order?---guessing 2 as iqq is second-int-coord---!
+     call interv(self%knot1,self%n1p+self%nord,p1,ipp,iflag)
+     if (iflag>0) then
+        call log_error(m_name,s_name,1,error_warning,'Point not in range of spline')
+        iflag=0
+     end if
+     call interv(self%knot2,self%n2p+self%nord,p2,iqq,iflag)
+     if (iflag>0) then
+        call log_error(m_name,s_name,2,error_warning,'Point not in range of spline')
+        iflag=0
+     end if
+     kp1=ipp-self%nord
+     kp2=iqq-self%nord
   else if (self%lunif>=1) then
-    call interu(self%rh1,self%n1p,p1-self%org1,ipp,0,0,0)
-    call interu(self%rh2,self%n2p,p2-self%org2,iqq,0,0,0)
-    if (ipp*iqq==0) then
-      call log_error(m_name,s_name,3,error_warning,'Point not in range of spline')
-      ipp=max(1,ipp)
-      iqq=max(1,iqq)
-    end if
-    kp1=ipp
-    kp2=iqq
+     call interu(self%rh1,self%n1p,p1-self%org1,ipp,0,0,0)
+     call interu(self%rh2,self%n2p,p2-self%org2,iqq,0,0,0)
+     if (ipp*iqq==0) then
+        call log_error(m_name,s_name,3,error_warning,'Point not in range of spline')
+        ipp=max(1,ipp)
+        iqq=max(1,iqq)
+     end if
+     kp1=ipp
+     kp2=iqq
   end if
 
 end subroutine spl2d_locpos
@@ -1440,51 +1349,45 @@ subroutine spl2d_deriv(self,dself,kcoo)
   integer(ki4) :: iflag   !<  error flag
   real(kr8) :: z   !< point to evaluate derivative
   real(kr8) :: zd   !< derivative value
-  integer(ki4) :: nord1   !< order in 1-direction
-  integer(ki4) :: nord2   !< order in 2-direction
 
   allocate(work2(self%n1p,self%n2p), stat=status)
   call log_alloc_check(m_name,s_name,1,status)
 
   if (kcoo==1) then
-    ! derivative in 1-direction
-    do j=1,self%n2p
-      self%wv1(:self%n1p)=self%coeff(:,j)
-      do i=1,self%n1p
-        z=(i-1)*self%h1+self%org1
-        call bvalue(self%knot1,self%wv1,self%n1p,self%nord_c1,z,1,self%lunif,iflag,zd)
-        if (iflag>0) then
-          call log_error(m_name,s_name,10,error_fatal,'Point not in range of spline')
-          iflag=0
-        end if
-        self%wv2(i)=zd
-      end do
-      work2(:self%n1p,j)=self%wv2(:self%n1p)
-    end do
-    nord1=self%nord_c1-1
-    nord2=self%nord_c1
-
+     ! derivative in 1-direction
+     do j=1,self%n2p
+        self%wv1(:self%n1p)=self%coeff(:,j)
+        do i=1,self%n1p
+           z=(i-1)*self%h1+self%org1
+           call bvalue(self%knot1,self%wv1,self%n1p,self%nord,z,1,self%lunif,iflag,zd)
+           if (iflag>0) then
+              call log_error(m_name,s_name,10,error_fatal,'Point not in range of spline')
+              iflag=0
+           end if
+           self%wv2(i)=zd
+        end do
+        work2(:self%n1p,j)=self%wv2(:self%n1p)
+     end do
   else
-    ! derivative in 2-direction
-    do i=1,self%n1p
-      self%wv1(:self%n2p)=self%coeff(i,:)
-      do j=1,self%n2p
-        z=(j-1)*self%h2+self%org2
-        call bvalue(self%knot2,self%wv1,self%n2p,self%nord_c2,z,1,self%lunif,iflag,zd)
-        if (iflag>0) then
-          call log_error(m_name,s_name,20,error_fatal,'Point not in range of spline')
-          iflag=0
-        end if
-        self%wv2(j)=zd
-      end do
-      work2(i,:self%n2p)=self%wv2(:self%n2p)
-    end do
-    nord1=self%nord_c2
-    nord2=self%nord_c2-1
+
+     ! derivative in 2-direction
+     do i=1,self%n1p
+        self%wv1(:self%n2p)=self%coeff(i,:)
+        do j=1,self%n2p
+           z=(j-1)*self%h2+self%org2
+           call bvalue(self%knot2,self%wv1,self%n2p,self%nord,z,1,self%lunif,iflag,zd)
+           if (iflag>0) then
+              call log_error(m_name,s_name,20,error_fatal,'Point not in range of spline')
+              iflag=0
+           end if
+           self%wv2(j)=zd
+        end do
+        work2(i,:self%n2p)=self%wv2(:self%n2p)
+     end do
   end if
 
   call spl2d_init(dself,work2,self%n1,self%n2,&
- &self%org1,self%org2,self%h1,self%h2,nord1,nord2)
+ &self%org1,self%org2,self%h1,self%h2,self%nord)
   deallocate(work2)
 
 end subroutine spl2d_deriv

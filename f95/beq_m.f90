@@ -123,7 +123,7 @@ module beq_m
   logical :: iltest !< logical flag
   integer(ki4) :: n_regions !< number of regions (used for double null case)
   integer(ki4) :: n_xpoints !< number of active xpoints (used for double null case)
-  integer(ki4) :: same_rmbpmbm !< Set R_m,B_{bm} and B_m in the multi region case
+  integer(ki4) :: same_rmbpmbm !< Set \f$ R_m, B_{pm} \f$ and \f$ B_m \f$ in the multi-region case
 
   contains
 !---------------------------------------------------------------------
@@ -4267,7 +4267,7 @@ subroutine beq_bdryrb_dn(self)
      return
   end if  
   !Loop over regions
-  Do m=0,n_regions
+  do m=0,n_regions
      if(m==1) then
          self%n%bdryopt=4
          self%psibdry=self%psixptarr(1)
@@ -5680,13 +5680,13 @@ subroutine beq_rextremum(self,psr1,psr2,ptheta,psim,psrm,peps,kerr)
 
   end do do_count
 
-  call log_value('debug output from beq_rextremum self%n%rcen+zsr5*zcos',self%n%rcen+zsr5*zcos)
-  call log_value('debug output from beq_rextremum self%n%zcen+zsr5*zsin',self%n%zcen+zsr5*zsin)
-
-  call log_value('debug output from beq_rextremum zpsi1', zpsi1)
-  call log_value('debug output from beq_rextremum zpsi2', zpsi2)
-  call log_value('debug output from beq_rextremum zpsi3', zpsi3)
-  call log_value('debug output from beq_rextremum peps', peps)
+!jod1 call log_value('debug output from beq_rextremum self!n!rcen+zsr5*zcos',self!n!rcen+zsr5*zcos)!jod1 
+!jod1 call log_value('debug output from beq_rextremum self!n!zcen+zsr5*zsin',self!n!zcen+zsr5*zsin)!jod1 
+!jod1 
+!jod1 call log_value('debug output from beq_rextremum zpsi1', zpsi1)!jod1 
+!jod1 call log_value('debug output from beq_rextremum zpsi2', zpsi2)!jod1 
+!jod1 call log_value('debug output from beq_rextremum zpsi3', zpsi3)!jod1 
+!jod1 call log_value('debug output from beq_rextremum peps', peps)!jod1 
 
   if (jicount>=micount) then
      kerr=1
