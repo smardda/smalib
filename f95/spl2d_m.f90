@@ -556,7 +556,7 @@ subroutine spl2d_initfull(self,selfout)
   call log_alloc_check(m_name,s_name,30,status)
   selfout%val1=0
   !! allocate value 2 storage
-  allocate(selfout%val2(self%nord_c1), stat=status)
+  allocate(selfout%val2(self%nord), stat=status)
   call log_alloc_check(m_name,s_name,31,status)
   selfout%val2=0
 
