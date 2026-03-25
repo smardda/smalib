@@ -560,7 +560,6 @@ subroutine spl2d_initfull(self,selfout)
   call log_alloc_check(m_name,s_name,31,status)
   selfout%val2=0
 
-
 end subroutine spl2d_initfull
 !---------------------------------------------------------------------
 !> get \f$ \psi,\theta \f$ limits of interpolation
