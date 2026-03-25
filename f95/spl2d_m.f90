@@ -640,9 +640,9 @@ subroutine spl2d_initfull(self,selfout)
   allocate(selfout%val2(self%nord_c1), stat=status)
   call log_alloc_check(m_name,s_name,31,status)
   selfout%val2=0
-  allocate(selfout%val2(self%nord_c2), stat=status)
-  call log_alloc_check(m_name,s_name,31,status)
-  selfout%val2=0
+!  allocate(selfout%val2(self%nord_c2), stat=status)
+!  call log_alloc_check(m_name,s_name,31,status)
+!  selfout%val2=0
 
 
 end subroutine spl2d_initfull
